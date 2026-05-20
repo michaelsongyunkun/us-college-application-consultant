@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Environment variables and secrets
+.env
+.env.*
+*.key
+api_key.txt
+openai_api_key.txt
+
+# Runtime logs
+*.log
+server.out.log
+server.err.log
+spawn.out.log
+spawn.err.log
+
+# Local exports and drafts
+*.doc
+*.docx
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>美本申请规划 Agent</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">US College Admissions Strategist Agent</p>
+          <h1>美本申请规划 Agent</h1>
+        </div>
+        <div class="actions" aria-label="页面操作">
+          <button id="saveButton" type="button">保存草稿</button>
+          <button id="exportButton" type="button">导出 JSON</button>
+          <button id="exportWordButton" type="button">导出 Word</button>
+          <button id="resetButton" type="button" class="quiet">清空</button>
+        </div>
+      </header>
+
+      <section class="panel intake-panel" aria-labelledby="intake-title">
+        <div class="section-heading">
+          <h2 id="intake-title">用户背景输入</h2>
+          <p>这些信息会作为用户背景传给中间 Agent 层。</p>
+        </div>
+
+        <form id="profileForm" class="profile-grid">
+          <label>
+            <span>年级</span>
+            <select name="grade">
+              <option value="">请选择</option>
+              <option>8年级</option>
+              <option>9年级</option>
+              <option>10年级</option>
+              <option>11年级</option>
+              <option>12年级</option>
+              <option>Gap Year</option>
+            </select>
+          </label>
+
+          <label>
+            <span>专业方向</span>
+            <input name="majorDirection" type="text" placeholder="例如：计算机 / 经济 / 生物医学 / 未定" />
+          </label>
+
+          <label>
+            <span>核心能力 / 特长</span>
+            <textarea name="coreStrengths" placeholder="例如：自学Python、科研、写作、竞赛、语言能力"></textarea>
+          </label>
+
+          <label>
+            <span>可利用资源</span>
+            <textarea name="availableResources" placeholder="例如：高校实验室、社区组织、校内社团资源、导师、预算、时间"></textarea>
+          </label>
+
+          <label>
+            <span>性格 / 行为倾向</span>
+            <textarea name="personality" placeholder="例如：内向深度调研型 / 外向组织协调型 / 细节控 / 长期执行力强"></textarea>
+          </label>
+
+          <label>
+            <span>兴趣方向</span>
+            <textarea name="interests" placeholder="例如：人工智能+教育公益、生物学+乡村生态、政治学+公共演讲"></textarea>
+          </label>
+
+          <label class="full-span">
+            <span>现有课外活动</span>
+            <textarea name="existingActivities" placeholder="请列出目前已经参与的活动、职位、时长、成果或证据"></textarea>
+          </label>
+        </form>
+      </section>
+
+      <section class="panel agent-panel" aria-labelledby="agent-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="agent-title">中间 Agent 层</h2>
+            <p>固定提示词由后端自动读取并作为 system prompt 注入，用户不需要输入或查看提示词。</p>
+          </div>
+          <button id="generateButton" type="button">生成并填入表格</button>
+        </div>
+        <div class="agent-body">
+          <div class="agent-note">
+            <strong>固定 Agent 提示词：</strong>
+            <span id="promptStatus">等待检测</span>
+          </div>
+          <label>
+            <span>OpenAI API Key（仅本次请求使用，不保存）</span>
+            <input
+              id="apiKeyInput"
+              type="password"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="粘贴 sk-...；如果服务端已设置 OPENAI_API_KEY 可留空"
+            />
+          </label>
+          <label>
+            <span>Agent 原始规划回答</span>
+            <textarea id="rawAnswer" placeholder="生成后会显示 Agent 完整回答；其中的表格会自动写入下方结构化表格。"></textarea>
+          </label>
+          <div class="codex-mode">
+            <div class="codex-actions">
+              <button id="buildCodexTaskButton" type="button" class="quiet">生成 Codex 任务包</button>
+              <button id="copyCodexTaskButton" type="button" class="quiet">复制任务包</button>
+              <button id="parseCodexAnswerButton" type="button">解析 Codex 回答进表格</button>
+            </div>
+            <label>
+              <span>Codex 模式任务包（复制给当前 Codex 对话）</span>
+              <textarea id="codexTaskPackage" placeholder="点击“生成 Codex 任务包”后，把这里的内容复制给 Codex。"></textarea>
+            </label>
+            <label>
+              <span>Codex 回答粘贴区</span>
+              <textarea id="codexAnswerInput" placeholder="把 Codex 基于固定提示词生成的完整回答粘贴到这里，再点击“解析 Codex 回答进表格”。"></textarea>
+            </label>
+          </div>
+        </div>
+        <div class="agent-footer">
+          <span id="agentStatus" class="status" role="status" aria-live="polite">等待生成</span>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="activities-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="activities-title">规划回答输出表格</h2>
+            <p>Agent 输出的 10 项课外活动最终填入这里。</p>
+          </div>
+          <span id="saveStatus" class="status" role="status" aria-live="polite">未保存</span>
+        </div>
+
+        <div class="table-wrap">
+          <table id="activityTable">
+            <thead>
+              <tr>
+                <th scope="col">序号</th>
+                <th scope="col">活动类型（Type）</th>
+                <th scope="col">活动名称（精准描述）</th>
+                <th scope="col">具体执行描述（需含：问题 / 成果 / 影响）</th>
+                <th scope="col">建议年级</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">1</th>
+                <td><input name="type-1" type="text" /></td>
+                <td><textarea name="name-1"></textarea></td>
+                <td><textarea name="description-1" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-1" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">2</th>
+                <td><input name="type-2" type="text" /></td>
+                <td><textarea name="name-2"></textarea></td>
+                <td><textarea name="description-2" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-2" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">3</th>
+                <td><input name="type-3" type="text" /></td>
+                <td><textarea name="name-3"></textarea></td>
+                <td><textarea name="description-3" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-3" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">4</th>
+                <td><input name="type-4" type="text" /></td>
+                <td><textarea name="name-4"></textarea></td>
+                <td><textarea name="description-4" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-4" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">5</th>
+                <td><input name="type-5" type="text" /></td>
+                <td><textarea name="name-5"></textarea></td>
+                <td><textarea name="description-5" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-5" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">6</th>
+                <td><input name="type-6" type="text" /></td>
+                <td><textarea name="name-6"></textarea></td>
+                <td><textarea name="description-6" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-6" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">7</th>
+                <td><input name="type-7" type="text" /></td>
+                <td><textarea name="name-7"></textarea></td>
+                <td><textarea name="description-7" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-7" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">8</th>
+                <td><input name="type-8" type="text" /></td>
+                <td><textarea name="name-8"></textarea></td>
+                <td><textarea name="description-8" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-8" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">9</th>
+                <td><input name="type-9" type="text" /></td>
+                <td><textarea name="name-9"></textarea></td>
+                <td><textarea name="description-9" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-9" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">10</th>
+                <td><input name="type-10" type="text" /></td>
+                <td><textarea name="name-10"></textarea></td>
+                <td><textarea name="description-10" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-10" type="text" /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <label class="narrative-box">
+          <span>活动叙事逻辑解读</span>
+          <textarea id="narrativeOutput" placeholder="Agent 输出的【活动叙事逻辑解读】会填入这里。"></textarea>
+        </label>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
