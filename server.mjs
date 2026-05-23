@@ -9,7 +9,7 @@ import { resolveApiKey } from "./api-key.mjs";
 const root = fileURLToPath(new URL(".", import.meta.url));
 const promptPath = join(root, "prompts", "us-college-admissions-strategist-agent.md");
 const port = Number(process.env.PORT || 4177);
-const host = process.env.HOST || "127.0.0.1";
+const host = process.env.HOST || "0.0.0.0";
 
 const contentTypes = {
   ".html": "text/html;charset=utf-8",

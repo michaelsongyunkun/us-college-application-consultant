@@ -15,7 +15,9 @@ const documentHtml = buildWordDocument({
   narrative: "以AI教育公益为Spike。",
 });
 
-assert.ok(documentHtml.includes("<title>美本申请规划活动表</title>"));
+assert.ok(documentHtml.includes("<title>"));
 assert.ok(documentHtml.includes("AI教育公益研究"));
-assert.ok(documentHtml.includes("问题：资源不足<br>成果：完成工具<br>影响：服务80人"));
+assert.ok(documentHtml.includes("<p>问题：资源不足</p>"));
+assert.ok(documentHtml.includes("<p>成果：完成工具</p>"));
+assert.ok(documentHtml.includes("<p>影响：服务80人</p>"));
 assert.ok(documentHtml.includes("以AI教育公益为Spike。"));

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>选课辅助器</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Course Planning Assistant</p>
+          <h1>选课辅助器</h1>
+        </div>
+        <div class="actions" aria-label="页面操作">
+          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
+        </div>
+      </header>
+
+      <section class="panel course-helper-panel" aria-labelledby="course-helper-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="course-helper-title">学生选课信息</h2>
+            <p>默认按 AP 课程体系整理已修课程、目标专业和后续选课优先级。</p>
+          </div>
+          <span id="apCourseStatus" class="status" role="status" aria-live="polite">AP 课程数据加载中</span>
+        </div>
+
+        <form id="courseHelperForm" class="profile-grid course-helper-grid">
+          <label>
+            <span>当前年级</span>
+            <select name="grade">
+              <option value="">请选择</option>
+              <option>8年级</option>
+              <option>9年级</option>
+              <option>10年级</option>
+              <option>11年级</option>
+              <option>12年级</option>
+            </select>
+          </label>
+
+          <label>
+            <span>目标专业方向</span>
+            <input name="majorDirection" type="text" placeholder="例如：计算机、经济、生物医学、历史、艺术" />
+          </label>
+
+          <fieldset class="ap-course-field full-span">
+            <legend>已修读的 AP 课程</legend>
+            <div id="apCourseGrid" class="ap-course-grid"></div>
+          </fieldset>
+
+          <label class="full-span">
+            <span>成绩与难点</span>
+            <textarea name="academicStatus" placeholder="例如：AP Calculus BC 表现稳定，AP English 写作还需要加强，物理实验经验不足"></textarea>
+          </label>
+        </form>
+      </section>
+
+      <section class="panel ap-recommendation-panel" aria-labelledby="ap-recommendation-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="ap-recommendation-title">AP选课推荐</h2>
+            <p>根据当前年级、目标专业方向和已修读 AP 课程，规划明年至 12 年级的 AP 选课路径。</p>
+          </div>
+          <div class="inline-actions">
+            <span id="apRecommendationStatus" class="status" role="status" aria-live="polite">等待完整输入</span>
+            <button id="refreshApRecommendationsButton" type="button" class="quiet neutral">重新生成</button>
+          </div>
+        </div>
+        <div class="ap-recommendation-body">
+          <p id="apRecommendationNotice" class="case-notice">
+            请先填写当前年级、目标专业方向，并至少选择一门已修读的 AP 课程。
+          </p>
+          <div id="apRecommendationList" class="ap-recommendation-list"></div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./safe-navigation.mjs"></script>
+    <script type="module" src="./course-helper.js"></script>
+  </body>
+</html>

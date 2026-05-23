@@ -11,7 +11,10 @@
       <header class="topbar">
         <div>
           <p class="eyebrow">US College Admissions Strategist Agent</p>
-          <h1>美本申请规划 Agent</h1>
+          <div class="title-row">
+            <h1>美本申请规划 Agent</h1>
+            <a class="button-link title-link" href="./course-helper.html" data-safe-nav>选课辅助器</a>
+          </div>
         </div>
         <div class="actions" aria-label="页面操作">
           <button id="saveButton" type="button">保存草稿</button>
@@ -220,9 +223,83 @@
           <span>活动叙事逻辑解读</span>
           <textarea id="narrativeOutput" placeholder="Agent 输出的【活动叙事逻辑解读】会填入这里。"></textarea>
         </label>
+
+        <label class="narrative-box learning-box">
+          <span>未来学习方向</span>
+          <textarea
+            id="futureLearningOutput"
+            readonly
+            placeholder="系统会根据用户背景和 10 项课外活动列表，自动生成后续学习资料与学习方向建议。"
+          ></textarea>
+        </label>
+      </section>
+
+      <section class="panel competition-panel" aria-labelledby="competition-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="competition-title">国际竞赛推荐</h2>
+            <p>基于当前学生背景和竞赛资料库，推荐 3 个学科强相关竞赛与 2 个拓展型竞赛。</p>
+          </div>
+          <div class="inline-actions">
+            <span id="competitionStatus" class="status" role="status" aria-live="polite">竞赛库加载中</span>
+            <button id="refreshCompetitionsButton" type="button" class="quiet neutral">换一批</button>
+          </div>
+        </div>
+        <div class="competition-body">
+          <p id="competitionNotice" class="case-notice">正在读取竞赛资料并生成推荐。</p>
+          <div id="competitionList" class="competition-list"></div>
+        </div>
+      </section>
+
+      <section class="panel summer-school-panel" aria-labelledby="summer-school-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="summer-school-title">夏校推荐</h2>
+            <p>基于当前学生背景和国际夏校资料库，推荐冲刺型、匹配型和保底型各 1 个项目。</p>
+          </div>
+          <div class="inline-actions">
+            <span id="summerSchoolStatus" class="status" role="status" aria-live="polite">夏校库加载中</span>
+            <button id="refreshSummerSchoolsButton" type="button" class="quiet neutral">换一批</button>
+          </div>
+        </div>
+        <div class="summer-school-body">
+          <p id="summerSchoolNotice" class="case-notice">正在读取夏校资料并生成推荐。</p>
+          <div id="summerSchoolList" class="summer-school-list"></div>
+        </div>
+      </section>
+
+      <section class="panel recommendation-letter-panel" aria-labelledby="recommendation-letter-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="recommendation-letter-title">推荐信推荐</h2>
+            <p>基于用户背景输入和规划回答输出表格，制定 Counselor、校内教师和校外推荐信策略。</p>
+          </div>
+          <span id="recommendationLetterStatus" class="status" role="status" aria-live="polite">等待完整输入</span>
+        </div>
+        <div class="recommendation-letter-body">
+          <p id="recommendationLetterNotice" class="case-notice">
+            推荐信策略需要同时基于用户背景输入和规划回答输出表格生成。
+          </p>
+          <div id="recommendationLetterList" class="recommendation-letter-list"></div>
+        </div>
+      </section>
+
+      <section class="panel case-match-panel" aria-labelledby="case-match-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="case-match-title">相似录取案例参考</h2>
+            <p>基于当前学生的专业方向、学术背景与活动规划，匹配可参考的录取案例。</p>
+          </div>
+          <span id="caseMatchStatus" class="status" role="status" aria-live="polite">案例库加载中</span>
+        </div>
+        <div class="case-match-body">
+          <p id="caseMatchNotice" class="case-notice">正在读取案例库并分析当前学生背景。</p>
+          <div id="caseMatchList" class="case-list"></div>
+        </div>
       </section>
     </main>
 
     <script type="module" src="./app.js"></script>
+    <script type="module" src="./safe-navigation.mjs"></script>
   </body>
 </html>
