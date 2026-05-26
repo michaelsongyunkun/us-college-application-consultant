@@ -48,6 +48,39 @@ assert.equal(rateCompetition({ name: "BMT 伯克利数学锦标赛", category: "
 assert.equal(rateCompetition({ name: "UKMT SMC / IMC / JMC / Kangaroo / Olympiad", category: "数学类", raw: "" }), "A");
 assert.equal(rateCompetition({ name: "HKIMO 香港国际数学奥林匹克", category: "数学类", raw: "" }), "A");
 
+const detailedMarkdown = `
+# 竞赛汇总（Markdown 清洗版）
+## 📐 一、数学类（Mathematics）
+### 美国名校自办赛
+#### HMMT 哈佛-MIT 数学锦标赛
+- **评级**：A
+- **官网**：[https://www.hmmt.org](https://www.hmmt.org)
+- **时间**：报名 9–10 月，比赛 11 月
+- **简介**：哈佛与 MIT 联合举办的高难度高中数学邀请赛。
+- **奖项**：个人单项前列 + 团体奖。
+`;
+const detailedCompetitions = parseCompetitionsMarkdown(detailedMarkdown);
+assert.deepEqual(detailedCompetitions, [
+  {
+    id: "competition-1",
+    name: "HMMT 哈佛-MIT 数学锦标赛",
+    url: "https://www.hmmt.org",
+    category: "数学类",
+    categoryRaw: "📐 一、数学类（Mathematics）",
+    subcategory: "美国名校自办赛",
+    rating: "A",
+    time: "报名 9–10 月，比赛 11 月",
+    description: "哈佛与 MIT 联合举办的高难度高中数学邀请赛。",
+    awards: "个人单项前列 + 团体奖。",
+    raw: `#### HMMT 哈佛-MIT 数学锦标赛
+- **评级**：A
+- **官网**：[https://www.hmmt.org](https://www.hmmt.org)
+- **时间**：报名 9–10 月，比赛 11 月
+- **简介**：哈佛与 MIT 联合举办的高难度高中数学邀请赛。
+- **奖项**：个人单项前列 + 团体奖。`,
+  },
+]);
+
 const studentProfile = buildCompetitionStudentProfile({
   profile: {
     grade: "10年级",
@@ -129,3 +162,40 @@ const historyBatch = recommendCompetitions({
 assert.ok(historyBatch.items.length >= 3);
 assert.ok(historyBatch.items.every((item) => item.category !== "数学类"));
 assert.ok(historyBatch.items.some((item) => item.category === "人文社科类"));
+
+const eligibilityCompetitionProfile = buildCompetitionStudentProfile({
+  profile: {
+    grade: "10年级",
+    majorDirection: "计算机 / AI",
+    interests: "算法、人工智能",
+    coreStrengths: "Python",
+    schoolContext: "outside_us_high_school",
+    identityDescription: "无美国公民或永久居民身份",
+  },
+  activities: [],
+  narrative: "",
+});
+const eligibilityCompetitions = [
+  {
+    id: "restricted-ai",
+    name: "US High School AI Challenge",
+    category: "计算机类",
+    raw: "仅美高学生可申请 AI",
+    eligibilityStatus: "us_high_school_only",
+  },
+  ...competitions.filter((item) => item.category === "计算机类" || item.category === "科创类"),
+  ...competitions.filter((item) => item.category === "数学类"),
+];
+const eligibilityCompetitionBatch = recommendCompetitions({
+  studentProfile: eligibilityCompetitionProfile,
+  competitions: eligibilityCompetitions,
+});
+
+assert.ok(eligibilityCompetitionBatch.items.every((item) => item.id !== "restricted-ai"));
+assert.ok(eligibilityCompetitionBatch.notice.includes("排除 1 个"));
+
+const onlyRestrictedCompetitionBatch = recommendCompetitions({
+  studentProfile: eligibilityCompetitionProfile,
+  competitions: [eligibilityCompetitions[0]],
+});
+assert.deepEqual(onlyRestrictedCompetitionBatch.items, []);

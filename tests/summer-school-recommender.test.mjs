@@ -194,3 +194,40 @@ const historyBatch = recommendSummerSchools({
 
 assert.equal(historyBatch.items.length, 3);
 assert.ok(historyBatch.items.every((item) => item.category === "人文社科方向"));
+
+const eligibilityStudentProfile = buildSummerSchoolStudentProfile({
+  profile: {
+    grade: "10年级",
+    majorDirection: "计算机 / AI",
+    interests: "人工智能、编程",
+    coreStrengths: "Python",
+    schoolContext: "mainland_china_high_school",
+    identityDescription: "无美国公民或永久居民身份",
+  },
+  activities: [],
+  narrative: "",
+});
+const eligibilitySummerSchools = [
+  {
+    ...summerSchools[3],
+    id: "us-high-school-only",
+    name: "US High School AI Research",
+    requirements: ["仅美高学生可申请"],
+  },
+  {
+    ...summerSchools[3],
+    id: "international-ai",
+    name: "International AI Research",
+    requirements: ["接受国际生"],
+  },
+  summerSchools[4],
+  summerSchools[5],
+];
+const eligibilityBatch = recommendSummerSchools({
+  studentProfile: eligibilityStudentProfile,
+  summerSchools: eligibilitySummerSchools,
+});
+
+assert.ok(eligibilityBatch.items.every((item) => item.id !== "us-high-school-only"));
+assert.ok(eligibilityBatch.items.some((item) => item.id === "international-ai"));
+assert.ok(eligibilityBatch.notice.includes("排除 1 个"));

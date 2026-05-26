@@ -11,12 +11,22 @@ if errorlevel 1 (
 )
 
 set PORT=4179
-start "" "http://127.0.0.1:%PORT%/"
 echo US College Application Consultant is running at:
 echo http://127.0.0.1:%PORT%/
 echo.
 echo Keep this window open while using the page.
 echo Press Ctrl+C to stop the local server.
 echo.
-node server.mjs
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$p = Start-Process -FilePath 'node.exe' -ArgumentList 'server.mjs' -WorkingDirectory '%CD%' -PassThru; " ^
+  "try { " ^
+  "  $ready = $false; " ^
+  "  for ($i = 0; $i -lt 40; $i++) { " ^
+  "    if ($p.HasExited) { throw 'Local server exited before it was ready.' } " ^
+  "    try { Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:%PORT%/' -TimeoutSec 1 | Out-Null; $ready = $true; break } catch { Start-Sleep -Milliseconds 250 } " ^
+  "  } " ^
+  "  if (-not $ready) { throw 'Local server did not become ready in time.' } " ^
+  "  Start-Process 'http://127.0.0.1:%PORT%/'; " ^
+  "  Wait-Process -Id $p.Id; " ^
+  "} finally { if (-not $p.HasExited) { Stop-Process -Id $p.Id } }"
 pause

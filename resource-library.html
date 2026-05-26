@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>资源库</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar brand-page-header">
+        <div class="brand-page-identity">
+          <a class="brand-mark" href="./index.html" data-safe-nav>
+            <span class="brand-prefix">US</span> College Compass
+          </a>
+          <p class="eyebrow">Resource Library</p>
+          <h1>资源库</h1>
+        </div>
+        <div class="actions" aria-label="页面操作">
+          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
+          <a class="button-link quiet-link" href="./course-helper.html" data-safe-nav>选课辅助器</a>
+        </div>
+      </header>
+
+      <section class="panel resource-panel" aria-labelledby="resource-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="resource-title">项目资料检索</h2>
+            <p>浏览竞赛库、夏校库与实习/科研库，查看项目类型、评级和基础申请信息。</p>
+          </div>
+          <span id="resourceStatus" class="status" role="status" aria-live="polite">资源加载中</span>
+        </div>
+
+        <form id="resourceEligibilityForm" class="resource-filter" autocomplete="off">
+          <div class="resource-filter-heading">
+            <h3>我的可参与条件</h3>
+            <p>仅用于当前页面筛选，不会保存到账号资料。资格结论仍请以项目官网为准。</p>
+          </div>
+          <div class="resource-filter-fields">
+            <label class="resource-filter-input">
+              <span>国籍</span>
+              <input id="resourceNationality" type="text" placeholder="例如：中国" />
+            </label>
+            <label class="resource-filter-input">
+              <span>身份说明</span>
+              <input id="resourceIdentity" type="text" placeholder="例如：无美国公民或绿卡身份" />
+            </label>
+            <label class="resource-filter-input">
+              <span>当前就读体系</span>
+              <select id="resourceSchoolContext">
+                <option value="">未选择</option>
+                <option value="mainland_china_high_school">中国大陆高中在读</option>
+                <option value="outside_us_high_school">其他非美国高中在读</option>
+                <option value="us_high_school">美国高中在读</option>
+              </select>
+            </label>
+            <label class="resource-search">
+              <span>搜索当前资源库</span>
+              <input id="resourceSearch" type="search" placeholder="输入名称或方向" />
+            </label>
+            <fieldset>
+              <legend>参加方式</legend>
+              <label><input type="radio" name="participationMode" value="online_only" />仅线上</label>
+              <label><input type="radio" name="participationMode" value="offline_only" />仅线下</label>
+              <label><input type="radio" name="participationMode" value="either" />线上线下都可</label>
+            </fieldset>
+          </div>
+          <div class="resource-filter-actions">
+            <button type="submit">应用筛选</button>
+            <button id="clearResourceEligibility" class="secondary" type="button">清除条件</button>
+          </div>
+        </form>
+
+        <div class="resource-toolbar">
+          <div class="resource-tabs" role="tablist" aria-label="资源类型">
+            <button id="competitionTab" class="resource-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="competitionLibrary">竞赛库</button>
+            <button id="summerSchoolTab" class="resource-tab" type="button" role="tab" aria-selected="false" aria-controls="summerSchoolLibrary">夏校库</button>
+            <button id="researchProjectTab" class="resource-tab" type="button" role="tab" aria-selected="false" aria-controls="researchProjectLibrary">实习/科研库</button>
+          </div>
+        </div>
+
+        <section id="competitionLibrary" class="resource-view" role="tabpanel" aria-labelledby="competitionTab">
+          <div class="resource-view-header">
+            <h3>竞赛库</h3>
+            <span id="competitionCount" class="resource-count"></span>
+          </div>
+          <div id="resourceCompetitionList" class="resource-grid"></div>
+          <section id="competitionExcludedSection" class="resource-excluded is-hidden" aria-labelledby="competitionExcludedTitle">
+            <div class="resource-view-header">
+              <h4 id="competitionExcludedTitle">已排除项目</h4>
+              <span id="competitionExcludedCount" class="resource-count"></span>
+            </div>
+            <div id="resourceCompetitionExcludedList" class="resource-grid"></div>
+          </section>
+        </section>
+
+        <section id="summerSchoolLibrary" class="resource-view is-hidden" role="tabpanel" aria-labelledby="summerSchoolTab">
+          <div class="resource-view-header">
+            <h3>夏校库</h3>
+            <span id="summerSchoolCount" class="resource-count"></span>
+          </div>
+          <div id="resourceSummerSchoolList" class="resource-grid"></div>
+          <section id="summerSchoolExcludedSection" class="resource-excluded is-hidden" aria-labelledby="summerSchoolExcludedTitle">
+            <div class="resource-view-header">
+              <h4 id="summerSchoolExcludedTitle">已排除项目</h4>
+              <span id="summerSchoolExcludedCount" class="resource-count"></span>
+            </div>
+            <div id="resourceSummerSchoolExcludedList" class="resource-grid"></div>
+          </section>
+        </section>
+
+        <section id="researchProjectLibrary" class="resource-view is-hidden" role="tabpanel" aria-labelledby="researchProjectTab">
+          <div class="resource-view-header">
+            <h3>实习/科研库</h3>
+            <span id="researchProjectCount" class="resource-count"></span>
+          </div>
+          <div id="resourceResearchProjectList" class="resource-grid"></div>
+          <section id="researchProjectExcludedSection" class="resource-excluded is-hidden" aria-labelledby="researchProjectExcludedTitle">
+            <div class="resource-view-header">
+              <h4 id="researchProjectExcludedTitle">已排除项目</h4>
+              <span id="researchProjectExcludedCount" class="resource-count"></span>
+            </div>
+            <div id="resourceResearchProjectExcludedList" class="resource-grid"></div>
+          </section>
+        </section>
+        <div class="load-more-row">
+          <button id="loadMoreResources" class="secondary is-hidden" type="button">加载更多</button>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./safe-navigation.mjs"></script>
+    <script type="module" src="./resource-library.js"></script>
+  </body>
+</html>

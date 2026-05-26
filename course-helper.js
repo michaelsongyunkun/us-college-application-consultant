@@ -14,6 +14,32 @@ const refreshApRecommendationsButton = document.querySelector("#refreshApRecomme
 
 let apCourses = [];
 let apRecommendationBatchIndex = 0;
+let latestApRecommendationCount = 0;
+
+function trackCourseUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
+  const input = collectCourseHelperInput();
+  fetch("/api/analytics/usage-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventType,
+      profile: {
+        grade: input.grade,
+        majorDirection: input.majorDirection,
+      },
+      metrics: {
+        completionFields: [input.grade, input.majorDirection, input.academicStatus].filter(Boolean).length,
+        generatedActivityCount: latestApRecommendationCount,
+        ...metrics,
+      },
+      details: {
+        completedApCourseCount: input.completedCourses.length,
+        hasNoApCourses: input.hasNoApCourses,
+        ...details,
+      },
+    }),
+  }).catch(() => {});
+}
 
 const AP_COURSE_FALLBACK = [
   { name: "AP 2-D Art and Design", chineseName: "二维设计" },
@@ -103,6 +129,10 @@ function renderRecommendations() {
 
   const studentProfile = buildApCourseStudentProfile(collectCourseHelperInput());
   const result = recommendApCoursePlan({ studentProfile, courses: apCourses, batchIndex: apRecommendationBatchIndex });
+  latestApRecommendationCount = result.items.reduce(
+    (total, gradePlan) => total + gradePlan.recommendations.length,
+    0,
+  );
 
   apRecommendationStatus.textContent = result.items.length ? "已生成计划" : "等待完整输入";
   apRecommendationNotice.textContent = result.notice;
@@ -152,6 +182,7 @@ async function loadApCourses() {
     renderApCourseOptions(apCourses);
     if (apCourseStatus) apCourseStatus.textContent = `已载入 ${apCourses.length} 门 AP 课程`;
   } catch {
+    trackCourseUsageEvent("data_load_failure", { details: { dataset: "ap_courses" } });
     apCourses = AP_COURSE_FALLBACK;
     renderApCourseOptions(apCourses);
     if (apCourseStatus) apCourseStatus.textContent = `已载入 ${apCourses.length} 门 AP 课程（备用列表）`;
@@ -166,5 +197,9 @@ form?.addEventListener("input", () => {
 refreshApRecommendationsButton?.addEventListener("click", () => {
   apRecommendationBatchIndex += 1;
   renderRecommendations();
+  trackCourseUsageEvent("refresh_ap_recommendations", {
+    metrics: { generatedActivityCount: latestApRecommendationCount },
+  });
 });
 loadApCourses();
+trackCourseUsageEvent("course_helper_visit");

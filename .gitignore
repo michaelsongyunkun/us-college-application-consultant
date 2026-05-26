@@ -22,9 +22,13 @@ spawn.err.log
 !package.json
 !package-lock.json
 !tsconfig.json
+data/*.sqlite
+data/*.sqlite-wal
+data/*.sqlite-shm
 
 # OS/editor files
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+.superpowers/

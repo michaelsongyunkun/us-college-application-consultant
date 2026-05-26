@@ -21,9 +21,29 @@ import {
 import { buildRecommendationLetterStrategy } from "./recommendation-letter-recommender.mjs";
 import { buildWordDocument } from "./word-export.mjs";
 import { renderMarkdown } from "./markdown-renderer.mjs";
+import { getRequestErrorMessage } from "./auth-client-errors.mjs";
+import {
+  readUserDraft,
+  removeLegacySharedDraft,
+  removeUserDraft,
+} from "./draft-storage.mjs";
 
-const STORAGE_KEY = "us-college-application-consultant-draft";
-
+const authShell = document.querySelector("#authShell");
+const appShell = document.querySelector("#appShell");
+const heroStartButton = document.querySelector("#heroStartButton");
+const authForm = document.querySelector("#authForm");
+const authTitle = document.querySelector("#auth-title");
+const authNameField = document.querySelector("#authNameField");
+const authNameInput = document.querySelector("#authName");
+const authEmailInput = document.querySelector("#authEmail");
+const authPasswordInput = document.querySelector("#authPassword");
+const authSubmitButton = document.querySelector("#authSubmitButton");
+const authModeButton = document.querySelector("#authModeButton");
+const forgotPasswordButton = document.querySelector("#forgotPasswordButton");
+const authStatus = document.querySelector("#authStatus");
+const currentUserBadge = document.querySelector("#currentUserBadge");
+const logoutButton = document.querySelector("#logoutButton");
+const adminDashboardLink = document.querySelector("#adminDashboardLink");
 const profileForm = document.querySelector("#profileForm");
 const activityTable = document.querySelector("#activityTable");
 const saveButton = document.querySelector("#saveButton");
@@ -57,6 +77,16 @@ const refreshSummerSchoolsButton = document.querySelector("#refreshSummerSchools
 const recommendationLetterStatus = document.querySelector("#recommendationLetterStatus");
 const recommendationLetterNotice = document.querySelector("#recommendationLetterNotice");
 const recommendationLetterList = document.querySelector("#recommendationLetterList");
+const studentProfileSummary = document.querySelector("#studentProfileSummary");
+const profileUpdatedAt = document.querySelector("#profileUpdatedAt");
+const planList = document.querySelector("#planList");
+const newPlanButton = document.querySelector("#newPlanButton");
+const renamePlanButton = document.querySelector("#renamePlanButton");
+const deletePlanButton = document.querySelector("#deletePlanButton");
+const planningWorkspaceStatus = document.querySelector("#planningWorkspaceStatus");
+const snapshotNote = document.querySelector("#snapshotNote");
+const createSnapshotButton = document.querySelector("#createSnapshotButton");
+const snapshotList = document.querySelector("#snapshotList");
 
 let serverHasApiKey = false;
 let fixedPrompt = "";
@@ -72,9 +102,170 @@ let previousSummerSchoolBatchIds = [];
 let seenSummerSchoolIds = [];
 let summerSchoolBatchIndex = 0;
 let latestRecommendationLetterStrategy = { items: [] };
+let authMode = "login";
+let appInitialized = false;
+let currentUser = null;
+let currentProfileUpdatedAt = null;
+let plans = [];
+let currentPlan = null;
+let snapshots = [];
+let workspaceDirty = false;
+const initialResetToken = new URLSearchParams(window.location.search).get("resetToken");
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isRegistering = authMode === "register";
+  const isForgotPassword = authMode === "forgot";
+  const isResetPassword = authMode === "reset";
+
+  authTitle.textContent = {
+    login: "登录",
+    register: "注册",
+    forgot: "找回密码",
+    reset: "设置新密码",
+  }[authMode];
+  authSubmitButton.textContent = {
+    login: "登录",
+    register: "注册并进入",
+    forgot: "发送重置邮件",
+    reset: "更新密码",
+  }[authMode];
+  authModeButton.textContent = isRegistering ? "已有账号？登录" : "返回登录";
+  if (authMode === "login") authModeButton.textContent = "没有账号？注册";
+  authNameField.classList.toggle("is-hidden", !isRegistering);
+  authEmailInput.closest("label").classList.toggle("is-hidden", isResetPassword);
+  authPasswordInput.closest("label").classList.toggle("is-hidden", isForgotPassword);
+  forgotPasswordButton.classList.toggle("is-hidden", authMode !== "login");
+  authNameInput.required = isRegistering;
+  authEmailInput.required = !isResetPassword;
+  authPasswordInput.required = !isForgotPassword;
+  authPasswordInput.autocomplete = isRegistering || isResetPassword ? "new-password" : "current-password";
+  authStatus.textContent = "";
+  authStatus.classList.remove("error");
+}
+
+function showAuthView(message = "") {
+  authShell.classList.remove("is-hidden");
+  appShell.classList.add("is-hidden");
+  currentUserBadge.textContent = "";
+  adminDashboardLink?.classList.add("is-hidden");
+  if (message) authStatus.textContent = message;
+}
+
+function showAppView(user) {
+  authShell.classList.add("is-hidden");
+  appShell.classList.remove("is-hidden");
+  currentUserBadge.textContent = `${user.name} (${user.role})`;
+  adminDashboardLink?.classList.toggle(
+    "is-hidden",
+    user.role !== "admin",
+  );
+}
+
+async function requestJson(url, options = {}) {
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "请求失败");
+    return data;
+  } catch (error) {
+    throw new Error(getRequestErrorMessage(error));
+  }
+}
+
+async function loadCurrentUser() {
+  try {
+    const data = await requestJson("/api/auth/me", { method: "GET" });
+    await initializeApp(data.user);
+    showAppView(data.user);
+  } catch {
+    showAuthView();
+  }
+}
+
+async function submitAuthForm(event) {
+  event.preventDefault();
+  authSubmitButton.disabled = true;
+  authStatus.textContent =
+    {
+      login: "正在登录...",
+      register: "正在注册...",
+      forgot: "正在发送...",
+      reset: "正在更新密码...",
+    }[authMode] || "处理中...";
+  authStatus.classList.remove("error");
+
+  try {
+    if (authMode === "forgot") {
+      const data = await requestJson("/api/auth/request-password-reset", {
+        method: "POST",
+        body: JSON.stringify({ email: authEmailInput.value.trim() }),
+      });
+      authStatus.textContent = data.message || "如果邮箱已注册，重置邮件会发送到该邮箱。";
+      return;
+    }
+
+    if (authMode === "reset") {
+      await requestJson("/api/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({
+          token: initialResetToken,
+          password: authPasswordInput.value,
+        }),
+      });
+      authForm.reset();
+      setAuthMode("login");
+      authStatus.textContent = "密码已更新，请使用新密码登录。";
+      window.history.replaceState({}, "", window.location.pathname);
+      return;
+    }
+
+    const payload = {
+      email: authEmailInput.value.trim(),
+      password: authPasswordInput.value,
+    };
+    if (authMode === "register") payload.name = authNameInput.value.trim();
+
+    const data = await requestJson(`/api/auth/${authMode}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    authForm.reset();
+    await initializeApp(data.user);
+    showAppView(data.user);
+  } catch (error) {
+    authStatus.textContent = error.message;
+    authStatus.classList.add("error");
+  } finally {
+    authSubmitButton.disabled = false;
+  }
+}
+
+async function logout() {
+  await requestJson("/api/auth/logout", { method: "POST", body: "{}" }).catch(() => ({}));
+  clearVisibleDraft();
+  currentUser = null;
+  currentPlan = null;
+  plans = [];
+  snapshots = [];
+  workspaceDirty = false;
+  setAuthMode("login");
+  showAuthView("已退出登录");
+}
 
 function collectProfile() {
   return Object.fromEntries(new FormData(profileForm).entries());
+}
+
+function collectPlanningProfile() {
+  const { schoolContext, identityDescription, ...planningProfile } = collectProfile();
+  return planningProfile;
 }
 
 function collectActivities() {
@@ -102,11 +293,61 @@ function collectDraft() {
   };
 }
 
+function collectPlanDraft() {
+  const { profile, updatedAt, ...draft } = collectDraft();
+  return draft;
+}
+
 function collectGenerationPayload() {
+  const draft = collectDraft();
   return {
-    ...collectDraft(),
+    ...draft,
+    profile: collectPlanningProfile(),
     apiKey: apiKeyInput.value.trim(),
   };
+}
+
+function collectAnalyticsProfile() {
+  const profile = collectProfile();
+  return {
+    grade: profile.grade || "",
+    majorDirection: profile.majorDirection || "",
+  };
+}
+
+function countFilledActivities() {
+  return collectActivities().filter(
+    (activity) =>
+      activity.type ||
+      activity.activityName ||
+      activity.executionDescription ||
+      activity.suggestedGrade,
+  ).length;
+}
+
+function countCompletedProfileFields() {
+  return Object.values(collectProfile()).filter((value) => String(value || "").trim()).length;
+}
+
+function buildAnalyticsMetrics(extra = {}) {
+  return {
+    completionFields: countCompletedProfileFields(),
+    filledActivityCount: countFilledActivities(),
+    ...extra,
+  };
+}
+
+function trackUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
+  fetch("/api/analytics/usage-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventType,
+      profile: collectAnalyticsProfile(),
+      metrics: buildAnalyticsMetrics(metrics),
+      details,
+    }),
+  }).catch(() => {});
 }
 
 function escapeHtml(value) {
@@ -119,7 +360,7 @@ function escapeHtml(value) {
 
 function buildCurrentStudentCaseProfile() {
   return buildStudentCaseProfile({
-    profile: collectProfile(),
+    profile: collectPlanningProfile(),
     activities: collectActivities(),
     narrative: narrativeOutput.value,
   });
@@ -136,7 +377,7 @@ function buildCurrentCompetitionStudentProfile() {
 function updateFutureLearningDirection() {
   if (!futureLearningOutput) return;
   futureLearningOutput.value = buildFutureLearningDirection({
-    profile: collectProfile(),
+    profile: collectPlanningProfile(),
     activities: collectActivities(),
     narrative: narrativeOutput.value,
   });
@@ -288,7 +529,7 @@ function renderRecommendationLetterStrategy() {
   if (!recommendationLetterList || !recommendationLetterNotice || !recommendationLetterStatus) return;
 
   latestRecommendationLetterStrategy = buildRecommendationLetterStrategy({
-    profile: collectProfile(),
+    profile: collectPlanningProfile(),
     activities: collectActivities(),
     narrative: narrativeOutput.value,
   });
@@ -405,6 +646,7 @@ async function loadAdmissionCases() {
     admissionCases = parseAdmissionCasesMarkdown(markdown);
     renderCaseMatches();
   } catch {
+    trackUsageEvent("data_load_failure", { details: { dataset: "admission_cases" } });
     admissionCases = [];
     renderCaseMatches();
   }
@@ -420,6 +662,7 @@ async function loadCompetitions() {
     competitions = parseCompetitionsMarkdown(markdown);
     renderCompetitionRecommendations();
   } catch {
+    trackUsageEvent("data_load_failure", { details: { dataset: "competitions" } });
     competitions = [];
     renderCompetitionRecommendations();
   }
@@ -435,6 +678,7 @@ async function loadSummerSchools() {
     summerSchools = parseSummerSchoolsMarkdown(markdown);
     renderSummerSchoolRecommendations();
   } catch {
+    trackUsageEvent("data_load_failure", { details: { dataset: "summer_schools" } });
     summerSchools = [];
     renderSummerSchoolRecommendations();
   }
@@ -470,29 +714,279 @@ function fillActivities(activities) {
   updateActivityMarkdownPreviews();
 }
 
-function restoreDraft() {
-  const rawDraft = localStorage.getItem(STORAGE_KEY);
-  if (!rawDraft) return;
+function applyProfile(profile = {}) {
+  profileForm.reset();
+  Object.entries(profile).forEach(([name, value]) => setFieldValue(name, value));
+}
 
-  try {
-    const draft = JSON.parse(rawDraft);
-    Object.entries(draft.profile || {}).forEach(([name, value]) => setFieldValue(name, value));
-    fillActivities(draft.activities || []);
-    rawAnswer.value = draft.rawAnswer || "";
-    narrativeOutput.value = draft.narrative || "";
-    if (futureLearningOutput) {
-      futureLearningOutput.value =
-        draft.futureLearningDirection ||
-        buildFutureLearningDirection({
-          profile: collectProfile(),
-          activities: collectActivities(),
-          narrative: narrativeOutput.value,
-        });
-    }
-    saveStatus.textContent = "已恢复本地草稿";
-  } catch {
-    saveStatus.textContent = "草稿读取失败";
+function clearPlanFields() {
+  activityTable.querySelectorAll("input, textarea").forEach((field) => {
+    field.value = "";
+  });
+  rawAnswer.value = "";
+  narrativeOutput.value = "";
+  if (futureLearningOutput) futureLearningOutput.value = "";
+  codexTaskPackage.value = "";
+  codexAnswerInput.value = "";
+  latestCompetitionRecommendations = [];
+  latestSummerSchoolRecommendations = [];
+  latestRecommendationLetterStrategy = { items: [] };
+  latestCaseMatches = [];
+}
+
+function applyPlanDraft(draft = {}) {
+  clearPlanFields();
+  fillActivities(draft.activities || []);
+  rawAnswer.value = draft.rawAnswer || "";
+  narrativeOutput.value = draft.narrative || "";
+  if (futureLearningOutput) futureLearningOutput.value = draft.futureLearningDirection || "";
+  renderStudentDependentRecommendations();
+}
+
+function isPlanDraftEmpty(draft = {}) {
+  return (
+    !(draft.activities || []).some((activity) =>
+      Object.values(activity || {}).some((value) => String(value || "").trim()),
+    ) &&
+    !String(draft.rawAnswer || "").trim() &&
+    !String(draft.narrative || "").trim() &&
+    !String(draft.futureLearningDirection || "").trim() &&
+    !(draft.competitionRecommendations || []).length &&
+    !(draft.summerSchoolRecommendations || []).length &&
+    !(draft.recommendationLetterStrategy?.items || []).length &&
+    !(draft.caseMatches || []).length
+  );
+}
+
+function formatWorkspaceDate(value) {
+  return new Date(value).toLocaleString("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function renderProfileSummary() {
+  if (!studentProfileSummary || !profileUpdatedAt) return;
+  const profile = collectProfile();
+  const summary = [profile.grade, profile.majorDirection, profile.interests]
+    .filter((item) => String(item || "").trim())
+    .join(" / ");
+  studentProfileSummary.textContent = summary || "还没有填写学生信息。";
+  profileUpdatedAt.textContent = currentProfileUpdatedAt
+    ? `最近保存：${formatWorkspaceDate(currentProfileUpdatedAt)}`
+    : "尚未保存";
+}
+
+function setWorkspaceStatus(message, isError = false) {
+  if (!planningWorkspaceStatus) return;
+  planningWorkspaceStatus.textContent = message;
+  planningWorkspaceStatus.classList.toggle("error", isError);
+}
+
+function renderPlanList() {
+  if (!planList) return;
+  planList.innerHTML = plans
+    .map(
+      (plan) => `
+        <div class="plan-item">
+          <button type="button" data-plan-id="${plan.id}" class="${currentPlan?.id === plan.id ? "is-active" : ""}">
+            ${escapeHtml(plan.name)}
+          </button>
+        </div>`,
+    )
+    .join("");
+}
+
+function renderSnapshots() {
+  if (!snapshotList) return;
+  if (!snapshots.length) {
+    snapshotList.innerHTML = '<p class="workspace-empty">还没有备份。</p>';
+    return;
   }
+  snapshotList.innerHTML = snapshots
+    .map(
+      (snapshot) => `
+        <div class="snapshot-row">
+          <div>
+            <p>${escapeHtml(snapshot.note || "未填写备注")}</p>
+            <p class="workspace-meta">${escapeHtml(formatWorkspaceDate(snapshot.createdAt))}</p>
+          </div>
+          <div class="snapshot-actions">
+            <button type="button" class="quiet neutral" data-snapshot-id="${snapshot.id}">恢复</button>
+            <button type="button" class="danger" data-delete-snapshot-id="${snapshot.id}">删除</button>
+          </div>
+        </div>`,
+    )
+    .join("");
+}
+
+async function loadSnapshots() {
+  if (!currentPlan) return;
+  const data = await requestJson(`/api/plans/${currentPlan.id}/snapshots`, { method: "GET" });
+  snapshots = data.snapshots || [];
+  renderSnapshots();
+}
+
+async function openPlan(planId) {
+  if (workspaceDirty) {
+    if (!window.confirm("当前内容还没有保存，切换方案会放弃这些修改。继续吗？")) return;
+    const profileData = await requestJson("/api/student-profile", { method: "GET" });
+    currentProfileUpdatedAt = profileData.updatedAt;
+    applyProfile(profileData.profile);
+    renderProfileSummary();
+  }
+  const data = await requestJson(`/api/plans/${planId}`, { method: "GET" });
+  currentPlan = data.plan;
+  applyPlanDraft(currentPlan.draft);
+  workspaceDirty = false;
+  renderPlanList();
+  await loadSnapshots();
+  saveStatus.textContent = `当前方案：${currentPlan.name}`;
+}
+
+async function persistCurrentWorkspace() {
+  if (!currentUser || !currentPlan) return;
+  const [profileData, planData] = await Promise.all([
+    requestJson("/api/student-profile", {
+      method: "PUT",
+      body: JSON.stringify({ profile: collectProfile() }),
+    }),
+    requestJson(`/api/plans/${currentPlan.id}`, {
+      method: "PUT",
+      body: JSON.stringify({ draft: collectPlanDraft() }),
+    }),
+  ]);
+  currentProfileUpdatedAt = profileData.updatedAt;
+  currentPlan = planData.plan;
+  plans = plans.map((plan) => (plan.id === currentPlan.id ? currentPlan : plan));
+  workspaceDirty = false;
+  removeUserDraft(localStorage, currentUser.id);
+  renderProfileSummary();
+  renderPlanList();
+}
+
+async function loadWorkspace() {
+  setWorkspaceStatus("正在加载");
+  const [profileData, planData] = await Promise.all([
+    requestJson("/api/student-profile", { method: "GET" }),
+    requestJson("/api/plans", { method: "GET" }),
+  ]);
+  plans = planData.plans || [];
+  currentPlan = (await requestJson(`/api/plans/${plans[0].id}`, { method: "GET" })).plan;
+  const localDraft = currentUser ? readUserDraft(localStorage, currentUser.id) : "";
+  let migrated = false;
+
+  if (!profileData.updatedAt && isPlanDraftEmpty(currentPlan.draft) && localDraft) {
+    try {
+      const draft = JSON.parse(localDraft);
+      applyProfile(draft.profile || {});
+      applyPlanDraft(draft);
+      await persistCurrentWorkspace();
+      migrated = true;
+      setWorkspaceStatus("已恢复原有内容");
+    } catch {
+      setWorkspaceStatus("原有内容恢复失败，未覆盖当前数据", true);
+    }
+  }
+
+  if (!migrated) {
+    currentProfileUpdatedAt = profileData.updatedAt;
+    applyProfile(profileData.profile);
+    applyPlanDraft(currentPlan.draft);
+    setWorkspaceStatus("内容已加载");
+  }
+  workspaceDirty = false;
+  renderProfileSummary();
+  renderPlanList();
+  await loadSnapshots();
+}
+
+async function createPlan() {
+  const name = window.prompt("请输入新方案名称：");
+  if (name === null) return;
+  if (workspaceDirty) {
+    if (!window.confirm("当前内容还没有保存，新建方案会放弃这些修改。继续吗？")) return;
+    const profileData = await requestJson("/api/student-profile", { method: "GET" });
+    currentProfileUpdatedAt = profileData.updatedAt;
+    applyProfile(profileData.profile);
+    renderProfileSummary();
+  }
+  const data = await requestJson("/api/plans", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+  plans = [data.plan, ...plans];
+  currentPlan = data.plan;
+  applyPlanDraft(currentPlan.draft);
+  workspaceDirty = false;
+  renderPlanList();
+  await loadSnapshots();
+  setWorkspaceStatus("新方案已创建");
+}
+
+async function renameCurrentPlan() {
+  if (!currentPlan) return;
+  const name = window.prompt("请输入方案新名称：", currentPlan.name);
+  if (name === null) return;
+  const data = await requestJson(`/api/plans/${currentPlan.id}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+  currentPlan = data.plan;
+  plans = plans.map((plan) => (plan.id === currentPlan.id ? currentPlan : plan));
+  renderPlanList();
+  setWorkspaceStatus("方案名称已更新");
+}
+
+async function deleteCurrentPlan() {
+  if (!currentPlan || !window.confirm(`确认删除“${currentPlan.name}”及其所有历史备份吗？`)) return;
+  await requestJson(`/api/plans/${currentPlan.id}`, { method: "DELETE" });
+  const data = await requestJson("/api/plans", { method: "GET" });
+  plans = data.plans || [];
+  currentPlan = null;
+  workspaceDirty = false;
+  await openPlan(plans[0].id);
+  setWorkspaceStatus("方案已删除");
+}
+
+async function createCurrentSnapshot() {
+  if (!currentPlan) return;
+  await saveDraft();
+  await requestJson(`/api/plans/${currentPlan.id}/snapshots`, {
+    method: "POST",
+    body: JSON.stringify({ note: snapshotNote.value.trim() }),
+  });
+  snapshotNote.value = "";
+  await loadSnapshots();
+  setWorkspaceStatus("备份已保存");
+}
+
+async function restoreCurrentSnapshot(snapshotId) {
+  if (!currentPlan || !window.confirm("恢复这份备份会覆盖当前学生信息和方案内容。继续吗？")) return;
+  const data = await requestJson(
+    `/api/plans/${currentPlan.id}/snapshots/${snapshotId}/restore`,
+    { method: "POST", body: "{}" },
+  );
+  currentProfileUpdatedAt = data.profile.updatedAt;
+  applyProfile(data.profile.profile);
+  currentPlan = data.plan;
+  applyPlanDraft(currentPlan.draft);
+  workspaceDirty = false;
+  renderProfileSummary();
+  renderPlanList();
+  saveStatus.textContent = "已恢复备份";
+  setWorkspaceStatus("备份已恢复");
+}
+
+async function deleteCurrentSnapshot(snapshotId) {
+  if (!currentPlan || !window.confirm("确认删除这份历史备份吗？删除后无法恢复。")) return;
+  await requestJson(`/api/plans/${currentPlan.id}/snapshots/${snapshotId}`, {
+    method: "DELETE",
+  });
+  await loadSnapshots();
+  setWorkspaceStatus("备份已删除");
 }
 
 async function checkPrompt() {
@@ -533,6 +1027,7 @@ async function checkPrompt() {
 }
 
 function buildCodexTask() {
+  trackUsageEvent("build_codex_task");
   if (!fixedPrompt) {
     agentStatus.textContent = "固定提示词尚未加载，无法生成 Codex 任务包。";
     agentStatus.classList.add("error");
@@ -541,7 +1036,7 @@ function buildCodexTask() {
 
   codexTaskPackage.value = buildCodexTaskPackage({
     fixedPrompt,
-    profile: collectProfile(),
+    profile: collectPlanningProfile(),
     activities: collectActivities(),
   });
   agentStatus.textContent = "Codex 任务包已生成，可复制给当前 Codex 对话。";
@@ -549,32 +1044,42 @@ function buildCodexTask() {
 }
 
 async function copyCodexTask() {
+  trackUsageEvent("copy_codex_task");
   if (!codexTaskPackage.value) buildCodexTask();
   await navigator.clipboard.writeText(codexTaskPackage.value);
   agentStatus.textContent = "Codex 任务包已复制。";
   agentStatus.classList.remove("error");
 }
 
-function parseCodexAnswer() {
+async function parseCodexAnswer() {
   const parsed = parseAgentOutput(codexAnswerInput.value);
+  trackUsageEvent("parse_codex_answer", {
+    metrics: { generatedActivityCount: parsed.activities?.length || 0 },
+  });
   rawAnswer.value = codexAnswerInput.value;
   fillActivities(parsed.activities || []);
   narrativeOutput.value = parsed.narrative || "";
   renderStudentDependentRecommendations();
   agentStatus.textContent = `已解析 Codex 回答，并填入 ${parsed.activities?.length || 0} 项活动`;
   agentStatus.classList.remove("error");
-  saveDraft();
+  await saveDraft();
 }
 
-function saveDraft() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(collectDraft(), null, 2));
+async function saveDraft() {
+  if (!currentUser) return;
+  trackUsageEvent("save_draft");
+  await persistCurrentWorkspace();
   saveStatus.textContent = `已保存 ${new Date().toLocaleTimeString("zh-CN", {
     hour: "2-digit",
     minute: "2-digit",
   })}`;
+  setWorkspaceStatus("当前内容已保存");
 }
 
 function exportDraft() {
+  trackUsageEvent("export_json", {
+    metrics: { filledActivityCount: countFilledActivities() },
+  });
   const blob = new Blob([JSON.stringify(collectDraft(), null, 2)], {
     type: "application/json;charset=utf-8",
   });
@@ -587,6 +1092,15 @@ function exportDraft() {
 }
 
 function exportWordDocument() {
+  trackUsageEvent("export_word", {
+    metrics: { filledActivityCount: countFilledActivities() },
+    details: {
+      hasCompetitions: latestCompetitionRecommendations.length > 0,
+      hasSummerSchools: latestSummerSchoolRecommendations.length > 0,
+      hasRecommendationLetters: latestRecommendationLetterStrategy.items?.length > 0,
+      hasCaseMatches: latestCaseMatches.length > 0,
+    },
+  });
   renderCompetitionRecommendations();
   renderSummerSchoolRecommendations();
   renderRecommendationLetterStrategy();
@@ -612,7 +1126,16 @@ function exportWordDocument() {
   URL.revokeObjectURL(url);
 }
 
-function resetDraft() {
+async function resetDraft() {
+  trackUsageEvent("clear_draft");
+  clearPlanFields();
+  renderStudentDependentRecommendations();
+  workspaceDirty = true;
+  await saveDraft();
+  saveStatus.textContent = "已清空";
+}
+
+function clearVisibleDraft() {
   clearDraftFields({
     profileForm,
     activityTable,
@@ -623,12 +1146,11 @@ function resetDraft() {
     codexAnswerInput,
   });
   renderStudentDependentRecommendations();
-  localStorage.removeItem(STORAGE_KEY);
-  saveStatus.textContent = "已清空";
 }
 
 async function generatePlan() {
   generateButton.disabled = true;
+  const startedAt = performance.now();
   agentStatus.textContent = "Agent 正在根据固定提示词生成规划回答...";
 
   try {
@@ -648,8 +1170,18 @@ async function generatePlan() {
     narrativeOutput.value = data.parsed?.narrative || "";
     renderStudentDependentRecommendations();
     agentStatus.textContent = `已生成，并填入 ${data.parsed?.activities?.length || 0} 项活动`;
-    saveDraft();
+    trackUsageEvent("generate_plan_success", {
+      metrics: {
+        generatedActivityCount: data.parsed?.activities?.length || 0,
+        durationMs: performance.now() - startedAt,
+      },
+    });
+    await saveDraft();
   } catch (error) {
+    trackUsageEvent("generate_plan_failure", {
+      metrics: { durationMs: performance.now() - startedAt },
+      details: { failureReason: error.message },
+    });
     agentStatus.textContent = error.message;
     agentStatus.classList.add("error");
     rawAnswer.value = error.message;
@@ -658,33 +1190,99 @@ async function generatePlan() {
   }
 }
 
-saveButton.addEventListener("click", saveDraft);
+saveButton.addEventListener("click", () => runWorkspaceAction(saveDraft));
 exportButton.addEventListener("click", exportDraft);
 exportWordButton.addEventListener("click", exportWordDocument);
-resetButton.addEventListener("click", resetDraft);
+resetButton.addEventListener("click", () => runWorkspaceAction(resetDraft));
 generateButton.addEventListener("click", generatePlan);
 buildCodexTaskButton.addEventListener("click", buildCodexTask);
 copyCodexTaskButton.addEventListener("click", copyCodexTask);
-parseCodexAnswerButton.addEventListener("click", parseCodexAnswer);
+parseCodexAnswerButton.addEventListener("click", () => runWorkspaceAction(parseCodexAnswer));
 refreshCompetitionsButton?.addEventListener("click", () => {
+  trackUsageEvent("refresh_competitions", {
+    metrics: { generatedActivityCount: latestCompetitionRecommendations.length },
+  });
   renderCompetitionRecommendations({ refresh: true });
 });
 refreshSummerSchoolsButton?.addEventListener("click", () => {
+  trackUsageEvent("refresh_summer_schools", {
+    metrics: { generatedActivityCount: latestSummerSchoolRecommendations.length },
+  });
   renderSummerSchoolRecommendations({ refresh: true });
 });
 document.addEventListener("input", renderStudentDependentRecommendations);
 
 document.addEventListener("input", () => {
+  workspaceDirty = true;
   saveStatus.textContent = "有未保存修改";
+  renderProfileSummary();
 });
 
 apiKeyInput.addEventListener("input", () => {
   updateAgentAvailability();
 });
 
-restoreDraft();
-renderStudentDependentRecommendations();
-loadCompetitions();
-loadSummerSchools();
-loadAdmissionCases();
-checkPrompt();
+authForm.addEventListener("submit", submitAuthForm);
+heroStartButton?.addEventListener("click", () => {
+  authEmailInput.focus();
+});
+authModeButton.addEventListener("click", () => {
+  setAuthMode(authMode === "login" ? "register" : "login");
+});
+forgotPasswordButton.addEventListener("click", () => setAuthMode("forgot"));
+logoutButton.addEventListener("click", logout);
+
+newPlanButton?.addEventListener("click", () => runWorkspaceAction(createPlan));
+renamePlanButton?.addEventListener("click", () => runWorkspaceAction(renameCurrentPlan));
+deletePlanButton?.addEventListener("click", () => runWorkspaceAction(deleteCurrentPlan));
+createSnapshotButton?.addEventListener("click", () => runWorkspaceAction(createCurrentSnapshot));
+planList?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-plan-id]");
+  if (button) runWorkspaceAction(() => openPlan(Number(button.dataset.planId)));
+});
+snapshotList?.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("[data-delete-snapshot-id]");
+  if (deleteButton) {
+    runWorkspaceAction(() => deleteCurrentSnapshot(Number(deleteButton.dataset.deleteSnapshotId)));
+    return;
+  }
+  const restoreButton = event.target.closest("[data-snapshot-id]");
+  if (restoreButton) {
+    runWorkspaceAction(() => restoreCurrentSnapshot(Number(restoreButton.dataset.snapshotId)));
+  }
+});
+
+async function runWorkspaceAction(action) {
+  try {
+    await action();
+  } catch (error) {
+    setWorkspaceStatus(error.message, true);
+  }
+}
+
+async function initializeApp(user) {
+  const changedUser = currentUser?.id !== user.id;
+  currentUser = user;
+
+  if (changedUser) {
+    removeLegacySharedDraft(localStorage);
+    clearVisibleDraft();
+    await loadWorkspace();
+  }
+
+  if (appInitialized) return;
+  appInitialized = true;
+  if (!changedUser) await loadWorkspace();
+  loadCompetitions();
+  loadSummerSchools();
+  loadAdmissionCases();
+  checkPrompt();
+}
+
+if (initialResetToken) {
+  setAuthMode("reset");
+  showAuthView();
+} else {
+  setAuthMode("login");
+  loadCurrentUser();
+}

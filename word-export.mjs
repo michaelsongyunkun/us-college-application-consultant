@@ -11,6 +11,8 @@ function escapeHtml(value) {
 const PROFILE_LABELS = {
   grade: "年级",
   majorDirection: "专业方向",
+  schoolContext: "当前就读体系（项目资格筛选）",
+  identityDescription: "美国身份条件（项目资格筛选）",
   coreStrengths: "核心能力 / 特长",
   availableResources: "可利用资源",
   personality: "性格 / 行为倾向",

@@ -97,6 +97,25 @@ $env:OPENAI_MODEL="gpt-4.1-mini"
 
 ## 测试
 
+## 找回密码邮件配置
+
+找回密码功能通过 SMTP 发送重置链接。启动服务前可设置：
+
+```powershell
+$env:SMTP_HOST="smtp.qq.com"
+$env:SMTP_PORT="465"
+$env:SMTP_SECURE="true"
+$env:SMTP_USER="3152482377@qq.com"
+$env:SMTP_PASS="你的 QQ 邮箱 SMTP 授权码"
+$env:SMTP_FROM="US College Consultant <3152482377@qq.com>"
+$env:APP_BASE_URL="http://127.0.0.1:4177"
+node server.mjs
+```
+
+如果不设置 `SMTP_HOST`、`SMTP_PORT`、`SMTP_SECURE`、`SMTP_USER` 和 `SMTP_FROM`，系统会默认使用 `3152482377@qq.com` 的 QQ 邮箱 SMTP 配置；仍然必须设置 `SMTP_PASS` 授权码。
+
+重置链接有效期为 30 分钟。为保护账号隐私，找回密码页面不会提示邮箱是否已注册。
+
 ```powershell
 node tests\admission-case-matching.test.mjs
 node tests\competition-recommender.test.mjs

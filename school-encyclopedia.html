@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>院校百科</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar brand-page-header">
+        <div class="brand-page-identity">
+          <a class="brand-mark" href="./index.html" data-safe-nav>
+            <span class="brand-prefix">US</span> College Compass
+          </a>
+          <p class="eyebrow">School Encyclopedia</p>
+          <h1>院校百科</h1>
+        </div>
+        <div class="actions" aria-label="页面操作">
+          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
+          <a class="button-link quiet-link" href="./resource-library.html" data-safe-nav>资源库</a>
+        </div>
+      </header>
+
+      <section class="panel school-panel" aria-labelledby="school-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="school-title">美国院校介绍与申请要求</h2>
+            <p>
+              资料来自《综合_T80_文理TOP50_数据清洗_Markdown版》。
+              当前按来源文档实际收录的院校条目展示；文书题目、推荐信规则和其他政策请以申请年度官网最新要求为准。
+            </p>
+          </div>
+          <span id="schoolStatus" class="status" role="status" aria-live="polite">资料加载中</span>
+        </div>
+
+        <div class="school-toolbar">
+          <label class="school-search">
+            <span>搜索院校资料</span>
+            <input id="schoolSearch" type="search" placeholder="搜索学校中文名、英文名、特色或申请要求" />
+          </label>
+          <div class="resource-tabs" role="tablist" aria-label="院校类别">
+            <button
+              id="universityTab"
+              class="resource-tab is-active"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="schoolList"
+            >综合大学 T80</button>
+            <button
+              id="liberalArtsTab"
+              class="resource-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="schoolList"
+            >文理学院 TOP50</button>
+          </div>
+        </div>
+
+        <section class="school-results" aria-label="院校资料结果">
+          <div class="resource-view-header">
+            <h3 id="schoolCategoryTitle">综合大学 T80</h3>
+            <span id="schoolCount" class="resource-count"></span>
+          </div>
+          <div id="schoolList" class="school-grid" role="tabpanel" aria-labelledby="universityTab"></div>
+          <div class="load-more-row">
+            <button id="loadMoreSchools" class="secondary is-hidden" type="button">加载更多</button>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script type="module" src="./safe-navigation.mjs"></script>
+    <script type="module" src="./school-encyclopedia.js"></script>
+  </body>
+</html>

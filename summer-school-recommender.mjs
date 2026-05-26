@@ -1,3 +1,5 @@
+import { classifyResource, enrichResourceEligibility } from "./resource-eligibility.mjs";
+
 const TIER_ORDER = ["冲刺型", "匹配型", "保底型"];
 const TIER_RATINGS = {
   冲刺型: ["S+", "S", "A+"],
@@ -225,7 +227,8 @@ export function parseSummerSchoolsMarkdown(markdown) {
 }
 
 export function buildSummerSchoolStudentProfile({ profile, activities, narrative }) {
-  const profileText = Object.values(profile || {}).join(" ");
+  const { schoolContext = "", identityDescription = "", ...planningProfile } = profile || {};
+  const profileText = Object.values(planningProfile).join(" ");
   const activityText = (activities || [])
     .map((activity) =>
       [activity.type, activity.activityName, activity.executionDescription, activity.suggestedGrade].join(" "),
@@ -240,6 +243,7 @@ export function buildSummerSchoolStudentProfile({ profile, activities, narrative
     text,
     tags: tagText(text),
     primaryTags: primaryTags.length ? primaryTags : primaryTagsFromText(text),
+    eligibilityFilters: { schoolContext, identityDescription },
     hasAnyInput: Boolean(text.trim()),
     hasEnoughInfo: Boolean(profile?.majorDirection && profile?.grade && (profile?.interests || profile?.coreStrengths)),
   };
@@ -304,6 +308,19 @@ function filterByAllowedTags(scoredItems, allowedTags) {
   return scoredItems.filter((item) => item.tags.some((tag) => allowedTags.includes(tag)));
 }
 
+function filterEligibleSummerSchools(summerSchools, studentProfile) {
+  let excludedCount = 0;
+  const items = summerSchools.filter((summerSchool) => {
+    const excluded = classifyResource(
+      enrichResourceEligibility(summerSchool),
+      studentProfile.eligibilityFilters || {},
+    ).excluded;
+    if (excluded) excludedCount += 1;
+    return !excluded;
+  });
+  return { items, excludedCount };
+}
+
 export function recommendSummerSchools({ studentProfile, summerSchools, seenIds = [], previousBatchIds = [], batchIndex = 0 }) {
   const normalized = summerSchools || [];
   if (!studentProfile || !studentProfile.hasAnyInput || !normalized.length) {
@@ -313,7 +330,8 @@ export function recommendSummerSchools({ studentProfile, summerSchools, seenIds 
     };
   }
 
-  const scored = normalized
+  const eligible = filterEligibleSummerSchools(normalized, studentProfile);
+  const scored = eligible.items
     .filter((summerSchool) => summerSchool.tier)
     .map((summerSchool) => ({
       summerSchool,
@@ -336,9 +354,13 @@ export function recommendSummerSchools({ studentProfile, summerSchools, seenIds 
 
   return {
     items,
-    notice:
+    notice: [
       studentProfile.hasAnyInput && !studentProfile.hasEnoughInfo
         ? "当前推荐基于已填写信息生成，补充目标专业、年级和兴趣方向后，可进一步提高匹配准确度。"
         : "",
+      eligible.excludedCount
+        ? `已依据当前可参与条件排除 ${eligible.excludedCount} 个明确不符合申请要求的夏校。`
+        : "",
+    ].filter(Boolean).join(" "),
   };
 }

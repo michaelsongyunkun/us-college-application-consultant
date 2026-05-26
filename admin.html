@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>数据看板 / 登录数据</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell admin-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Admin Dashboard</p>
+          <div class="title-row">
+            <h1>数据看板 / 登录数据</h1>
+            <a class="button-link quiet-link title-link" href="/" data-safe-nav>返回主页</a>
+          </div>
+        </div>
+        <div class="actions">
+          <span id="adminUserBadge" class="user-badge"></span>
+          <button id="downloadExcelButton" type="button">下载 Excel</button>
+          <button id="adminLogoutButton" type="button" class="quiet">退出</button>
+        </div>
+      </header>
+
+      <section class="panel admin-toolbar" aria-labelledby="filters-title">
+        <div>
+          <h2 id="filters-title">查看范围</h2>
+          <p>日期和用户条件会统一作用于概览、行为与安全记录。</p>
+        </div>
+        <form id="dashboardFilters" class="admin-toolbar-form">
+          <label>
+            <span>用户名 / 邮箱</span>
+            <input id="filterQuery" name="query" type="search" placeholder="搜索用户" />
+          </label>
+          <label>
+            <span>开始日期</span>
+            <input id="filterFromDate" name="fromDate" type="date" />
+          </label>
+          <label>
+            <span>结束日期</span>
+            <input id="filterToDate" name="toDate" type="date" />
+          </label>
+          <button type="submit">应用范围</button>
+        </form>
+        <span id="dashboardStatus" class="status" role="status" aria-live="polite">加载中</span>
+      </section>
+
+      <section class="admin-overview" aria-label="运营概览">
+        <div class="overview-card">
+          <span>活跃用户</span>
+          <strong id="metricActiveUsers">0</strong>
+          <small>发生关键操作的用户</small>
+        </div>
+        <div class="overview-card">
+          <span>规划生成</span>
+          <strong id="metricPlanGenerations">0</strong>
+          <small>成功生成报告</small>
+        </div>
+        <div class="overview-card">
+          <span>Word 导出</span>
+          <strong id="metricWordExports">0</strong>
+          <small>已导出报告</small>
+        </div>
+        <div class="overview-card">
+          <span>推荐刷新</span>
+          <strong id="metricRecommendationRefreshes">0</strong>
+          <small>竞赛与夏校</small>
+        </div>
+        <div class="overview-card alert-metric">
+          <span>登录失败</span>
+          <strong id="metricFailedLogins">0</strong>
+          <small>需要关注的异常</small>
+        </div>
+      </section>
+
+      <nav class="admin-tabs" aria-label="看板内容">
+        <button type="button" class="active" data-admin-tab="behavior" aria-controls="behaviorPanel" aria-selected="true">行为趋势</button>
+        <button type="button" data-admin-tab="users" aria-controls="usersPanel" aria-selected="false">用户分析</button>
+        <button type="button" data-admin-tab="security" aria-controls="securityPanel" aria-selected="false">安全日志</button>
+      </nav>
+
+      <div class="admin-panels">
+        <section id="behaviorPanel" class="panel admin-section admin-tab-panel active" data-admin-panel="behavior" aria-labelledby="behavior-title">
+          <div class="section-heading">
+            <div>
+              <h2 id="behavior-title">功能使用情况</h2>
+              <p>哪些工具正在被使用，以及最近的关键操作记录。</p>
+            </div>
+            <form id="behaviorFilters" class="inline-filter">
+              <label>
+                <span>操作类型</span>
+                <select id="filterEventType" name="eventType">
+                  <option value="">全部关键操作</option>
+                  <option value="generate_plan_success">规划生成成功</option>
+                  <option value="export_word">导出 Word</option>
+                  <option value="parse_codex_answer">解析 Codex 回答</option>
+                  <option value="refresh_competitions">竞赛换一批</option>
+                  <option value="refresh_summer_schools">夏校换一批</option>
+                </select>
+              </label>
+            </form>
+          </div>
+          <div id="usageSummaryList" class="metric-list summary-strip"></div>
+          <div class="table-wrap focused-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>操作</th>
+                  <th>用户</th>
+                  <th>学生背景</th>
+                  <th>数量 / 完成度</th>
+                  <th>详情</th>
+                </tr>
+              </thead>
+              <tbody id="usageEventsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="usersPanel" class="panel admin-section admin-tab-panel" data-admin-panel="users" aria-labelledby="users-title" hidden>
+          <div class="section-heading">
+            <h2 id="users-title">用户分析</h2>
+            <p>账户、累计登录与最近登录时间，便于定位活跃用户。</p>
+          </div>
+          <div class="table-wrap focused-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>名称</th>
+                  <th>邮箱</th>
+                  <th>累计登录</th>
+                  <th>最近登录</th>
+                </tr>
+              </thead>
+              <tbody id="userSummaryBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="securityPanel" class="panel admin-section admin-tab-panel" data-admin-panel="security" aria-labelledby="security-title" hidden>
+          <div class="section-heading">
+            <div>
+              <h2 id="security-title">登录与风险排查</h2>
+              <p>技术字段仅在排查时展开，减少主视图干扰。</p>
+            </div>
+            <form id="securityFilters" class="inline-filter">
+              <label>
+                <span>登录状态</span>
+                <select id="securityStatusFilter" name="status">
+                  <option value="">全部状态</option>
+                  <option value="success">成功</option>
+                  <option value="failure">失败</option>
+                </select>
+              </label>
+            </form>
+          </div>
+          <div class="admin-grid security-trends">
+            <div>
+              <h3>每日登录</h3>
+              <div id="dailyActivityList" class="metric-list"></div>
+            </div>
+            <div>
+              <h3>每周登录</h3>
+              <div id="weeklyActivityList" class="metric-list"></div>
+            </div>
+          </div>
+          <div class="table-wrap focused-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>状态</th>
+                  <th>用户</th>
+                  <th>失败原因</th>
+                  <th>详情</th>
+                </tr>
+              </thead>
+              <tbody id="loginEventsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="./admin-dashboard.js"></script>
+    <script type="module" src="./safe-navigation.mjs"></script>
+  </body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GPA计算器</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">GPA Calculator</p>
+          <h1>GPA计算器</h1>
+        </div>
+        <div class="actions" aria-label="页面操作">
+          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
+          <a class="button-link quiet-link" href="./course-helper.html" data-safe-nav>选课辅助器</a>
+        </div>
+      </header>
+
+      <section class="panel gpa-calculator-panel" aria-labelledby="gpa-form-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="gpa-form-title">学校评分方式</h2>
+            <p>面向 AP 体系计算加权 GPA：AP 科目最高按 5.0，普通科目最高按 4.0；学分留空时按 1 学分计算。</p>
+          </div>
+          <span id="gpaStatus" class="status" role="status" aria-live="polite">等待输入</span>
+        </div>
+
+        <form id="gpaForm" class="profile-grid gpa-grid">
+          <label>
+            <span>学校GPA计算方式（必选）</span>
+            <select id="gpaScale" name="scale" required>
+              <option value="percentage">百分制</option>
+              <option value="four-point">4.0制度</option>
+            </select>
+          </label>
+
+          <fieldset id="thresholdFieldset" class="gpa-threshold-field full-span">
+            <legend>学校ABCD分数线（选填）</legend>
+            <label>
+              <span>A 分数线</span>
+              <input name="thresholdA" type="number" min="0" max="100" step="0.1" placeholder="默认 90" />
+            </label>
+            <label>
+              <span>B 分数线</span>
+              <input name="thresholdB" type="number" min="0" max="100" step="0.1" placeholder="默认 80" />
+            </label>
+            <label>
+              <span>C 分数线</span>
+              <input name="thresholdC" type="number" min="0" max="100" step="0.1" placeholder="默认 70" />
+            </label>
+            <label>
+              <span>D 分数线</span>
+              <input name="thresholdD" type="number" min="0" max="100" step="0.1" placeholder="默认 60" />
+            </label>
+          </fieldset>
+
+          <fieldset class="gpa-course-field full-span">
+            <legend>每科成绩</legend>
+            <div id="gpaCourseRows" class="gpa-course-rows"></div>
+            <button id="addGpaCourseButton" type="button" class="quiet neutral">添加科目</button>
+          </fieldset>
+        </form>
+      </section>
+
+      <section class="panel gpa-result-panel" aria-labelledby="gpa-result-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="gpa-result-title">计算结果</h2>
+            <p>结果按有效课程和学分加权计算，百分制会先按 ABCD 分数线换算；AP 科目会额外加权 1 分。</p>
+          </div>
+        </div>
+        <div class="gpa-result-body">
+          <div class="gpa-result-card">
+            <p>加权 GPA</p>
+            <strong id="gpaResultValue">--</strong>
+          </div>
+          <dl class="gpa-result-meta">
+            <div><dt>有效科目</dt><dd id="gpaCourseCount">0</dd></div>
+            <div><dt>总学分</dt><dd id="gpaTotalCredits">0</dd></div>
+            <div><dt>评分方式</dt><dd id="gpaScaleLabel">百分制</dd></div>
+          </dl>
+          <p id="gpaNotice" class="case-notice">请输入至少一科成绩。</p>
+          <div id="gpaBreakdown" class="gpa-breakdown"></div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./safe-navigation.mjs"></script>
+    <script type="module" src="./gpa-calculator.js"></script>
+  </body>
+</html>

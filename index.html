@@ -7,22 +7,195 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="app-shell">
+    <section id="authShell" class="landing-shell" aria-labelledby="landing-title">
+      <header id="landingHeader" class="landing-header">
+        <a class="brand-mark" href="./index.html" aria-label="US College Compass 首页">
+          <span class="brand-prefix">US</span> College Compass
+        </a>
+        <nav class="landing-nav" aria-label="了解产品">
+          <a href="#capabilityHighlights">规划方式</a>
+          <a href="#landingProcess">使用流程</a>
+          <a href="#trustCommitment">可信承诺</a>
+        </nav>
+      </header>
+
+      <div class="landing-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">真实信息 + 个性规划</p>
+          <h1 id="landing-title">你的申请路径，<br />真的<span>适合你</span>吗？</h1>
+          <p class="hero-description">
+            把学生背景、兴趣方向与院校资料，转化为清晰、可执行、有依据的规划建议。
+          </p>
+          <button id="heroStartButton" type="button">免费开始规划</button>
+          <div class="hero-proof" aria-label="产品能力">
+            <p><strong>个性规划</strong><span>围绕背景生成</span></p>
+            <p><strong>可信资料</strong><span>保留来源边界</span></p>
+            <p><strong>规划报告</strong><span>支持保存导出</span></p>
+          </div>
+        </div>
+
+        <div id="authCard" class="auth-card">
+          <p class="eyebrow">开始你的规划</p>
+          <h2 id="auth-title">登录</h2>
+          <p class="auth-copy">登录或免费注册后，使用完整的美本申请规划工具。</p>
+          <form id="authForm" class="auth-form">
+            <label id="authNameField" class="is-hidden">
+              <span>姓名</span>
+              <input id="authName" name="name" type="text" autocomplete="name" />
+            </label>
+            <label>
+              <span>邮箱</span>
+              <input id="authEmail" name="email" type="email" autocomplete="email" required />
+            </label>
+            <label>
+              <span>密码</span>
+              <input id="authPassword" name="password" type="password" autocomplete="current-password" required />
+            </label>
+            <p id="authStatus" class="status auth-status" role="status" aria-live="polite"></p>
+            <button id="authSubmitButton" type="submit">登录</button>
+          </form>
+          <button id="forgotPasswordButton" type="button" class="quiet auth-mode-button">忘记密码？</button>
+          <button id="authModeButton" type="button" class="quiet auth-mode-button">没有账号？注册</button>
+        </div>
+      </div>
+
+      <section id="capabilityHighlights" class="capability-highlights" aria-label="核心能力">
+        <article class="capability-card">
+          <p class="feature-index">01</p>
+          <h2>规划 Agent</h2>
+          <p>从年级、兴趣与已有经历出发，整理可执行的成长与活动方向。</p>
+        </article>
+        <article class="capability-card">
+          <p class="feature-index">02</p>
+          <h2>资源与院校</h2>
+          <p>登录后检索项目资料与院校信息，将规划建议与真实要求对照。</p>
+        </article>
+        <article class="capability-card">
+          <p class="feature-index">03</p>
+          <h2>规划报告</h2>
+          <p>保存重要版本并导出报告，方便学生与家长持续复盘选择。</p>
+        </article>
+      </section>
+
+      <section id="landingProcess" class="landing-process" aria-labelledby="process-title">
+        <div class="landing-section-heading">
+          <p class="eyebrow">简单开始</p>
+          <h2 id="process-title">三步形成你的申请方向</h2>
+        </div>
+        <ol class="process-grid">
+          <li><strong>填写背景</strong><span>录入年级、方向、兴趣与已有活动。</span></li>
+          <li><strong>生成方案</strong><span>获得活动规划、资源建议与学习方向。</span></li>
+          <li><strong>对照保存</strong><span>查询资料、保存版本并导出报告。</span></li>
+        </ol>
+      </section>
+
+      <section id="trustCommitment" class="trust-commitment" aria-labelledby="trust-title">
+        <div>
+          <p class="eyebrow">给学生与家长的承诺</p>
+          <h2 id="trust-title">让每个建议都有核对路径</h2>
+          <p class="trust-description">
+            规划建议用于支持判断与行动安排，不等于录取承诺。项目资格与院校政策请始终以申请年度官方最新要求为准。
+          </p>
+        </div>
+        <ul class="trust-points">
+          <li>资料展示保留来源与适用提示</li>
+          <li>输入内容用于你的规划流程</li>
+          <li>方案可保存、可导出、可复盘</li>
+        </ul>
+      </section>
+    </section>
+
+    <main id="appShell" class="app-shell is-hidden">
       <header class="topbar">
         <div>
           <p class="eyebrow">US College Admissions Strategist Agent</p>
           <div class="title-row">
             <h1>美本申请规划 Agent</h1>
-            <a class="button-link title-link" href="./course-helper.html" data-safe-nav>选课辅助器</a>
+            <nav class="title-link-group" aria-label="页面导航">
+              <span class="primary-links">
+                <span class="button-link title-link current-link" aria-current="page">申请规划</span>
+                <a class="button-link title-link" href="./resource-library.html" data-safe-nav>资源库</a>
+                <a class="button-link title-link" href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+              </span>
+              <span class="utility-links">
+                <a class="button-link quiet-link title-link" href="./gpa-calculator.html" data-safe-nav>GPA计算器</a>
+                <a class="button-link quiet-link title-link" href="./course-helper.html" data-safe-nav>选课辅助器</a>
+                <a class="button-link quiet-link title-link" href="./disclaimer.html" data-safe-nav>免责声明</a>
+                <a class="button-link quiet-link title-link" href="./contact.html" data-safe-nav>联系我们</a>
+              </span>
+            </nav>
+            <a
+              id="adminDashboardLink"
+              class="button-link quiet-link title-link is-hidden"
+              href="./admin.html"
+              data-safe-nav
+            >数据看板 / 登录数据</a>
           </div>
         </div>
         <div class="actions" aria-label="页面操作">
-          <button id="saveButton" type="button">保存草稿</button>
-          <button id="exportButton" type="button">导出 JSON</button>
-          <button id="exportWordButton" type="button">导出 Word</button>
-          <button id="resetButton" type="button" class="quiet">清空</button>
+          <span id="currentUserBadge" class="user-badge"></span>
+          <button id="saveButton" type="button">保存当前内容</button>
+          <button id="exportButton" class="secondary" type="button">导出 JSON</button>
+          <button id="exportWordButton" class="secondary" type="button">导出 Word</button>
+          <button id="resetButton" class="danger" type="button">清空当前方案</button>
+          <button id="logoutButton" class="secondary" type="button">退出</button>
         </div>
       </header>
+
+      <section class="panel workspace-panel" aria-labelledby="workspace-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="workspace-title">三步完成申请规划</h2>
+            <p>第一次使用也很简单：先填写信息，再选择方案，需要保留时保存一份备份。</p>
+          </div>
+          <span id="planningWorkspaceStatus" class="status" role="status" aria-live="polite">正在加载</span>
+        </div>
+        <ol id="workspaceGuide" class="workspace-guide" aria-label="使用说明">
+          <li>
+            <strong>第 1 步：填写学生信息</strong>
+            <span>在下方“用户背景输入”填写一次，所有方案共用。</span>
+          </li>
+          <li>
+            <strong>第 2 步：选择规划方案</strong>
+            <span>直接用默认方案；需要比较不同方向时再新建方案。</span>
+          </li>
+          <li>
+            <strong>第 3 步：保存重要版本</strong>
+            <span>内容满意时点“保存备份”，之后随时可以恢复。</span>
+          </li>
+        </ol>
+        <div class="workspace-grid">
+          <article class="workspace-card">
+            <p class="workspace-label">学生信息摘要</p>
+            <p id="studentProfileSummary" class="profile-summary">还没有填写学生信息。</p>
+            <p id="profileUpdatedAt" class="workspace-meta">尚未保存</p>
+          </article>
+          <article class="workspace-card plans-card">
+            <div class="workspace-card-heading">
+              <p class="workspace-label">当前方案</p>
+              <button id="newPlanButton" type="button" class="quiet neutral">新建方案</button>
+            </div>
+            <div id="planList" class="plan-list" aria-label="规划方案列表"></div>
+            <p class="workspace-subtle-label">更多操作</p>
+            <div class="workspace-actions">
+              <button id="renamePlanButton" type="button" class="quiet neutral">重命名</button>
+              <button id="deletePlanButton" type="button" class="quiet">删除</button>
+            </div>
+          </article>
+          <article class="workspace-card snapshots-card">
+            <p class="workspace-label">历史备份</p>
+            <p class="workspace-help">保存重要节点；需要时点“恢复”，回到当时的内容。</p>
+            <label class="snapshot-note">
+              <span>备份备注（可选）</span>
+              <input id="snapshotNote" type="text" maxlength="120" placeholder="例如：提交顾问前" />
+            </label>
+            <button id="createSnapshotButton" type="button">保存备份</button>
+            <div id="snapshotList" class="snapshot-list" aria-label="历史备份列表">
+              <p class="workspace-empty">还没有备份。</p>
+            </div>
+          </article>
+        </div>
+      </section>
 
       <section class="panel intake-panel" aria-labelledby="intake-title">
         <div class="section-heading">
@@ -47,6 +220,25 @@
           <label>
             <span>专业方向</span>
             <input name="majorDirection" type="text" placeholder="例如：计算机 / 经济 / 生物医学 / 未定" />
+          </label>
+
+          <label>
+            <span>当前就读体系（项目资格筛选）</span>
+            <select name="schoolContext">
+              <option value="">请选择</option>
+              <option value="mainland_china_high_school">非美高（中国大陆高中）</option>
+              <option value="outside_us_high_school">非美高（其他国家或地区高中）</option>
+              <option value="us_high_school">美高</option>
+            </select>
+          </label>
+
+          <label>
+            <span>美国身份条件（项目资格筛选）</span>
+            <select name="identityDescription">
+              <option value="">未确认</option>
+              <option value="无美国公民或永久居民身份">无美国公民或永久居民身份</option>
+              <option value="具备美国公民或永久居民身份">具备美国公民或永久居民身份</option>
+            </select>
           </label>
 
           <label>

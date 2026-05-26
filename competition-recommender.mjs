@@ -1,3 +1,5 @@
+import { classifyResource, enrichResourceEligibility } from "./resource-eligibility.mjs";
+
 const CATEGORY_TAGS = {
   数学类: ["math", "quant", "stem"],
   物理类: ["physics", "engineering", "stem"],
@@ -84,7 +86,12 @@ function expandAllowedTags(primaryTags) {
 }
 
 function categoryFromHeading(heading) {
-  return String(heading || "").replace(/^#\s*/, "").replace(/（.*?）|\(.*?\)/g, "").trim();
+  return String(heading || "")
+    .replace(/^#+\s*/, "")
+    .replace(/（.*?）|\(.*?\)/g, "")
+    .replace(/^[^\p{Script=Han}A-Za-z0-9]+/u, "")
+    .replace(/^[一二三四五六七八九十]+、/, "")
+    .trim();
 }
 
 export function rateCompetition(competition) {
@@ -160,7 +167,83 @@ function parseCompetitionLine(line, index, categoryRaw) {
   };
 }
 
+function parseFieldValue(block, label) {
+  return block.match(new RegExp(`^- \\*\\*${label}\\*\\*：(.+)$`, "m"))?.[1]?.trim() || "";
+}
+
+function parseWebsite(value) {
+  return value.match(/\]\(([^)]+)\)/)?.[1]?.trim() || value.match(/https?:\/\/\S+/)?.[0] || "";
+}
+
+function parseDetailedCompetitionBlock(block, index, categoryRaw, subcategory) {
+  const name = block.match(/^####\s+(.+)$/m)?.[1]?.trim();
+  if (!name) return null;
+  const explicitRating = parseFieldValue(block, "评级");
+  const requirements = ["申请要求", "报名条件", "参赛条件"]
+    .map((label) => parseFieldValue(block, label))
+    .filter(Boolean);
+  const competition = {
+    id: `competition-${index + 1}`,
+    name,
+    url: parseWebsite(parseFieldValue(block, "官网")),
+    category: categoryFromHeading(categoryRaw),
+    categoryRaw,
+    subcategory,
+    rating: explicitRating || rateCompetition({ name, category: categoryRaw, raw: block }),
+    time: parseFieldValue(block, "时间"),
+    description: parseFieldValue(block, "简介"),
+    awards: parseFieldValue(block, "奖项"),
+    raw: block.trim(),
+  };
+  if (requirements.length) competition.requirements = requirements;
+  return competition;
+}
+
+function parseDetailedCompetitionsMarkdown(markdown) {
+  const competitions = [];
+  let categoryRaw = "";
+  let subcategory = "";
+  let current = [];
+
+  function addCurrent() {
+    if (!current.length) return;
+    const competition = parseDetailedCompetitionBlock(
+      current.join("\n"),
+      competitions.length,
+      categoryRaw,
+      subcategory,
+    );
+    if (competition) competitions.push(competition);
+    current = [];
+  }
+
+  for (const line of String(markdown || "").split(/\r?\n/)) {
+    if (/^##\s+/.test(line)) {
+      addCurrent();
+      categoryRaw = line.replace(/^##\s+/, "").trim();
+      subcategory = "";
+      continue;
+    }
+    if (/^###\s+/.test(line)) {
+      addCurrent();
+      subcategory = line.replace(/^###\s+/, "").trim();
+      continue;
+    }
+    if (/^####\s+/.test(line)) {
+      addCurrent();
+      current = [line];
+      continue;
+    }
+    if (current.length) current.push(line);
+  }
+  addCurrent();
+  return competitions;
+}
+
 export function parseCompetitionsMarkdown(markdown) {
+  if (/^####\s+/m.test(String(markdown || ""))) {
+    return parseDetailedCompetitionsMarkdown(markdown);
+  }
   const competitions = [];
   let categoryRaw = "";
 
@@ -181,7 +264,8 @@ export function parseCompetitionsMarkdown(markdown) {
 }
 
 export function buildCompetitionStudentProfile({ profile, activities, narrative }) {
-  const profileValues = Object.values(profile || {}).join(" ");
+  const { schoolContext = "", identityDescription = "", ...planningProfile } = profile || {};
+  const profileValues = Object.values(planningProfile).join(" ");
   const activityText = (activities || [])
     .map((activity) =>
       [activity.type, activity.activityName, activity.executionDescription, activity.suggestedGrade].join(" "),
@@ -201,6 +285,7 @@ export function buildCompetitionStudentProfile({ profile, activities, narrative 
     tags: tagText(fullText),
     primaryTags: primaryTags.length ? primaryTags : primaryTagsFromText(fullText),
     expansionTags: expansionTags.length ? expansionTags : tagText(fullText),
+    eligibilityFilters: { schoolContext, identityDescription },
     hasAnyInput,
     hasEnoughInfo: hasCoreFields,
   };
@@ -301,6 +386,19 @@ function sortByTagFit(scoredItems, tags) {
   );
 }
 
+function filterEligibleCompetitions(competitions, studentProfile) {
+  let excludedCount = 0;
+  const items = competitions.filter((competition) => {
+    const excluded = classifyResource(
+      enrichResourceEligibility(competition),
+      studentProfile.eligibilityFilters || {},
+    ).excluded;
+    if (excluded) excludedCount += 1;
+    return !excluded;
+  });
+  return { items, excludedCount };
+}
+
 export function recommendCompetitions({ studentProfile, competitions, previousBatchIds = [], batchIndex = 0 }) {
   const normalized = competitions || [];
   if (!studentProfile || !normalized.length) {
@@ -310,7 +408,8 @@ export function recommendCompetitions({ studentProfile, competitions, previousBa
     return { items: [], notice: "填写用户背景信息后，将根据学生方向生成国际竞赛推荐。" };
   }
 
-  const scored = normalized
+  const eligible = filterEligibleCompetitions(normalized, studentProfile);
+  const scored = eligible.items
     .map((competition) => ({
       competition,
       score: scoreCompetition(competition, studentProfile),
@@ -360,7 +459,7 @@ export function recommendCompetitions({ studentProfile, competitions, previousBa
 
   if (selected.length < 5) {
     const existingIds = selected.map((item) => item.id);
-    const fillerPool = scopedScored.length ? scopedScored.map((item) => item.competition) : normalized;
+    const fillerPool = scopedScored.length ? scopedScored.map((item) => item.competition) : eligible.items;
     const fillers = fillerPool
       .filter((item) => !existingIds.includes(item.id))
       .slice(0, 5 - selected.length)
@@ -369,16 +468,20 @@ export function recommendCompetitions({ studentProfile, competitions, previousBa
   }
 
   const previousSet = (previousBatchIds || []).join("|");
-  if (selected.map((item) => item.id).join("|") === previousSet && normalized.length > selected.length) {
-    const replacement = normalized.find((item) => !selected.some((selectedItem) => selectedItem.id === item.id));
+  if (selected.map((item) => item.id).join("|") === previousSet && eligible.items.length > selected.length) {
+    const replacement = eligible.items.find((item) => !selected.some((selectedItem) => selectedItem.id === item.id));
     if (replacement) selected[selected.length - 1] = decorateRecommendation(replacement, "拓展型", studentProfile);
   }
 
   return {
     items: selected.slice(0, 5),
-    notice:
+    notice: [
       studentProfile.hasAnyInput && !studentProfile.hasEnoughInfo
         ? "当前推荐基于已填写信息生成，补充目标专业、年级和兴趣方向后，可进一步提高匹配准确度。"
         : "",
+      eligible.excludedCount
+        ? `已依据当前可参与条件排除 ${eligible.excludedCount} 个明确不符合报名要求的竞赛。`
+        : "",
+    ].filter(Boolean).join(" "),
   };
 }
