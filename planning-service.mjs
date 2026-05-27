@@ -1,3 +1,5 @@
+import { normalizeSnapshotNote, stripSensitiveDraftFields } from "./privacy-guards.mjs";
+
 const DEFAULT_PLAN_NAME = "默认规划";
 const MAX_PLAN_NAME_LENGTH = 80;
 
@@ -124,7 +126,7 @@ export function createPlanningService({ authDb, now = () => new Date() }) {
     `).run(
       Number(planId),
       userId,
-      String(note ?? "").trim(),
+      normalizeSnapshotNote(note),
       JSON.stringify({ profile, draft: plan.draft }),
       isoNow(now),
     );
@@ -220,7 +222,7 @@ function emptyDraft() {
 }
 
 function normalizeDraft(value) {
-  const draft = normalizeObject(value, "Plan draft");
+  const draft = stripSensitiveDraftFields(normalizeObject(value, "Plan draft"));
   return { ...emptyDraft(), ...draft };
 }
 

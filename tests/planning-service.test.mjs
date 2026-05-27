@@ -54,6 +54,11 @@ try {
   });
   assert.equal(savedPlan.name, "冲刺规划");
   assert.equal(savedPlan.draft.rawAnswer, "answer");
+  const sensitiveDraftPlan = planning.savePlan(student, defaultPlan.id, {
+    draft: { ...draft, apiKey: "sk-request", OPENAI_API_KEY: "sk-env" },
+  });
+  assert.equal(Object.hasOwn(sensitiveDraftPlan.draft, "apiKey"), false);
+  assert.equal(Object.hasOwn(sensitiveDraftPlan.draft, "OPENAI_API_KEY"), false);
 
   const secondPlan = planning.createPlan(student, { name: "保底规划" });
   assert.equal(planning.listPlans(student).length, 2);
@@ -73,6 +78,14 @@ try {
   assert.equal(restored.plan.draft.rawAnswer, "answer");
   assert.equal(restored.plan.name, "冲刺规划");
   assert.equal(planning.listSnapshots(student, savedPlan.id).length, 1);
+
+  const browserAutofillSnapshot = planning.createSnapshot(student, savedPlan.id, {
+    note: "3152482377@qq.com",
+  });
+  assert.equal(browserAutofillSnapshot.note, "");
+  assert.deepEqual(planning.deleteSnapshot(student, savedPlan.id, browserAutofillSnapshot.id), {
+    ok: true,
+  });
 
   const removableSnapshot = planning.createSnapshot(student, savedPlan.id, { note: "删除版本" });
   assert.deepEqual(planning.deleteSnapshot(student, savedPlan.id, removableSnapshot.id), { ok: true });

@@ -27,6 +27,7 @@ import {
   removeLegacySharedDraft,
   removeUserDraft,
 } from "./draft-storage.mjs";
+import { normalizeSnapshotNote, stripSensitiveDraftFields } from "./privacy-guards.mjs";
 
 const authShell = document.querySelector("#authShell");
 const appShell = document.querySelector("#appShell");
@@ -279,7 +280,7 @@ function collectActivities() {
 }
 
 function collectDraft() {
-  return {
+  return stripSensitiveDraftFields({
     profile: collectProfile(),
     activities: collectActivities(),
     rawAnswer: rawAnswer.value,
@@ -290,7 +291,7 @@ function collectDraft() {
     recommendationLetterStrategy: latestRecommendationLetterStrategy,
     caseMatches: latestCaseMatches,
     updatedAt: new Date().toISOString(),
-  };
+  });
 }
 
 function collectPlanDraft() {
@@ -726,6 +727,7 @@ function clearPlanFields() {
   rawAnswer.value = "";
   narrativeOutput.value = "";
   if (futureLearningOutput) futureLearningOutput.value = "";
+  if (apiKeyInput) apiKeyInput.value = "";
   codexTaskPackage.value = "";
   codexAnswerInput.value = "";
   latestCompetitionRecommendations = [];
@@ -735,6 +737,7 @@ function clearPlanFields() {
 }
 
 function applyPlanDraft(draft = {}) {
+  draft = stripSensitiveDraftFields(draft);
   clearPlanFields();
   fillActivities(draft.activities || []);
   rawAnswer.value = draft.rawAnswer || "";
@@ -880,7 +883,7 @@ async function loadWorkspace() {
 
   if (!profileData.updatedAt && isPlanDraftEmpty(currentPlan.draft) && localDraft) {
     try {
-      const draft = JSON.parse(localDraft);
+      const draft = stripSensitiveDraftFields(JSON.parse(localDraft));
       applyProfile(draft.profile || {});
       applyPlanDraft(draft);
       await persistCurrentWorkspace();
@@ -954,9 +957,10 @@ async function deleteCurrentPlan() {
 async function createCurrentSnapshot() {
   if (!currentPlan) return;
   await saveDraft();
+  const note = normalizeSnapshotNote(snapshotNote.value);
   await requestJson(`/api/plans/${currentPlan.id}/snapshots`, {
     method: "POST",
-    body: JSON.stringify({ note: snapshotNote.value.trim() }),
+    body: JSON.stringify({ note }),
   });
   snapshotNote.value = "";
   await loadSnapshots();
@@ -1142,8 +1146,10 @@ function clearVisibleDraft() {
     rawAnswer,
     narrativeOutput,
     futureLearningOutput,
+    apiKeyInput,
     codexTaskPackage,
     codexAnswerInput,
+    snapshotNote,
   });
   renderStudentDependentRecommendations();
 }
@@ -1154,10 +1160,13 @@ async function generatePlan() {
   agentStatus.textContent = "Agent 正在根据固定提示词生成规划回答...";
 
   try {
+    const payload = collectGenerationPayload();
+    apiKeyInput.value = "";
+    updateAgentAvailability();
     const response = await fetch("/api/plan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(collectGenerationPayload()),
+      body: JSON.stringify(payload),
     });
     const data = await response.json();
 
@@ -1210,9 +1219,18 @@ refreshSummerSchoolsButton?.addEventListener("click", () => {
   });
   renderSummerSchoolRecommendations({ refresh: true });
 });
-document.addEventListener("input", renderStudentDependentRecommendations);
+function isWorkspaceDataInput(event) {
+  const target = event.target;
+  return appShell.contains(target) && target !== apiKeyInput && target !== snapshotNote;
+}
 
-document.addEventListener("input", () => {
+document.addEventListener("input", (event) => {
+  if (!isWorkspaceDataInput(event)) return;
+  renderStudentDependentRecommendations();
+});
+
+document.addEventListener("input", (event) => {
+  if (!isWorkspaceDataInput(event)) return;
   workspaceDirty = true;
   saveStatus.textContent = "有未保存修改";
   renderProfileSummary();

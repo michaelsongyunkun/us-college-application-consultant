@@ -187,7 +187,15 @@
             <p class="workspace-help">保存重要节点；需要时点“恢复”，回到当时的内容。</p>
             <label class="snapshot-note">
               <span>备份备注（可选）</span>
-              <input id="snapshotNote" type="text" maxlength="120" placeholder="例如：提交顾问前" />
+              <input
+                id="snapshotNote"
+                type="text"
+                maxlength="120"
+                autocomplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                placeholder="例如：提交顾问前"
+              />
             </label>
             <button id="createSnapshotButton" type="button">保存备份</button>
             <div id="snapshotList" class="snapshot-list" aria-label="历史备份列表">
@@ -286,7 +294,11 @@
             <input
               id="apiKeyInput"
               type="password"
-              autocomplete="off"
+              autocomplete="one-time-code"
+              autocapitalize="off"
+              autocorrect="off"
+              data-lpignore="true"
+              data-1p-ignore="true"
               spellcheck="false"
               placeholder="粘贴 sk-...；如果服务端已设置 OPENAI_API_KEY 可留空"
             />
