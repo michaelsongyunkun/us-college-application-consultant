@@ -339,25 +339,6 @@ export function resolveDatabasePath(env = process.env) {
   return env.AUTH_DATABASE_PATH || env.DATABASE_PATH || defaultDatabasePath;
 }
 
-function promoteRequestedProductionAdmin(authDb, env = process.env) {
-  const appBaseUrl = String(env.APP_BASE_URL || "").replace(/\/$/, "");
-  if (env.NODE_ENV !== "production" && appBaseUrl !== "https://us-application-consultant.com") {
-    return;
-  }
-
-  const result = authDb.db
-    .prepare(
-      `UPDATE users
-       SET role = 'admin', name = ?, updated_at = ?
-       WHERE lower(email) = lower(?) AND role <> 'admin'`,
-    )
-    .run("Yunkun Song", new Date().toISOString(), "3152482377@qq.com");
-
-  if (result.changes > 0) {
-    console.log("Promoted production admin account: 3152482377@qq.com");
-  }
-}
-
 export function createAppServer({
   databasePath = resolveDatabasePath(),
   authDb = createAuthDatabase({ databasePath }),
@@ -368,7 +349,6 @@ export function createAppServer({
   maxRequestBodyBytes = DEFAULT_MAX_REQUEST_BODY_BYTES,
   rateLimits = DEFAULT_RATE_LIMITS,
 } = {}) {
-  promoteRequestedProductionAdmin(authDb);
   const readJson = (request) => readRequestJson(request, maxRequestBodyBytes);
   const handleAuth = createAuthHandler(auth, { mailer, appBaseUrl, readJson });
   const getRateLimit = createRateLimiter(rateLimits);
