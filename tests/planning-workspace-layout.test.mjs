@@ -120,3 +120,5 @@ assert.match(appJs, /备份已删除/, "Snapshot deletion should provide complet
 assert.match(html, /name="schoolContext"/, "Student background should capture school context for eligibility filtering.");
 assert.match(html, /非美高（中国大陆高中）/, "Student background should offer a mainland China non-US-high-school option.");
 assert.match(html, /name="identityDescription"/, "Student background should capture US identity eligibility conditions.");
+assert.doesNotMatch(html, /未来学习方向/, "Future learning direction section should not be shown.");
+assert.doesNotMatch(html, /id=["']futureLearningOutput["']/, "Future learning direction textarea should be removed.");

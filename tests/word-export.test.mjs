@@ -21,3 +21,4 @@ assert.ok(documentHtml.includes("<p>问题：资源不足</p>"));
 assert.ok(documentHtml.includes("<p>成果：完成工具</p>"));
 assert.ok(documentHtml.includes("<p>影响：服务80人</p>"));
 assert.ok(documentHtml.includes("以AI教育公益为Spike。"));
+assert.equal(documentHtml.includes("未来学习方向"), false);

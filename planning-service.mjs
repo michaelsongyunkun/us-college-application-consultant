@@ -213,7 +213,6 @@ function emptyDraft() {
     activities: [],
     rawAnswer: "",
     narrative: "",
-    futureLearningDirection: "",
     competitionRecommendations: [],
     summerSchoolRecommendations: [],
     recommendationLetterStrategy: { items: [] },

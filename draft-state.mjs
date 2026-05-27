@@ -3,7 +3,6 @@ export function clearDraftFields({
   activityTable,
   rawAnswer,
   narrativeOutput,
-  futureLearningOutput,
   apiKeyInput,
   codexTaskPackage,
   codexAnswerInput,
@@ -15,7 +14,6 @@ export function clearDraftFields({
   });
   if (rawAnswer) rawAnswer.value = "";
   if (narrativeOutput) narrativeOutput.value = "";
-  if (futureLearningOutput) futureLearningOutput.value = "";
   if (apiKeyInput) apiKeyInput.value = "";
   if (codexTaskPackage) codexTaskPackage.value = "";
   if (codexAnswerInput) codexAnswerInput.value = "";

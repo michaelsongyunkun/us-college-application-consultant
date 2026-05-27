@@ -143,7 +143,6 @@ export function buildWordDocument({
   profile,
   activities,
   narrative,
-  futureLearningDirection = "",
   competitionRecommendations = [],
   summerSchoolRecommendations = [],
   recommendationLetterStrategy = { items: [] },
@@ -200,8 +199,6 @@ export function buildWordDocument({
     </table>
     <h2>活动叙事逻辑解读</h2>
     <p>${escapeHtml(narrative).replaceAll("\n", "<br>")}</p>
-    <h2>未来学习方向</h2>
-    <p>${escapeHtml(futureLearningDirection).replaceAll("\n", "<br>")}</p>
     ${buildCompetitionSections(competitionRecommendations)}
     ${buildSummerSchoolSections(summerSchoolRecommendations)}
     ${buildRecommendationLetterSections(recommendationLetterStrategy)}

@@ -150,10 +150,8 @@ node tests\competition-recommender.test.mjs
 node tests\summer-school-recommender.test.mjs
 node tests\humanities-recommendation-integration.test.mjs
 node tests\draft-state.test.mjs
-node tests\learning-direction.test.mjs
 node tests\word-export-cases.test.mjs
 node tests\word-export-competitions.test.mjs
-node tests\word-export-learning-direction.test.mjs
 node tests\word-export-summer-schools.test.mjs
 node tests\prompt-integrity.test.mjs
 node tests\parse-agent-output.test.mjs

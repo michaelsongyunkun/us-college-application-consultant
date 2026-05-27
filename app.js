@@ -1,6 +1,5 @@
 import { getAgentAvailability } from "./ui-state.mjs";
 import { clearDraftFields } from "./draft-state.mjs";
-import { buildFutureLearningDirection } from "./learning-direction.mjs";
 import { buildCodexTaskPackage } from "./codex-mode.mjs";
 import { parseAgentOutput } from "./agent-output-parser.mjs";
 import {
@@ -59,7 +58,6 @@ const promptStatus = document.querySelector("#promptStatus");
 const apiKeyInput = document.querySelector("#apiKeyInput");
 const rawAnswer = document.querySelector("#rawAnswer");
 const narrativeOutput = document.querySelector("#narrativeOutput");
-const futureLearningOutput = document.querySelector("#futureLearningOutput");
 const buildCodexTaskButton = document.querySelector("#buildCodexTaskButton");
 const copyCodexTaskButton = document.querySelector("#copyCodexTaskButton");
 const parseCodexAnswerButton = document.querySelector("#parseCodexAnswerButton");
@@ -293,7 +291,6 @@ function collectDraft() {
     activities: collectActivities(),
     rawAnswer: rawAnswer.value,
     narrative: narrativeOutput.value,
-    futureLearningDirection: futureLearningOutput?.value || "",
     competitionRecommendations: latestCompetitionRecommendations,
     summerSchoolRecommendations: latestSummerSchoolRecommendations,
     recommendationLetterStrategy: latestRecommendationLetterStrategy,
@@ -378,15 +375,6 @@ function buildCurrentStudentCaseProfile() {
 function buildCurrentCompetitionStudentProfile() {
   return buildCompetitionStudentProfile({
     profile: collectProfile(),
-    activities: collectActivities(),
-    narrative: narrativeOutput.value,
-  });
-}
-
-function updateFutureLearningDirection() {
-  if (!futureLearningOutput) return;
-  futureLearningOutput.value = buildFutureLearningDirection({
-    profile: collectPlanningProfile(),
     activities: collectActivities(),
     narrative: narrativeOutput.value,
   });
@@ -688,7 +676,6 @@ function renderCaseMatches() {
 function renderStudentDependentRecommendations() {
   updateActivityMarkdownPreviews();
   renderActivityQuality();
-  updateFutureLearningDirection();
   previousCompetitionBatchIds = [];
   competitionBatchIndex = 0;
   previousSummerSchoolBatchIds = [];
@@ -789,7 +776,6 @@ function clearPlanFields() {
   });
   rawAnswer.value = "";
   narrativeOutput.value = "";
-  if (futureLearningOutput) futureLearningOutput.value = "";
   if (apiKeyInput) apiKeyInput.value = "";
   codexTaskPackage.value = "";
   codexAnswerInput.value = "";
@@ -805,7 +791,6 @@ function applyPlanDraft(draft = {}) {
   fillActivities(draft.activities || []);
   rawAnswer.value = draft.rawAnswer || "";
   narrativeOutput.value = draft.narrative || "";
-  if (futureLearningOutput) futureLearningOutput.value = draft.futureLearningDirection || "";
   renderStudentDependentRecommendations();
 }
 
@@ -816,7 +801,6 @@ function isPlanDraftEmpty(draft = {}) {
     ) &&
     !String(draft.rawAnswer || "").trim() &&
     !String(draft.narrative || "").trim() &&
-    !String(draft.futureLearningDirection || "").trim() &&
     !(draft.competitionRecommendations || []).length &&
     !(draft.summerSchoolRecommendations || []).length &&
     !(draft.recommendationLetterStrategy?.items || []).length &&
@@ -1181,7 +1165,6 @@ function exportWordDocument() {
     profile: collectProfile(),
     activities: collectActivities(),
     narrative: narrativeOutput.value,
-    futureLearningDirection: futureLearningOutput?.value || "",
     competitionRecommendations: latestCompetitionRecommendations,
     summerSchoolRecommendations: latestSummerSchoolRecommendations,
     recommendationLetterStrategy: latestRecommendationLetterStrategy,
@@ -1213,7 +1196,6 @@ function clearVisibleDraft() {
     activityTable,
     rawAnswer,
     narrativeOutput,
-    futureLearningOutput,
     apiKeyInput,
     codexTaskPackage,
     codexAnswerInput,

@@ -1547,15 +1547,6 @@ td textarea {
   min-height: 120px;
 }
 
-.learning-box {
-  padding-top: 0;
-}
-
-.learning-box textarea {
-  min-height: 150px;
-  background: #fbfcfe;
-}
-
 tr:last-child th,
 tr:last-child td {
   border-bottom: 0;

@@ -42,7 +42,6 @@ try {
     activities: [{ title: "Research" }],
     rawAnswer: "answer",
     narrative: "narrative",
-    futureLearningDirection: "direction",
     competitionRecommendations: [{ name: "Contest" }],
     summerSchoolRecommendations: [],
     recommendationLetterStrategy: { items: [{ role: "Teacher" }] },
