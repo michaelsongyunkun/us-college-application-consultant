@@ -15,14 +15,31 @@ export function normalizeGradeThresholds(thresholds = {}) {
   };
 }
 
+function roundGradePoint(value) {
+  return Number(value.toFixed(2));
+}
+
+function convertBandPercentageToGradePoint(percentage, lowerThreshold, upperThreshold, basePoint) {
+  if (upperThreshold <= lowerThreshold) return basePoint;
+  const bandProgress = (percentage - lowerThreshold) / (upperThreshold - lowerThreshold);
+  return roundGradePoint(basePoint + Math.min(Math.max(bandProgress, 0), 0.99));
+}
+
 export function convertPercentageToGradePoint(grade, thresholds = DEFAULT_THRESHOLDS, { isAp = false } = {}) {
   const percentage = parseNumber(grade);
   if (percentage === null || percentage < 0 || percentage > 100) return null;
+  const normalizedThresholds = normalizeGradeThresholds(thresholds);
   const apBonus = isAp ? 1 : 0;
-  if (percentage >= thresholds.a) return 4 + apBonus;
-  if (percentage >= thresholds.b) return 3 + apBonus;
-  if (percentage >= thresholds.c) return 2 + apBonus;
-  if (percentage >= thresholds.d) return 1 + apBonus;
+  if (percentage >= normalizedThresholds.a) return 4 + apBonus;
+  if (percentage >= normalizedThresholds.b) {
+    return convertBandPercentageToGradePoint(percentage, normalizedThresholds.b, normalizedThresholds.a, 3) + apBonus;
+  }
+  if (percentage >= normalizedThresholds.c) {
+    return convertBandPercentageToGradePoint(percentage, normalizedThresholds.c, normalizedThresholds.b, 2) + apBonus;
+  }
+  if (percentage >= normalizedThresholds.d) {
+    return convertBandPercentageToGradePoint(percentage, normalizedThresholds.d, normalizedThresholds.c, 1) + apBonus;
+  }
   return 0;
 }
 

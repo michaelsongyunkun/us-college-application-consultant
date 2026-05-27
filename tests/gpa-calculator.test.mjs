@@ -12,14 +12,21 @@ assert.deepEqual(
 );
 
 assert.equal(convertPercentageToGradePoint(95, { a: 90, b: 80, c: 70, d: 60 }), 4);
-assert.equal(convertPercentageToGradePoint(86, { a: 90, b: 80, c: 70, d: 60 }), 3);
-assert.equal(convertPercentageToGradePoint(72, { a: 90, b: 80, c: 70, d: 60 }), 2);
-assert.equal(convertPercentageToGradePoint(61, { a: 90, b: 80, c: 70, d: 60 }), 1);
+assert.equal(convertPercentageToGradePoint(90, { a: 90, b: 80, c: 70, d: 60 }), 4);
+assert.equal(convertPercentageToGradePoint(89, { a: 90, b: 80, c: 70, d: 60 }), 3.9);
+assert.equal(convertPercentageToGradePoint(86, { a: 90, b: 80, c: 70, d: 60 }), 3.6);
+assert.equal(convertPercentageToGradePoint(80, { a: 90, b: 80, c: 70, d: 60 }), 3);
+assert.equal(convertPercentageToGradePoint(72, { a: 90, b: 80, c: 70, d: 60 }), 2.2);
+assert.equal(convertPercentageToGradePoint(71, { a: 90, b: 80, c: 70, d: 60 }), 2.1);
+assert.equal(convertPercentageToGradePoint(61, { a: 90, b: 80, c: 70, d: 60 }), 1.1);
 assert.equal(convertPercentageToGradePoint(59, { a: 90, b: 80, c: 70, d: 60 }), 0);
 assert.equal(convertPercentageToGradePoint(95, { a: 90, b: 80, c: 70, d: 60 }, { isAp: true }), 5);
-assert.equal(convertPercentageToGradePoint(86, { a: 90, b: 80, c: 70, d: 60 }, { isAp: true }), 4);
-assert.equal(convertPercentageToGradePoint(72, { a: 90, b: 80, c: 70, d: 60 }, { isAp: true }), 3);
-assert.equal(convertPercentageToGradePoint(61, { a: 90, b: 80, c: 70, d: 60 }, { isAp: true }), 2);
+assert.equal(convertPercentageToGradePoint(90, { a: 90, b: 80, c: 70, d: 60 }, { isAp: true }), 5);
+assert.equal(convertPercentageToGradePoint(89, { a: 90, b: 80, c: 70, d: 60 }, { isAp: true }), 4.9);
+assert.equal(convertPercentageToGradePoint(86, { a: 90, b: 80, c: 70, d: 60 }, { isAp: true }), 4.6);
+assert.equal(convertPercentageToGradePoint(80, { a: 90, b: 80, c: 70, d: 60 }, { isAp: true }), 4);
+assert.equal(convertPercentageToGradePoint(72, { a: 90, b: 80, c: 70, d: 60 }, { isAp: true }), 3.2);
+assert.equal(convertPercentageToGradePoint(61, { a: 90, b: 80, c: 70, d: 60 }, { isAp: true }), 2.1);
 assert.equal(convertPercentageToGradePoint(59, { a: 90, b: 80, c: 70, d: 60 }, { isAp: true }), 0);
 
 const percentageResult = calculateGpa({
@@ -34,10 +41,10 @@ const percentageResult = calculateGpa({
 
 assert.equal(percentageResult.validCourseCount, 3);
 assert.equal(percentageResult.totalCredits, 7);
-assert.equal(percentageResult.gpa, 3.71);
+assert.equal(percentageResult.gpa, 3.83);
 assert.deepEqual(
   percentageResult.courses.map((course) => course.gradePoint),
-  [4, 4, 2],
+  [4, 4.2, 2.4],
 );
 
 const fourPointResult = calculateGpa({
