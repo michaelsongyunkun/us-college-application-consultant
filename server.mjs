@@ -26,6 +26,12 @@ const DEFAULT_RATE_LIMITS = {
   "/api/plan": { maxRequests: 10, windowMs: 60_000 },
   "/api/analytics/usage-event": { maxRequests: 120, windowMs: 60_000 },
 };
+const SECURITY_HEADERS = Object.freeze({
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+});
 
 class RequestError extends Error {
   constructor(message, statusCode) {
@@ -45,12 +51,16 @@ const contentTypes = {
 };
 
 function sendJson(response, statusCode, payload) {
-  response.writeHead(statusCode, { "Content-Type": "application/json;charset=utf-8" });
+  response.writeHead(statusCode, withSecurityHeaders({ "Content-Type": "application/json;charset=utf-8" }));
   response.end(JSON.stringify(payload));
 }
 
 function sendAuthJson(response, statusCode, payload) {
   sendJson(response, statusCode, payload);
+}
+
+function withSecurityHeaders(headers = {}) {
+  return { ...SECURITY_HEADERS, ...headers };
 }
 
 async function readRequestJson(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_BYTES) {
@@ -89,12 +99,20 @@ function buildSessionCookie(sessionToken, { expiresAt } = {}) {
     "SameSite=Lax",
   ];
   if (expiresAt) parts.push(`Expires=${new Date(expiresAt).toUTCString()}`);
-  if (process.env.COOKIE_SECURE === "true") parts.push("Secure");
+  if (shouldUseSecureCookies(process.env)) parts.push("Secure");
   return parts.join("; ");
 }
 
 function buildClearSessionCookie() {
-  return `${sessionCookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  const parts = [`${sessionCookieName}=`, "Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=0"];
+  if (shouldUseSecureCookies(process.env)) parts.push("Secure");
+  return parts.join("; ");
+}
+
+export function shouldUseSecureCookies(env = process.env) {
+  if (env.COOKIE_SECURE === "true") return true;
+  if (env.COOKIE_SECURE === "false") return false;
+  return env.NODE_ENV === "production";
 }
 
 function getSessionToken(request) {
@@ -209,30 +227,30 @@ function createAuthHandler(auth, { mailer, appBaseUrl, readJson = readRequestJso
 
     if (request.method === "POST" && pathname === "/api/auth/register") {
       const result = auth.register(await readJson(request), getRequestMetadata(request));
-      response.writeHead(200, {
+      response.writeHead(200, withSecurityHeaders({
         "Content-Type": "application/json;charset=utf-8",
         "Set-Cookie": buildSessionCookie(result.sessionToken, { expiresAt: result.expiresAt }),
-      });
+      }));
       response.end(JSON.stringify({ user: result.user }));
       return true;
     }
 
     if (request.method === "POST" && pathname === "/api/auth/login") {
       const result = auth.login(await readJson(request), getRequestMetadata(request));
-      response.writeHead(200, {
+      response.writeHead(200, withSecurityHeaders({
         "Content-Type": "application/json;charset=utf-8",
         "Set-Cookie": buildSessionCookie(result.sessionToken, { expiresAt: result.expiresAt }),
-      });
+      }));
       response.end(JSON.stringify({ user: result.user }));
       return true;
     }
 
     if (request.method === "POST" && pathname === "/api/auth/logout") {
       auth.logout(getSessionToken(request));
-      response.writeHead(200, {
+      response.writeHead(200, withSecurityHeaders({
         "Content-Type": "application/json;charset=utf-8",
         "Set-Cookie": buildClearSessionCookie(),
-      });
+      }));
       response.end(JSON.stringify({ ok: true }));
       return true;
     }
@@ -284,7 +302,7 @@ function requireAdmin(request, response, auth, { redirect = false } = {}) {
   const user = auth.getUserForSession(getSessionToken(request));
   if (user?.role === "admin") return user;
   if (redirect) {
-    response.writeHead(302, { Location: "/" });
+    response.writeHead(302, withSecurityHeaders({ Location: "/" }));
     response.end();
     return null;
   }
@@ -487,7 +505,7 @@ export function createAppServer({
       }
 
       if (request.method !== "GET") {
-        response.writeHead(405);
+        response.writeHead(405, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
         response.end("Method Not Allowed");
         return;
       }
@@ -511,14 +529,14 @@ export function createAppServer({
 
       const filePath = normalize(join(root, requestPath));
       if (!filePath.startsWith(root) || !existsSync(filePath)) {
-        response.writeHead(404);
+        response.writeHead(404, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
         response.end("Not Found");
         return;
       }
 
-      response.writeHead(200, {
+      response.writeHead(200, withSecurityHeaders({
         "Content-Type": contentTypes[extname(filePath)] || "text/plain;charset=utf-8",
-      });
+      }));
       createReadStream(filePath).pipe(response);
     } catch (error) {
       if (error instanceof AuthError || error instanceof PlanningError || error instanceof RequestError) {

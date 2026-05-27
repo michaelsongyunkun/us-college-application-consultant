@@ -27,6 +27,8 @@ try {
 
   const blockedPrompt = await fetch(`${baseUrl}/api/prompt`);
   assert.equal(blockedPrompt.status, 401);
+  assert.equal(blockedPrompt.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(blockedPrompt.headers.get("x-frame-options"), "DENY");
 
   const blockedResourceLibrary = await fetch(`${baseUrl}/resource-library.html`);
   assert.equal(blockedResourceLibrary.status, 401);
@@ -75,6 +77,7 @@ try {
     headers: { Cookie: cookie },
   });
   assert.equal(resourceLibraryResponse.status, 200);
+  assert.equal(resourceLibraryResponse.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
 
   const schoolEncyclopediaResponse = await fetch(`${baseUrl}/school-encyclopedia.html`, {
     headers: { Cookie: cookie },

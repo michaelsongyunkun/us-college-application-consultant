@@ -7,7 +7,7 @@
 - 用户背景输入：年级、专业方向、核心能力 / 特长、可利用资源、性格 / 行为倾向、兴趣方向、现有课外活动。
 - 固定 Agent 提示词：位于 `prompts/us-college-admissions-strategist-agent.md`，请勿篡改。
 - API 模式：用户临时输入自己的 OpenAI API Key，一键生成并填入表格。
-- Codex 模式：不调用外部 API，生成任务包给 Codex/ChatGPT，再粘贴回答并解析进表格。
+- AI 任务包模式：不调用外部 API，生成任务包给 DeepSeek、ChatGPT 或其他 AI，再粘贴回答并解析进表格。
 - 导出：支持导出 JSON 和 Word 可打开的 `.doc` 文件。
 
 ## 文件结构
@@ -17,7 +17,7 @@
 - `app.js`：前端交互、生成任务包、解析回答、导出文件。
 - `server.mjs`：本地服务，读取固定提示词，处理 API 模式请求。
 - `agent-output-parser.mjs`：解析 Agent 输出中的 markdown 表格和【活动叙事逻辑解读】。
-- `codex-mode.mjs`：生成给 Codex 使用的任务包。
+- `codex-mode.mjs`：生成给外部 AI 对话使用的任务包。
 - `word-export.mjs`：生成 Word 可打开的导出文档。
 - `prompts/us-college-admissions-strategist-agent.md`：固定 Agent 提示词。
 - `start-consultant.cmd`：Windows 一键启动脚本。
@@ -43,14 +43,14 @@ http://127.0.0.1:4179
 
 ## 两种生成方式
 
-### 方式一：Codex 模式（不需要 API Key）
+### 方式一：AI 任务包模式（不需要 API Key）
 
 1. 填写用户背景信息。
-2. 点击 `生成 Codex 任务包`。
+2. 点击 `生成任务包`。
 3. 点击 `复制任务包`。
-4. 把任务包发给 Codex/ChatGPT。
-5. 把 Codex/ChatGPT 的完整回答粘贴到 `Codex 回答粘贴区`。
-6. 点击 `解析 Codex 回答进表格`。
+4. 把任务包发给 DeepSeek、ChatGPT 或其他 AI。
+5. 把 AI 的完整回答粘贴到 `AI回答粘贴区`。
+6. 点击 `解析回答进表格`。
 
 这种方式不调用外部 API，不需要用户提供 OpenAI API Key。
 
@@ -75,6 +75,32 @@ node server.mjs
 $env:OPENAI_MODEL="gpt-4.1-mini"
 ```
 
+## Render 部署配置
+
+如果部署到 Render，并启用 Persistent Disk，推荐配置：
+
+```text
+挂载路径：/var/data
+```
+
+环境变量：
+
+```text
+AUTH_DATABASE_PATH=/var/data/auth.sqlite
+APP_BASE_URL=https://us-application-consultant.com
+COOKIE_SECURE=true
+NODE_ENV=production
+```
+
+可选环境变量：
+
+```text
+OPENAI_API_KEY=你的 OpenAI API Key
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+`OPENAI_API_KEY` 不必填；不填时用户仍可使用 AI 任务包模式。
+
 ## GitHub 发布注意事项
 
 不要把任何 API Key、`.env` 文件、日志、导出的 Word/JSON 文件上传到 GitHub。
@@ -91,30 +117,30 @@ $env:OPENAI_MODEL="gpt-4.1-mini"
 
 发布到 GitHub 后，别人下载项目也可以使用：
 
-- Codex 模式：无需 API Key。
+- AI 任务包模式：无需 API Key。
 - 导出 JSON / Word：无需 API Key。
 - API 模式：需要他们自己的 OpenAI API Key。
 
-## 测试
-
 ## 找回密码邮件配置
 
-找回密码功能通过 SMTP 发送重置链接。启动服务前可设置：
+找回密码功能通过 SMTP 发送重置链接。系统不再内置默认发件邮箱；需要启用找回密码时，请显式设置 SMTP 环境变量：
 
 ```powershell
 $env:SMTP_HOST="smtp.qq.com"
 $env:SMTP_PORT="465"
 $env:SMTP_SECURE="true"
-$env:SMTP_USER="3152482377@qq.com"
+$env:SMTP_USER="your-email@qq.com"
 $env:SMTP_PASS="你的 QQ 邮箱 SMTP 授权码"
-$env:SMTP_FROM="US College Consultant <3152482377@qq.com>"
+$env:SMTP_FROM="US College Consultant <your-email@qq.com>"
 $env:APP_BASE_URL="http://127.0.0.1:4177"
 node server.mjs
 ```
 
-如果不设置 `SMTP_HOST`、`SMTP_PORT`、`SMTP_SECURE`、`SMTP_USER` 和 `SMTP_FROM`，系统会默认使用 `3152482377@qq.com` 的 QQ 邮箱 SMTP 配置；仍然必须设置 `SMTP_PASS` 授权码。
+如果未设置 `SMTP_HOST`、`SMTP_USER` 或 `SMTP_PASS`，找回密码接口仍会返回统一提示，但后台不会发送邮件。`SMTP_FROM` 可省略，系统会默认使用 `US College Consultant <SMTP_USER>`。
 
 重置链接有效期为 30 分钟。为保护账号隐私，找回密码页面不会提示邮箱是否已注册。
+
+## 测试
 
 ```powershell
 node tests\admission-case-matching.test.mjs

@@ -1,13 +1,22 @@
 import assert from "node:assert/strict";
-import { resolveSmtpConfig } from "../mailer.mjs";
+import { createMailerFromEnv, resolveSmtpConfig } from "../mailer.mjs";
 
-assert.deepEqual(resolveSmtpConfig({ SMTP_PASS: "auth-code" }), {
+assert.deepEqual(resolveSmtpConfig({}), {
+  host: "",
+  port: 465,
+  secure: true,
+  user: "",
+  pass: "",
+  from: "",
+});
+
+assert.deepEqual(resolveSmtpConfig({ SMTP_HOST: "smtp.qq.com", SMTP_USER: "sender@qq.com", SMTP_PASS: "auth-code" }), {
   host: "smtp.qq.com",
   port: 465,
   secure: true,
-  user: "3152482377@qq.com",
+  user: "sender@qq.com",
   pass: "auth-code",
-  from: "US College Consultant <3152482377@qq.com>",
+  from: "US College Consultant <sender@qq.com>",
 });
 
 assert.deepEqual(
@@ -27,4 +36,9 @@ assert.deepEqual(
     pass: "secret",
     from: "Sender <sender@example.com>",
   },
+);
+
+await assert.rejects(
+  () => createMailerFromEnv({}).sendPasswordResetEmail(),
+  /Missing SMTP configuration: SMTP_HOST, SMTP_USER, SMTP_PASS/,
 );

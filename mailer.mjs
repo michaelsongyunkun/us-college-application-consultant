@@ -1,22 +1,24 @@
 import nodemailer from "nodemailer";
 
 const PASSWORD_RESET_SUBJECT = "重置你的登录密码";
-const DEFAULT_QQ_SMTP_USER = "3152482377@qq.com";
 
 export function resolveSmtpConfig(env = process.env) {
+  const user = env.SMTP_USER || "";
   return {
-    host: env.SMTP_HOST || "smtp.qq.com",
+    host: env.SMTP_HOST || "",
     port: Number(env.SMTP_PORT || 465),
     secure: env.SMTP_SECURE ? env.SMTP_SECURE === "true" : true,
-    user: env.SMTP_USER || DEFAULT_QQ_SMTP_USER,
+    user,
     pass: env.SMTP_PASS || "",
-    from: env.SMTP_FROM || `US College Consultant <${DEFAULT_QQ_SMTP_USER}>`,
+    from: env.SMTP_FROM || (user ? `US College Consultant <${user}>` : ""),
   };
 }
 
 export function createMailerFromEnv(env = process.env) {
   const config = resolveSmtpConfig(env);
   const missing = [];
+  if (!config.host) missing.push("SMTP_HOST");
+  if (!config.user) missing.push("SMTP_USER");
   if (!config.pass) missing.push("SMTP_PASS");
 
   if (missing.length > 0) {
