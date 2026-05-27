@@ -1,9 +1,15 @@
 export function parseAgentOutput(markdown) {
   const source = String(markdown || "");
   const activities = parseTabularActivities(source);
+  const plainTextActivities = activities.length ? [] : parsePlainTextActivities(source);
 
   return {
-    activities: (activities.length ? activities : parseNumberedActivities(source)).slice(0, 10),
+    activities: (activities.length
+      ? activities
+      : plainTextActivities.length
+        ? plainTextActivities
+        : parseNumberedActivities(source)
+    ).slice(0, 10),
     narrative: extractNarrative(source),
   };
 }
@@ -65,6 +71,58 @@ function parseNumberedActivities(source) {
   }
 
   return activities;
+}
+
+function parsePlainTextActivities(source) {
+  const activities = [];
+
+  for (const line of source.split(/\r?\n/)) {
+    const activity = parsePlainTextActivityLine(line);
+    if (activity) activities.push(activity);
+  }
+
+  return activities;
+}
+
+function parsePlainTextActivityLine(line) {
+  const trimmed = line.trim();
+  if (!trimmed || /^(序号|活动类型|以下是|---|【?活动叙事逻辑解读】?)/.test(trimmed)) return null;
+
+  const startMatch = trimmed.match(/^(\d{1,2})\s+([^\s]+)\s+(.+)$/);
+  if (!startMatch) return null;
+
+  const [, rawId, type, rest] = startMatch;
+  const gradeMatch = rest.match(
+    /\s((?:(?:9|10|11|12)(?:-(?:9|10|11|12))?(?:年级)?(?:暑假|寒假)?|\d{1,2}\+)(?:\s*[,，、]\s*(?:(?:9|10|11|12)(?:-(?:9|10|11|12))?(?:年级)?(?:暑假|寒假)?|\d{1,2}\+))*|(?:9|10|11|12)年级(?:暑假|寒假))$/,
+  );
+  if (!gradeMatch) return null;
+
+  const suggestedGrade = gradeMatch[1].trim();
+  const content = rest.slice(0, gradeMatch.index).trim();
+  const splitIndex = findDescriptionStart(content);
+  if (splitIndex <= 0) return null;
+
+  const activityName = content.slice(0, splitIndex).trim();
+  const executionDescription = content.slice(splitIndex).trim();
+  if (!activityName || !executionDescription) return null;
+
+  return {
+    id: normalizeId(rawId),
+    type,
+    activityName,
+    executionDescription,
+    suggestedGrade,
+  };
+}
+
+function findDescriptionStart(content) {
+  const marker = content.match(
+    /\s(?=(?:9|10|11|12)(?:-(?:9|10|11|12))?年级(?:暑假|寒假)?(?:长期兴趣|主导研究|发起|持续挑战|个人项目)?[：:]|(?:为解决|针对|不满足于|响应|在自学|通过严格选拔|为锻炼|利用|发现|创建|设计|从))/,
+  );
+  if (marker) return marker.index + marker[0].length;
+
+  const sentenceStart = content.search(/[。；]\s*/);
+  return sentenceStart > 0 ? sentenceStart + 1 : -1;
 }
 
 function buildActivityFromNumberedBlock(rawId, block) {
