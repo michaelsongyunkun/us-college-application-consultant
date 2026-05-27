@@ -510,6 +510,12 @@ export function createAppServer({
         return;
       }
 
+      if (url.pathname === "/favicon.ico") {
+        response.writeHead(204, withSecurityHeaders());
+        response.end();
+        return;
+      }
+
       const requestPath = url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
       if (requestPath === "/admin.html" && !requireAdmin(request, response, auth, { redirect: true })) {
         return;

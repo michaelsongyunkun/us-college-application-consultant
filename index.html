@@ -429,6 +429,38 @@
           </table>
         </div>
 
+        <div class="activity-quality-check" aria-labelledby="activity-quality-title">
+          <div class="activity-quality-heading">
+            <div>
+              <h3 id="activity-quality-title">活动质量检查</h3>
+              <p>自动检查完整度、数字证据、影响表达、领导力线索和专业连接。</p>
+            </div>
+            <span id="activityQualityStatus" class="status" role="status" aria-live="polite">等待活动内容</span>
+          </div>
+          <div class="activity-quality-overview">
+            <div class="activity-quality-score">
+              <span>综合评分</span>
+              <strong id="activityQualityScore">--</strong>
+            </div>
+            <p id="activityQualitySummary">填入活动后，系统会自动检查活动列表质量。</p>
+          </div>
+          <div id="activityQualityMetrics" class="activity-quality-metrics" aria-label="活动质量指标"></div>
+          <div class="activity-quality-columns">
+            <section aria-labelledby="activity-quality-strength-title">
+              <h4 id="activity-quality-strength-title">当前优势</h4>
+              <ul id="activityQualityStrengths"></ul>
+            </section>
+            <section aria-labelledby="activity-quality-issue-title">
+              <h4 id="activity-quality-issue-title">优先优化</h4>
+              <ul id="activityQualityIssues"></ul>
+            </section>
+          </div>
+          <section class="activity-quality-notes" aria-labelledby="activity-quality-note-title">
+            <h4 id="activity-quality-note-title">逐项提示</h4>
+            <div id="activityQualityActivityNotes"></div>
+          </section>
+        </div>
+
         <label class="narrative-box">
           <span>活动叙事逻辑解读</span>
           <textarea id="narrativeOutput" placeholder="Agent 输出的【活动叙事逻辑解读】会填入这里。"></textarea>

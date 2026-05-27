@@ -1415,6 +1415,130 @@ td textarea {
   padding: 1px 4px;
 }
 
+.activity-quality-check {
+  margin: 18px 22px 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: #fbfcfe;
+  padding: 18px;
+}
+
+.activity-quality-heading,
+.activity-quality-overview,
+.activity-quality-columns,
+.activity-quality-metrics {
+  display: grid;
+  gap: 14px;
+}
+
+.activity-quality-heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.activity-quality-heading h3,
+.activity-quality-columns h4,
+.activity-quality-notes h4 {
+  margin: 0;
+}
+
+.activity-quality-heading p,
+.activity-quality-overview p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.activity-quality-overview {
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: center;
+  margin-top: 16px;
+}
+
+.activity-quality-score {
+  border-left: 4px solid var(--accent);
+  padding-left: 12px;
+}
+
+.activity-quality-score span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.activity-quality-score strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 32px;
+  line-height: 1;
+}
+
+.activity-quality-metrics {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
+.activity-quality-metrics div {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 10px 12px;
+}
+
+.activity-quality-metrics span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.activity-quality-metrics strong {
+  display: block;
+  margin-top: 4px;
+}
+
+.activity-quality-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.activity-quality-columns section,
+.activity-quality-notes {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.activity-quality-columns ul {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0 18px;
+  padding: 0;
+  color: #27354a;
+}
+
+.activity-quality-notes {
+  margin-top: 16px;
+}
+
+.activity-quality-note {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 10px 12px;
+}
+
+.activity-quality-note + .activity-quality-note {
+  margin-top: 8px;
+}
+
+.activity-quality-note span,
+.activity-quality-empty {
+  color: var(--muted);
+}
+
 .narrative-box {
   padding: 18px 22px 22px;
 }
@@ -2568,12 +2692,25 @@ button.neutral:hover {
   }
 
   .agent-footer,
+  .activity-quality-check,
   .narrative-box,
   .competition-body,
   .summer-school-body,
   .recommendation-letter-body,
   .case-match-body {
     padding: 0 16px 16px;
+  }
+
+  .activity-quality-check {
+    margin: 16px 16px 0;
+    padding: 16px;
+  }
+
+  .activity-quality-heading,
+  .activity-quality-overview,
+  .activity-quality-columns,
+  .activity-quality-metrics {
+    grid-template-columns: 1fr;
   }
 
   .case-list,

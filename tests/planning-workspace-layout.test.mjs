@@ -48,6 +48,13 @@ for (const id of [
   "snapshotNote",
   "createSnapshotButton",
   "snapshotList",
+  "activityQualityStatus",
+  "activityQualityScore",
+  "activityQualitySummary",
+  "activityQualityMetrics",
+  "activityQualityStrengths",
+  "activityQualityIssues",
+  "activityQualityActivityNotes",
 ]) {
   assert.match(html, new RegExp(`id=["']${id}["']`), `Missing workspace element #${id}`);
 }
@@ -61,6 +68,10 @@ for (const copy of [
   "保存备份",
   "保存当前内容",
   "清空当前方案",
+  "活动质量检查",
+  "数字证据",
+  "优先优化",
+  "逐项提示",
 ]) {
   assert.match(html, new RegExp(copy), `Missing simplified workspace copy: ${copy}`);
 }
@@ -84,6 +95,7 @@ assert.match(html, /DeepSeek/, "Help text should recommend DeepSeek.");
 assert.match(html, /ChatGPT/, "Help text should recommend ChatGPT.");
 assert.match(styles, /\.auth-status:empty\s*\{/, "An empty auth status should be visually hidden.");
 assert.match(styles, /\.agent-usage-note\s*\{/, "Agent usage instructions should have a distinct style.");
+assert.match(styles, /\.activity-quality-check\s*\{/, "Activity quality checker should have a distinct style.");
 for (const token of ["--brand-green", "--brand-orange", "--surface-warm", "--radius-card"]) {
   assert.match(styles, new RegExp(token), `Missing trusted-balanced style token ${token}`);
 }
@@ -101,6 +113,7 @@ assert.match(styles, /@media \(max-width: 780px\)[\s\S]*\.landing-hero/, "Landin
 assert.match(appJs, /const heroStartButton = document\.querySelector\("#heroStartButton"\)/);
 assert.match(appJs, /heroStartButton\?\.addEventListener\("click"/);
 assert.match(appJs, /authEmailInput\.focus\(\)/);
+assert.match(appJs, /analyzeActivityQuality/, "Activity quality checker should be wired into the main app.");
 assert.match(appJs, /data-delete-snapshot-id/, "Snapshot rows should expose a delete action.");
 assert.match(appJs, /确认删除这份历史备份吗/, "Snapshot deletion should require confirmation.");
 assert.match(appJs, /备份已删除/, "Snapshot deletion should provide completion feedback.");

@@ -19,6 +19,7 @@ import {
   recommendSummerSchools,
 } from "./summer-school-recommender.mjs";
 import { buildRecommendationLetterStrategy } from "./recommendation-letter-recommender.mjs";
+import { analyzeActivityQuality } from "./activity-quality-checker.mjs";
 import { buildWordDocument } from "./word-export.mjs";
 import { renderMarkdown } from "./markdown-renderer.mjs";
 import { getRequestErrorMessage } from "./auth-client-errors.mjs";
@@ -78,6 +79,13 @@ const refreshSummerSchoolsButton = document.querySelector("#refreshSummerSchools
 const recommendationLetterStatus = document.querySelector("#recommendationLetterStatus");
 const recommendationLetterNotice = document.querySelector("#recommendationLetterNotice");
 const recommendationLetterList = document.querySelector("#recommendationLetterList");
+const activityQualityStatus = document.querySelector("#activityQualityStatus");
+const activityQualityScore = document.querySelector("#activityQualityScore");
+const activityQualitySummary = document.querySelector("#activityQualitySummary");
+const activityQualityMetrics = document.querySelector("#activityQualityMetrics");
+const activityQualityStrengths = document.querySelector("#activityQualityStrengths");
+const activityQualityIssues = document.querySelector("#activityQualityIssues");
+const activityQualityActivityNotes = document.querySelector("#activityQualityActivityNotes");
 const studentProfileSummary = document.querySelector("#studentProfileSummary");
 const profileUpdatedAt = document.querySelector("#profileUpdatedAt");
 const planList = document.querySelector("#planList");
@@ -417,6 +425,60 @@ function updateActivityMarkdownPreviews() {
   });
 }
 
+function renderActivityQuality() {
+  if (!activityQualityStatus || !activityQualityScore || !activityQualitySummary) return;
+
+  const result = analyzeActivityQuality({
+    profile: collectProfile(),
+    activities: collectActivities(),
+  });
+  const metricItems = [
+    ["完整活动", `${result.metrics.completedCount}/10`],
+    ["数字证据", result.metrics.quantifiedCount],
+    ["影响表达", result.metrics.impactCount],
+    ["领导力线索", result.metrics.leadershipCount],
+    ["专业连接", result.metrics.majorFitCount],
+  ];
+
+  activityQualityStatus.textContent = result.statusLabel;
+  activityQualityScore.textContent = result.score ? String(result.score) : "--";
+  activityQualitySummary.textContent = result.summary;
+  if (activityQualityMetrics) {
+    activityQualityMetrics.innerHTML = metricItems
+      .map(
+        ([label, value]) => `
+          <div>
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(value)}</strong>
+          </div>`,
+      )
+      .join("");
+  }
+  if (activityQualityStrengths) {
+    activityQualityStrengths.innerHTML = result.strengths
+      .map((item) => `<li>${escapeHtml(item)}</li>`)
+      .join("");
+  }
+  if (activityQualityIssues) {
+    activityQualityIssues.innerHTML = result.issues
+      .map((item) => `<li>${escapeHtml(item)}</li>`)
+      .join("");
+  }
+  if (activityQualityActivityNotes) {
+    activityQualityActivityNotes.innerHTML = result.activityNotes.length
+      ? result.activityNotes
+          .map(
+            (item) => `
+              <div class="activity-quality-note">
+                <strong>第 ${escapeHtml(item.id)} 项：${escapeHtml(item.name)}</strong>
+                <span>${escapeHtml(item.notes.join("；"))}</span>
+              </div>`,
+          )
+          .join("")
+      : '<p class="activity-quality-empty">暂无逐项提醒。</p>';
+  }
+}
+
 function renderCompetitionRecommendations({ refresh = false } = {}) {
   if (!competitionList || !competitionNotice || !competitionStatus) return;
 
@@ -625,6 +687,7 @@ function renderCaseMatches() {
 
 function renderStudentDependentRecommendations() {
   updateActivityMarkdownPreviews();
+  renderActivityQuality();
   updateFutureLearningDirection();
   previousCompetitionBatchIds = [];
   competitionBatchIndex = 0;

@@ -8,6 +8,7 @@
 - 固定 Agent 提示词：位于 `prompts/us-college-admissions-strategist-agent.md`，请勿篡改。
 - API 模式：用户临时输入自己的 OpenAI API Key，一键生成并填入表格。
 - AI 任务包模式：不调用外部 API，生成任务包给 DeepSeek、ChatGPT 或其他 AI，再粘贴回答并解析进表格。
+- 活动质量检查：自动检查 10 项活动的完整度、数字证据、影响表达、领导力线索和专业连接。
 - 导出：支持导出 JSON 和 Word 可打开的 `.doc` 文件。
 
 ## 文件结构
@@ -17,6 +18,7 @@
 - `app.js`：前端交互、生成任务包、解析回答、导出文件。
 - `server.mjs`：本地服务，读取固定提示词，处理 API 模式请求。
 - `agent-output-parser.mjs`：解析 Agent 输出中的 markdown 表格和【活动叙事逻辑解读】。
+- `activity-quality-checker.mjs`：检查活动列表质量并生成可执行优化提示。
 - `codex-mode.mjs`：生成给外部 AI 对话使用的任务包。
 - `word-export.mjs`：生成 Word 可打开的导出文档。
 - `prompts/us-college-admissions-strategist-agent.md`：固定 Agent 提示词。

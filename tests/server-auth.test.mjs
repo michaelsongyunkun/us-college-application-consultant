@@ -36,6 +36,10 @@ try {
   const blockedSchoolEncyclopedia = await fetch(`${baseUrl}/school-encyclopedia.html`);
   assert.equal(blockedSchoolEncyclopedia.status, 401);
 
+  const faviconResponse = await fetch(`${baseUrl}/favicon.ico`);
+  assert.equal(faviconResponse.status, 204);
+  assert.equal(faviconResponse.headers.get("x-content-type-options"), "nosniff");
+
   const registrationResponse = await fetch(`${baseUrl}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
