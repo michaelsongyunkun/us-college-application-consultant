@@ -12,6 +12,7 @@ import { PlanningError, createPlanningService } from "./planning-service.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const promptPath = join(root, "prompts", "us-college-admissions-strategist-agent.md");
+const defaultDatabasePath = join(root, "data", "auth.sqlite");
 const port = Number(process.env.PORT || 4177);
 const host = process.env.HOST || "0.0.0.0";
 const sessionCookieName = "consultant_session";
@@ -316,8 +317,12 @@ function createRateLimiter(rateLimits) {
   };
 }
 
+export function resolveDatabasePath(env = process.env) {
+  return env.AUTH_DATABASE_PATH || env.DATABASE_PATH || defaultDatabasePath;
+}
+
 export function createAppServer({
-  databasePath = join(root, "data", "auth.sqlite"),
+  databasePath = resolveDatabasePath(),
   authDb = createAuthDatabase({ databasePath }),
   auth = createAuthService({ authDb }),
   planning = createPlanningService({ authDb }),
