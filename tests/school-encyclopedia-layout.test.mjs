@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const indexHtml = readFileSync("index.html", "utf8");
 const pageHtml = readFileSync("school-encyclopedia.html", "utf8");
+const script = readFileSync("school-encyclopedia.js", "utf8");
 const navigation = indexHtml.match(/<nav class="title-link-group"[\s\S]*?<\/nav>/)?.[0] || "";
 
 assert.match(pageHtml, /class="[^"]*brand-page-header[^"]*"/, "School page should use the shared brand header.");
@@ -17,3 +18,6 @@ assert.ok(pageHtml.includes('id="universityTab"') && pageHtml.includes('id="libe
 assert.ok(pageHtml.includes('id="schoolList"') && pageHtml.includes('id="schoolStatus"'));
 assert.ok(pageHtml.includes('id="loadMoreSchools"'), "院校百科应提供加载更多按钮。");
 assert.ok(pageHtml.includes("申请年度官网"), "页面应提示用户核对最新官网要求。");
+assert.ok(!pageHtml.includes("资料来自"), "院校百科不应展示资料来源说明。");
+assert.ok(!script.includes("来源记录"), "院校百科状态不应展示来源记录文案。");
+assert.ok(!script.includes("来源资料未提供"), "院校百科空字段不应展示来源文案。");

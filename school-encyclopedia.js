@@ -27,12 +27,12 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
-function sourceValue(value) {
-  return value || "来源资料未提供";
+function displayValue(value) {
+  return value || "暂未提供";
 }
 
 function summary(value) {
-  const text = sourceValue(value);
+  const text = displayValue(value);
   return text.length > 110 ? `${text.slice(0, 110)}...` : text;
 }
 
@@ -59,10 +59,10 @@ function renderSchoolCard(school) {
       </div>
       <p class="school-summary">${escapeHtml(summary(school.schoolFeatures))}</p>
       <dl id="${escapeHtml(detailId)}" class="school-details is-hidden">
-        <div><dt>申请与文书</dt><dd>${escapeHtml(sourceValue(school.applicationAndEssays))}</dd></div>
-        <div><dt>学校特色</dt><dd>${escapeHtml(sourceValue(school.schoolFeatures))}</dd></div>
-        <div><dt>录取偏好</dt><dd>${escapeHtml(sourceValue(school.admissionPreferences))}</dd></div>
-        <div><dt>推荐信要求</dt><dd>${escapeHtml(sourceValue(school.recommendationRequirements))}</dd></div>
+        <div><dt>申请与文书</dt><dd>${escapeHtml(displayValue(school.applicationAndEssays))}</dd></div>
+        <div><dt>学校特色</dt><dd>${escapeHtml(displayValue(school.schoolFeatures))}</dd></div>
+        <div><dt>录取偏好</dt><dd>${escapeHtml(displayValue(school.admissionPreferences))}</dd></div>
+        <div><dt>推荐信要求</dt><dd>${escapeHtml(displayValue(school.recommendationRequirements))}</dd></div>
       </dl>
     </article>`;
 }
@@ -75,7 +75,7 @@ function renderSchools() {
 
   categoryTitle.textContent = categoryLabel(activeCategory);
   schoolCount.textContent = `显示 ${page.shownCount} / ${page.totalCount} 所`;
-  status.textContent = `已载入 ${schools.length} 条来源记录`;
+  status.textContent = `已载入 ${schools.length} 所院校`;
   status.classList.remove("error");
   schoolList.innerHTML = page.totalCount
     ? page.visibleItems.map(renderSchoolCard).join("")
