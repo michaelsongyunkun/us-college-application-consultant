@@ -1234,6 +1234,22 @@ button.danger:hover {
   line-height: 1.5;
 }
 
+.agent-usage-note {
+  border-left: 3px solid var(--brand-green);
+  background: #f7fbf8;
+  color: var(--muted);
+  padding: 10px 14px;
+  line-height: 1.65;
+}
+
+.agent-usage-note p {
+  margin: 0;
+}
+
+.agent-usage-note p + p {
+  margin-top: 6px;
+}
+
 .codex-mode {
   display: grid;
   gap: 14px;

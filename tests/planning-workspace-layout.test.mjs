@@ -73,7 +73,17 @@ assert.match(html, /id="exportButton"[^>]*class="secondary"/, "JSON export shoul
 assert.match(html, /id="exportWordButton"[^>]*class="secondary"/, "Word export should use a secondary action style.");
 assert.match(html, /id="logoutButton"[^>]*class="secondary"/, "Log out should use a secondary action style.");
 assert.match(html, /id="resetButton"[^>]*class="danger"/, "Reset should use a danger action style.");
+assert.match(html, /id=["']codexTaskPackage["']/, "The AI task package field should remain available.");
+assert.match(html, /id=["']codexAnswerInput["']/, "The AI answer paste field should remain available.");
+assert.match(html, /使用方式①/, "OpenAI API Key help text should explain direct generation.");
+assert.match(html, /生成任务包/, "Task package button copy should be generic.");
+assert.match(html, /解析回答进表格/, "Parse answer button copy should be generic.");
+assert.match(html, /任务包（复制给AI对话）/, "Task package label should mention generic AI chats.");
+assert.match(html, /AI回答粘贴区/, "Answer paste label should mention AI instead of Codex.");
+assert.match(html, /DeepSeek/, "Help text should recommend DeepSeek.");
+assert.match(html, /ChatGPT/, "Help text should recommend ChatGPT.");
 assert.match(styles, /\.auth-status:empty\s*\{/, "An empty auth status should be visually hidden.");
+assert.match(styles, /\.agent-usage-note\s*\{/, "Agent usage instructions should have a distinct style.");
 for (const token of ["--brand-green", "--brand-orange", "--surface-warm", "--radius-card"]) {
   assert.match(styles, new RegExp(token), `Missing trusted-balanced style token ${token}`);
 }

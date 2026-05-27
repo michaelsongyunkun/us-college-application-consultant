@@ -303,23 +303,29 @@
               placeholder="粘贴 sk-...；如果服务端已设置 OPENAI_API_KEY 可留空"
             />
           </label>
+          <div class="agent-usage-note">
+            <p>使用方式①：输入 OpenAI API Key，点击“生成并填入表格”。</p>
+            <p>
+              使用方式②：若无 OpenAI API Key，点击“生成任务包”后再点击“复制任务包”，将任务包复制给任意 AI（推荐使用 DeepSeek 或 ChatGPT）。AI 生成回答后，将回答粘贴到“AI回答粘贴区”里，最后点击“解析回答进表格”生成活动规划。
+            </p>
+          </div>
           <label>
             <span>Agent 原始规划回答</span>
             <textarea id="rawAnswer" placeholder="生成后会显示 Agent 完整回答；其中的表格会自动写入下方结构化表格。"></textarea>
           </label>
           <div class="codex-mode">
             <div class="codex-actions">
-              <button id="buildCodexTaskButton" type="button" class="quiet">生成 Codex 任务包</button>
+              <button id="buildCodexTaskButton" type="button" class="quiet">生成任务包</button>
               <button id="copyCodexTaskButton" type="button" class="quiet">复制任务包</button>
-              <button id="parseCodexAnswerButton" type="button">解析 Codex 回答进表格</button>
+              <button id="parseCodexAnswerButton" type="button">解析回答进表格</button>
             </div>
             <label>
-              <span>Codex 模式任务包（复制给当前 Codex 对话）</span>
-              <textarea id="codexTaskPackage" placeholder="点击“生成 Codex 任务包”后，把这里的内容复制给 Codex。"></textarea>
+              <span>任务包（复制给AI对话）</span>
+              <textarea id="codexTaskPackage" placeholder="点击“生成任务包”后，再点击“复制任务包”，把任务包复制给 DeepSeek、ChatGPT 或其他 AI 对话。"></textarea>
             </label>
             <label>
-              <span>Codex 回答粘贴区</span>
-              <textarea id="codexAnswerInput" placeholder="把 Codex 基于固定提示词生成的完整回答粘贴到这里，再点击“解析 Codex 回答进表格”。"></textarea>
+              <span>AI回答粘贴区</span>
+              <textarea id="codexAnswerInput" placeholder="把 AI 生成的完整回答粘贴到这里，再点击“解析回答进表格”。"></textarea>
             </label>
           </div>
         </div>

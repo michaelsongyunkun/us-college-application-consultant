@@ -1033,7 +1033,7 @@ async function checkPrompt() {
 function buildCodexTask() {
   trackUsageEvent("build_codex_task");
   if (!fixedPrompt) {
-    agentStatus.textContent = "固定提示词尚未加载，无法生成 Codex 任务包。";
+    agentStatus.textContent = "固定提示词尚未加载，无法生成任务包。";
     agentStatus.classList.add("error");
     return;
   }
@@ -1043,7 +1043,7 @@ function buildCodexTask() {
     profile: collectPlanningProfile(),
     activities: collectActivities(),
   });
-  agentStatus.textContent = "Codex 任务包已生成，可复制给当前 Codex 对话。";
+  agentStatus.textContent = "任务包已生成，可复制给 DeepSeek、ChatGPT 或其他 AI 对话。";
   agentStatus.classList.remove("error");
 }
 
@@ -1051,7 +1051,7 @@ async function copyCodexTask() {
   trackUsageEvent("copy_codex_task");
   if (!codexTaskPackage.value) buildCodexTask();
   await navigator.clipboard.writeText(codexTaskPackage.value);
-  agentStatus.textContent = "Codex 任务包已复制。";
+  agentStatus.textContent = "任务包已复制。";
   agentStatus.classList.remove("error");
 }
 
@@ -1069,7 +1069,7 @@ async function parseCodexAnswer() {
   fillActivities(parsed.activities || []);
   narrativeOutput.value = parsed.narrative || "";
   renderStudentDependentRecommendations();
-  agentStatus.textContent = `已解析 Codex 回答，并填入 ${parsed.activities?.length || 0} 项活动`;
+  agentStatus.textContent = `已解析 AI 回答，并填入 ${parsed.activities?.length || 0} 项活动`;
   agentStatus.classList.remove("error");
   await saveDraft();
 }
