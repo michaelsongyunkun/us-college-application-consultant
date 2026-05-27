@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { parseAgentOutput } from "../agent-output-parser.mjs";
+import { diagnoseAgentOutput, parseAgentOutput } from "../agent-output-parser.mjs";
 
 const markdownTable = `### 输出列表（严格按表格填写）
 | 序号 | 活动类型（Type） | 活动名称（精准描述） | 具体执行描述（需含：问题/成果/影响） | 建议年级 |
@@ -12,6 +12,8 @@ const markdownTable = `### 输出列表（严格按表格填写）
 
 const parsedMarkdown = parseAgentOutput(markdownTable);
 assert.equal(parsedMarkdown.activities.length, 2);
+assert.equal(parsedMarkdown.diagnostics.activityCount, 2);
+assert.equal(parsedMarkdown.diagnostics.strategy, "table");
 assert.deepEqual(parsedMarkdown.activities[0], {
   id: "1",
   type: "学术突破",
@@ -27,6 +29,7 @@ const copiedTable = `序号\t活动类型（Type）\t活动名称（精准描述
 const parsedCopiedTable = parseAgentOutput(copiedTable);
 assert.equal(parsedCopiedTable.activities.length, 1);
 assert.equal(parsedCopiedTable.activities[0].activityName, "社区空气质量数据研究");
+assert.equal(parsedCopiedTable.diagnostics.strategy, "table");
 
 const loosePipeTable = `1 | 个人兴趣 | 古籍修复学习日志 | 问题：地方文献破损；成果：完成20篇修复记录；影响：制作校内分享材料 | 9-10`;
 
@@ -47,6 +50,7 @@ const numberedAnswer = `1. 活动类型（Type）：学术突破
 const parsedNumberedAnswer = parseAgentOutput(numberedAnswer);
 assert.equal(parsedNumberedAnswer.activities.length, 2);
 assert.equal(parsedNumberedAnswer.activities[1].suggestedGrade, "11");
+assert.equal(parsedNumberedAnswer.diagnostics.strategy, "numbered-blocks");
 
 const plainTextAnswer = `序号 活动类型 (Type) 活动名称 (精准描述) 具体执行描述 (含：问题/成果/影响) 建议年级
 1 学术突破 基于物理信息的神经网络(PINN)求解混沌系统（获丘成桐中学科学奖物理奖） 11年级主导研究：发现传统数值方法求解三体问题等混沌系统效率低，利用PyTorch构建PINN模型，将物理定律(如能量守恒)作为损失函数约束项，在10,000个数据点的数据集上训练，将预测误差降低了15%，大幅提升计算效率。论文入围丘成桐科学奖半决赛。 11
@@ -70,3 +74,15 @@ assert.equal(parsedPlainText.activities[0].activityName, "基于物理信息的�
 assert.equal(parsedPlainText.activities[6].suggestedGrade, "10年级暑假");
 assert.equal(parsedPlainText.activities[9].type, "领导力/服务");
 assert.match(parsedPlainText.narrative, /计算物理新锐/);
+assert.equal(parsedPlainText.diagnostics.strategy, "plain-text-table");
+assert.equal(parsedPlainText.diagnostics.narrativeFound, true);
+
+const emptyDiagnostics = diagnoseAgentOutput("");
+assert.equal(emptyDiagnostics.activityCount, 0);
+assert.equal(emptyDiagnostics.strategy, "none");
+assert.match(emptyDiagnostics.issues.join(" "), /粘贴区为空/);
+
+const brokenDiagnostics = diagnoseAgentOutput("序号 活动类型 活动名称 具体执行描述 建议年级\n这里只有表头，没有活动行");
+assert.equal(brokenDiagnostics.activityCount, 0);
+assert.equal(brokenDiagnostics.evidence.hasTableHeader, true);
+assert.ok(brokenDiagnostics.suggestions.some((item) => item.includes("5 列")));

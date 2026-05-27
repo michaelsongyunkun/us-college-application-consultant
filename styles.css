@@ -1,3 +1,4 @@
+/* Design tokens */
 :root {
   color-scheme: light;
   --bg: #fbfaf5;
@@ -20,6 +21,7 @@
     Inter, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", Arial, sans-serif;
 }
 
+/* Base layout */
 * {
   box-sizing: border-box;
 }
@@ -48,6 +50,7 @@ textarea {
   padding: 28px 0 44px;
 }
 
+/* Public landing and authentication */
 .landing-shell {
   display: grid;
   gap: 52px;
@@ -634,6 +637,7 @@ textarea {
   color: var(--danger);
 }
 
+/* App navigation and workspace shell */
 .topbar {
   display: flex;
   align-items: flex-end;
@@ -1250,6 +1254,94 @@ button.danger:hover {
   margin-top: 6px;
 }
 
+.parse-diagnostics {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: #fbfcfe;
+  padding: 16px;
+}
+
+.parse-diagnostics[hidden] {
+  display: none;
+}
+
+.parse-diagnostics.has-error {
+  border-color: #e7c4bc;
+  background: #fff8f5;
+}
+
+.parse-diagnostics.is-success {
+  border-color: #c7dfd2;
+  background: #f7fbf8;
+}
+
+.parse-diagnostics__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.parse-diagnostics__header h3,
+.parse-diagnostics__list h4 {
+  margin: 0;
+}
+
+.parse-diagnostics__header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.parse-diagnostics__header span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.parse-diagnostics__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.parse-diagnostics__metrics div {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 9px 11px;
+}
+
+.parse-diagnostics__metrics span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.parse-diagnostics__metrics strong {
+  display: block;
+  margin-top: 4px;
+}
+
+.parse-diagnostics__list {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.parse-diagnostics__list ul {
+  display: grid;
+  gap: 7px;
+  margin: 8px 0 0 18px;
+  padding: 0;
+  color: #27354a;
+}
+
 .codex-mode {
   display: grid;
   gap: 14px;
@@ -1283,6 +1375,7 @@ label span {
   grid-column: 1 / -1;
 }
 
+/* Forms, tables, and planning output */
 input,
 select,
 textarea {
@@ -1415,6 +1508,7 @@ td textarea {
   padding: 1px 4px;
 }
 
+/* Diagnostics and insight panels */
 .activity-quality-check {
   margin: 18px 22px 0;
   border: 1px solid var(--line);
@@ -2454,6 +2548,7 @@ button.neutral:hover {
   word-break: break-all;
 }
 
+/* Responsive layout */
 @media (max-width: 780px) {
   .landing-shell {
     gap: 34px;
@@ -2700,8 +2795,13 @@ button.neutral:hover {
   .activity-quality-heading,
   .activity-quality-overview,
   .activity-quality-columns,
-  .activity-quality-metrics {
+  .activity-quality-metrics,
+  .parse-diagnostics__metrics {
     grid-template-columns: 1fr;
+  }
+
+  .parse-diagnostics__header {
+    display: grid;
   }
 
   .case-list,

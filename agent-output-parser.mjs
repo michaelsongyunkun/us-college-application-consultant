@@ -2,16 +2,31 @@ export function parseAgentOutput(markdown) {
   const source = String(markdown || "");
   const activities = parseTabularActivities(source);
   const plainTextActivities = activities.length ? [] : parsePlainTextActivities(source);
+  const numberedActivities = activities.length || plainTextActivities.length ? [] : parseNumberedActivities(source);
+  const selectedActivities = (activities.length
+    ? activities
+    : plainTextActivities.length
+      ? plainTextActivities
+      : numberedActivities
+  ).slice(0, 10);
+  const narrative = extractNarrative(source);
 
   return {
-    activities: (activities.length
-      ? activities
-      : plainTextActivities.length
-        ? plainTextActivities
-        : parseNumberedActivities(source)
-    ).slice(0, 10),
-    narrative: extractNarrative(source),
+    activities: selectedActivities,
+    narrative,
+    diagnostics: buildParseDiagnostics({
+      source,
+      activities: selectedActivities,
+      tabularActivities: activities,
+      plainTextActivities,
+      numberedActivities,
+      narrative,
+    }),
   };
+}
+
+export function diagnoseAgentOutput(markdown) {
+  return parseAgentOutput(markdown).diagnostics;
 }
 
 function parseTabularActivities(source) {
@@ -167,6 +182,70 @@ function parseLabeledLine(line) {
 function extractNarrative(source) {
   const match = source.match(/^\s*#{0,4}\s*【?活动叙事逻辑解读】?\s*[:：]?\s*([\s\S]*)$/m);
   return match ? match[1].trim() : "";
+}
+
+function buildParseDiagnostics({ source, activities, tabularActivities, plainTextActivities, numberedActivities, narrative }) {
+  const nonEmptyLineCount = source.split(/\r?\n/).filter((line) => line.trim()).length;
+  const hasTableHeader = /序号[\s\S]{0,30}活动类型[\s\S]{0,30}活动名称[\s\S]{0,40}建议年级/.test(source);
+  const candidatePipeRows = source
+    .split(/\r?\n/)
+    .filter((line) => parseRowCells(line).length >= 5).length;
+  const candidateNumberedBlocks = [...source.matchAll(/(?:^|\n)\s*(?:序号\s*[:：]\s*)?\d{1,2}[.、)]?\s+/g)].length;
+  const candidatePlainTextRows = source
+    .split(/\r?\n/)
+    .filter((line) => /^\s*\d{1,2}\s+\S+\s+/.test(line)).length;
+  const strategy = tabularActivities.length
+    ? "table"
+    : plainTextActivities.length
+      ? "plain-text-table"
+      : numberedActivities.length
+        ? "numbered-blocks"
+        : "none";
+  const issues = [];
+  const suggestions = [];
+
+  if (!source.trim()) {
+    issues.push("粘贴区为空。");
+    suggestions.push("请粘贴 AI 生成的完整回答，而不只是活动叙事解读或局部段落。");
+  }
+  if (!activities.length && source.trim()) {
+    issues.push("没有识别到可填入表格的活动行。");
+    suggestions.push("建议让 AI 使用包含 5 列的表格：序号、活动类型、活动名称、具体执行描述、建议年级。");
+  }
+  if (hasTableHeader && !candidatePipeRows && !activities.length) {
+    issues.push("检测到表头，但没有检测到完整表格行。");
+    suggestions.push("复制时请从第 1 项活动开始一起复制，或保留每行之间的换行/制表符。");
+  }
+  if (candidateNumberedBlocks > 0 && !activities.length) {
+    issues.push(`检测到 ${candidateNumberedBlocks} 个疑似编号段落，但缺少稳定字段标签。`);
+    suggestions.push("每项活动请尽量写出：活动类型、活动名称、具体执行描述、建议年级。");
+  }
+  if (activities.length > 0 && activities.length < 10) {
+    issues.push(`已识别 ${activities.length} 项活动，但少于 Common App 10 项完整列表。`);
+    suggestions.push("如果需要完整规划，请让 AI 补齐到 10 项，或检查是否有部分行被复制漏掉。");
+  }
+  if (!narrative) {
+    issues.push("未识别到【活动叙事逻辑解读】。");
+    suggestions.push("建议保留 AI 回答末尾的【活动叙事逻辑解读】，便于生成后续推荐和报告。");
+  }
+
+  return {
+    activityCount: activities.length,
+    narrativeFound: Boolean(narrative),
+    strategy,
+    nonEmptyLineCount,
+    evidence: {
+      hasTableHeader,
+      candidatePipeRows,
+      candidatePlainTextRows,
+      candidateNumberedBlocks,
+      recognizedTableRows: tabularActivities.length,
+      recognizedPlainTextRows: plainTextActivities.length,
+      recognizedNumberedRows: numberedActivities.length,
+    },
+    issues,
+    suggestions: [...new Set(suggestions)].slice(0, 4),
+  };
 }
 
 function normalizeId(value) {

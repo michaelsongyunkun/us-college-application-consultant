@@ -18,10 +18,22 @@ import {
   recommendSummerSchools,
 } from "./summer-school-recommender.mjs";
 import { buildRecommendationLetterStrategy } from "./recommendation-letter-recommender.mjs";
-import { analyzeActivityQuality } from "./activity-quality-checker.mjs";
+import { renderActivityQualityPanel } from "./activity-quality-ui.mjs";
+import {
+  buildParseFailureMessage,
+  renderParseDiagnostics,
+} from "./agent-answer-diagnostics-ui.mjs";
 import { buildWordDocument } from "./word-export.mjs";
 import { renderMarkdown } from "./markdown-renderer.mjs";
 import { getRequestErrorMessage } from "./auth-client-errors.mjs";
+import { escapeHtml } from "./html-utils.mjs";
+import {
+  applyProfileFields,
+  collectActivitiesFromTable,
+  collectPlanningProfileFromForm,
+  collectProfileFromForm,
+  fillActivityTable,
+} from "./planning-form-state.mjs";
 import {
   readUserDraft,
   removeLegacySharedDraft,
@@ -63,6 +75,7 @@ const copyCodexTaskButton = document.querySelector("#copyCodexTaskButton");
 const parseCodexAnswerButton = document.querySelector("#parseCodexAnswerButton");
 const codexTaskPackage = document.querySelector("#codexTaskPackage");
 const codexAnswerInput = document.querySelector("#codexAnswerInput");
+const parseDiagnostics = document.querySelector("#parseDiagnostics");
 const caseMatchStatus = document.querySelector("#caseMatchStatus");
 const caseMatchNotice = document.querySelector("#caseMatchNotice");
 const caseMatchList = document.querySelector("#caseMatchList");
@@ -267,22 +280,15 @@ async function logout() {
 }
 
 function collectProfile() {
-  return Object.fromEntries(new FormData(profileForm).entries());
+  return collectProfileFromForm(profileForm);
 }
 
 function collectPlanningProfile() {
-  const { schoolContext, identityDescription, ...planningProfile } = collectProfile();
-  return planningProfile;
+  return collectPlanningProfileFromForm(profileForm);
 }
 
 function collectActivities() {
-  return Array.from(activityTable.querySelectorAll("tbody tr")).map((row, index) => ({
-    id: index + 1,
-    type: row.querySelector(`[name="type-${index + 1}"]`).value,
-    activityName: row.querySelector(`[name="name-${index + 1}"]`).value,
-    executionDescription: row.querySelector(`[name="description-${index + 1}"]`).value,
-    suggestedGrade: row.querySelector(`[name="grade-${index + 1}"]`).value,
-  }));
+  return collectActivitiesFromTable(activityTable);
 }
 
 function collectDraft() {
@@ -356,14 +362,6 @@ function trackUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
   }).catch(() => {});
 }
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
 function buildCurrentStudentCaseProfile() {
   return buildStudentCaseProfile({
     profile: collectPlanningProfile(),
@@ -414,57 +412,19 @@ function updateActivityMarkdownPreviews() {
 }
 
 function renderActivityQuality() {
-  if (!activityQualityStatus || !activityQualityScore || !activityQualitySummary) return;
-
-  const result = analyzeActivityQuality({
+  renderActivityQualityPanel({
+    elements: {
+      status: activityQualityStatus,
+      score: activityQualityScore,
+      summary: activityQualitySummary,
+      metrics: activityQualityMetrics,
+      strengths: activityQualityStrengths,
+      issues: activityQualityIssues,
+      activityNotes: activityQualityActivityNotes,
+    },
     profile: collectProfile(),
     activities: collectActivities(),
   });
-  const metricItems = [
-    ["完整活动", `${result.metrics.completedCount}/10`],
-    ["数字证据", result.metrics.quantifiedCount],
-    ["影响表达", result.metrics.impactCount],
-    ["领导力线索", result.metrics.leadershipCount],
-    ["专业连接", result.metrics.majorFitCount],
-  ];
-
-  activityQualityStatus.textContent = result.statusLabel;
-  activityQualityScore.textContent = result.score ? String(result.score) : "--";
-  activityQualitySummary.textContent = result.summary;
-  if (activityQualityMetrics) {
-    activityQualityMetrics.innerHTML = metricItems
-      .map(
-        ([label, value]) => `
-          <div>
-            <span>${escapeHtml(label)}</span>
-            <strong>${escapeHtml(value)}</strong>
-          </div>`,
-      )
-      .join("");
-  }
-  if (activityQualityStrengths) {
-    activityQualityStrengths.innerHTML = result.strengths
-      .map((item) => `<li>${escapeHtml(item)}</li>`)
-      .join("");
-  }
-  if (activityQualityIssues) {
-    activityQualityIssues.innerHTML = result.issues
-      .map((item) => `<li>${escapeHtml(item)}</li>`)
-      .join("");
-  }
-  if (activityQualityActivityNotes) {
-    activityQualityActivityNotes.innerHTML = result.activityNotes.length
-      ? result.activityNotes
-          .map(
-            (item) => `
-              <div class="activity-quality-note">
-                <strong>第 ${escapeHtml(item.id)} 项：${escapeHtml(item.name)}</strong>
-                <span>${escapeHtml(item.notes.join("；"))}</span>
-              </div>`,
-          )
-          .join("")
-      : '<p class="activity-quality-empty">暂无逐项提醒。</p>';
-  }
 }
 
 function renderCompetitionRecommendations({ refresh = false } = {}) {
@@ -749,25 +709,14 @@ function updateAgentAvailability(promptLoaded = true) {
   return availability;
 }
 
-function setFieldValue(name, value) {
-  const field = document.querySelector(`[name="${name}"]`);
-  if (field) field.value = value || "";
-}
-
 function fillActivities(activities) {
-  activities.slice(0, 10).forEach((activity, index) => {
-    const rowNumber = index + 1;
-    setFieldValue(`type-${rowNumber}`, activity.type);
-    setFieldValue(`name-${rowNumber}`, activity.activityName);
-    setFieldValue(`description-${rowNumber}`, activity.executionDescription);
-    setFieldValue(`grade-${rowNumber}`, activity.suggestedGrade);
+  fillActivityTable(activityTable, activities, {
+    afterFill: updateActivityMarkdownPreviews,
   });
-  updateActivityMarkdownPreviews();
 }
 
 function applyProfile(profile = {}) {
-  profileForm.reset();
-  Object.entries(profile).forEach(([name, value]) => setFieldValue(name, value));
+  applyProfileFields(profileForm, profile);
 }
 
 function clearPlanFields() {
@@ -1104,11 +1053,16 @@ async function copyCodexTask() {
 
 async function parseCodexAnswer() {
   const parsed = parseAgentOutput(codexAnswerInput.value);
+  renderParseDiagnostics(parseDiagnostics, parsed.diagnostics);
   trackUsageEvent("parse_codex_answer", {
     metrics: { generatedActivityCount: parsed.activities?.length || 0 },
+    details: {
+      parseStrategy: parsed.diagnostics?.strategy || "none",
+      narrativeFound: Boolean(parsed.diagnostics?.narrativeFound),
+    },
   });
   if (!parsed.activities?.length) {
-    agentStatus.textContent = "未识别到活动表格。请粘贴包含序号、活动类型、活动名称、具体执行描述、建议年级的完整回答。";
+    agentStatus.textContent = buildParseFailureMessage(parsed.diagnostics);
     agentStatus.classList.add("error");
     return;
   }
