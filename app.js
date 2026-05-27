@@ -1060,6 +1060,11 @@ async function parseCodexAnswer() {
   trackUsageEvent("parse_codex_answer", {
     metrics: { generatedActivityCount: parsed.activities?.length || 0 },
   });
+  if (!parsed.activities?.length) {
+    agentStatus.textContent = "未识别到活动表格。请粘贴包含序号、活动类型、活动名称、具体执行描述、建议年级的完整回答。";
+    agentStatus.classList.add("error");
+    return;
+  }
   rawAnswer.value = codexAnswerInput.value;
   fillActivities(parsed.activities || []);
   narrativeOutput.value = parsed.narrative || "";
