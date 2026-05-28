@@ -7,19 +7,21 @@ const script = readFileSync("src/client/my-activities.js", "utf8");
 const styles = readFileSync("styles.css", "utf8");
 const navigation = indexHtml.match(/<nav class="title-link-group"[\s\S]*?<\/nav>/)?.[0] || "";
 
-assert.ok(navigation.includes('href="./my-activities.html"'), "主导航应包含我的课外活动入口。");
+assert.ok(navigation.includes('href="./my-activities.html"'), "主导航应包含我的申请入口。");
 assert.ok(
   navigation.indexOf("申请规划") < navigation.indexOf("my-activities.html")
     && navigation.indexOf("my-activities.html") < navigation.indexOf("resource-library.html"),
-  "我的课外活动应与申请规划 / 资源库 / 院校百科同级，并位于资源库前。"
+  "我的申请应与申请规划 / 资源库 / 院校百科同级，并位于资源库前。"
 );
 
 for (const expected of [
-  "我的课外活动",
-  "整理你已经完成或正在准备的活动、竞赛、夏校和推荐信材料，作为后续规划与申请复盘的基础。",
+  "我的申请",
+  "整理选校计划、活动、竞赛、夏校和推荐信材料，作为后续申请复盘的基础。",
   'id="portfolioForm"',
   'id="savePortfolioButton"',
   'id="portfolioStatus"',
+  'id="applicationPlanList"',
+  'id="applicationPlanProgress"',
   'id="activityImportSources"',
   'id="activityImportStatus"',
   'id="activitiesList"',
@@ -35,6 +37,7 @@ for (const expected of [
 }
 
 for (const copy of [
+  "选校计划：已填写 0 所",
   "课外活动：已填写 0/10",
   "竞赛：已填写 0/5",
   "夏校：已填写 0/3",
@@ -55,6 +58,11 @@ for (const field of [
   "organizer",
   "counselorStatus",
   "preparedMaterials",
+  "applicationPlan",
+  "renderApplicationPlan",
+  "data-add-application-round",
+  "application-round-schools.md",
+  "enforceEarlyBindingExclusivity",
 ]) {
   assert.ok(script.includes(field), `Script should render or collect ${field}.`);
 }
@@ -75,3 +83,4 @@ assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");
 assert.match(styles, /\.portfolio-card\s*\{/, "履历条目应使用专用卡片样式。");
+assert.match(styles, /\.application-plan-grid\s*\{/, "我的申请页面应有选校计划布局样式。");

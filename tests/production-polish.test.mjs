@@ -100,8 +100,10 @@ try {
   for (const protectedPath of [
     "/course-helper.html",
     "/gpa-calculator.html",
+    "/my-activities.html",
     "/resource-library.html",
     "/school-encyclopedia.html",
+    "/data/application-round-schools.md",
     "/data/schools.md",
     "/data/international-schools.md",
     "/data/other-region-schools.md",

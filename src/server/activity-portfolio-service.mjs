@@ -1,6 +1,15 @@
 const ACTIVITY_LIMIT = 10;
 const COMPETITION_LIMIT = 5;
 const SUMMER_SCHOOL_LIMIT = 3;
+const APPLICATION_ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "uc", "rd"];
+const APPLICATION_ROUND_LIMITS = {
+  rea: 1,
+  ed1: 1,
+  ed2: 1,
+  ea: 50,
+  uc: 20,
+  rd: 50,
+};
 
 const ACTIVITY_FIELDS = [
   "activityName",
@@ -30,6 +39,7 @@ const SUMMER_SCHOOL_FIELDS = [
   "output",
   "proofLink",
 ];
+const APPLICATION_PLAN_FIELDS = ["school", "major"];
 
 export class ActivityPortfolioError extends Error {
   constructor(message, statusCode = 400) {
@@ -46,6 +56,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
     const row = db
       .prepare(
         `SELECT
+          application_plan_json,
           activities_json,
           competitions_json,
           summer_schools_json,
@@ -58,6 +69,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
 
     if (!row) return emptyPortfolio();
     return {
+      applicationPlan: parseApplicationPlan(row.application_plan_json),
       activities: parseCollection(row.activities_json, ACTIVITY_LIMIT, ACTIVITY_FIELDS, "Activities"),
       competitions: parseCollection(
         row.competitions_json,
@@ -83,14 +95,16 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
     db.prepare(
       `INSERT INTO student_activity_portfolios (
         user_id,
+        application_plan_json,
         activities_json,
         competitions_json,
         summer_schools_json,
         recommendation_letters_json,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
+        application_plan_json = excluded.application_plan_json,
         activities_json = excluded.activities_json,
         competitions_json = excluded.competitions_json,
         summer_schools_json = excluded.summer_schools_json,
@@ -98,6 +112,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
         updated_at = excluded.updated_at`,
     ).run(
       userId,
+      JSON.stringify(portfolio.applicationPlan),
       JSON.stringify(portfolio.activities),
       JSON.stringify(portfolio.competitions),
       JSON.stringify(portfolio.summerSchools),
@@ -116,6 +131,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
 
 function emptyPortfolio() {
   return {
+    applicationPlan: emptyApplicationPlan(),
     activities: [],
     competitions: [],
     summerSchools: [],
@@ -127,6 +143,7 @@ function emptyPortfolio() {
 function normalizePortfolio(payload) {
   const value = normalizeObject(payload, "Activity portfolio");
   return {
+    applicationPlan: normalizeApplicationPlan(value.applicationPlan),
     activities: normalizeCollection(value.activities, ACTIVITY_LIMIT, ACTIVITY_FIELDS, "Activities"),
     competitions: normalizeCollection(
       value.competitions,
@@ -142,6 +159,34 @@ function normalizePortfolio(payload) {
     ),
     recommendationLetters: normalizeRecommendationLetters(value.recommendationLetters),
   };
+}
+
+function emptyApplicationPlan() {
+  return Object.fromEntries(APPLICATION_ROUND_KEYS.map((round) => [round, []]));
+}
+
+function normalizeApplicationPlan(value) {
+  if (value === undefined || value === null) return emptyApplicationPlan();
+  const item = normalizeObject(value, "Application plan");
+  const plan = emptyApplicationPlan();
+  for (const round of APPLICATION_ROUND_KEYS) {
+    plan[round] = normalizeApplicationRound(
+      item[round],
+      APPLICATION_ROUND_LIMITS[round],
+      `Application plan ${round.toUpperCase()}`,
+    );
+  }
+  if (plan.rea.length > 0) plan.ed1 = [];
+  return plan;
+}
+
+function normalizeApplicationRound(value, limit, label) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) throw new ActivityPortfolioError(`${label} must be an array`, 400);
+  return value
+    .map((entry) => normalizeRecord(entry, APPLICATION_PLAN_FIELDS, label))
+    .filter((entry) => entry.school)
+    .slice(0, limit);
 }
 
 function normalizeCollection(value, limit, fields, label) {
@@ -212,6 +257,17 @@ function parseCollection(serialized, limit, fields, label) {
 function parseRecommendationLetters(serialized) {
   try {
     return normalizeRecommendationLetters(JSON.parse(serialized));
+  } catch (error) {
+    if (error instanceof ActivityPortfolioError || error instanceof SyntaxError) {
+      throw new ActivityPortfolioError("Stored activity portfolio is invalid", 500);
+    }
+    throw error;
+  }
+}
+
+function parseApplicationPlan(serialized) {
+  try {
+    return normalizeApplicationPlan(JSON.parse(serialized));
   } catch (error) {
     if (error instanceof ActivityPortfolioError || error instanceof SyntaxError) {
       throw new ActivityPortfolioError("Stored activity portfolio is invalid", 500);

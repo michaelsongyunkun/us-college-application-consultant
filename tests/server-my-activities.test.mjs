@@ -29,6 +29,14 @@ try {
   const emptyPortfolio = await get("/api/my-activities", firstCookie);
   assert.equal(emptyPortfolio.status, 200);
   assert.deepEqual(await emptyPortfolio.json(), {
+    applicationPlan: {
+      rea: [],
+      ed1: [],
+      ed2: [],
+      ea: [],
+      uc: [],
+      rd: [],
+    },
     activities: [],
     competitions: [],
     summerSchools: [],
@@ -38,7 +46,7 @@ try {
 
   const protectedPage = await get("/my-activities.html", firstCookie);
   assert.equal(protectedPage.status, 200);
-  assert.match(await protectedPage.text(), /我的课外活动/);
+  assert.match(await protectedPage.text(), /我的申请/);
 
   const plansResponse = await get("/api/plans", firstCookie);
   const firstPlanId = (await plansResponse.json()).plans[0].id;
@@ -70,6 +78,17 @@ try {
   const savedResponse = await put(
     "/api/my-activities",
     {
+      applicationPlan: {
+        rea: [],
+        ed1: [{ school: "University of Chicago", major: "Economics" }],
+        ed2: [{ school: "New York University", major: "Business" }],
+        ea: [
+          { school: "Massachusetts Institute of Technology", major: "Electrical Engineering" },
+          { school: "University of Michigan--Ann Arbor", major: "Data Science" },
+        ],
+        uc: [{ school: "University of California, Los Angeles", major: "Applied Math" }],
+        rd: [{ school: "Harvard University", major: "History" }],
+      },
       activities: [
         {
           activityName: "社区科普社",
@@ -131,6 +150,9 @@ try {
   );
   assert.equal(savedResponse.status, 200);
   const saved = await savedResponse.json();
+  assert.equal(saved.applicationPlan.ed1[0].school, "University of Chicago");
+  assert.equal(saved.applicationPlan.ea.length, 2);
+  assert.equal(saved.applicationPlan.uc[0].major, "Applied Math");
   assert.equal(saved.activities[0].activityName, "社区科普社");
   assert.equal(saved.competitions[0].competitionName, "Physics Bowl");
   assert.equal(saved.summerSchools[0].programName, "YYGS");
@@ -138,7 +160,9 @@ try {
   assert.ok(saved.updatedAt);
 
   const reloaded = await get("/api/my-activities", firstCookie);
-  assert.equal((await reloaded.json()).activities[0].outcome, "覆盖 80 名学生");
+  const reloadedPortfolio = await reloaded.json();
+  assert.equal(reloadedPortfolio.activities[0].outcome, "覆盖 80 名学生");
+  assert.deepEqual(reloadedPortfolio.applicationPlan, saved.applicationPlan);
 
   const secondRegistration = await post("/api/auth/register", {
     email: "activities-b@example.com",
@@ -148,6 +172,14 @@ try {
   const secondCookie = secondRegistration.headers.get("set-cookie");
   const secondPortfolio = await get("/api/my-activities", secondCookie);
   assert.deepEqual(await secondPortfolio.json(), {
+    applicationPlan: {
+      rea: [],
+      ed1: [],
+      ed2: [],
+      ea: [],
+      uc: [],
+      rd: [],
+    },
     activities: [],
     competitions: [],
     summerSchools: [],

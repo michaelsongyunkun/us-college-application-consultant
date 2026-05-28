@@ -32,6 +32,14 @@ try {
   }).user;
 
   assert.deepEqual(portfolios.getPortfolio(firstStudent), {
+    applicationPlan: {
+      rea: [],
+      ed1: [],
+      ed2: [],
+      ea: [],
+      uc: [],
+      rd: [],
+    },
     activities: [],
     competitions: [],
     summerSchools: [],
@@ -40,6 +48,17 @@ try {
   });
 
   const saved = portfolios.savePortfolio(firstStudent, {
+    applicationPlan: {
+      rea: [],
+      ed1: [{ school: "University of Chicago", major: "Economics" }],
+      ed2: [{ school: "New York University", major: "Business" }],
+      ea: [
+        { school: "Massachusetts Institute of Technology", major: "Electrical Engineering" },
+        { school: "University of Michigan--Ann Arbor", major: "Data Science" },
+      ],
+      uc: [{ school: "University of California, Los Angeles", major: "Applied Math" }],
+      rd: [{ school: "Harvard University", major: "History" }],
+    },
     activities: Array.from({ length: 12 }, (_, index) => ({
       activityName: `Activity ${index + 1}`,
       type: index === 0 ? "科研" : "",
@@ -80,6 +99,13 @@ try {
     },
   });
 
+  assert.equal(saved.applicationPlan.rea.length, 0);
+  assert.equal(saved.applicationPlan.ed1.length, 1);
+  assert.equal(saved.applicationPlan.ed1[0].school, "University of Chicago");
+  assert.equal(saved.applicationPlan.ed2.length, 1);
+  assert.equal(saved.applicationPlan.ea.length, 2);
+  assert.equal(saved.applicationPlan.uc[0].major, "Applied Math");
+  assert.equal(saved.applicationPlan.rd[0].school, "Harvard University");
   assert.equal(saved.activities.length, 10, "课外活动最多保存 10 项。");
   assert.equal(saved.activities[0].activityName, "Activity 1");
   assert.equal(saved.activities[0].type, "科研");
@@ -92,15 +118,37 @@ try {
   assert.equal(saved.updatedAt, "2026-05-28T00:00:00.000Z");
 
   const reloaded = portfolios.getPortfolio(firstStudent);
+  assert.deepEqual(reloaded.applicationPlan, saved.applicationPlan);
   assert.deepEqual(reloaded.activities, saved.activities);
   assert.equal(reloaded.recommendationLetters.notes, "6 月更新材料");
   assert.deepEqual(portfolios.getPortfolio(secondStudent), {
+    applicationPlan: {
+      rea: [],
+      ed1: [],
+      ed2: [],
+      ea: [],
+      uc: [],
+      rd: [],
+    },
     activities: [],
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
     updatedAt: null,
   });
+
+  const conflictSaved = portfolios.savePortfolio(secondStudent, {
+    applicationPlan: {
+      rea: [
+        { school: "Princeton University", major: "Computer Science" },
+        { school: "Harvard University", major: "Economics" },
+      ],
+      ed1: [{ school: "University of Chicago", major: "Economics" }],
+    },
+  });
+  assert.equal(conflictSaved.applicationPlan.rea.length, 1, "REA 最多保存 1 所。");
+  assert.equal(conflictSaved.applicationPlan.rea[0].school, "Princeton University");
+  assert.equal(conflictSaved.applicationPlan.ed1.length, 0, "REA 与 ED1 不能同时保留。");
 
   assert.throws(
     () => portfolios.savePortfolio({}, { activities: [] }),

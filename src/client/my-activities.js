@@ -1,10 +1,25 @@
 import { escapeHtml } from "./html-utils.mjs";
+import {
+  APPLICATION_ROUND_LABELS,
+  getEligibleSchools,
+  parseApplicationRoundSchoolsMarkdown,
+} from "../domain/application-round-schools.mjs";
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const ACTIVITY_IMPORT_SOURCES_ENDPOINT = "/api/my-activities/import-sources";
+const APPLICATION_ROUND_SCHOOLS_ENDPOINT = "./data/application-round-schools.md";
 const ACTIVITY_SLOT_COUNT = 10;
 const COMPETITION_SLOT_COUNT = 5;
 const SUMMER_SCHOOL_SLOT_COUNT = 3;
+
+const APPLICATION_ROUND_CONFIG = [
+  { key: "rea", label: "REA", title: "REA", addable: false, note: "1所；不能与ED1同时申请" },
+  { key: "ed1", label: "ED1", title: "ED1", addable: false, note: "1所；不能与REA同时申请" },
+  { key: "ed2", label: "ED2", title: "ED2", addable: false, note: "1所" },
+  { key: "ea", label: "EA", title: "EA", addable: true, note: "可新增多所" },
+  { key: "uc", label: "UC", title: "UC", addable: true, note: "UC系统单独记录" },
+  { key: "rd", label: "RD", title: "RD", addable: true, note: "可新增多所" },
+];
 
 const ACTIVITY_TYPE_OPTIONS = ["科研", "公益", "社团", "竞赛延展", "艺术", "体育", "实习", "其他"];
 const ACTIVITY_STATUS_OPTIONS = ["已完成", "进行中", "计划中"];
@@ -50,6 +65,8 @@ const activitiesProgress = document.querySelector("#activitiesProgress");
 const competitionsProgress = document.querySelector("#competitionsProgress");
 const summerSchoolsProgress = document.querySelector("#summerSchoolsProgress");
 const recommendationProgress = document.querySelector("#recommendationProgress");
+const applicationPlanProgress = document.querySelector("#applicationPlanProgress");
+const applicationPlanList = document.querySelector("#applicationPlanList");
 const activityImportSources = document.querySelector("#activityImportSources");
 const activityImportStatus = document.querySelector("#activityImportStatus");
 const activitiesList = document.querySelector("#activitiesList");
@@ -59,10 +76,25 @@ const recommendationLettersPanel = document.querySelector("#recommendationLetter
 
 let isDirty = false;
 let isRendering = false;
+let currentPortfolio = emptyPortfolio();
+let applicationRoundSchools = [];
+let applicationRoundRowCounts = { ea: 1, uc: 1, rd: 1 };
 let planningActivitySources = [];
+
+function emptyApplicationPlan() {
+  return {
+    rea: [],
+    ed1: [],
+    ed2: [],
+    ea: [],
+    uc: [],
+    rd: [],
+  };
+}
 
 function emptyPortfolio() {
   return {
+    applicationPlan: emptyApplicationPlan(),
     activities: [],
     competitions: [],
     summerSchools: [],
@@ -72,15 +104,128 @@ function emptyPortfolio() {
 }
 
 function renderPortfolio(portfolio = emptyPortfolio()) {
+  currentPortfolio = normalizePortfolioForView(portfolio);
+  syncApplicationRowCounts(currentPortfolio.applicationPlan);
   isRendering = true;
-  activitiesList.innerHTML = renderActivityCards(portfolio.activities || []);
-  competitionsList.innerHTML = renderCompetitionCards(portfolio.competitions || []);
-  summerSchoolsList.innerHTML = renderSummerSchoolCards(portfolio.summerSchools || []);
+  renderApplicationPlan(currentPortfolio.applicationPlan);
+  activitiesList.innerHTML = renderActivityCards(currentPortfolio.activities || []);
+  competitionsList.innerHTML = renderCompetitionCards(currentPortfolio.competitions || []);
+  summerSchoolsList.innerHTML = renderSummerSchoolCards(currentPortfolio.summerSchools || []);
   recommendationLettersPanel.innerHTML = renderRecommendationLetters(
-    portfolio.recommendationLetters || {},
+    currentPortfolio.recommendationLetters || {},
   );
   isRendering = false;
   updateCompletion();
+}
+
+function normalizePortfolioForView(portfolio = emptyPortfolio()) {
+  const fallback = emptyPortfolio();
+  return {
+    ...fallback,
+    ...portfolio,
+    applicationPlan: normalizeApplicationPlanForView(portfolio.applicationPlan),
+    activities: portfolio.activities || [],
+    competitions: portfolio.competitions || [],
+    summerSchools: portfolio.summerSchools || [],
+    recommendationLetters: portfolio.recommendationLetters || {},
+  };
+}
+
+function normalizeApplicationPlanForView(plan = emptyApplicationPlan()) {
+  const fallback = emptyApplicationPlan();
+  return Object.fromEntries(
+    APPLICATION_ROUND_CONFIG.map((round) => [
+      round.key,
+      Array.isArray(plan?.[round.key]) ? plan[round.key] : fallback[round.key],
+    ]),
+  );
+}
+
+function syncApplicationRowCounts(plan = emptyApplicationPlan()) {
+  for (const round of APPLICATION_ROUND_CONFIG.filter((item) => item.addable)) {
+    applicationRoundRowCounts[round.key] = Math.max(
+      applicationRoundRowCounts[round.key] || 1,
+      plan[round.key]?.length || 0,
+      1,
+    );
+  }
+}
+
+function renderApplicationPlan(plan = emptyApplicationPlan()) {
+  if (!applicationPlanList) return;
+  applicationPlanList.innerHTML = APPLICATION_ROUND_CONFIG.map((round) =>
+    renderApplicationRoundCard(round, plan[round.key] || []),
+  ).join("");
+}
+
+function renderApplicationRoundCard(round, entries = []) {
+  const rowCount = round.addable
+    ? Math.max(applicationRoundRowCounts[round.key] || 1, entries.length, 1)
+    : 1;
+  return `
+    <article class="application-round-card">
+      <div class="application-round-header">
+        <div>
+          <h3>${escapeHtml(APPLICATION_ROUND_LABELS[round.key] || round.title)}</h3>
+          <p>${escapeHtml(round.note)}</p>
+        </div>
+        ${
+          round.addable
+            ? `<button type="button" class="secondary" data-add-application-round="${escapeHtml(round.key)}">新增</button>`
+            : ""
+        }
+      </div>
+      <div class="application-plan-rows">
+        ${Array.from({ length: rowCount }, (_, index) =>
+          renderApplicationPlanRow(round, index, entries[index] || {}),
+        ).join("")}
+      </div>
+    </article>`;
+}
+
+function renderApplicationPlanRow(round, index, entry = {}) {
+  return `
+    <div class="application-plan-row" data-application-round="${escapeHtml(round.key)}" data-application-index="${index}">
+      ${renderApplicationSchoolSelect(round.key, index, entry.school)}
+      ${renderApplicationMajorInput(round.key, index, entry.major)}
+    </div>`;
+}
+
+function renderApplicationSchoolSelect(roundKey, index, value = "") {
+  const options = getEligibleSchools(applicationRoundSchools, roundKey);
+  const selectedValue = String(value || "");
+  const hasSelectedOption = options.some((school) => school.name === selectedValue);
+  return `
+    <label>
+      <span>院校</span>
+      <select name="${escapeHtml(applicationControlName(roundKey, index, "school"))}">
+        <option value="">${options.length ? "请选择院校" : "正在加载院校"}</option>
+        ${
+          selectedValue && !hasSelectedOption
+            ? `<option value="${escapeHtml(selectedValue)}" selected>${escapeHtml(selectedValue)}（当前已保存）</option>`
+            : ""
+        }
+        ${options
+          .map((school) => {
+            const label = `${school.name} · ${school.category} ${school.rank}`;
+            return `<option value="${escapeHtml(school.name)}" ${school.name === selectedValue ? "selected" : ""}>${escapeHtml(label)}</option>`;
+          })
+          .join("")}
+      </select>
+    </label>`;
+}
+
+function renderApplicationMajorInput(roundKey, index, value = "") {
+  return `
+    <label>
+      <span>专业方向</span>
+      <input
+        name="${escapeHtml(applicationControlName(roundKey, index, "major"))}"
+        type="text"
+        value="${escapeHtml(value)}"
+        placeholder="例如 Computer Science"
+      />
+    </label>`;
 }
 
 function renderActivityImportSources(sources = []) {
@@ -292,6 +437,7 @@ function renderStandaloneSelect(name, label, options, value = "") {
 
 function collectPortfolio() {
   return {
+    applicationPlan: collectApplicationPlan(),
     activities: collectEntries("activities", ACTIVITY_SLOT_COUNT, activityFields),
     competitions: collectEntries("competitions", COMPETITION_SLOT_COUNT, competitionFields),
     summerSchools: collectEntries("summerSchools", SUMMER_SCHOOL_SLOT_COUNT, summerSchoolFields),
@@ -306,6 +452,29 @@ function collectEntries(group, count, fields) {
     );
     return entry;
   }).filter(hasAnyValue);
+}
+
+function collectApplicationPlan() {
+  const plan = emptyApplicationPlan();
+  if (!applicationPlanList) return plan;
+
+  for (const round of APPLICATION_ROUND_CONFIG) {
+    const rows = Array.from(
+      applicationPlanList.querySelectorAll(`[data-application-round="${round.key}"]`),
+    );
+    plan[round.key] = rows
+      .map((row) => {
+        const index = Number(row.dataset.applicationIndex || 0);
+        return {
+          school: fieldValue(applicationControlName(round.key, index, "school")),
+          major: fieldValue(applicationControlName(round.key, index, "major")),
+        };
+      })
+      .filter((entry) => entry.school);
+  }
+
+  if (plan.rea.length > 0) plan.ed1 = [];
+  return plan;
 }
 
 function collectRecommendationLetters() {
@@ -377,12 +546,19 @@ function importPlanningActivity(sourceId, activityIndex) {
 
 function updateCompletion() {
   const portfolio = collectPortfolio();
+  if (applicationPlanProgress) {
+    applicationPlanProgress.textContent = `选校计划：已填写 ${countApplicationPlanSchools(portfolio.applicationPlan)} 所`;
+  }
   activitiesProgress.textContent = `课外活动：已填写 ${portfolio.activities.length}/${ACTIVITY_SLOT_COUNT}`;
   competitionsProgress.textContent = `竞赛：已填写 ${portfolio.competitions.length}/${COMPETITION_SLOT_COUNT}`;
   summerSchoolsProgress.textContent = `夏校：已填写 ${portfolio.summerSchools.length}/${SUMMER_SCHOOL_SLOT_COUNT}`;
   recommendationProgress.textContent = hasAnyRecommendation(portfolio.recommendationLetters)
     ? "推荐信：已填写"
     : "推荐信：待补充";
+}
+
+function countApplicationPlanSchools(plan = emptyApplicationPlan()) {
+  return Object.values(plan).reduce((total, entries) => total + (entries?.length || 0), 0);
 }
 
 async function loadActivityImportSources() {
@@ -395,6 +571,24 @@ async function loadActivityImportSources() {
     setImportStatus(planningActivitySources.length ? "选择单项活动导入" : "暂无可导入活动");
   } catch (error) {
     setImportStatus(error.message, true);
+  }
+}
+
+async function loadApplicationRoundSchools() {
+  if (!applicationPlanList) return;
+  try {
+    const response = await fetch(APPLICATION_ROUND_SCHOOLS_ENDPOINT);
+    if (response.status === 401) {
+      window.location.href = "./index.html";
+      throw new Error("请先登录");
+    }
+    if (!response.ok) throw new Error("院校轮次数据加载失败");
+    applicationRoundSchools = parseApplicationRoundSchoolsMarkdown(await response.text());
+    const plan = collectPortfolio().applicationPlan;
+    currentPortfolio = { ...currentPortfolio, applicationPlan: plan };
+    renderApplicationPlan(plan);
+  } catch (error) {
+    applicationPlanList.innerHTML = `<p class="portfolio-empty">${escapeHtml(error.message)}</p>`;
   }
 }
 
@@ -418,6 +612,7 @@ async function savePortfolio() {
       method: "PUT",
       body: JSON.stringify(collectPortfolio()),
     });
+    renderPortfolio(saved);
     isDirty = false;
     updateCompletion();
     setStatus("已保存");
@@ -447,6 +642,34 @@ async function requestJson(url, options = {}) {
   return data;
 }
 
+function addApplicationRound(roundKey) {
+  const round = APPLICATION_ROUND_CONFIG.find((item) => item.key === roundKey && item.addable);
+  if (!round) return;
+  applicationRoundRowCounts[roundKey] = (applicationRoundRowCounts[roundKey] || 1) + 1;
+  const portfolio = collectPortfolio();
+  renderPortfolio(portfolio);
+  isDirty = true;
+  setStatus("有未保存修改");
+  updateCompletion();
+  portfolioForm.elements
+    .namedItem(applicationControlName(roundKey, applicationRoundRowCounts[roundKey] - 1, "school"))
+    ?.focus();
+}
+
+function enforceEarlyBindingExclusivity(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLSelectElement) || !target.value) return;
+  if (target.name === applicationControlName("rea", 0, "school")) clearApplicationRound("ed1");
+  if (target.name === applicationControlName("ed1", 0, "school")) clearApplicationRound("rea");
+}
+
+function clearApplicationRound(roundKey) {
+  for (const field of ["school", "major"]) {
+    const element = portfolioForm.elements.namedItem(applicationControlName(roundKey, 0, field));
+    if (element) element.value = "";
+  }
+}
+
 function fieldValue(name) {
   const element = portfolioForm.elements.namedItem(name);
   return String(element?.value || "").trim();
@@ -454,6 +677,10 @@ function fieldValue(name) {
 
 function controlName(group, index, field) {
   return `${group}_${index}_${field}`;
+}
+
+function applicationControlName(roundKey, index, field) {
+  return `applicationPlan_${roundKey}_${index}_${field}`;
 }
 
 function hasAnyValue(entry) {
@@ -513,9 +740,17 @@ function formatDate(value) {
 }
 
 portfolioForm.addEventListener("input", markDirty);
-portfolioForm.addEventListener("change", markDirty);
+portfolioForm.addEventListener("change", (event) => {
+  enforceEarlyBindingExclusivity(event);
+  markDirty();
+});
 savePortfolioButtons.forEach((button) => {
   button.addEventListener("click", savePortfolio);
+});
+applicationPlanList?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-add-application-round]");
+  if (!button) return;
+  addApplicationRound(button.dataset.addApplicationRound);
 });
 activityImportSources?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-import-activity]");
@@ -530,5 +765,6 @@ window.addEventListener("beforeunload", (event) => {
 });
 
 renderPortfolio();
+loadApplicationRoundSchools();
 loadPortfolio();
 loadActivityImportSources();

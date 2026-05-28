@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>我的课外活动</title>
+    <title>我的申请</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260528-activity-import" />
+    <link rel="stylesheet" href="./styles.css?v=20260528-application-plan" />
   </head>
   <body>
     <main class="app-shell portfolio-shell">
@@ -14,10 +14,10 @@
           <a class="brand-mark" href="./index.html" data-safe-nav>
             <span class="brand-prefix">US</span> College Compass
           </a>
-          <p class="eyebrow">Student Activity Portfolio</p>
-          <h1>我的课外活动</h1>
+          <p class="eyebrow">Application Workspace</p>
+          <h1>我的申请</h1>
           <p class="portfolio-subtitle">
-            整理你已经完成或正在准备的活动、竞赛、夏校和推荐信材料，作为后续规划与申请复盘的基础。
+            整理选校计划、活动、竞赛、夏校和推荐信材料，作为后续申请复盘的基础。
           </p>
         </div>
         <div class="actions" aria-label="页面操作">
@@ -29,6 +29,17 @@
       </header>
 
       <form id="portfolioForm" autocomplete="off">
+        <section class="panel portfolio-panel application-plan-panel" aria-labelledby="application-plan-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="application-plan-title">选校计划</h2>
+              <p>按申请轮次记录目标院校与专业方向。院校来自RAG轮次表，专业由学生自行填写。</p>
+            </div>
+            <span id="applicationPlanProgress" class="status" role="status" aria-live="polite">选校计划：已填写 0 所</span>
+          </div>
+          <div id="applicationPlanList" class="application-plan-grid"></div>
+        </section>
+
         <section class="panel portfolio-panel activity-import-panel" aria-labelledby="activity-import-title">
           <div class="section-heading table-heading">
             <div>
@@ -90,7 +101,7 @@
         </footer>
       </form>
     </main>
-    <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-activity-import"></script>
-    <script type="module" src="./src/client/my-activities.js?v=20260528-activity-import"></script>
+    <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-application-plan"></script>
+    <script type="module" src="./src/client/my-activities.js?v=20260528-application-plan"></script>
   </body>
 </html>

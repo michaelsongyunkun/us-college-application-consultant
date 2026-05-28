@@ -107,6 +107,7 @@ export function createAuthDatabase({ databasePath }) {
     CREATE TABLE IF NOT EXISTS student_activity_portfolios (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL UNIQUE,
+      application_plan_json TEXT NOT NULL DEFAULT '{}',
       activities_json TEXT NOT NULL,
       competitions_json TEXT NOT NULL,
       summer_schools_json TEXT NOT NULL,
@@ -164,6 +165,12 @@ export function createAuthDatabase({ databasePath }) {
   ensureColumn(db, "usage_events", "duration_ms", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "usage_events", "failure_reason", "TEXT");
   ensureColumn(db, "usage_events", "details_json", "TEXT");
+  ensureColumn(
+    db,
+    "student_activity_portfolios",
+    "application_plan_json",
+    "TEXT NOT NULL DEFAULT '{}'",
+  );
   migrateUsageEventsConstraint(db);
   return {
     db,

@@ -1242,6 +1242,54 @@ button.danger:hover {
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
 }
 
+.application-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 12px;
+  padding: 14px 18px 18px;
+}
+
+.application-round-card {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 14px;
+}
+
+.application-round-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.application-round-header h3 {
+  margin: 0;
+  color: #2c3645;
+  font-size: 18px;
+}
+
+.application-round-header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.application-plan-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.application-plan-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.1fr) minmax(180px, 0.9fr);
+  gap: 10px 12px;
+  align-items: end;
+}
+
 .portfolio-card {
   display: grid;
   gap: 12px;
@@ -3091,6 +3139,7 @@ button.neutral:hover {
   }
 
   .activity-import-sources,
+  .application-plan-grid,
   .portfolio-grid,
   .recommendation-portfolio {
     grid-template-columns: 1fr;
@@ -3098,6 +3147,7 @@ button.neutral:hover {
   }
 
   .portfolio-card-heading,
+  .application-plan-row,
   .portfolio-fields.two-column,
   .portfolio-fields.three-column,
   .portfolio-fields.four-column {
