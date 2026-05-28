@@ -4,7 +4,6 @@ import {
   getEligibleSchools,
   parseApplicationRoundSchoolsMarkdown,
 } from "../domain/application-round-schools.mjs";
-import { buildApplicationPortfolioWordDocument } from "../domain/word-export.mjs";
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const ACTIVITY_IMPORT_SOURCES_ENDPOINT = "/api/my-activities/import-sources";
@@ -61,7 +60,6 @@ const summerSchoolFields = [
 const portfolioForm = document.querySelector("#portfolioForm");
 const savePortfolioButton = document.querySelector("#savePortfolioButton");
 const savePortfolioButtons = document.querySelectorAll("[data-save-portfolio], #savePortfolioButton");
-const downloadPortfolioWordButtons = document.querySelectorAll("[data-download-word]");
 const portfolioStatus = document.querySelector("#portfolioStatus");
 const activitiesProgress = document.querySelector("#activitiesProgress");
 const competitionsProgress = document.querySelector("#competitionsProgress");
@@ -639,25 +637,6 @@ async function savePortfolio() {
   }
 }
 
-function downloadPortfolioWordDocument() {
-  const html = buildApplicationPortfolioWordDocument({
-    portfolio: collectPortfolio(),
-    exportedAt: new Date(),
-  });
-  const blob = new Blob(["\ufeff", html], {
-    type: "application/msword;charset=utf-8",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "我的申请.doc";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-  setStatus("已生成 Word 文档");
-}
-
 async function requestJson(url, options = {}) {
   const response = await fetch(url, {
     ...options,
@@ -806,9 +785,6 @@ portfolioForm.addEventListener("change", (event) => {
 });
 savePortfolioButtons.forEach((button) => {
   button.addEventListener("click", savePortfolio);
-});
-downloadPortfolioWordButtons.forEach((button) => {
-  button.addEventListener("click", downloadPortfolioWordDocument);
 });
 applicationPlanList?.addEventListener("click", (event) => {
   const addButton = event.target.closest("[data-add-application-round]");

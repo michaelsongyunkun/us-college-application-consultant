@@ -19,7 +19,6 @@ for (const expected of [
   "整理选校计划、活动、竞赛、夏校和推荐信材料，作为后续申请复盘的基础。",
   'id="portfolioForm"',
   'id="savePortfolioButton"',
-  'id="downloadPortfolioWordButton"',
   'id="portfolioStatus"',
   'id="applicationPlanList"',
   'id="applicationPlanProgress"',
@@ -69,10 +68,7 @@ for (const field of [
   "renderApplicationPlan",
   "data-add-application-round",
   "data-remove-application-round",
-  "data-download-word",
   "application-round-schools.md",
-  "buildApplicationPortfolioWordDocument",
-  "downloadPortfolioWordDocument",
   "enforceEarlyBindingExclusivity",
   "removeApplicationRound",
 ]) {
@@ -92,13 +88,10 @@ assert.ok(script.includes("mapPlanningActivityToPortfolio"), "导入时应映射
 assert.ok(script.includes("beforeunload"), "有未保存修改时应拦截离开页面。");
 assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案。");
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
-assert.ok(pageHtml.includes("下载为word文档"), "我的申请页面应提供 Word 下载按钮。");
-assert.ok(script.includes("application/msword;charset=utf-8"), "Word 下载应生成可由 Word 打开的文档。");
-assert.ok(script.includes("我的申请.doc"), "Word 下载文件名应对应我的申请页面。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260528-application-plan-word")
-    && pageHtml.includes("./src/client/my-activities.js?v=20260528-application-plan-word"),
+  pageHtml.includes("./styles.css?v=20260528-application-plan-delete")
+    && pageHtml.includes("./src/client/my-activities.js?v=20260528-application-plan-delete"),
   "我的申请页面应更新 CSS 版本号，避免用户继续加载缓存的平行布局。"
 );
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");
