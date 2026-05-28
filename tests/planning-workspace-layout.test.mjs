@@ -17,6 +17,8 @@ for (const id of [
   "authCard",
   "capabilityHighlights",
   "landingProcess",
+  "hallucinationRisk",
+  "audienceFit",
   "trustCommitment",
 ]) {
   assert.match(html, new RegExp(`id=["']${id}["']`), `Missing public landing element #${id}`);
@@ -56,12 +58,22 @@ for (const id of [
   "activityQualityIssues",
   "activityQualityActivityNotes",
   "parseDiagnostics",
+  "refreshCaseMatchesButton",
 ]) {
   assert.match(html, new RegExp(`id=["']${id}["']`), `Missing workspace element #${id}`);
 }
 
 for (const copy of [
   "三步完成申请规划",
+  "AI 美本规划工作台",
+  "可执行、可核验、可复盘",
+  "我们如何降低 AI 幻觉风险",
+  "适合谁使用",
+  "8-11 年级国际生家庭",
+  "不适合谁",
+  "保录",
+  "代写",
+  "人工顾问全案服务",
   "第 1 步：填写学生信息",
   "第 2 步：选择规划方案",
   "第 3 步：保存重要版本",
@@ -110,6 +122,8 @@ for (const selector of [
   ".landing-hero",
   ".capability-highlights",
   ".landing-process",
+  ".risk-control",
+  ".audience-fit",
   ".trust-commitment",
 ]) {
   assert.match(styles, new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `Missing style ${selector}`);
@@ -118,6 +132,17 @@ assert.match(styles, /@media \(max-width: 780px\)[\s\S]*\.landing-hero/, "Landin
 assert.match(appJs, /const heroStartButton = document\.querySelector\("#heroStartButton"\)/);
 assert.match(appJs, /heroStartButton\?\.addEventListener\("click"/);
 assert.match(appJs, /authEmailInput\.focus\(\)/);
+assert.match(
+  appJs,
+  /refreshCaseMatchesButton\?\.addEventListener\("click"[\s\S]*renderCaseMatches\(\{ refresh: true \}\)/,
+  "Similar case recommendations should expose a next-ranked refresh action.",
+);
+assert.match(appJs, /匹配度排名第 \$\{selectedIndex \+ 1\}/, "Case refresh should describe the next-ranked match.");
+assert.match(
+  appJs,
+  /async function resetDraft\(\) \{[\s\S]*clearVisibleDraft\(\);[\s\S]*await saveDraft\(\);[\s\S]*\}/,
+  "Clearing the current plan should reset visible profile fields and dependent recommendation panels before saving.",
+);
 assert.match(appJs, /renderActivityQualityPanel/, "Activity quality checker should be wired through a UI module.");
 assert.match(appJs, /renderParseDiagnostics/, "Parse diagnostics should be wired into the main app.");
 assert.match(appJs, /collectActivitiesFromTable/, "Planning form state should be collected through a module.");

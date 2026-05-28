@@ -30,6 +30,7 @@ assert.doesNotMatch(
   "Login status should not be presented as a global dashboard filter.",
 );
 assert.match(script, /dashboard\.overview/, "Summary cards should render server-computed operational totals.");
+assert.match(script, /refresh_case_matches/, "Dashboard should label similar-case refresh events.");
 assert.match(script, /data-admin-tab/, "Dashboard script should activate focused tab panels.");
 assert.match(script, /<details class="technical-details">/, "Low-frequency browser and IP data should be expandable.");
 assert.match(styles, /\.admin-tabs/, "Tabbed dashboard navigation should be styled.");

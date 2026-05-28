@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>我的课外活动</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar brand-page-header">
+        <div class="brand-page-identity">
+          <a class="brand-mark" href="./index.html" data-safe-nav>
+            <span class="brand-prefix">US</span> College Compass
+          </a>
+          <p class="eyebrow">Student Activity Portfolio</p>
+          <h1>我的课外活动</h1>
+          <p class="portfolio-subtitle">
+            整理你已经完成或正在准备的活动、竞赛、夏校和推荐信材料，作为后续规划与申请复盘的基础。
+          </p>
+        </div>
+        <div class="actions" aria-label="页面操作">
+          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
+          <a class="button-link quiet-link" href="./resource-library.html" data-safe-nav>资源库</a>
+          <a class="button-link quiet-link" href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+          <button id="savePortfolioButton" type="button">保存进度</button>
+        </div>
+      </header>
+
+      <form id="portfolioForm" autocomplete="off">
+        <section class="panel portfolio-panel" aria-labelledby="activities-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="activities-title">课外活动</h2>
+              <p>最多记录 10 项已完成、进行中或计划中的真实活动。</p>
+            </div>
+            <span id="activitiesProgress" class="status" role="status" aria-live="polite">课外活动：已填写 0/10</span>
+          </div>
+          <div id="activitiesList" class="portfolio-grid" data-portfolio-section="activities"></div>
+        </section>
+
+        <section class="panel portfolio-panel" aria-labelledby="competitions-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="competitions-title">竞赛经历</h2>
+              <p>最多记录 5 项已经参加、获奖或正在准备的竞赛。</p>
+            </div>
+            <span id="competitionsProgress" class="status" role="status" aria-live="polite">竞赛：已填写 0/5</span>
+          </div>
+          <div id="competitionsList" class="portfolio-grid compact" data-portfolio-section="competitions"></div>
+        </section>
+
+        <section class="panel portfolio-panel" aria-labelledby="summer-schools-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="summer-schools-title">夏校经历</h2>
+              <p>最多记录 3 项夏校经历或申请计划。</p>
+            </div>
+            <span id="summerSchoolsProgress" class="status" role="status" aria-live="polite">夏校：已填写 0/3</span>
+          </div>
+          <div id="summerSchoolsList" class="portfolio-grid compact" data-portfolio-section="summer-schools"></div>
+        </section>
+
+        <section class="panel portfolio-panel" aria-labelledby="recommendation-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="recommendation-title">推荐信准备</h2>
+              <p>记录 Counselor、校内教师和校外推荐人的准备状态。</p>
+            </div>
+            <span id="recommendationProgress" class="status" role="status" aria-live="polite">推荐信：待补充</span>
+          </div>
+          <div id="recommendationLettersPanel" class="recommendation-portfolio"></div>
+        </section>
+
+        <footer class="portfolio-save-bar" aria-label="保存状态">
+          <span id="portfolioStatus" class="status" role="status" aria-live="polite">正在加载</span>
+          <button type="button" data-save-portfolio>保存进度</button>
+        </footer>
+      </form>
+    </main>
+    <script type="module" src="./src/client/safe-navigation.mjs"></script>
+    <script type="module" src="./src/client/my-activities.js"></script>
+  </body>
+</html>

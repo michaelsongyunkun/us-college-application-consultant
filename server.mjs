@@ -7,6 +7,10 @@ import { parseAgentOutput } from "./src/domain/agent-output-parser.mjs";
 import { resolveApiKey } from "./src/server/api-key.mjs";
 import { createAuthDatabase } from "./src/server/auth-db.mjs";
 import { AuthError, createAuthService } from "./src/server/auth-service.mjs";
+import {
+  ActivityPortfolioError,
+  createActivityPortfolioService,
+} from "./src/server/activity-portfolio-service.mjs";
 import { createMailerFromEnv } from "./src/server/mailer.mjs";
 import { PlanningError, createPlanningService } from "./src/server/planning-service.mjs";
 
@@ -360,6 +364,7 @@ export function createAppServer({
   authDb = createAuthDatabase({ databasePath }),
   auth = createAuthService({ authDb }),
   planning = createPlanningService({ authDb }),
+  activityPortfolio = createActivityPortfolioService({ authDb }),
   mailer = createMailerFromEnv(),
   appBaseUrl = process.env.APP_BASE_URL || "",
   maxRequestBodyBytes = DEFAULT_MAX_REQUEST_BODY_BYTES,
@@ -409,6 +414,20 @@ export function createAppServer({
         if (!user) return;
         const payload = await readJson(request);
         sendJson(response, 200, planning.saveProfile(user, payload.profile || {}));
+        return;
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/my-activities") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        sendJson(response, 200, activityPortfolio.getPortfolio(user));
+        return;
+      }
+
+      if (request.method === "PUT" && url.pathname === "/api/my-activities") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        sendJson(response, 200, activityPortfolio.savePortfolio(user, await readJson(request)));
         return;
       }
 
@@ -538,6 +557,7 @@ export function createAppServer({
       if (
         ((requestPath === "/course-helper.html" ||
           requestPath === "/gpa-calculator.html" ||
+          requestPath === "/my-activities.html" ||
           requestPath === "/resource-library.html" ||
           requestPath === "/school-encyclopedia.html") ||
           requestPath.startsWith("/data/")) &&
@@ -559,7 +579,12 @@ export function createAppServer({
       }));
       createReadStream(filePath).pipe(response);
     } catch (error) {
-      if (error instanceof AuthError || error instanceof PlanningError || error instanceof RequestError) {
+      if (
+        error instanceof AuthError ||
+        error instanceof ActivityPortfolioError ||
+        error instanceof PlanningError ||
+        error instanceof RequestError
+      ) {
         sendJson(response, error.statusCode, { error: error.message });
         return;
       }

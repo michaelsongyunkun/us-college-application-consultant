@@ -60,7 +60,24 @@ export function createAuthDatabase({ databasePath }) {
       user_name TEXT NOT NULL,
       user_email TEXT NOT NULL,
       event_type TEXT NOT NULL CHECK (
-        event_type IN ('parse_codex_answer', 'export_json', 'export_word')
+        event_type IN (
+          'parse_codex_answer',
+          'parse_codex_failure',
+          'export_json',
+          'export_word',
+          'save_draft',
+          'clear_draft',
+          'generate_plan_success',
+          'generate_plan_failure',
+          'build_codex_task',
+          'copy_codex_task',
+          'refresh_competitions',
+          'refresh_summer_schools',
+          'refresh_case_matches',
+          'course_helper_visit',
+          'refresh_ap_recommendations',
+          'data_load_failure'
+        )
       ),
       grade TEXT,
       major_direction TEXT,
@@ -82,6 +99,18 @@ export function createAuthDatabase({ databasePath }) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL UNIQUE,
       profile_json TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS student_activity_portfolios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      activities_json TEXT NOT NULL,
+      competitions_json TEXT NOT NULL,
+      summer_schools_json TEXT NOT NULL,
+      recommendation_letters_json TEXT NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -120,6 +149,8 @@ export function createAuthDatabase({ databasePath }) {
     CREATE INDEX IF NOT EXISTS idx_usage_events_user_id ON usage_events(user_id);
     CREATE INDEX IF NOT EXISTS idx_usage_events_event_type ON usage_events(event_type);
     CREATE INDEX IF NOT EXISTS idx_usage_events_occurred_at ON usage_events(occurred_at);
+    CREATE INDEX IF NOT EXISTS idx_student_activity_portfolios_user_id
+      ON student_activity_portfolios(user_id);
     CREATE INDEX IF NOT EXISTS idx_planning_projects_user_id ON planning_projects(user_id);
     CREATE INDEX IF NOT EXISTS idx_planning_snapshots_project_id ON planning_snapshots(project_id);
     CREATE INDEX IF NOT EXISTS idx_planning_snapshots_user_id ON planning_snapshots(user_id);
@@ -146,7 +177,7 @@ function migrateUsageEventsConstraint(db) {
   const table = db
     .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usage_events'")
     .get();
-  if (!table?.sql || table.sql.includes("save_draft")) return;
+  if (!table?.sql || table.sql.includes("refresh_case_matches")) return;
 
   db.exec(`
     ALTER TABLE usage_events RENAME TO usage_events_old;
@@ -170,6 +201,7 @@ function migrateUsageEventsConstraint(db) {
           'copy_codex_task',
           'refresh_competitions',
           'refresh_summer_schools',
+          'refresh_case_matches',
           'course_helper_visit',
           'refresh_ap_recommendations',
           'data_load_failure'

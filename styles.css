@@ -72,7 +72,7 @@ textarea {
   color: var(--ink);
   font-size: 22px;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   text-decoration: none;
 }
 
@@ -111,8 +111,8 @@ textarea {
 .hero-copy h1 {
   margin-bottom: 18px;
   color: var(--ink);
-  font-size: clamp(44px, 5vw, 58px);
-  letter-spacing: -0.06em;
+  font-size: 56px;
+  letter-spacing: 0;
   line-height: 1.18;
 }
 
@@ -362,6 +362,110 @@ textarea {
 .process-grid span {
   color: var(--muted);
   line-height: 1.6;
+}
+
+.risk-control,
+.audience-fit {
+  display: grid;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.risk-control-grid,
+.audience-fit-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.risk-control-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.risk-control-grid article {
+  min-height: 218px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--panel);
+  padding: 22px;
+}
+
+.risk-control-grid span {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-green);
+  color: var(--brand-green);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.risk-control-grid h3 {
+  margin: 18px 0 8px;
+  font-size: 18px;
+}
+
+.risk-control-grid p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.audience-fit-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.audience-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--panel);
+  padding: 26px;
+}
+
+.audience-panel.is-suitable {
+  background: var(--surface-green);
+}
+
+.audience-panel.is-unsuitable {
+  background: #fff6e6;
+}
+
+.audience-panel ul {
+  display: grid;
+  gap: 13px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.audience-panel li {
+  position: relative;
+  padding-left: 28px;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+.audience-panel li::before {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(40, 114, 80, 0.12);
+  color: var(--brand-green);
+  font-size: 12px;
+  font-weight: 800;
+  content: "✓";
+}
+
+.audience-panel.is-unsuitable li::before {
+  background: rgba(168, 100, 0, 0.12);
+  color: var(--brand-orange);
+  content: "!";
 }
 
 .trust-commitment {
@@ -1025,6 +1129,124 @@ button.danger:hover {
 
 .resource-panel {
   margin-bottom: 18px;
+}
+
+.portfolio-panel {
+  margin-bottom: 18px;
+}
+
+.portfolio-subtitle {
+  max-width: 760px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 14px;
+  padding: 18px 22px 22px;
+}
+
+.portfolio-grid.compact {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.portfolio-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 16px;
+}
+
+.portfolio-card-heading {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 0.72fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.portfolio-card-heading h3 {
+  margin: 0;
+  color: #2c3645;
+  font-size: 18px;
+}
+
+.portfolio-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.portfolio-fields.two-column {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.portfolio-fields.three-column {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.portfolio-fields.four-column {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.portfolio-fieldset {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfe;
+  padding: 14px;
+}
+
+.portfolio-fieldset legend {
+  padding: 0 6px;
+  color: #2c3645;
+  font-weight: 700;
+}
+
+.recommendation-portfolio {
+  padding: 18px 22px 22px;
+}
+
+.portfolio-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.portfolio-checkboxes label {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 0 11px;
+}
+
+.portfolio-checkboxes input {
+  width: auto;
+}
+
+.portfolio-save-bar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 0 0 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.94);
+  padding: 12px;
+  box-shadow: 0 12px 30px rgba(31, 41, 49, 0.08);
 }
 
 .ap-recommendation-panel {
@@ -1953,7 +2175,7 @@ button.neutral:hover {
   color: #3576a9;
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -2569,6 +2791,12 @@ button.neutral:hover {
 }
 
 /* Responsive layout */
+@media (max-width: 1080px) {
+  .risk-control-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 780px) {
   .landing-shell {
     gap: 34px;
@@ -2579,6 +2807,8 @@ button.neutral:hover {
   .landing-hero,
   .capability-highlights,
   .process-grid,
+  .risk-control-grid,
+  .audience-fit-grid,
   .trust-commitment {
     display: grid;
     grid-template-columns: 1fr;
@@ -2598,7 +2828,7 @@ button.neutral:hover {
   }
 
   .hero-copy h1 {
-    font-size: clamp(38px, 12vw, 46px);
+    font-size: 40px;
   }
 
   .hero-description {
@@ -2622,6 +2852,14 @@ button.neutral:hover {
   .trust-commitment {
     gap: 22px;
     padding: 24px 20px;
+  }
+
+  .risk-control-grid article {
+    min-height: auto;
+  }
+
+  .audience-panel {
+    padding: 22px 20px;
   }
 
   .admin-overview,
@@ -2745,6 +2983,25 @@ button.neutral:hover {
 
   .resource-view {
     padding: 16px;
+  }
+
+  .portfolio-grid,
+  .recommendation-portfolio {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .portfolio-card-heading,
+  .portfolio-fields.two-column,
+  .portfolio-fields.three-column,
+  .portfolio-fields.four-column {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-save-bar {
+    align-items: stretch;
+    flex-direction: column;
+    bottom: 8px;
   }
 
   .load-more-row {

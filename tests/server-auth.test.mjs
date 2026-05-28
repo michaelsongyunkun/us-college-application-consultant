@@ -106,6 +106,7 @@ try {
     "copy_codex_task",
     "refresh_competitions",
     "refresh_summer_schools",
+    "refresh_case_matches",
     "course_helper_visit",
     "refresh_ap_recommendations",
   ]) {
@@ -250,7 +251,7 @@ try {
   assert.equal(dashboard.overview.activeUsers, 1);
   assert.equal(dashboard.overview.planGenerations, 1);
   assert.equal(dashboard.overview.wordExports, 1);
-  assert.equal(dashboard.overview.recommendationRefreshes, 2);
+  assert.equal(dashboard.overview.recommendationRefreshes, 3);
 
   const exportedReportResponse = await fetch(`${baseUrl}/api/admin/login-dashboard?eventType=export_word`, {
     headers: { Cookie: adminLoginResponse.headers.get("set-cookie") },

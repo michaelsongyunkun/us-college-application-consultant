@@ -34,6 +34,7 @@ const usageEventLabels = {
   copy_codex_task: "复制 Codex 任务包",
   refresh_competitions: "竞赛换一批",
   refresh_summer_schools: "夏校换一批",
+  refresh_case_matches: "案例换一批",
   course_helper_visit: "访问选课辅助器",
   refresh_ap_recommendations: "重新生成 AP 推荐",
   data_load_failure: "数据加载失败",

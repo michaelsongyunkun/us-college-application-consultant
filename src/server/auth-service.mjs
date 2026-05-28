@@ -21,6 +21,7 @@ const USAGE_EVENT_TYPES = new Set([
   "copy_codex_task",
   "refresh_competitions",
   "refresh_summer_schools",
+  "refresh_case_matches",
   "course_helper_visit",
   "refresh_ap_recommendations",
   "data_load_failure",
@@ -364,7 +365,7 @@ export function createAuthService({
         .prepare(
           `SELECT COUNT(*) AS count
            FROM usage_events
-           ${appendFilterCondition(baseUsageFilters.where, "event_type IN ('refresh_competitions', 'refresh_summer_schools')")}`,
+           ${appendFilterCondition(baseUsageFilters.where, "event_type IN ('refresh_competitions', 'refresh_summer_schools', 'refresh_case_matches')")}`,
         )
         .get(baseUsageFilters.params).count,
       failedLogins: db

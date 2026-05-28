@@ -79,6 +79,7 @@ const parseDiagnostics = document.querySelector("#parseDiagnostics");
 const caseMatchStatus = document.querySelector("#caseMatchStatus");
 const caseMatchNotice = document.querySelector("#caseMatchNotice");
 const caseMatchList = document.querySelector("#caseMatchList");
+const refreshCaseMatchesButton = document.querySelector("#refreshCaseMatchesButton");
 const competitionStatus = document.querySelector("#competitionStatus");
 const competitionNotice = document.querySelector("#competitionNotice");
 const competitionList = document.querySelector("#competitionList");
@@ -112,6 +113,7 @@ let serverHasApiKey = false;
 let fixedPrompt = "";
 let admissionCases = [];
 let latestCaseMatches = [];
+let caseMatchBatchIndex = 0;
 let competitions = [];
 let latestCompetitionRecommendations = [];
 let previousCompetitionBatchIds = [];
@@ -575,37 +577,52 @@ function renderRecommendationLetterStrategy() {
     .join("");
 }
 
-function renderCaseMatches() {
+function renderCaseMatches({ refresh = false } = {}) {
   if (!caseMatchList || !caseMatchNotice || !caseMatchStatus) return;
+
+  if (refresh) caseMatchBatchIndex += 1;
 
   if (!admissionCases.length) {
     latestCaseMatches = [];
+    caseMatchBatchIndex = 0;
     caseMatchStatus.textContent = "案例库为空";
     caseMatchNotice.textContent =
       "当前案例库暂未找到合适案例，建议后续补充更多录取案例数据后再生成匹配结果。";
     caseMatchList.innerHTML = "";
+    if (refreshCaseMatchesButton) refreshCaseMatchesButton.disabled = true;
     return;
   }
 
-  latestCaseMatches = matchAdmissionCases({
+  const rankedMatches = matchAdmissionCases({
     studentProfile: buildCurrentStudentCaseProfile(),
     cases: admissionCases,
-    limit: 1,
+    limit: admissionCases.length,
   });
 
-  caseMatchStatus.textContent = `已载入 ${admissionCases.length} 个案例`;
-
-  if (!latestCaseMatches.length) {
+  if (!rankedMatches.length) {
+    latestCaseMatches = [];
+    caseMatchBatchIndex = 0;
+    caseMatchStatus.textContent = `已载入 ${admissionCases.length} 个案例`;
     caseMatchNotice.textContent =
       "当前案例库暂未找到合适案例，建议后续补充更多录取案例数据后再生成匹配结果。";
     caseMatchList.innerHTML = "";
+    if (refreshCaseMatchesButton) refreshCaseMatchesButton.disabled = true;
     return;
   }
 
+  const selectedIndex = caseMatchBatchIndex % rankedMatches.length;
+  latestCaseMatches = [rankedMatches[selectedIndex]];
+  caseMatchStatus.textContent = `已载入 ${admissionCases.length} 个案例 · 当前第 ${selectedIndex + 1}/${rankedMatches.length} 个`;
+  if (refreshCaseMatchesButton) refreshCaseMatchesButton.disabled = rankedMatches.length <= 1;
+
   const hasHighMatch = latestCaseMatches.some((match) => match.strength === "high");
-  caseMatchNotice.textContent = hasHighMatch
-    ? "以下为当前案例库中专业方向和背景最接近的一个录取案例。"
-    : "以下为当前案例库中专业方向接近、但整体相似度仍需谨慎参考的一个案例。";
+  if (selectedIndex > 0) {
+    caseMatchNotice.textContent = `以下为匹配度排名第 ${selectedIndex + 1} 的相似案例，匹配度仅次于上一条推荐案例。`;
+  } else {
+    caseMatchNotice.textContent = hasHighMatch
+      ? "以下为当前案例库中专业方向和背景最接近的一个录取案例。点击“换一批”可查看匹配度次高的案例。"
+      : "以下为当前案例库中专业方向接近、但整体相似度仍需谨慎参考的一个案例。点击“换一批”可查看匹配度次高的案例。";
+  }
 
   caseMatchList.innerHTML = latestCaseMatches
     .map((match, index) => {
@@ -615,7 +632,7 @@ function renderCaseMatches() {
         <article class="case-card">
           <div class="case-card__header">
             <div>
-              <p class="case-index">案例 ${index + 1}</p>
+              <p class="case-index">案例 ${selectedIndex + index + 1}</p>
               <h3>${escapeHtml(admissionCase.admission)}</h3>
             </div>
             <span class="case-score">匹配度 ${score}</span>
@@ -641,6 +658,7 @@ function renderStudentDependentRecommendations() {
   previousSummerSchoolBatchIds = [];
   seenSummerSchoolIds = [];
   summerSchoolBatchIndex = 0;
+  caseMatchBatchIndex = 0;
   renderCompetitionRecommendations();
   renderSummerSchoolRecommendations();
   renderRecommendationLetterStrategy();
@@ -1137,8 +1155,8 @@ function exportWordDocument() {
 
 async function resetDraft() {
   trackUsageEvent("clear_draft");
-  clearPlanFields();
-  renderStudentDependentRecommendations();
+  clearVisibleDraft();
+  renderProfileSummary();
   workspaceDirty = true;
   await saveDraft();
   saveStatus.textContent = "已清空";
@@ -1222,6 +1240,13 @@ refreshSummerSchoolsButton?.addEventListener("click", () => {
     metrics: { generatedActivityCount: latestSummerSchoolRecommendations.length },
   });
   renderSummerSchoolRecommendations({ refresh: true });
+});
+refreshCaseMatchesButton?.addEventListener("click", () => {
+  trackUsageEvent("refresh_case_matches", {
+    metrics: { generatedActivityCount: latestCaseMatches.length },
+    details: { currentCaseRank: caseMatchBatchIndex + 1 },
+  });
+  renderCaseMatches({ refresh: true });
 });
 function isWorkspaceDataInput(event) {
   const target = event.target;
