@@ -56,6 +56,18 @@ assert.ok(getTagAttribute(indexHtml, /<meta property="og:description"[^>]+>/, "c
 assert.equal(getTagAttribute(indexHtml, /<meta name="twitter:card"[^>]+>/, "content"), "summary");
 assert.ok(indexHtml.includes('<meta name="theme-color" content="#fbfaf5" />'));
 assert.ok(indexHtml.includes('<link rel="icon" href="/favicon.svg" type="image/svg+xml" />'));
+assert.match(
+  getTagAttribute(indexHtml, /<link rel="stylesheet"[^>]+>/, "href"),
+  /^\.\/styles\.css\?v=[a-z0-9-]+$/u,
+);
+assert.match(
+  getTagAttribute(indexHtml, /<script type="module" src="\.\/src\/client\/app\.js[^"]*"[^>]*>/, "src"),
+  /^\.\/src\/client\/app\.js\?v=[a-z0-9-]+$/u,
+);
+assert.match(
+  getTagAttribute(indexHtml, /<script type="module" src="\.\/src\/client\/safe-navigation\.mjs[^"]*"[^>]*>/, "src"),
+  /^\.\/src\/client\/safe-navigation\.mjs\?v=[a-z0-9-]+$/u,
+);
 
 const robots = await readFile("robots.txt", "utf8");
 assert.ok(robots.includes("User-agent: *"));
