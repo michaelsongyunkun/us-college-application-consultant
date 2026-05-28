@@ -1244,7 +1244,7 @@ button.danger:hover {
 
 .application-plan-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   padding: 14px 18px 18px;
 }

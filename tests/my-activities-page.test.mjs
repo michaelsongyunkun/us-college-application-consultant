@@ -86,6 +86,11 @@ assert.match(styles, /\.portfolio-card\s*\{/, "履历条目应使用专用卡片
 assert.match(styles, /\.application-plan-grid\s*\{/, "我的申请页面应有选校计划布局样式。");
 assert.match(
   styles,
+  /\.application-plan-grid\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+  "选校计划轮次卡片应垂直排列为单列。"
+);
+assert.match(
+  styles,
   /\.application-plan-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1\.05fr\)\s*minmax\(0,\s*0\.95fr\)/,
   "选校计划字段列应允许收缩，避免三列布局下输入框溢出。"
 );
