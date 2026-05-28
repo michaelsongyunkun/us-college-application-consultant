@@ -137,6 +137,11 @@ assert.match(
   /refreshCaseMatchesButton\?\.addEventListener\("click"[\s\S]*renderCaseMatches\(\{ refresh: true \}\)/,
   "Similar case recommendations should expose a next-ranked refresh action.",
 );
+assert.match(
+  appJs,
+  /from "\.\.\/domain\/admission-case-matcher\.mjs\?v=[a-z0-9-]+"/,
+  "The admission case matcher import should be cache-busted when matching behavior changes.",
+);
 assert.match(appJs, /匹配度排名第 \$\{selectedIndex \+ 1\}/, "Case refresh should describe the next-ranked match.");
 assert.match(
   appJs,

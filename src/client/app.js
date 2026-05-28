@@ -6,7 +6,7 @@ import {
   buildStudentCaseProfile,
   matchAdmissionCases,
   parseAdmissionCasesMarkdown,
-} from "../domain/admission-case-matcher.mjs";
+} from "../domain/admission-case-matcher.mjs?v=20260528-case-refresh";
 import {
   buildCompetitionStudentProfile,
   parseCompetitionsMarkdown,
