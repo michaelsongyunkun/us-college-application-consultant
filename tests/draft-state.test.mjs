@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { clearDraftFields } from "../draft-state.mjs";
+import { clearDraftFields } from "../src/client/draft-state.mjs";
 
 const fields = [
   { value: "activity type" },

@@ -5,7 +5,7 @@ import {
   recommendSummerSchools,
   normalizeRating,
   tierForRating,
-} from "../summer-school-recommender.mjs";
+} from "../src/domain/summer-school-recommender.mjs";
 
 const markdown = `
 # 📐 一、数学方向

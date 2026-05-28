@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getAgentAvailability } from "../ui-state.mjs";
+import { getAgentAvailability } from "../src/client/ui-state.mjs";
 
 assert.deepEqual(
   getAgentAvailability({ protocol: "file:", promptLoaded: false, hasApiKey: false }),

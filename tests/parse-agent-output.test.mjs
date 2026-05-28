@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { diagnoseAgentOutput, parseAgentOutput } from "../agent-output-parser.mjs";
+import { diagnoseAgentOutput, parseAgentOutput } from "../src/domain/agent-output-parser.mjs";
 
 const markdownTable = `### 输出列表（严格按表格填写）
 | 序号 | 活动类型（Type） | 活动名称（精准描述） | 具体执行描述（需含：问题/成果/影响） | 建议年级 |

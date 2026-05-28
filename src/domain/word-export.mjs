@@ -1,4 +1,4 @@
-import { renderMarkdown } from "./markdown-renderer.mjs";
+import { renderMarkdown } from "../domain/markdown-renderer.mjs";
 
 function escapeHtml(value) {
   return String(value ?? "")

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {
   buildParseFailureMessage,
   renderParseDiagnostics,
-} from "../agent-answer-diagnostics-ui.mjs";
+} from "../src/client/agent-answer-diagnostics-ui.mjs";
 
 assert.equal(
   buildParseFailureMessage({

@@ -1,4 +1,4 @@
-import { normalizeSnapshotNote, stripSensitiveDraftFields } from "./privacy-guards.mjs";
+import { normalizeSnapshotNote, stripSensitiveDraftFields } from "../shared/privacy-guards.mjs";
 
 const DEFAULT_PLAN_NAME = "默认规划";
 const MAX_PLAN_NAME_LENGTH = 80;

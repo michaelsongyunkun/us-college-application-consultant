@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getRequestErrorMessage } from "../auth-client-errors.mjs";
+import { getRequestErrorMessage } from "../src/client/auth-client-errors.mjs";
 
 assert.equal(
   getRequestErrorMessage(new TypeError("Failed to fetch")),

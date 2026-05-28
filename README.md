@@ -16,16 +16,16 @@
 
 - `index.html`：页面结构。
 - `styles.css`：页面样式。
-- `app.js`：前端交互、生成任务包、解析回答、导出文件。
-- `planning-form-state.mjs`：主页面表单与活动表格的数据采集、回填。
-- `html-utils.mjs`：共享 HTML 转义工具。
-- `agent-answer-diagnostics-ui.mjs`：AI 回答解析诊断面板。
-- `activity-quality-ui.mjs`：活动质量检查面板渲染。
+- `src/client/app.js`：前端交互、生成任务包、解析回答、导出文件。
+- `src/client/planning-form-state.mjs`：主页面表单与活动表格的数据采集、回填。
+- `src/client/html-utils.mjs`：共享 HTML 转义工具。
+- `src/client/agent-answer-diagnostics-ui.mjs`：AI 回答解析诊断面板。
+- `src/client/activity-quality-ui.mjs`：活动质量检查面板渲染。
 - `server.mjs`：本地服务，读取固定提示词，处理 API 模式请求。
-- `agent-output-parser.mjs`：解析 Agent 输出中的 markdown 表格和【活动叙事逻辑解读】。
-- `activity-quality-checker.mjs`：检查活动列表质量并生成可执行优化提示。
-- `codex-mode.mjs`：生成给外部 AI 对话使用的任务包。
-- `word-export.mjs`：生成 Word 可打开的导出文档。
+- `src/domain/agent-output-parser.mjs`：解析 Agent 输出中的 markdown 表格和【活动叙事逻辑解读】。
+- `src/domain/activity-quality-checker.mjs`：检查活动列表质量并生成可执行优化提示。
+- `src/domain/codex-mode.mjs`：生成给外部 AI 对话使用的任务包。
+- `src/domain/word-export.mjs`：生成 Word 可打开的导出文档。
 - `prompts/us-college-admissions-strategist-agent.md`：固定 Agent 提示词。
 - `start-consultant.cmd`：Windows 一键启动脚本。
 - `tests/`：基础测试。
@@ -150,27 +150,15 @@ node server.mjs
 ## 测试
 
 ```powershell
-node tests\admission-case-matching.test.mjs
-node tests\competition-recommender.test.mjs
-node tests\summer-school-recommender.test.mjs
-node tests\humanities-recommendation-integration.test.mjs
-node tests\draft-state.test.mjs
-node tests\word-export-cases.test.mjs
-node tests\word-export-competitions.test.mjs
-node tests\word-export-summer-schools.test.mjs
-node tests\prompt-integrity.test.mjs
-node tests\parse-agent-output.test.mjs
-node tests\codex-mode.test.mjs
-node tests\word-export.test.mjs
-node --check app.js
-node --check server.mjs
+npm test
+npm run check
 ```
 
 ## 相似录取案例匹配
 
 - 案例库文件位于 `data/admission-cases.md`，当前由用户提供的 Word 案例文档提取而来，共 57 个案例。
 - 每个案例按 `录取`、`专业`、`课程成绩`、`奖项`、`活动` 结构维护。
-- 匹配逻辑位于 `admission-case-matcher.mjs`，会综合专业方向、学术背景、奖项、活动和目标院校层级计算相似度。
+- 匹配逻辑位于 `src/domain/admission-case-matcher.mjs`，会综合专业方向、学术背景、奖项、活动和目标院校层级计算相似度。
 - 后续补充案例时，继续按 `# 案例 58`、`## 录取`、`## 专业`、`## 课程成绩`、`## 奖项`、`## 活动` 的 Markdown 结构追加即可。
 - 后续如果升级为数据库、向量库或 RAG 检索，可以保留 `matchAdmissionCases` 的输入输出结构，只替换案例召回层。
 
@@ -178,7 +166,7 @@ node --check server.mjs
 
 - 竞赛资料库文件位于 `data/competitions.md`，当前由用户提供的 Word 竞赛文档提取而来，共 552 条竞赛记录。
 - 页面会在“规划回答输出表格”和“相似录取案例参考”之间展示 5 个竞赛推荐：3 个学科强相关、2 个拓展型。
-- 推荐逻辑位于 `competition-recommender.mjs`，只从 `data/competitions.md` 解析竞赛名称和官网链接；缺少网址的竞赛会显示“官网待确认”。
+- 推荐逻辑位于 `src/domain/competition-recommender.mjs`，只从 `data/competitions.md` 解析竞赛名称和官网链接；缺少网址的竞赛会显示“官网待确认”。
 - 竞赛含金量会在解析时自动评级为 `S / A / B / C`：`S` 对应丘成桐、ISEF、顶级国际奥赛等；`A` 对应 AIME、USACO、John Locke、NEC 等强信号竞赛；`B` 对应 AMC、区域/校际型竞赛；`C` 对应袋鼠数学等入门或体验型竞赛。
 - 后续补充竞赛时，继续按 `# 类别名称` 加 `- [竞赛名称](官网链接)` 或 `- 竞赛名称 — 官网以承办机构最新公告为准` 的 Markdown 结构追加即可。
 
@@ -186,6 +174,6 @@ node --check server.mjs
 
 - 夏校资料库文件位于 `data/summer-schools.md`，当前由用户提供的 Word 夏校文档提取而来，共 120 个项目。
 - 页面会在“国际竞赛推荐”和“相似录取案例参考”之间展示 3 个夏校推荐：冲刺型、匹配型、保底型各 1 个。
-- 推荐逻辑位于 `summer-school-recommender.mjs`，会解析项目名称、方向、形式与官网、简介、含金量、录取率、申请要求、举办时间和申请时间。
+- 推荐逻辑位于 `src/domain/summer-school-recommender.mjs`，会解析项目名称、方向、形式与官网、简介、含金量、录取率、申请要求、举办时间和申请时间。
 - 含金量会标准化为主评级，例如 `A+(身份受限)` 会按 `A+` 进入冲刺型梯度。
 - 后续补充夏校时，继续按 `# 方向`、`## 序号. 项目名称` 和固定字段的 Markdown 结构追加即可。

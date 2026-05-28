@@ -28,7 +28,7 @@
 
 - `planning-service.mjs` 增加按用户、方案与备份 id 删除单条备份的方法。
 - `server.mjs` 增加 `DELETE /api/plans/:planId/snapshots/:snapshotId` 路由。
-- `app.js` 在备份行渲染删除按钮，增加确认及请求后刷新列表的客户端行为。
+- `src/client/app.js` 在备份行渲染删除按钮，增加确认及请求后刷新列表的客户端行为。
 - `styles.css` 仅在现有布局不足以容纳双按钮时补充备份行按钮容器样式；沿用当前危险按钮样式。
 - 现有创建与恢复接口、方案删除行为、导出行为均不改变。
 

@@ -13,7 +13,7 @@ The app currently runs from `server.mjs` using Node's native HTTP server. It ser
 - `GET /api/prompt`
 - `POST /api/plan`
 
-There is no current authentication, session handling, user storage, or database layer. The frontend is a static page in `index.html` with behavior in `app.js`. Draft data is currently stored in browser `localStorage`.
+There is no current authentication, session handling, user storage, or database layer. The frontend is a static page in `index.html` with behavior in `src/client/app.js`. Draft data is currently stored in browser `localStorage`.
 
 ## Chosen Approach
 

@@ -1,4 +1,4 @@
-import { calculateGpa } from "./gpa-calculator.mjs";
+import { calculateGpa } from "../domain/gpa-calculator.mjs";
 
 const form = document.querySelector("#gpaForm");
 const scaleSelect = document.querySelector("#gpaScale");

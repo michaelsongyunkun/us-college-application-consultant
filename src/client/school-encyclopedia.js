@@ -1,4 +1,4 @@
-import { filterSchools, parseSchoolsMarkdown } from "./school-encyclopedia.mjs";
+import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs";
 import {
   DEFAULT_VISIBLE_RESULT_LIMIT,
   expandVisibleResultLimit,

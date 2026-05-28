@@ -46,10 +46,10 @@
 
 **Files:**
 - Modify: `index.html`
-- Modify: `app.js`
-- Modify: `competition-recommender.mjs`
-- Modify: `summer-school-recommender.mjs`
-- Modify: `word-export.mjs`
+- Modify: `src/client/app.js`
+- Modify: `src/domain/competition-recommender.mjs`
+- Modify: `src/domain/summer-school-recommender.mjs`
+- Modify: `src/domain/word-export.mjs`
 - Test: `tests/planning-workspace-layout.test.mjs`
 - Test: `tests/competition-recommender.test.mjs`
 - Test: `tests/summer-school-recommender.test.mjs`

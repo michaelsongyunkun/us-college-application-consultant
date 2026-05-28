@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { buildCompetitionStudentProfile, recommendCompetitions } from "../competition-recommender.mjs";
-import { buildSummerSchoolStudentProfile, recommendSummerSchools, tierForRating } from "../summer-school-recommender.mjs";
+import { buildCompetitionStudentProfile, recommendCompetitions } from "../src/domain/competition-recommender.mjs";
+import { buildSummerSchoolStudentProfile, recommendSummerSchools, tierForRating } from "../src/domain/summer-school-recommender.mjs";
 
 const mixedDirectionProfile = {
   grade: "11",

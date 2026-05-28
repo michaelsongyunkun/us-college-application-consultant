@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseResearchProjectsMarkdown } from "../research-project-recommender.mjs";
+import { parseResearchProjectsMarkdown } from "../src/domain/research-project-recommender.mjs";
 
 const projects = parseResearchProjectsMarkdown(readFileSync("data/research-projects.md", "utf8"));
 

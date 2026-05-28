@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
-import { createAuthDatabase } from "../auth-db.mjs";
+import { createAuthDatabase } from "../src/server/auth-db.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-server-auth-"));
 const databasePath = join(tempDir, "auth.sqlite");
@@ -37,7 +37,8 @@ try {
   assert.equal(blockedSchoolEncyclopedia.status, 401);
 
   const faviconResponse = await fetch(`${baseUrl}/favicon.ico`);
-  assert.equal(faviconResponse.status, 204);
+  assert.equal(faviconResponse.status, 200);
+  assert.equal(faviconResponse.headers.get("content-type"), "image/svg+xml;charset=utf-8");
   assert.equal(faviconResponse.headers.get("x-content-type-options"), "nosniff");
 
   const registrationResponse = await fetch(`${baseUrl}/api/auth/register`, {

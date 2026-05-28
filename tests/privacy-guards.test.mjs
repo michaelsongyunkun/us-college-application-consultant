@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { normalizeSnapshotNote, stripSensitiveDraftFields } from "../privacy-guards.mjs";
+import { normalizeSnapshotNote, stripSensitiveDraftFields } from "../src/shared/privacy-guards.mjs";
 
 assert.equal(normalizeSnapshotNote("  Before counselor review  "), "Before counselor review");
 assert.equal(normalizeSnapshotNote("3152482377@qq.com"), "");

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { hasAnyApiKey, resolveApiKey } from "../api-key.mjs";
+import { hasAnyApiKey, resolveApiKey } from "../src/server/api-key.mjs";
 
 assert.equal(
   resolveApiKey({ environmentApiKey: "env-key", requestApiKey: "" }),

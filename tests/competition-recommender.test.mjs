@@ -4,7 +4,7 @@ import {
   parseCompetitionsMarkdown,
   rateCompetition,
   recommendCompetitions,
-} from "../competition-recommender.mjs";
+} from "../src/domain/competition-recommender.mjs";
 
 const markdown = `
 # 数学类（Mathematics）

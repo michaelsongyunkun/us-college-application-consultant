@@ -4,12 +4,12 @@ import {
   buildCompetitionStudentProfile,
   parseCompetitionsMarkdown,
   recommendCompetitions,
-} from "../competition-recommender.mjs";
+} from "../src/domain/competition-recommender.mjs";
 import {
   buildSummerSchoolStudentProfile,
   parseSummerSchoolsMarkdown,
   recommendSummerSchools,
-} from "../summer-school-recommender.mjs";
+} from "../src/domain/summer-school-recommender.mjs";
 
 const profile = {
   grade: "10年级",

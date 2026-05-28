@@ -1,4 +1,4 @@
-import { classifyResource, enrichResourceEligibility } from "./resource-eligibility.mjs";
+import { classifyResource, enrichResourceEligibility } from "../domain/resource-eligibility.mjs";
 
 const CATEGORY_TAGS = {
   数学类: ["math", "quant", "stem"],

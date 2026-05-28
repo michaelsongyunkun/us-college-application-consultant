@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildRecommendationLetterStrategy } from "../recommendation-letter-recommender.mjs";
+import { buildRecommendationLetterStrategy } from "../src/domain/recommendation-letter-recommender.mjs";
 
 const profile = {
   grade: "11年级",

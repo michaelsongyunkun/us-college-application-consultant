@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const html = readFileSync("resource-library.html", "utf8");
-const script = readFileSync("resource-library.js", "utf8");
+const script = readFileSync("src/client/resource-library.js", "utf8");
 const filterForm = html.match(/<form id="resourceEligibilityForm"[\s\S]*?<\/form>/)?.[0] || "";
 const toolbar = html.match(/<div class="resource-toolbar">[\s\S]*?<\/div>\s*<\/div>/)?.[0] || "";
 

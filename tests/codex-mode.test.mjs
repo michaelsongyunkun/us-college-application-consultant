@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildCodexTaskPackage } from "../codex-mode.mjs";
+import { buildCodexTaskPackage } from "../src/domain/codex-mode.mjs";
 
 const task = buildCodexTaskPackage({
   fixedPrompt: "# Role: 固定提示词",

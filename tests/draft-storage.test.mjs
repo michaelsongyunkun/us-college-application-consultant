@@ -5,7 +5,7 @@ import {
   removeLegacySharedDraft,
   removeUserDraft,
   writeUserDraft,
-} from "../draft-storage.mjs";
+} from "../src/client/draft-storage.mjs";
 
 const values = new Map();
 const storage = {

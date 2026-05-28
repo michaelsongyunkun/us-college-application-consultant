@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { analyzeActivityQuality } from "../activity-quality-checker.mjs";
+import { analyzeActivityQuality } from "../src/domain/activity-quality-checker.mjs";
 
 const emptyResult = analyzeActivityQuality();
 assert.equal(emptyResult.score, 0);

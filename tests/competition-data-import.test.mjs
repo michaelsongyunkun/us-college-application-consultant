@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseCompetitionsMarkdown } from "../competition-recommender.mjs";
-import { classifyResource, enrichResourceEligibility } from "../resource-eligibility.mjs";
+import { parseCompetitionsMarkdown } from "../src/domain/competition-recommender.mjs";
+import { classifyResource, enrichResourceEligibility } from "../src/domain/resource-eligibility.mjs";
 
 const markdown = readFileSync("data/competitions.md", "utf8");
 const competitions = parseCompetitionsMarkdown(markdown);

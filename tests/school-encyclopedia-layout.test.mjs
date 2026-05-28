@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 
 const indexHtml = readFileSync("index.html", "utf8");
 const pageHtml = readFileSync("school-encyclopedia.html", "utf8");
-const script = readFileSync("school-encyclopedia.js", "utf8");
+const script = readFileSync("src/client/school-encyclopedia.js", "utf8");
 const navigation = indexHtml.match(/<nav class="title-link-group"[\s\S]*?<\/nav>/)?.[0] || "";
 
 assert.match(pageHtml, /class="[^"]*brand-page-header[^"]*"/, "School page should use the shared brand header.");

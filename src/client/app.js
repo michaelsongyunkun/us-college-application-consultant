@@ -1,30 +1,30 @@
 import { getAgentAvailability } from "./ui-state.mjs";
 import { clearDraftFields } from "./draft-state.mjs";
-import { buildCodexTaskPackage } from "./codex-mode.mjs";
-import { parseAgentOutput } from "./agent-output-parser.mjs";
+import { buildCodexTaskPackage } from "../domain/codex-mode.mjs";
+import { parseAgentOutput } from "../domain/agent-output-parser.mjs";
 import {
   buildStudentCaseProfile,
   matchAdmissionCases,
   parseAdmissionCasesMarkdown,
-} from "./admission-case-matcher.mjs";
+} from "../domain/admission-case-matcher.mjs";
 import {
   buildCompetitionStudentProfile,
   parseCompetitionsMarkdown,
   recommendCompetitions,
-} from "./competition-recommender.mjs";
+} from "../domain/competition-recommender.mjs";
 import {
   buildSummerSchoolStudentProfile,
   parseSummerSchoolsMarkdown,
   recommendSummerSchools,
-} from "./summer-school-recommender.mjs";
-import { buildRecommendationLetterStrategy } from "./recommendation-letter-recommender.mjs";
+} from "../domain/summer-school-recommender.mjs";
+import { buildRecommendationLetterStrategy } from "../domain/recommendation-letter-recommender.mjs";
 import { renderActivityQualityPanel } from "./activity-quality-ui.mjs";
 import {
   buildParseFailureMessage,
   renderParseDiagnostics,
 } from "./agent-answer-diagnostics-ui.mjs";
-import { buildWordDocument } from "./word-export.mjs";
-import { renderMarkdown } from "./markdown-renderer.mjs";
+import { buildWordDocument } from "../domain/word-export.mjs";
+import { renderMarkdown } from "../domain/markdown-renderer.mjs";
 import { getRequestErrorMessage } from "./auth-client-errors.mjs";
 import { escapeHtml } from "./html-utils.mjs";
 import {
@@ -39,7 +39,7 @@ import {
   removeLegacySharedDraft,
   removeUserDraft,
 } from "./draft-storage.mjs";
-import { normalizeSnapshotNote, stripSensitiveDraftFields } from "./privacy-guards.mjs";
+import { normalizeSnapshotNote, stripSensitiveDraftFields } from "../shared/privacy-guards.mjs";
 
 const authShell = document.querySelector("#authShell");
 const appShell = document.querySelector("#appShell");

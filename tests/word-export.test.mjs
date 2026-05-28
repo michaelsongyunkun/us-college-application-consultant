@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildWordDocument } from "../word-export.mjs";
+import { buildWordDocument } from "../src/domain/word-export.mjs";
 
 const documentHtml = buildWordDocument({
   profile: { grade: "10年级", interests: "AI教育公益" },

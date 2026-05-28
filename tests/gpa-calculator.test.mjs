@@ -3,7 +3,7 @@ import {
   calculateGpa,
   convertPercentageToGradePoint,
   normalizeGradeThresholds,
-} from "../gpa-calculator.mjs";
+} from "../src/domain/gpa-calculator.mjs";
 
 assert.deepEqual(normalizeGradeThresholds({}), { a: 90, b: 80, c: 70, d: 60 });
 assert.deepEqual(

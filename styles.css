@@ -8,8 +8,8 @@
   --line: #e4e5dc;
   --accent: #328263;
   --accent-strong: #206248;
-  --brand-green: #3a916c;
-  --brand-orange: #eca62f;
+  --brand-green: #287250;
+  --brand-orange: #a86400;
   --surface-warm: #fffaf0;
   --surface-green: #edf5f0;
   --surface-blue: #eef4fa;
@@ -241,6 +241,26 @@ textarea {
 .auth-mode-button {
   width: 100%;
   margin-top: 12px;
+}
+
+.auth-trust-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 14px;
+  margin-top: 16px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-trust-links a {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+.auth-trust-links a:hover {
+  color: var(--brand-green);
+  text-decoration: underline;
 }
 
 .capability-highlights {

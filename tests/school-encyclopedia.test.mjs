@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   filterSchools,
   parseSchoolsMarkdown,
-} from "../school-encyclopedia.mjs";
+} from "../src/domain/school-encyclopedia.mjs";
 
 const markdown = readFileSync("data/schools.md", "utf8");
 const schools = parseSchoolsMarkdown(markdown);

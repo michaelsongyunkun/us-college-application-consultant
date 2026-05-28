@@ -4,7 +4,7 @@ import {
   buildApCourseStudentProfile,
   parseApCoursesMarkdown,
   recommendApCoursePlan,
-} from "../ap-course-recommender.mjs";
+} from "../src/domain/ap-course-recommender.mjs";
 
 const courses = parseApCoursesMarkdown(readFileSync("data/ap-courses.md", "utf8"));
 

@@ -1,4 +1,4 @@
-import { analyzeActivityQuality } from "./activity-quality-checker.mjs";
+import { analyzeActivityQuality } from "../domain/activity-quality-checker.mjs";
 import { escapeHtml } from "./html-utils.mjs";
 
 export function renderActivityQualityPanel({ elements, profile, activities }) {

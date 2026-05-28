@@ -4,7 +4,7 @@
 
 **Goal:** Add a warm, trustworthy public landing experience around the existing authentication card and visually align the authenticated workspace, resource library, and school encyclopedia without removing functions or changing database behavior.
 
-**Architecture:** Keep the current single-page authentication and workspace switching model in `index.html` and `app.js`. Add presentation-only sections and CSS tokens/components, plus one small UI interaction for focusing the existing authentication card from the hero CTA. Reuse existing IDs, routes, requests, storage, datasets, and protected-page access rules exactly as they are.
+**Architecture:** Keep the current single-page authentication and workspace switching model in `index.html` and `src/client/app.js`. Add presentation-only sections and CSS tokens/components, plus one small UI interaction for focusing the existing authentication card from the hero CTA. Reuse existing IDs, routes, requests, storage, datasets, and protected-page access rules exactly as they are.
 
 **Tech Stack:** Static HTML/CSS, browser ES modules, Node.js `assert` layout tests, existing local Node server, Codex in-app Browser verification.
 
@@ -22,7 +22,7 @@
 
 - Modify `index.html`: wrap the existing authentication form in a public hero/brand landing structure and preserve the entire logged-in workspace.
 - Modify `styles.css`: introduce the trusted-balanced palette and new landing/workspace/tool-page component styling.
-- Modify `app.js`: add a single presentation-only event that focuses the existing auth card from the hero CTA.
+- Modify `src/client/app.js`: add a single presentation-only event that focuses the existing auth card from the hero CTA.
 - Modify `resource-library.html`: apply shared branded header classes and hierarchy without changing filters, tabs, cards, or progressive loading IDs.
 - Modify `school-encyclopedia.html`: apply shared branded header classes and hierarchy without changing search, tabs, cards, or progressive loading IDs.
 - Modify `tests/planning-workspace-layout.test.mjs`: assert landing sections, required preserved IDs, focus hook, and brand-style contract.
@@ -121,7 +121,7 @@ Expected: PASS for landing structure assertions and existing ID preservation ass
 
 **Files:**
 - Modify: `tests/planning-workspace-layout.test.mjs`
-- Modify: `app.js`
+- Modify: `src/client/app.js`
 
 - [ ] **Step 1: Write failing behavior-source assertion**
 
@@ -140,7 +140,7 @@ Expected: FAIL because `heroStartButton` is not yet bound.
 
 - [ ] **Step 3: Implement the smallest presentation-only interaction**
 
-Add one selector beside the current authentication selectors in `app.js`:
+Add one selector beside the current authentication selectors in `src/client/app.js`:
 
 ```js
 const heroStartButton = document.querySelector("#heroStartButton");

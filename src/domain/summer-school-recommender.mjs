@@ -1,4 +1,4 @@
-import { classifyResource, enrichResourceEligibility } from "./resource-eligibility.mjs";
+import { classifyResource, enrichResourceEligibility } from "../domain/resource-eligibility.mjs";
 
 const TIER_ORDER = ["冲刺型", "匹配型", "保底型"];
 const TIER_RATINGS = {

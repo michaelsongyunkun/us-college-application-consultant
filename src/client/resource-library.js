@@ -1,11 +1,11 @@
-import { parseCompetitionsMarkdown } from "./competition-recommender.mjs";
+import { parseCompetitionsMarkdown } from "../domain/competition-recommender.mjs";
 import {
   classifyResource,
   enrichResourceEligibility,
   hasEligibilityConditions,
-} from "./resource-eligibility.mjs";
-import { parseResearchProjectsMarkdown } from "./research-project-recommender.mjs";
-import { parseSummerSchoolsMarkdown } from "./summer-school-recommender.mjs";
+} from "../domain/resource-eligibility.mjs";
+import { parseResearchProjectsMarkdown } from "../domain/research-project-recommender.mjs";
+import { parseSummerSchoolsMarkdown } from "../domain/summer-school-recommender.mjs";
 import {
   DEFAULT_VISIBLE_RESULT_LIMIT,
   expandVisibleResultLimit,

@@ -3,7 +3,7 @@ import {
   classifyResource,
   enrichResourceEligibility,
   hasEligibilityConditions,
-} from "../resource-eligibility.mjs";
+} from "../src/domain/resource-eligibility.mjs";
 
 const offline = enrichResourceEligibility({
   formatAndWebsite: "线下(Boston University)",

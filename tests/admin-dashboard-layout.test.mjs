@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const html = await readFile(new URL("../admin.html", import.meta.url), "utf8");
-const script = await readFile(new URL("../admin-dashboard.js", import.meta.url), "utf8");
+const script = await readFile(new URL("../src/client/admin-dashboard.js", import.meta.url), "utf8");
 const styles = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
 for (const id of [

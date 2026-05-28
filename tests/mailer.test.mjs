@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createMailerFromEnv, resolveSmtpConfig } from "../mailer.mjs";
+import { createMailerFromEnv, resolveSmtpConfig } from "../src/server/mailer.mjs";
 
 assert.deepEqual(resolveSmtpConfig({}), {
   host: "",

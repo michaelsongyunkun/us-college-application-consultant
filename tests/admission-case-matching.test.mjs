@@ -3,7 +3,7 @@ import {
   buildStudentCaseProfile,
   matchAdmissionCases,
   parseAdmissionCasesMarkdown,
-} from "../admission-case-matcher.mjs";
+} from "../src/domain/admission-case-matcher.mjs";
 
 const markdown = `
 ## 案例 1

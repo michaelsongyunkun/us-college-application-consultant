@@ -3,12 +3,12 @@ import { readFile } from "node:fs/promises";
 import { createReadStream, existsSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseAgentOutput } from "./agent-output-parser.mjs";
-import { resolveApiKey } from "./api-key.mjs";
-import { createAuthDatabase } from "./auth-db.mjs";
-import { AuthError, createAuthService } from "./auth-service.mjs";
-import { createMailerFromEnv } from "./mailer.mjs";
-import { PlanningError, createPlanningService } from "./planning-service.mjs";
+import { parseAgentOutput } from "./src/domain/agent-output-parser.mjs";
+import { resolveApiKey } from "./src/server/api-key.mjs";
+import { createAuthDatabase } from "./src/server/auth-db.mjs";
+import { AuthError, createAuthService } from "./src/server/auth-service.mjs";
+import { createMailerFromEnv } from "./src/server/mailer.mjs";
+import { PlanningError, createPlanningService } from "./src/server/planning-service.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const promptPath = join(root, "prompts", "us-college-admissions-strategist-agent.md");
@@ -44,11 +44,27 @@ class RequestError extends Error {
 const contentTypes = {
   ".html": "text/html;charset=utf-8",
   ".css": "text/css;charset=utf-8",
+  ".svg": "image/svg+xml;charset=utf-8",
+  ".xml": "application/xml;charset=utf-8",
+  ".txt": "text/plain;charset=utf-8",
   ".js": "text/javascript;charset=utf-8",
   ".mjs": "text/javascript;charset=utf-8",
   ".json": "application/json;charset=utf-8",
   ".md": "text/markdown;charset=utf-8",
 };
+
+const staticCacheExtensions = new Set([".css", ".js", ".mjs", ".svg"]);
+
+function cacheHeadersForPath(filePath) {
+  const extension = extname(filePath);
+  if (staticCacheExtensions.has(extension)) {
+    return { "Cache-Control": "public, max-age=86400" };
+  }
+  if (extension === ".html") {
+    return { "Cache-Control": "no-cache" };
+  }
+  return {};
+}
 
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, withSecurityHeaders({ "Content-Type": "application/json;charset=utf-8" }));
@@ -510,13 +526,12 @@ export function createAppServer({
         return;
       }
 
-      if (url.pathname === "/favicon.ico") {
-        response.writeHead(204, withSecurityHeaders());
-        response.end();
-        return;
-      }
-
-      const requestPath = url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
+      const requestPath =
+        url.pathname === "/"
+          ? "/index.html"
+          : url.pathname === "/favicon.ico"
+            ? "/favicon.svg"
+            : decodeURIComponent(url.pathname);
       if (requestPath === "/admin.html" && !requireAdmin(request, response, auth, { redirect: true })) {
         return;
       }
@@ -524,9 +539,7 @@ export function createAppServer({
         ((requestPath === "/course-helper.html" ||
           requestPath === "/gpa-calculator.html" ||
           requestPath === "/resource-library.html" ||
-          requestPath === "/school-encyclopedia.html" ||
-          requestPath === "/disclaimer.html" ||
-          requestPath === "/contact.html") ||
+          requestPath === "/school-encyclopedia.html") ||
           requestPath.startsWith("/data/")) &&
         !requireUser(request, response, auth)
       ) {
@@ -542,6 +555,7 @@ export function createAppServer({
 
       response.writeHead(200, withSecurityHeaders({
         "Content-Type": contentTypes[extname(filePath)] || "text/plain;charset=utf-8",
+        ...cacheHeadersForPath(filePath),
       }));
       createReadStream(filePath).pipe(response);
     } catch (error) {

@@ -3,7 +3,7 @@ import {
   DEFAULT_VISIBLE_RESULT_LIMIT,
   expandVisibleResultLimit,
   getVisibleResultPage,
-} from "../visible-results.mjs";
+} from "../src/client/visible-results.mjs";
 
 const items = Array.from({ length: 60 }, (_, index) => index + 1);
 const initial = getVisibleResultPage(items);

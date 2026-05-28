@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { renderMarkdown } from "../markdown-renderer.mjs";
+import { renderMarkdown } from "../src/domain/markdown-renderer.mjs";
 
 const html = renderMarkdown(`
 ### 问题

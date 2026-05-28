@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const styles = await readFile(new URL("../styles.css", import.meta.url), "utf8");
-const appJs = await readFile(new URL("../app.js", import.meta.url), "utf8");
+const appJs = await readFile(new URL("../src/client/app.js", import.meta.url), "utf8");
 
 assert.match(
   html,

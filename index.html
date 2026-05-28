@@ -3,7 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="US College Compass 是面向学生与家长的美本申请规划工具，帮助整理学生背景、活动方向、资源匹配和可导出的规划报告。" />
+    <meta name="theme-color" content="#fbfaf5" />
+    <link rel="canonical" href="https://us-application-consultant.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://us-application-consultant.com/" />
+    <meta property="og:title" content="US College Compass | 美本申请规划 Agent" />
+    <meta property="og:description" content="用真实学生背景生成清晰、可执行、可复盘的美本申请规划建议，支持资源参考、项目匹配、版本保存、报告导出、家长沟通复盘和后续申请行动安排。" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="US College Compass | 美本申请规划 Agent" />
+    <meta name="twitter:description" content="面向学生与家长的美本申请规划工具：背景整理、活动规划、资源匹配和报告导出。" />
     <title>美本申请规划 Agent</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -56,6 +67,10 @@
           </form>
           <button id="forgotPasswordButton" type="button" class="quiet auth-mode-button">忘记密码？</button>
           <button id="authModeButton" type="button" class="quiet auth-mode-button">没有账号？注册</button>
+          <div class="auth-trust-links" aria-label="信任与联系信息">
+            <a href="./disclaimer.html">免责声明与数据使用</a>
+            <a href="./contact.html">联系团队</a>
+          </div>
         </div>
       </div>
 
@@ -541,7 +556,7 @@
       </section>
     </main>
 
-    <script type="module" src="./app.js"></script>
-    <script type="module" src="./safe-navigation.mjs"></script>
+    <script type="module" src="./src/client/app.js"></script>
+    <script type="module" src="./src/client/safe-navigation.mjs"></script>
   </body>
 </html>

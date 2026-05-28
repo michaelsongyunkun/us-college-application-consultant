@@ -4,7 +4,7 @@
 
 **Goal:** Replace the competition resource library with the supplied cleaned Word dataset while preserving conservative eligibility filtering for non-US-high-school and non-US-status students.
 
-**Architecture:** Extract the DOCX paragraph text into the maintained Markdown data file without inventing new facts. Expand `competition-recommender.mjs` to parse its detailed heading-and-fields format while retaining legacy compact-format support, then continue routing parsed descriptions through the existing shared eligibility classifier.
+**Architecture:** Extract the DOCX paragraph text into the maintained Markdown data file without inventing new facts. Expand `src/domain/competition-recommender.mjs` to parse its detailed heading-and-fields format while retaining legacy compact-format support, then continue routing parsed descriptions through the existing shared eligibility classifier.
 
 **Tech Stack:** DOCX paragraph extraction using bundled Python runtime, browser ES modules, Node.js assertion tests.
 
@@ -14,7 +14,7 @@
 
 **Files:**
 - Modify: `tests/competition-recommender.test.mjs`
-- Modify: `competition-recommender.mjs`
+- Modify: `src/domain/competition-recommender.mjs`
 
 - [ ] Add a detailed Markdown fixture using `##` category, `###` subgroup, `####` item, and `- **官网** / 时间 / 简介 / 奖项 / 评级` fields.
 - [ ] Run `node tests/competition-recommender.test.mjs` and confirm it fails because detailed blocks are not parsed.

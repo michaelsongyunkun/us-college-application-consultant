@@ -2,7 +2,7 @@ import {
   buildApCourseStudentProfile,
   parseApCoursesMarkdown,
   recommendApCoursePlan,
-} from "./ap-course-recommender.mjs";
+} from "../domain/ap-course-recommender.mjs";
 
 const form = document.querySelector("#courseHelperForm");
 const apCourseGrid = document.querySelector("#apCourseGrid");

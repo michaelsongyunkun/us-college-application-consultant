@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createAuthDatabase } from "../auth-db.mjs";
-import { createAuthService } from "../auth-service.mjs";
-import { PlanningError, createPlanningService } from "../planning-service.mjs";
+import { createAuthDatabase } from "../src/server/auth-db.mjs";
+import { createAuthService } from "../src/server/auth-service.mjs";
+import { PlanningError, createPlanningService } from "../src/server/planning-service.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-planning-"));
 let authDb;
