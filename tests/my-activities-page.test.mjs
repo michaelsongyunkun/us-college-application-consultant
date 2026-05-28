@@ -84,3 +84,13 @@ assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容�
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");
 assert.match(styles, /\.portfolio-card\s*\{/, "履历条目应使用专用卡片样式。");
 assert.match(styles, /\.application-plan-grid\s*\{/, "我的申请页面应有选校计划布局样式。");
+assert.match(
+  styles,
+  /\.application-plan-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1\.05fr\)\s*minmax\(0,\s*0\.95fr\)/,
+  "选校计划字段列应允许收缩，避免三列布局下输入框溢出。"
+);
+assert.match(
+  styles,
+  /\.application-plan-row label,\s*\.application-plan-row input,\s*\.application-plan-row select\s*\{[\s\S]*?min-width:\s*0;/,
+  "选校计划输入控件应设置 min-width: 0，避免卡片重叠。"
+);

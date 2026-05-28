@@ -1251,6 +1251,7 @@ button.danger:hover {
 
 .application-round-card {
   display: grid;
+  min-width: 0;
   gap: 12px;
   align-content: start;
   border: 1px solid var(--line);
@@ -1285,9 +1286,17 @@ button.danger:hover {
 
 .application-plan-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1.1fr) minmax(180px, 0.9fr);
+  min-width: 0;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   gap: 10px 12px;
   align-items: end;
+}
+
+.application-plan-row label,
+.application-plan-row input,
+.application-plan-row select {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .portfolio-card {
