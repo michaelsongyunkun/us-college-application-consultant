@@ -8,7 +8,8 @@ const FIELD_NAMES = {
 const CATEGORY_LABELS = {
   university: "综合大学 T80",
   "liberal-arts": "文理学院 TOP50",
-  international: "英港澳加院校",
+  international: "英港澳加新院校",
+  "other-region": "其他地区院校",
 };
 
 const INTERNATIONAL_FIELD_NAMES = {
@@ -27,6 +28,7 @@ const INTERNATIONAL_FIELD_NAMES = {
   "AP / 美高": "apRequirement",
   IB: "ibRequirement",
   英语要求: "englishRequirement",
+  语言要求: "englishRequirement",
   热门专业: "popularMajors",
   学校风格: "schoolStyle",
 };
@@ -50,7 +52,7 @@ export function parseSchoolsMarkdown(markdown) {
 
   function appendCurrent() {
     if (!current) return;
-    if (current.category === "international") {
+    if (current.category === "international" || current.category === "other-region") {
       current.region = current.region || internationalRegion;
       current.applicationAndEssays = current.applicationRequirement;
       current.schoolFeatures = current.schoolStyle;
@@ -79,8 +81,8 @@ export function parseSchoolsMarkdown(markdown) {
     const internationalSection = line.match(/^###\s+\d+\.\d+\s+(.+?)院校\s*$/);
     if (internationalSection) {
       appendCurrent();
-      category = "international";
       internationalRegion = internationalSection[1].trim();
+      category = internationalRegion === "其他地区" ? "other-region" : "international";
       continue;
     }
 
@@ -101,7 +103,7 @@ export function parseSchoolsMarkdown(markdown) {
       continue;
     }
     const internationalHeading = line.match(/^####\s+(.+?)\s*$/);
-    if (internationalHeading && category === "international") {
+    if (internationalHeading && (category === "international" || category === "other-region")) {
       appendCurrent();
       internationalRank += 1;
       current = {
@@ -142,7 +144,7 @@ export function parseSchoolsMarkdown(markdown) {
     }
 
     const internationalField = line.match(/^-\s+(.+?)：\s*(.*)$/);
-    if (internationalField && current?.category === "international") {
+    if (internationalField && (current?.category === "international" || current?.category === "other-region")) {
       const fieldName = INTERNATIONAL_FIELD_NAMES[internationalField[1].trim()];
       if (fieldName) current[fieldName] = internationalField[2].trim();
     }

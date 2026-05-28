@@ -1,4 +1,4 @@
-import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260528-al-ap-ib";
+import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260528-other-region-schools";
 import {
   DEFAULT_VISIBLE_RESULT_LIMIT,
   expandVisibleResultLimit,
@@ -10,6 +10,7 @@ const searchInput = document.querySelector("#schoolSearch");
 const universityTab = document.querySelector("#universityTab");
 const liberalArtsTab = document.querySelector("#liberalArtsTab");
 const internationalTab = document.querySelector("#internationalTab");
+const otherRegionTab = document.querySelector("#otherRegionTab");
 const categoryTitle = document.querySelector("#schoolCategoryTitle");
 const schoolCount = document.querySelector("#schoolCount");
 const schoolList = document.querySelector("#schoolList");
@@ -41,7 +42,8 @@ function categoryLabel(category) {
   return {
     university: "综合大学 T80",
     "liberal-arts": "文理学院 TOP50",
-    international: "英港澳加院校",
+    international: "英港澳加新院校",
+    "other-region": "其他地区院校",
   }[category] || "院校资料";
 }
 
@@ -89,10 +91,11 @@ function renderDomesticDetails(school) {
 
 function renderSchoolCard(school) {
   const detailId = `school-details-${school.id}`;
-  const rankLabel = school.category === "international"
-    ? `${school.categoryLabel} · ${school.region || "英港澳加"} · #${school.rank}`
+  const isInternationalStyle = school.category === "international" || school.category === "other-region";
+  const rankLabel = isInternationalStyle
+    ? `${school.categoryLabel} · ${school.region || "海外"} · #${school.rank}`
     : `${school.categoryLabel} · #${school.rank}`;
-  const details = school.category === "international" ? renderInternationalDetails(school) : renderDomesticDetails(school);
+  const details = isInternationalStyle ? renderInternationalDetails(school) : renderDomesticDetails(school);
   return `
     <article class="school-card">
       <div class="school-card-header">
@@ -138,6 +141,7 @@ function switchCategory(category) {
     ["university", universityTab],
     ["liberal-arts", liberalArtsTab],
     ["international", internationalTab],
+    ["other-region", otherRegionTab],
   ];
   for (const [tabCategory, tab] of tabEntries) {
     const active = category === tabCategory;
@@ -167,6 +171,7 @@ searchInput.addEventListener("input", () => {
 universityTab.addEventListener("click", () => switchCategory("university"));
 liberalArtsTab.addEventListener("click", () => switchCategory("liberal-arts"));
 internationalTab.addEventListener("click", () => switchCategory("international"));
+otherRegionTab.addEventListener("click", () => switchCategory("other-region"));
 loadMoreSchoolsButton.addEventListener("click", () => {
   visibleSchoolLimit = expandVisibleResultLimit(visibleSchoolLimit, matchingSchoolCount);
   renderSchools();
@@ -174,14 +179,18 @@ loadMoreSchoolsButton.addEventListener("click", () => {
 
 async function loadSchools() {
   try {
-    const [domesticResponse, internationalResponse] = await Promise.all([
+    const [domesticResponse, internationalResponse, otherRegionResponse] = await Promise.all([
       fetch("./data/schools.md"),
       fetch("./data/international-schools.md"),
+      fetch("./data/other-region-schools.md"),
     ]);
-    if (!domesticResponse.ok || !internationalResponse.ok) throw new Error("schools unavailable");
+    if (!domesticResponse.ok || !internationalResponse.ok || !otherRegionResponse.ok) {
+      throw new Error("schools unavailable");
+    }
     schools = [
       ...parseSchoolsMarkdown(await domesticResponse.text()),
       ...parseSchoolsMarkdown(await internationalResponse.text()),
+      ...parseSchoolsMarkdown(await otherRegionResponse.text()),
     ];
     renderSchools();
   } catch {

@@ -1,4 +1,4 @@
-# 澳洲 / 加拿大 / 英国 / 香港本科院校信息汇总
+# 澳洲 / 加拿大 / 英国 / 香港 / 新加坡本科院校信息汇总
 > 更新时间：2026-05-28 | 排名口径：QS 2026 / THE 2026 / ARWU 2025 / U.S. News 2025-2026
 > 清洗说明：本版已取消所有 Markdown 表格，改为纯文本 Markdown 结构；原表格中的官网、排名、预算、本币估算和备注，均已整合到对应院校信息下。
 ## 1. 快速结论
@@ -538,11 +538,43 @@
 - 英语要求：IELTS 6.5；TOEFL iBT 79
 - 热门专业：商科、数据科学、CS、工程、创意媒体、法律
 - 学校风格：年轻上升快、国际化和应用研究强，城市通勤便利
+### 3.5 新加坡院校
+#### 新加坡国立大学 National University of Singapore (NUS)
+**基础信息**
+- 官网：https://www.nus.edu.sg
+- 地区：新加坡
+**排名与申请**
+- QS 2026：8
+- THE 2026：17
+- ARWU 2025：56
+- U.S. News 2025-2026：20
+- 平均排名：25.2
+**申请与学校风格**
+- 本科申请学术要求：认可 A-level、IB、AP/SAT、高考等多种体系；热门专业看先修科目、面试/笔试和综合背景，医学、法学、牙医尤其竞争激烈。
+- 语言要求：英文授课；常见需 TOEFL iBT 92+ 或 IELTS 6.5 左右，英语授课背景可能豁免。
+- 热门专业：CS、数据科学/AI、工程、商科、法律、医学、公共政策。
+- 学校风格：亚洲综合旗舰，学术、就业、城市资源都强；节奏快，适合目标清晰且抗压强的学生。
+#### 南洋理工大学 Nanyang Technological University (NTU)
+**基础信息**
+- 官网：https://www.ntu.edu.sg
+- 地区：新加坡
+**排名与申请**
+- QS 2026：12
+- THE 2026：31
+- ARWU 2025：88
+- U.S. News 2025-2026：28
+- 平均排名：39.8
+**申请与学校风格**
+- 本科申请学术要求：认可国际高中体系、高考、IB、A-level、AP/SAT等；工程、计算机、商科和医学需满足较强数学/科学先修或面试。
+- 语言要求：英文授课；常见 IELTS 6.5 或 TOEFL iBT 90+，按专业可能更高。
+- 热门专业：工程、CS/AI、材料科学、商科、传播、环境与可持续科技。
+- 学校风格：理工和应用研究突出，校园现代化；比 NUS 更偏工程科技和产业落地。
 ## 4. 申请提醒
 - 澳洲：通常可用高考、A-level、IB、AP/SAT、预科、国际高中成绩申请；医学、牙医、教育、法学、部分荣誉课程有额外要求。
 - 加拿大：多按高中体系逐项审核，核心是高均分、12年级英语、数学/科学先修；滑铁卢CS/工程尤其看补充申请和竞赛/项目背景。
 - 英国：通过UCAS；牛剑和医学/牙医/兽医等截止更早，常有入学考试、面试和书面材料；LSE/UCL/IC极看重专业匹配。
 - 香港：国际生一般走Non-JUPAS/International Qualifications；港前三热门专业录取波动大，IB 40+、A-level A/A*组合、SAT/AP高分会更稳。
+- 新加坡：NUS/NTU 认可 A-level、IB、AP/SAT、高考等多种体系；热门专业常看先修科目、面试/笔试和综合背景。
 ## 5. 信息源
 - [QS World University Rankings 2026](https://www.topuniversities.com/qs-top-uni-wur)
 - [THE World University Rankings 2026](https://www.timeshighereducation.com/world-university-rankings/latest/world-ranking)

@@ -15,8 +15,10 @@ assert.ok(
 );
 assert.ok(pageHtml.includes('id="schoolSearch"'), "页面应提供院校搜索输入框。");
 assert.ok(pageHtml.includes('id="universityTab"') && pageHtml.includes('id="liberalArtsTab"'));
-assert.ok(pageHtml.includes('id="internationalTab"'), "页面应提供英港澳加院校分类按钮。");
-assert.ok(pageHtml.includes("英港澳加院校"), "院校百科应显示英港澳加院校分类文案。");
+assert.ok(pageHtml.includes('id="internationalTab"'), "页面应提供英港澳加新院校分类按钮。");
+assert.ok(pageHtml.includes('id="otherRegionTab"'), "页面应提供其他地区院校分类按钮。");
+assert.ok(pageHtml.includes("英港澳加新院校"), "院校百科应显示英港澳加新院校分类文案。");
+assert.ok(pageHtml.includes("其他地区院校"), "院校百科应显示其他地区院校分类文案。");
 assert.ok(pageHtml.includes('id="schoolList"') && pageHtml.includes('id="schoolStatus"'));
 assert.ok(pageHtml.includes('id="loadMoreSchools"'), "院校百科应提供加载更多按钮。");
 assert.ok(pageHtml.includes("申请年度官网"), "页面应提示用户核对最新官网要求。");
@@ -24,8 +26,11 @@ assert.ok(!pageHtml.includes("资料来自"), "院校百科不应展示资料来
 assert.ok(!script.includes("来源记录"), "院校百科状态不应展示来源记录文案。");
 assert.ok(!script.includes("来源资料未提供"), "院校百科空字段不应展示来源文案。");
 assert.ok(script.includes('document.querySelector("#internationalTab")'), "前端脚本应绑定英港澳加院校按钮。");
+assert.ok(script.includes('document.querySelector("#otherRegionTab")'), "前端脚本应绑定其他地区院校按钮。");
 assert.ok(script.includes('fetch("./data/international-schools.md")'), "前端脚本应加载英港澳加院校 RAG 数据。");
+assert.ok(script.includes('fetch("./data/other-region-schools.md")'), "前端脚本应加载其他地区院校 RAG 数据。");
 assert.ok(script.includes('switchCategory("international")'), "英港澳加按钮应切换到 international 分类。");
+assert.ok(script.includes('switchCategory("other-region")'), "其他地区按钮应切换到 other-region 分类。");
 assert.ok(script.includes("A-Level / AL"), "英港澳加详情应展示 A-Level / AL 要求。");
 assert.ok(script.includes("AP / 美高"), "英港澳加详情应展示 AP / 美高要求。");
 assert.ok(script.includes("<dt>IB</dt>"), "英港澳加详情应展示 IB 要求。");

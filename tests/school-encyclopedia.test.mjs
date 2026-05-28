@@ -7,16 +7,20 @@ import {
 
 const markdown = readFileSync("data/schools.md", "utf8");
 const internationalMarkdown = readFileSync("data/international-schools.md", "utf8");
+const otherRegionMarkdown = readFileSync("data/other-region-schools.md", "utf8");
 const schools = parseSchoolsMarkdown(markdown);
 const internationalSchoolsData = parseSchoolsMarkdown(internationalMarkdown);
+const otherRegionSchoolsData = parseSchoolsMarkdown(otherRegionMarkdown);
 const universities = schools.filter((school) => school.category === "university");
 const liberalArtsColleges = schools.filter((school) => school.category === "liberal-arts");
 const internationalSchools = internationalSchoolsData.filter((school) => school.category === "international");
+const otherRegionSchools = otherRegionSchoolsData.filter((school) => school.category === "other-region");
 
 assert.equal(schools.length, 118);
 assert.equal(universities.length, 65);
 assert.equal(liberalArtsColleges.length, 53);
-assert.equal(internationalSchools.length, 25);
+assert.equal(internationalSchools.length, 27);
+assert.equal(otherRegionSchools.length, 37);
 assert.deepEqual(schools[0], {
   id: "university-1-princeton",
   category: "university",
@@ -49,7 +53,7 @@ assert.deepEqual(
   },
   {
     category: "international",
-    categoryLabel: "英港澳加院校",
+    categoryLabel: "英港澳加新院校",
     rank: "1",
     name: "墨尔本大学 University of Melbourne",
     region: "澳洲",
@@ -74,4 +78,43 @@ assert.equal(
 assert.equal(
   filterSchools(internationalSchoolsData, { category: "international", query: "AP aggregate" })[0].name,
   "墨尔本大学 University of Melbourne",
+);
+assert.equal(
+  filterSchools(internationalSchoolsData, { category: "international", query: "National University of Singapore" })[0].region,
+  "新加坡",
+);
+assert.equal(
+  filterSchools(internationalSchoolsData, { category: "international", query: "Nanyang Technological University" })[0].categoryLabel,
+  "英港澳加新院校",
+);
+assert.deepEqual(
+  {
+    category: otherRegionSchools[0].category,
+    categoryLabel: otherRegionSchools[0].categoryLabel,
+    rank: otherRegionSchools[0].rank,
+    name: otherRegionSchools[0].name,
+    region: otherRegionSchools[0].region,
+    website: otherRegionSchools[0].website,
+    qsRanking: otherRegionSchools[0].qsRanking,
+    englishRequirement: otherRegionSchools[0].englishRequirement,
+  },
+  {
+    category: "other-region",
+    categoryLabel: "其他地区院校",
+    rank: "1",
+    name: "苏黎世联邦理工学院 ETH Zurich",
+    region: "瑞士",
+    website: "https://ethz.ch",
+    qsRanking: "7",
+    englishRequirement:
+      "本科大多德语授课，通常需德语 C1；少数后续课程和项目使用英语，英语要求按课程页。",
+  },
+);
+assert.equal(
+  filterSchools(otherRegionSchoolsData, { category: "other-region", query: "National University of Singapore" }).length,
+  0,
+);
+assert.equal(
+  filterSchools(otherRegionSchoolsData, { category: "other-region", query: "Tsinghua" })[0].region,
+  "中国大陆",
 );
