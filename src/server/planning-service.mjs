@@ -171,6 +171,54 @@ export function createPlanningService({ authDb, now = () => new Date() }) {
     return { ok: true };
   }
 
+  function listActivityImportSources(user) {
+    const userId = requireUserId(user);
+    ensureDefaultPlan(userId);
+    const planRows = db
+      .prepare(`
+        SELECT id, name, current_draft_json, updated_at AS updatedAt
+        FROM planning_projects
+        WHERE user_id = ?
+        ORDER BY updated_at DESC, id DESC
+      `)
+      .all(userId);
+
+    return planRows.flatMap((plan) => {
+      const currentSource = buildActivityImportSource({
+        id: `plan-${plan.id}-current`,
+        sourceType: "current_plan",
+        planId: plan.id,
+        planName: plan.name,
+        label: `${plan.name} · 当前方案`,
+        savedAt: plan.updatedAt,
+        draft: parseDraft(plan.current_draft_json),
+      });
+      const snapshotSources = db
+        .prepare(`
+          SELECT id, note, snapshot_json, created_at AS createdAt
+          FROM planning_snapshots
+          WHERE project_id = ? AND user_id = ?
+          ORDER BY created_at DESC, id DESC
+        `)
+        .all(plan.id, userId)
+        .map((snapshot) => {
+          const snapshotData = parseObject(snapshot.snapshot_json);
+          return buildActivityImportSource({
+            id: `snapshot-${snapshot.id}`,
+            sourceType: "snapshot",
+            planId: plan.id,
+            snapshotId: snapshot.id,
+            planName: plan.name,
+            note: snapshot.note,
+            label: `${plan.name} · ${snapshot.note || "未填写备注"}`,
+            savedAt: snapshot.createdAt,
+            draft: normalizeDraft(snapshotData.draft || {}),
+          });
+        });
+      return [currentSource, ...snapshotSources].filter(Boolean);
+    });
+  }
+
   function ensureDefaultPlan(userId) {
     const existing = db
       .prepare("SELECT id FROM planning_projects WHERE user_id = ? LIMIT 1")
@@ -205,6 +253,7 @@ export function createPlanningService({ authDb, now = () => new Date() }) {
     createSnapshot,
     restoreSnapshot,
     deleteSnapshot,
+    listActivityImportSources,
   };
 }
 
@@ -237,6 +286,43 @@ function serializePlan(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function buildActivityImportSource(source) {
+  const activities = normalizeImportActivities(source.draft?.activities);
+  if (!activities.length) return null;
+  return {
+    id: source.id,
+    sourceType: source.sourceType,
+    planId: source.planId,
+    snapshotId: source.snapshotId,
+    planName: source.planName,
+    note: source.note || "",
+    label: source.label,
+    savedAt: source.savedAt,
+    activities,
+  };
+}
+
+function normalizeImportActivities(activities) {
+  if (!Array.isArray(activities)) return [];
+  return activities
+    .slice(0, 10)
+    .map((activity, index) => ({
+      id: Number(activity?.id) || index + 1,
+      type: normalizeText(activity?.type),
+      activityName: normalizeText(activity?.activityName || activity?.name || activity?.title),
+      description: normalizeText(activity?.executionDescription || activity?.description),
+      timeStage: normalizeText(activity?.suggestedGrade || activity?.timeStage),
+      status: "计划中",
+    }))
+    .filter((activity) =>
+      [activity.type, activity.activityName, activity.description, activity.timeStage].some(Boolean),
+    );
+}
+
+function normalizeText(value) {
+  return String(value ?? "").trim();
 }
 
 function normalizeObject(value, label) {

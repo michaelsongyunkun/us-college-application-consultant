@@ -431,6 +431,13 @@ export function createAppServer({
         return;
       }
 
+      if (request.method === "GET" && url.pathname === "/api/my-activities/import-sources") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        sendJson(response, 200, { sources: planning.listActivityImportSources(user) });
+        return;
+      }
+
       if (request.method === "GET" && url.pathname === "/api/plans") {
         const user = requireUser(request, response, auth);
         if (!user) return;

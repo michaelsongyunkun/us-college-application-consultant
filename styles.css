@@ -1131,8 +1131,22 @@ button.danger:hover {
   margin-bottom: 18px;
 }
 
+.portfolio-shell {
+  width: min(1280px, calc(100% - clamp(40px, 7vw, 112px)));
+  padding-top: 24px;
+}
+
+.portfolio-shell .topbar {
+  margin-bottom: 14px;
+}
+
 .portfolio-panel {
-  margin-bottom: 18px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.portfolio-panel .section-heading {
+  padding: 16px 18px 12px;
 }
 
 .portfolio-subtitle {
@@ -1142,31 +1156,106 @@ button.danger:hover {
   line-height: 1.6;
 }
 
-.portfolio-grid {
+.activity-import-sources {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 14px;
-  padding: 18px 22px 22px;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 12px;
+  padding: 14px 18px 18px;
 }
 
-.portfolio-grid.compact {
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+.portfolio-empty {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
-.portfolio-card {
+.activity-import-card {
   display: grid;
-  gap: 14px;
+  gap: 10px;
   align-content: start;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #fff;
-  padding: 16px;
+  padding: 14px;
+}
+
+.activity-import-card h3 {
+  margin: 0;
+  color: #2c3645;
+  font-size: 17px;
+}
+
+.activity-import-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.activity-import-card .activity-import-source {
+  margin-bottom: 4px;
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.activity-import-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.activity-import-card dl div {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfe;
+  padding: 8px;
+}
+
+.activity-import-card dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.activity-import-card dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.activity-import-card button {
+  justify-self: start;
+  min-height: 36px;
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(390px, 1fr));
+  gap: 12px;
+  padding: 14px 18px 18px;
+}
+
+.portfolio-grid.compact {
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+}
+
+.portfolio-card {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 14px;
 }
 
 .portfolio-card-heading {
   display: grid;
   grid-template-columns: minmax(120px, 1fr) minmax(160px, 0.72fr);
-  gap: 12px;
+  gap: 10px;
   align-items: end;
 }
 
@@ -1176,9 +1265,19 @@ button.danger:hover {
   font-size: 18px;
 }
 
+.portfolio-shell input,
+.portfolio-shell select,
+.portfolio-shell textarea {
+  padding: 9px 10px;
+}
+
+.portfolio-shell textarea {
+  min-height: 76px;
+}
+
 .portfolio-fields {
   display: grid;
-  gap: 12px;
+  gap: 10px 12px;
 }
 
 .portfolio-fields.two-column {
@@ -1195,12 +1294,12 @@ button.danger:hover {
 
 .portfolio-fieldset {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   margin: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #fbfcfe;
-  padding: 14px;
+  padding: 12px;
 }
 
 .portfolio-fieldset legend {
@@ -1210,7 +1309,7 @@ button.danger:hover {
 }
 
 .recommendation-portfolio {
-  padding: 18px 22px 22px;
+  padding: 14px 18px 18px;
 }
 
 .portfolio-checkboxes {
@@ -1241,11 +1340,11 @@ button.danger:hover {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin: 0 0 18px;
+  margin: 0 0 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.94);
-  padding: 12px;
+  padding: 10px 12px;
   box-shadow: 0 12px 30px rgba(31, 41, 49, 0.08);
 }
 
@@ -2889,6 +2988,10 @@ button.neutral:hover {
     padding-top: 18px;
   }
 
+  .portfolio-shell {
+    width: min(100% - 32px, 1280px);
+  }
+
   .topbar,
   .table-heading {
     align-items: stretch;
@@ -2985,6 +3088,7 @@ button.neutral:hover {
     padding: 16px;
   }
 
+  .activity-import-sources,
   .portfolio-grid,
   .recommendation-portfolio {
     grid-template-columns: 1fr;

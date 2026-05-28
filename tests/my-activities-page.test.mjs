@@ -20,6 +20,8 @@ for (const expected of [
   'id="portfolioForm"',
   'id="savePortfolioButton"',
   'id="portfolioStatus"',
+  'id="activityImportSources"',
+  'id="activityImportStatus"',
   'id="activitiesList"',
   'id="competitionsList"',
   'id="summerSchoolsList"',
@@ -61,6 +63,12 @@ assert.match(script, /const ACTIVITY_SLOT_COUNT = 10/);
 assert.match(script, /const COMPETITION_SLOT_COUNT = 5/);
 assert.match(script, /const SUMMER_SCHOOL_SLOT_COUNT = 3/);
 assert.ok(script.includes('"/api/my-activities"'), "页面脚本应读取和保存 /api/my-activities。");
+assert.ok(
+  script.includes('"/api/my-activities/import-sources"'),
+  "页面脚本应读取申请规划活动导入源。"
+);
+assert.ok(script.includes("data-import-activity"), "单个规划活动应提供导入按钮。");
+assert.ok(script.includes("mapPlanningActivityToPortfolio"), "导入时应映射规划活动字段。");
 assert.ok(script.includes("beforeunload"), "有未保存修改时应拦截离开页面。");
 assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案。");
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");

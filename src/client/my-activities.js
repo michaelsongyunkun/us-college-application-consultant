@@ -1,6 +1,7 @@
 import { escapeHtml } from "./html-utils.mjs";
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
+const ACTIVITY_IMPORT_SOURCES_ENDPOINT = "/api/my-activities/import-sources";
 const ACTIVITY_SLOT_COUNT = 10;
 const COMPETITION_SLOT_COUNT = 5;
 const SUMMER_SCHOOL_SLOT_COUNT = 3;
@@ -49,6 +50,8 @@ const activitiesProgress = document.querySelector("#activitiesProgress");
 const competitionsProgress = document.querySelector("#competitionsProgress");
 const summerSchoolsProgress = document.querySelector("#summerSchoolsProgress");
 const recommendationProgress = document.querySelector("#recommendationProgress");
+const activityImportSources = document.querySelector("#activityImportSources");
+const activityImportStatus = document.querySelector("#activityImportStatus");
 const activitiesList = document.querySelector("#activitiesList");
 const competitionsList = document.querySelector("#competitionsList");
 const summerSchoolsList = document.querySelector("#summerSchoolsList");
@@ -56,6 +59,7 @@ const recommendationLettersPanel = document.querySelector("#recommendationLetter
 
 let isDirty = false;
 let isRendering = false;
+let planningActivitySources = [];
 
 function emptyPortfolio() {
   return {
@@ -79,6 +83,42 @@ function renderPortfolio(portfolio = emptyPortfolio()) {
   updateCompletion();
 }
 
+function renderActivityImportSources(sources = []) {
+  if (!activityImportSources) return;
+  const importItems = sources.flatMap((source) =>
+    (source.activities || []).map((activity, index) => ({ source, activity, index })),
+  );
+  if (!importItems.length) {
+    activityImportSources.innerHTML =
+      '<p class="portfolio-empty">暂无可导入的规划活动。请先在申请规划中保存活动方案或历史备份。</p>';
+    return;
+  }
+
+  activityImportSources.innerHTML = importItems
+    .map(
+      ({ source, activity, index }) => `
+        <article class="activity-import-card">
+          <div>
+            <p class="activity-import-source">${escapeHtml(source.label || source.planName || "申请规划")}</p>
+            <h3>${escapeHtml(activity.activityName || `活动 ${activity.id || index + 1}`)}</h3>
+          </div>
+          <dl>
+            <div><dt>类型</dt><dd>${escapeHtml(activity.type || "未填写")}</dd></div>
+            <div><dt>时间</dt><dd>${escapeHtml(activity.timeStage || "未填写")}</dd></div>
+          </dl>
+          <p>${escapeHtml(activity.description || "暂无执行说明")}</p>
+          <button
+            type="button"
+            class="secondary"
+            data-import-activity
+            data-source-id="${escapeHtml(source.id)}"
+            data-activity-index="${index}"
+          >导入</button>
+        </article>`,
+    )
+    .join("");
+}
+
 function renderActivityCards(activities) {
   return Array.from({ length: ACTIVITY_SLOT_COUNT }, (_, index) => {
     const activity = activities[index] || {};
@@ -95,7 +135,7 @@ function renderActivityCards(activities) {
           ${renderInput("activities", index, "role", "担任角色", activity.role)}
           ${renderTextarea("activities", index, "description", "具体做了什么", activity.description)}
           ${renderTextarea("activities", index, "outcome", "可量化成果", activity.outcome)}
-          ${renderInput("activities", index, "proofLink", "证明材料/链接", activity.proofLink, "url")}
+          ${renderInput("activities", index, "proofLink", "证明材料/链接", activity.proofLink, "url", "full-span")}
         </div>
       </article>`;
   }).join("");
@@ -116,7 +156,7 @@ function renderCompetitionCards(competitions) {
           ${renderInput("competitions", index, "yearGrade", "参与年份/年级", competition.yearGrade)}
           ${renderInput("competitions", index, "award", "奖项结果", competition.award)}
           ${renderTextarea("competitions", index, "contribution", "个人贡献", competition.contribution)}
-          ${renderInput("competitions", index, "proofLink", "证明材料/链接", competition.proofLink, "url")}
+          ${renderInput("competitions", index, "proofLink", "证明材料/链接", competition.proofLink, "url", "full-span")}
         </div>
       </article>`;
   }).join("");
@@ -137,7 +177,7 @@ function renderSummerSchoolCards(summerSchools) {
           ${renderInput("summerSchools", index, "direction", "项目方向", summerSchool.direction)}
           ${renderInput("summerSchools", index, "participationTime", "参与时间", summerSchool.participationTime)}
           ${renderTextarea("summerSchools", index, "output", "项目产出", summerSchool.output)}
-          ${renderInput("summerSchools", index, "proofLink", "证明材料/链接", summerSchool.proofLink, "url")}
+          ${renderInput("summerSchools", index, "proofLink", "证明材料/链接", summerSchool.proofLink, "url", "full-span")}
         </div>
       </article>`;
   }).join("");
@@ -206,9 +246,9 @@ function renderTeacherFields(prefix, title, teacher) {
     </fieldset>`;
 }
 
-function renderInput(group, index, field, label, value = "", type = "text") {
+function renderInput(group, index, field, label, value = "", type = "text", className = "") {
   return `
-    <label>
+    <label${className ? ` class="${escapeHtml(className)}"` : ""}>
       <span>${escapeHtml(label)}</span>
       <input name="${controlName(group, index, field)}" type="${type}" value="${escapeHtml(value)}" />
     </label>`;
@@ -300,6 +340,41 @@ function collectNestedFields(prefix, fields) {
   return pruneEmpty(Object.fromEntries(fields.map((field) => [field, fieldValue(`${prefix}.${field}`)])));
 }
 
+function mapPlanningActivityToPortfolio(activity) {
+  return {
+    activityName: activity.activityName || "",
+    type: activity.type || "",
+    timeStage: activity.timeStage || "",
+    role: "",
+    description: activity.description || "",
+    outcome: "",
+    proofLink: "",
+    status: activity.status || "计划中",
+  };
+}
+
+function importPlanningActivity(sourceId, activityIndex) {
+  const source = planningActivitySources.find((item) => item.id === sourceId);
+  const activity = source?.activities?.[activityIndex];
+  if (!activity) {
+    setImportStatus("未找到这项规划活动，请刷新页面后重试。", true);
+    return;
+  }
+  const portfolio = collectPortfolio();
+  if (portfolio.activities.length >= ACTIVITY_SLOT_COUNT) {
+    setImportStatus("课外活动已满 10 项，请先清空一个活动槽位。", true);
+    return;
+  }
+
+  portfolio.activities.push(mapPlanningActivityToPortfolio(activity));
+  renderPortfolio(portfolio);
+  isDirty = true;
+  updateCompletion();
+  setStatus("已导入 1 项活动，请保存进度。");
+  setImportStatus(`已导入：${activity.activityName || "未命名活动"}`);
+  portfolioForm.elements.namedItem(controlName("activities", portfolio.activities.length - 1, "activityName"))?.focus();
+}
+
 function updateCompletion() {
   const portfolio = collectPortfolio();
   activitiesProgress.textContent = `课外活动：已填写 ${portfolio.activities.length}/${ACTIVITY_SLOT_COUNT}`;
@@ -308,6 +383,19 @@ function updateCompletion() {
   recommendationProgress.textContent = hasAnyRecommendation(portfolio.recommendationLetters)
     ? "推荐信：已填写"
     : "推荐信：待补充";
+}
+
+async function loadActivityImportSources() {
+  if (!activityImportSources) return;
+  try {
+    setImportStatus("正在加载导入源");
+    const data = await requestJson(ACTIVITY_IMPORT_SOURCES_ENDPOINT, { method: "GET" });
+    planningActivitySources = data.sources || [];
+    renderActivityImportSources(planningActivitySources);
+    setImportStatus(planningActivitySources.length ? "选择单项活动导入" : "暂无可导入活动");
+  } catch (error) {
+    setImportStatus(error.message, true);
+  }
 }
 
 async function loadPortfolio() {
@@ -396,6 +484,12 @@ function setStatus(message, isError = false) {
   portfolioStatus.classList.toggle("error", isError);
 }
 
+function setImportStatus(message, isError = false) {
+  if (!activityImportStatus) return;
+  activityImportStatus.textContent = message;
+  activityImportStatus.classList.toggle("error", isError);
+}
+
 function setButtonsDisabled(disabled) {
   savePortfolioButtons.forEach((button) => {
     button.disabled = disabled;
@@ -423,6 +517,11 @@ portfolioForm.addEventListener("change", markDirty);
 savePortfolioButtons.forEach((button) => {
   button.addEventListener("click", savePortfolio);
 });
+activityImportSources?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-import-activity]");
+  if (!button) return;
+  importPlanningActivity(button.dataset.sourceId, Number(button.dataset.activityIndex));
+});
 
 window.addEventListener("beforeunload", (event) => {
   if (!isDirty) return;
@@ -432,3 +531,4 @@ window.addEventListener("beforeunload", (event) => {
 
 renderPortfolio();
 loadPortfolio();
+loadActivityImportSources();

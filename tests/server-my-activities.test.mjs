@@ -23,6 +23,9 @@ try {
   });
   const firstCookie = firstRegistration.headers.get("set-cookie");
 
+  const blockedImportSources = await fetch(`${serverUrl()}/api/my-activities/import-sources`);
+  assert.equal(blockedImportSources.status, 401);
+
   const emptyPortfolio = await get("/api/my-activities", firstCookie);
   assert.equal(emptyPortfolio.status, 200);
   assert.deepEqual(await emptyPortfolio.json(), {
@@ -36,6 +39,33 @@ try {
   const protectedPage = await get("/my-activities.html", firstCookie);
   assert.equal(protectedPage.status, 200);
   assert.match(await protectedPage.text(), /我的课外活动/);
+
+  const plansResponse = await get("/api/plans", firstCookie);
+  const firstPlanId = (await plansResponse.json()).plans[0].id;
+  await put(
+    `/api/plans/${firstPlanId}`,
+    {
+      draft: {
+        activities: [
+          {
+            type: "公益",
+            activityName: "社区科普社",
+            executionDescription: "组织社区科学工作坊",
+            suggestedGrade: "10 年级中",
+          },
+        ],
+      },
+    },
+    firstCookie,
+  );
+  await post(`/api/plans/${firstPlanId}/snapshots`, { note: "导入测试备份" }, firstCookie);
+  const importSources = await get("/api/my-activities/import-sources", firstCookie);
+  assert.equal(importSources.status, 200);
+  const importSourceData = await importSources.json();
+  assert.equal(importSourceData.sources.length, 2);
+  assert.equal(importSourceData.sources[0].activities[0].activityName, "社区科普社");
+  assert.equal(importSourceData.sources[0].activities[0].description, "组织社区科学工作坊");
+  assert.equal(importSourceData.sources[1].sourceType, "snapshot");
 
   const savedResponse = await put(
     "/api/my-activities",
@@ -124,6 +154,8 @@ try {
     recommendationLetters: {},
     updatedAt: null,
   });
+  const secondImportSources = await get("/api/my-activities/import-sources", secondCookie);
+  assert.deepEqual(await secondImportSources.json(), { sources: [] });
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });

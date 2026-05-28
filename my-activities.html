@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell portfolio-shell">
       <header class="topbar brand-page-header">
         <div class="brand-page-identity">
           <a class="brand-mark" href="./index.html" data-safe-nav>
@@ -29,6 +29,17 @@
       </header>
 
       <form id="portfolioForm" autocomplete="off">
+        <section class="panel portfolio-panel activity-import-panel" aria-labelledby="activity-import-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="activity-import-title">从申请规划导入</h2>
+              <p>从已保存的规划方案或历史备份中，选择单个活动加入下方课外活动清单。</p>
+            </div>
+            <span id="activityImportStatus" class="status" role="status" aria-live="polite">正在加载导入源</span>
+          </div>
+          <div id="activityImportSources" class="activity-import-sources"></div>
+        </section>
+
         <section class="panel portfolio-panel" aria-labelledby="activities-title">
           <div class="section-heading table-heading">
             <div>

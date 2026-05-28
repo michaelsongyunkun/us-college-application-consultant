@@ -39,7 +39,14 @@ try {
   assert.deepEqual(defaultPlan.draft.activities, []);
 
   const draft = {
-    activities: [{ title: "Research" }],
+    activities: [
+      {
+        type: "科研",
+        activityName: "社区空气质量研究",
+        executionDescription: "设计传感器采样并写成报告",
+        suggestedGrade: "10 年级暑假",
+      },
+    ],
     rawAnswer: "answer",
     narrative: "narrative",
     competitionRecommendations: [{ name: "Contest" }],
@@ -69,6 +76,18 @@ try {
   const snapshot = planning.createSnapshot(student, savedPlan.id, { note: "提交前版本" });
   assert.equal(snapshot.note, "提交前版本");
   assert.equal(planning.listSnapshots(student, savedPlan.id).length, 1);
+
+  const importSources = planning.listActivityImportSources(student);
+  assert.equal(importSources.length, 2);
+  assert.equal(importSources[0].sourceType, "current_plan");
+  assert.equal(importSources[0].planName, "冲刺规划");
+  assert.equal(importSources[0].activities[0].activityName, "社区空气质量研究");
+  assert.equal(importSources[0].activities[0].description, "设计传感器采样并写成报告");
+  assert.equal(importSources[0].activities[0].timeStage, "10 年级暑假");
+  assert.equal(importSources[1].sourceType, "snapshot");
+  assert.equal(importSources[1].snapshotId, snapshot.id);
+  assert.equal(importSources[1].activities[0].status, "计划中");
+  assert.deepEqual(planning.listActivityImportSources(otherStudent), []);
 
   planning.saveProfile(student, { grade: "12", intendedMajor: "History" });
   planning.savePlan(student, savedPlan.id, { draft: { activities: [], rawAnswer: "changed" } });
