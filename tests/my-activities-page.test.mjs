@@ -67,8 +67,10 @@ for (const field of [
   "applicationPlan",
   "renderApplicationPlan",
   "data-add-application-round",
+  "data-remove-application-round",
   "application-round-schools.md",
   "enforceEarlyBindingExclusivity",
+  "removeApplicationRound",
 ]) {
   assert.ok(script.includes(field), `Script should render or collect ${field}.`);
 }
@@ -88,7 +90,8 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260528-application-plan-vertical"),
+  pageHtml.includes("./styles.css?v=20260528-application-plan-delete")
+    && pageHtml.includes("./src/client/my-activities.js?v=20260528-application-plan-delete"),
   "我的申请页面应更新 CSS 版本号，避免用户继续加载缓存的平行布局。"
 );
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");
@@ -108,4 +111,9 @@ assert.match(
   styles,
   /\.application-plan-row label,\s*\.application-plan-row input,\s*\.application-plan-row select\s*\{[\s\S]*?min-width:\s*0;/,
   "选校计划输入控件应设置 min-width: 0，避免卡片重叠。"
+);
+assert.match(
+  styles,
+  /\.application-plan-row\.with-action\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(0,\s*0\.9fr\)\s*auto;/,
+  "可新增轮次应为删除按钮预留操作列。"
 );

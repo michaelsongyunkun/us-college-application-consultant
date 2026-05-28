@@ -185,10 +185,22 @@ function renderApplicationRoundCard(round, entries = []) {
 
 function renderApplicationPlanRow(round, index, entry = {}) {
   return `
-    <div class="application-plan-row" data-application-round="${escapeHtml(round.key)}" data-application-index="${index}">
+    <div class="application-plan-row${round.addable ? " with-action" : ""}" data-application-round="${escapeHtml(round.key)}" data-application-index="${index}">
       ${renderApplicationSchoolSelect(round.key, index, entry.school)}
       ${renderApplicationMajorInput(round.key, index, entry.major)}
+      ${round.addable ? renderApplicationRemoveButton(round.key, round.label, index) : ""}
     </div>`;
+}
+
+function renderApplicationRemoveButton(roundKey, label, index) {
+  return `
+    <button
+      type="button"
+      class="danger application-remove-button"
+      data-remove-application-round="${escapeHtml(roundKey)}"
+      data-application-index="${index}"
+      aria-label="删除 ${escapeHtml(label)} 第 ${index + 1} 所"
+    >删除</button>`;
 }
 
 function renderApplicationSchoolSelect(roundKey, index, value = "") {
@@ -656,6 +668,33 @@ function addApplicationRound(roundKey) {
     ?.focus();
 }
 
+function removeApplicationRound(roundKey, index) {
+  const round = APPLICATION_ROUND_CONFIG.find((item) => item.key === roundKey && item.addable);
+  if (!round || !Number.isInteger(index) || index < 0) return;
+  const rows = collectApplicationRoundRows(roundKey);
+  if (!rows[index]) return;
+  rows.splice(index, 1);
+  applicationRoundRowCounts[roundKey] = Math.max(rows.length, 1);
+  const portfolio = collectPortfolio();
+  portfolio.applicationPlan[roundKey] = rows.filter((entry) => entry.school);
+  renderPortfolio(portfolio);
+  isDirty = true;
+  setStatus("有未保存修改");
+  updateCompletion();
+}
+
+function collectApplicationRoundRows(roundKey) {
+  return Array.from(applicationPlanList.querySelectorAll(`[data-application-round="${roundKey}"]`)).map(
+    (row) => {
+      const index = Number(row.dataset.applicationIndex || 0);
+      return {
+        school: fieldValue(applicationControlName(roundKey, index, "school")),
+        major: fieldValue(applicationControlName(roundKey, index, "major")),
+      };
+    },
+  );
+}
+
 function enforceEarlyBindingExclusivity(event) {
   const target = event.target;
   if (!(target instanceof HTMLSelectElement) || !target.value) return;
@@ -748,9 +787,17 @@ savePortfolioButtons.forEach((button) => {
   button.addEventListener("click", savePortfolio);
 });
 applicationPlanList?.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-add-application-round]");
-  if (!button) return;
-  addApplicationRound(button.dataset.addApplicationRound);
+  const addButton = event.target.closest("[data-add-application-round]");
+  if (addButton) {
+    addApplicationRound(addButton.dataset.addApplicationRound);
+    return;
+  }
+  const removeButton = event.target.closest("[data-remove-application-round]");
+  if (!removeButton) return;
+  removeApplicationRound(
+    removeButton.dataset.removeApplicationRound,
+    Number(removeButton.dataset.applicationIndex),
+  );
 });
 activityImportSources?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-import-activity]");

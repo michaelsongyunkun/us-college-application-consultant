@@ -1292,11 +1292,21 @@ button.danger:hover {
   align-items: end;
 }
 
+.application-plan-row.with-action {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) auto;
+}
+
 .application-plan-row label,
 .application-plan-row input,
 .application-plan-row select {
   min-width: 0;
   max-width: 100%;
+}
+
+.application-remove-button {
+  min-height: 42px;
+  align-self: end;
+  white-space: nowrap;
 }
 
 .portfolio-card {
@@ -3157,6 +3167,7 @@ button.neutral:hover {
 
   .portfolio-card-heading,
   .application-plan-row,
+  .application-plan-row.with-action,
   .portfolio-fields.two-column,
   .portfolio-fields.three-column,
   .portfolio-fields.four-column {
