@@ -36,6 +36,12 @@ for (const expected of [
   assert.ok(pageHtml.includes(expected), `Missing my-activities page element or copy: ${expected}`);
 }
 
+assert.ok(
+  pageHtml.indexOf('id="recommendationLettersPanel"') < pageHtml.indexOf('id="applicationPlanList"')
+    && pageHtml.indexOf('id="applicationPlanList"') < pageHtml.indexOf('class="portfolio-save-bar"'),
+  "选校计划应位于页面内容区最下面，放在推荐信之后、保存栏之前。"
+);
+
 for (const copy of [
   "选校计划：已填写 0 所",
   "课外活动：已填写 0/10",
@@ -81,6 +87,10 @@ assert.ok(script.includes("beforeunload"), "有未保存修改时应拦截离开
 assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案。");
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
+assert.ok(
+  pageHtml.includes("./styles.css?v=20260528-application-plan-vertical"),
+  "我的申请页面应更新 CSS 版本号，避免用户继续加载缓存的平行布局。"
+);
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");
 assert.match(styles, /\.portfolio-card\s*\{/, "履历条目应使用专用卡片样式。");
 assert.match(styles, /\.application-plan-grid\s*\{/, "我的申请页面应有选校计划布局样式。");
