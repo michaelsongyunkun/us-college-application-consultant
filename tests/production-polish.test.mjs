@@ -103,6 +103,7 @@ try {
     "/resource-library.html",
     "/school-encyclopedia.html",
     "/data/schools.md",
+    "/data/international-schools.md",
   ]) {
     const response = await fetch(`${baseUrl}${protectedPath}`);
     assert.equal(response.status, 401, `${protectedPath} should require login`);

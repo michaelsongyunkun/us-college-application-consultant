@@ -8,6 +8,24 @@ const FIELD_NAMES = {
 const CATEGORY_LABELS = {
   university: "综合大学 T80",
   "liberal-arts": "文理学院 TOP50",
+  international: "英港澳加院校",
+};
+
+const INTERNATIONAL_FIELD_NAMES = {
+  官网: "website",
+  地区: "region",
+  "QS 2026": "qsRanking",
+  "THE 2026": "theRanking",
+  "ARWU 2025": "arwuRanking",
+  "U.S. News 2025-2026": "usNewsRanking",
+  平均排名: "averageRanking",
+  "年预算人民币/年": "budgetRmb",
+  "估算对应本币/年": "localBudget",
+  预算备注: "budgetNote",
+  本科申请学术要求: "applicationRequirement",
+  英语要求: "englishRequirement",
+  热门专业: "popularMajors",
+  学校风格: "schoolStyle",
 };
 
 function englishSlug(name) {
@@ -23,10 +41,19 @@ export function parseSchoolsMarkdown(markdown) {
   const schools = [];
   const identifierCounts = new Map();
   let category = "";
+  let internationalRegion = "";
+  let internationalRank = 0;
   let current = null;
 
   function appendCurrent() {
     if (!current) return;
+    if (current.category === "international") {
+      current.region = current.region || internationalRegion;
+      current.applicationAndEssays = current.applicationRequirement;
+      current.schoolFeatures = current.schoolStyle;
+      current.admissionPreferences = current.popularMajors;
+      current.recommendationRequirements = [current.website, current.budgetNote].filter(Boolean).join("；");
+    }
     const identifierBase = `${current.category}-${current.rank}-${englishSlug(current.name)}`;
     const identifierCount = (identifierCounts.get(identifierBase) || 0) + 1;
     identifierCounts.set(identifierBase, identifierCount);
@@ -46,6 +73,13 @@ export function parseSchoolsMarkdown(markdown) {
       category = "liberal-arts";
       continue;
     }
+    const internationalSection = line.match(/^###\s+\d+\.\d+\s+(.+?)院校\s*$/);
+    if (internationalSection) {
+      appendCurrent();
+      category = "international";
+      internationalRegion = internationalSection[1].trim();
+      continue;
+    }
 
     const heading = line.match(/^####\s+#(\S+)\s+(.+?)\s*$/);
     if (heading && category) {
@@ -63,10 +97,48 @@ export function parseSchoolsMarkdown(markdown) {
       };
       continue;
     }
+    const internationalHeading = line.match(/^####\s+(.+?)\s*$/);
+    if (internationalHeading && category === "international") {
+      appendCurrent();
+      internationalRank += 1;
+      current = {
+        id: "",
+        category,
+        categoryLabel: CATEGORY_LABELS[category],
+        rank: String(internationalRank),
+        name: internationalHeading[1],
+        region: internationalRegion,
+        website: "",
+        qsRanking: "",
+        theRanking: "",
+        arwuRanking: "",
+        usNewsRanking: "",
+        averageRanking: "",
+        budgetRmb: "",
+        localBudget: "",
+        budgetNote: "",
+        applicationRequirement: "",
+        englishRequirement: "",
+        popularMajors: "",
+        schoolStyle: "",
+        applicationAndEssays: "",
+        schoolFeatures: "",
+        admissionPreferences: "",
+        recommendationRequirements: "",
+      };
+      continue;
+    }
 
     const field = line.match(/^-\s+\*\*(申请与文书|学校特色|录取偏好|推荐信要求)\*\*：\s*(.*)$/);
     if (field && current) {
       current[FIELD_NAMES[field[1]]] = field[2].trim();
+      continue;
+    }
+
+    const internationalField = line.match(/^-\s+(.+?)：\s*(.*)$/);
+    if (internationalField && current?.category === "international") {
+      const fieldName = INTERNATIONAL_FIELD_NAMES[internationalField[1].trim()];
+      if (fieldName) current[fieldName] = internationalField[2].trim();
     }
   }
 
@@ -87,6 +159,20 @@ export function filterSchools(schools, { category, query = "" } = {}) {
         school.schoolFeatures,
         school.admissionPreferences,
         school.recommendationRequirements,
+        school.region,
+        school.website,
+        school.qsRanking,
+        school.theRanking,
+        school.arwuRanking,
+        school.usNewsRanking,
+        school.averageRanking,
+        school.budgetRmb,
+        school.localBudget,
+        school.budgetNote,
+        school.applicationRequirement,
+        school.englishRequirement,
+        school.popularMajors,
+        school.schoolStyle,
       ].join(" "),
     ).includes(normalizedQuery);
   });

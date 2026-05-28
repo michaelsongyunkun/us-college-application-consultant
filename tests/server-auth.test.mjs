@@ -94,6 +94,11 @@ try {
   });
   assert.equal(schoolDatasetResponse.status, 200);
 
+  const internationalSchoolDatasetResponse = await fetch(`${baseUrl}/data/international-schools.md`, {
+    headers: { Cookie: cookie },
+  });
+  assert.equal(internationalSchoolDatasetResponse.status, 200);
+
   for (const eventType of [
     "parse_codex_answer",
     "export_json",

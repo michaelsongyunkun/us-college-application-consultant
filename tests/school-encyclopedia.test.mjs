@@ -6,13 +6,17 @@ import {
 } from "../src/domain/school-encyclopedia.mjs";
 
 const markdown = readFileSync("data/schools.md", "utf8");
+const internationalMarkdown = readFileSync("data/international-schools.md", "utf8");
 const schools = parseSchoolsMarkdown(markdown);
+const internationalSchoolsData = parseSchoolsMarkdown(internationalMarkdown);
 const universities = schools.filter((school) => school.category === "university");
 const liberalArtsColleges = schools.filter((school) => school.category === "liberal-arts");
+const internationalSchools = internationalSchoolsData.filter((school) => school.category === "international");
 
 assert.equal(schools.length, 118);
 assert.equal(universities.length, 65);
 assert.equal(liberalArtsColleges.length, 53);
+assert.equal(internationalSchools.length, 25);
 assert.deepEqual(schools[0], {
   id: "university-1-princeton",
   category: "university",
@@ -30,3 +34,31 @@ assert.deepEqual(schools[0], {
 });
 assert.equal(filterSchools(schools, { category: "university", query: "Maker" })[0].name, "麻省理工 MIT");
 assert.equal(filterSchools(schools, { category: "liberal-arts", query: "Williams" })[0].rank, "1");
+assert.deepEqual(
+  {
+    category: internationalSchools[0].category,
+    categoryLabel: internationalSchools[0].categoryLabel,
+    rank: internationalSchools[0].rank,
+    name: internationalSchools[0].name,
+    region: internationalSchools[0].region,
+    website: internationalSchools[0].website,
+    budgetRmb: internationalSchools[0].budgetRmb,
+  },
+  {
+    category: "international",
+    categoryLabel: "英港澳加院校",
+    rank: "1",
+    name: "墨尔本大学 University of Melbourne",
+    region: "澳洲",
+    website: "https://www.unimelb.edu.au",
+    budgetRmb: "37-49 万",
+  },
+);
+assert.equal(
+  filterSchools(internationalSchoolsData, { category: "international", query: "Waterloo" })[0].name,
+  "滑铁卢大学 University of Waterloo",
+);
+assert.equal(
+  filterSchools(internationalSchoolsData, { category: "international", query: "宽口径" })[0].name,
+  "墨尔本大学 University of Melbourne",
+);
