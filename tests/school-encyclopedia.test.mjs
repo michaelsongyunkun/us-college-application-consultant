@@ -43,6 +43,9 @@ assert.deepEqual(
     region: internationalSchools[0].region,
     website: internationalSchools[0].website,
     budgetRmb: internationalSchools[0].budgetRmb,
+    aLevelRequirement: internationalSchools[0].aLevelRequirement,
+    apRequirement: internationalSchools[0].apRequirement,
+    ibRequirement: internationalSchools[0].ibRequirement,
   },
   {
     category: "international",
@@ -52,6 +55,12 @@ assert.deepEqual(
     region: "澳洲",
     website: "https://www.unimelb.edu.au",
     budgetRmb: "37-49 万",
+    aLevelRequirement:
+      "2026入学按课程给保证分/最低分；常见为 Arts/Design/Science BBB，Commerce ABB，Biomedicine AAB，Oral Health AAA；A*=6, A=5, B=4, C=3, D=2, E=1，并需满足英语、数学/科学等先修。",
+    apRequirement:
+      "需美国高中毕业证与GPA，并提交 SAT / ACT 或 AP aggregate；AP aggregate通常按3-4门AP计分，常见区间约9-18分；单门AP低于3不计入总分，也不能满足先修。",
+    ibRequirement:
+      "2026入学保证/最低分按课程不同，常见区间约25-37；Arts约30，Science约31，Commerce/Biomedicine约35，Oral Health约37；数学、化学、生物/物理等先修需达到课程页要求。",
   },
 );
 assert.equal(
@@ -60,5 +69,9 @@ assert.equal(
 );
 assert.equal(
   filterSchools(internationalSchoolsData, { category: "international", query: "宽口径" })[0].name,
+  "墨尔本大学 University of Melbourne",
+);
+assert.equal(
+  filterSchools(internationalSchoolsData, { category: "international", query: "AP aggregate" })[0].name,
   "墨尔本大学 University of Melbourne",
 );

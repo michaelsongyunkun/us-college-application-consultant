@@ -26,6 +26,9 @@ assert.ok(!script.includes("来源资料未提供"), "院校百科空字段不�
 assert.ok(script.includes('document.querySelector("#internationalTab")'), "前端脚本应绑定英港澳加院校按钮。");
 assert.ok(script.includes('fetch("./data/international-schools.md")'), "前端脚本应加载英港澳加院校 RAG 数据。");
 assert.ok(script.includes('switchCategory("international")'), "英港澳加按钮应切换到 international 分类。");
+assert.ok(script.includes("A-Level / AL"), "英港澳加详情应展示 A-Level / AL 要求。");
+assert.ok(script.includes("AP / 美高"), "英港澳加详情应展示 AP / 美高要求。");
+assert.ok(script.includes("<dt>IB</dt>"), "英港澳加详情应展示 IB 要求。");
 assert.match(
   pageHtml,
   /src="\.\/src\/client\/school-encyclopedia\.js\?v=[a-z0-9-]+"/,

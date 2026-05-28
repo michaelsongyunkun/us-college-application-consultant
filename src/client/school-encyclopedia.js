@@ -1,4 +1,4 @@
-import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260528-international-schools";
+import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260528-al-ap-ib";
 import {
   DEFAULT_VISIBLE_RESULT_LIMIT,
   expandVisibleResultLimit,
@@ -71,6 +71,9 @@ function renderInternationalDetails(school) {
     <div><dt>排名</dt><dd>${escapeHtml(displayValue(rankingText))}</dd></div>
     <div><dt>预算</dt><dd>${escapeHtml(displayValue(budgetText))}</dd></div>
     <div><dt>本科申请要求</dt><dd>${escapeHtml(displayValue(school.applicationRequirement))}</dd></div>
+    <div><dt>A-Level / AL</dt><dd>${escapeHtml(displayValue(school.aLevelRequirement))}</dd></div>
+    <div><dt>AP / 美高</dt><dd>${escapeHtml(displayValue(school.apRequirement))}</dd></div>
+    <div><dt>IB</dt><dd>${escapeHtml(displayValue(school.ibRequirement))}</dd></div>
     <div><dt>英语要求</dt><dd>${escapeHtml(displayValue(school.englishRequirement))}</dd></div>
     <div><dt>热门专业</dt><dd>${escapeHtml(displayValue(school.popularMajors))}</dd></div>
     <div><dt>学校风格</dt><dd>${escapeHtml(displayValue(school.schoolStyle))}</dd></div>`;
