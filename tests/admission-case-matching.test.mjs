@@ -104,6 +104,82 @@ const majorFirstMatches = matchAdmissionCases({
 
 assert.deepEqual(majorFirstMatches, []);
 
+const englishCoverageCases = parseAdmissionCasesMarkdown(`
+## 案例 1
+- 录取：Dartmouth / UCLA / UCB
+- 专业：生物
+- 课程成绩：AP Biology 5, AP Chemistry 5
+- 奖项：HOSA, iGEM research, biology fair
+- 活动：hospital volunteering, lab research
+
+## 案例 2
+- 录取：Emory University
+- 专业：公共卫生
+- 课程成绩：AP Statistics 5, AP Biology 5
+- 奖项：public health research paper
+- 活动：community health education project
+
+## 案例 3
+- 录取：Stanford / Yale / Princeton
+- 专业：Political Science / Religious Studies
+- 课程成绩：AP US Government 5, AP World History 5
+- 奖项：debate, Model United Nations, public policy essay
+- 活动：campaign volunteering and civic education
+
+## 案例 4
+- 录取：Washington University in St. Louis
+- 专业：Communication
+- 课程成绩：AP English Language 5
+- 奖项：journalism award, speech competition
+- 活动：school newspaper and media project
+`);
+
+const englishBiologyProfile = buildStudentCaseProfile({
+  profile: {
+    grade: "10th grade",
+    majorDirection: "biology / biomedical science / pre-med",
+    interests: "lab research, HOSA, public health education",
+    coreStrengths: "biology fair and hospital volunteering",
+  },
+  activities: [],
+  narrative: "The student wants biology and medicine-adjacent activities.",
+});
+
+const englishBiologyMatches = matchAdmissionCases({
+  studentProfile: englishBiologyProfile,
+  cases: englishCoverageCases,
+  limit: englishCoverageCases.length,
+});
+
+assert.ok(
+  englishBiologyMatches.length >= 2,
+  "English biology/medical profiles should produce enough case matches for the refresh button.",
+);
+assert.match(englishBiologyMatches[0].case.major, /生物|公共卫生/);
+
+const englishPoliticsProfile = buildStudentCaseProfile({
+  profile: {
+    grade: "11th grade",
+    majorDirection: "political science / international relations / public policy",
+    interests: "debate, Model United Nations, civic education",
+    coreStrengths: "public speaking and policy research",
+  },
+  activities: [],
+  narrative: "The student is building a public policy and civic engagement direction.",
+});
+
+const englishPoliticsMatches = matchAdmissionCases({
+  studentProfile: englishPoliticsProfile,
+  cases: englishCoverageCases,
+  limit: englishCoverageCases.length,
+});
+
+assert.ok(
+  englishPoliticsMatches.length >= 2,
+  "English social science profiles should produce enough case matches for the refresh button.",
+);
+assert.match(englishPoliticsMatches[0].case.major, /Political Science|Communication/);
+
 const emptyMatches = matchAdmissionCases({
   studentProfile,
   cases: [],
