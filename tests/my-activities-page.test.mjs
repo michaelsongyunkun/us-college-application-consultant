@@ -5,7 +5,7 @@ const indexHtml = readFileSync("index.html", "utf8");
 const pageHtml = readFileSync("my-activities.html", "utf8");
 const script = readFileSync("src/client/my-activities.js", "utf8");
 const styles = readFileSync("styles.css", "utf8");
-const navigation = indexHtml.match(/<nav class="title-link-group"[\s\S]*?<\/nav>/)?.[0] || "";
+const navigation = indexHtml.match(/<nav class="[^"]*\bprimary-nav\b[^"]*"[\s\S]*?<\/nav>/)?.[0] || "";
 
 assert.ok(navigation.includes('href="./my-activities.html"'), "主导航应包含我的申请入口。");
 assert.ok(

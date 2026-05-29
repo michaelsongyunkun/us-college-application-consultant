@@ -846,6 +846,93 @@ h1 {
   border-color: var(--accent-strong);
 }
 
+.logged-in-header {
+  align-items: center;
+  gap: 28px;
+}
+
+.logged-in-identity {
+  min-width: min(360px, 100%);
+}
+
+.logged-in-nav-area {
+  display: grid;
+  flex: 1 1 680px;
+  min-width: 0;
+  justify-items: end;
+  gap: 10px;
+}
+
+.primary-nav,
+.utility-nav {
+  justify-content: flex-end;
+}
+
+.primary-nav .title-link {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink);
+}
+
+.primary-nav .title-link:hover {
+  border-color: var(--line);
+  background: #fff;
+  color: var(--accent-strong);
+}
+
+.primary-nav .current-link {
+  border-color: var(--accent);
+  background: var(--surface-green);
+  color: var(--accent-strong);
+}
+
+.utility-nav {
+  gap: 8px;
+}
+
+.utility-nav .title-link {
+  min-height: 34px;
+  padding: 0 11px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.workspace-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+  padding: 14px 22px;
+}
+
+.workspace-action-bar strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.workspace-action-bar span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.workspace-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 h2 {
   margin-bottom: 6px;
   font-size: 20px;
@@ -3073,6 +3160,25 @@ button.neutral:hover {
 
   .actions {
     justify-content: flex-start;
+  }
+
+  .logged-in-nav-area {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .primary-nav,
+  .utility-nav,
+  .account-actions,
+  .workspace-action-bar,
+  .workspace-action-buttons {
+    justify-content: flex-start;
+  }
+
+  .workspace-action-bar {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 14px 16px;
   }
 
   .utility-links {

@@ -15,7 +15,7 @@
     <meta name="twitter:description" content="面向学生与家长的 AI 美本规划工作台：背景整理、活动规划、资源匹配和报告导出。" />
     <title>AI 美本规划工作台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260528-case-refresh" />
+    <link rel="stylesheet" href="./styles.css?v=20260529-logged-in-nav" />
   </head>
   <body>
     <section id="authShell" class="landing-shell is-hidden" aria-labelledby="landing-title">
@@ -175,40 +175,40 @@
     </section>
 
     <main id="appShell" class="app-shell is-hidden">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">US College Admissions Strategist Agent</p>
-          <div class="title-row">
-            <h1>美本申请规划 Agent</h1>
-            <nav class="title-link-group" aria-label="页面导航">
-              <span class="primary-links">
-                <span class="button-link title-link current-link" aria-current="page">申请规划</span>
-                <a class="button-link title-link" href="./my-activities.html" data-safe-nav>我的申请</a>
-                <a class="button-link title-link" href="./resource-library.html" data-safe-nav>资源库</a>
-                <a class="button-link title-link" href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
-              </span>
-              <span class="utility-links">
-                <a class="button-link quiet-link title-link" href="./gpa-calculator.html" data-safe-nav>GPA计算器</a>
-                <a class="button-link quiet-link title-link" href="./course-helper.html" data-safe-nav>选课辅助器</a>
-                <a class="button-link quiet-link title-link" href="./disclaimer.html" data-safe-nav>免责声明</a>
-                <a class="button-link quiet-link title-link" href="./contact.html" data-safe-nav>联系我们</a>
-              </span>
-            </nav>
+      <header class="topbar brand-page-header logged-in-header">
+        <div class="brand-page-identity logged-in-identity">
+          <a class="brand-mark" href="./index.html" data-safe-nav>
+            <span class="brand-prefix">US</span> College Compass
+          </a>
+          <p class="eyebrow">Admissions Planning Workspace</p>
+          <h1>美本申请规划 Agent</h1>
+        </div>
+
+        <div class="logged-in-nav-area">
+          <nav class="title-link-group primary-nav" aria-label="主导航">
+            <span class="button-link title-link current-link" aria-current="page">申请规划</span>
+            <a class="button-link title-link" href="./my-activities.html" data-safe-nav>我的申请</a>
+            <a class="button-link title-link" href="./resource-library.html" data-safe-nav>资源库</a>
+            <a class="button-link title-link" href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+          </nav>
+
+          <nav class="title-link-group utility-nav" aria-label="工具与支持">
+            <a class="button-link quiet-link title-link" href="./gpa-calculator.html" data-safe-nav>GPA计算器</a>
+            <a class="button-link quiet-link title-link" href="./course-helper.html" data-safe-nav>选课辅助器</a>
+            <a class="button-link quiet-link title-link" href="./disclaimer.html" data-safe-nav>免责声明</a>
+            <a class="button-link quiet-link title-link" href="./contact.html" data-safe-nav>联系我们</a>
             <a
               id="adminDashboardLink"
               class="button-link quiet-link title-link is-hidden"
               href="./admin.html"
               data-safe-nav
             >数据看板 / 登录数据</a>
+          </nav>
+
+          <div class="account-actions" aria-label="账号操作">
+            <span id="currentUserBadge" class="user-badge"></span>
+            <button id="logoutButton" class="secondary" type="button">退出</button>
           </div>
-        </div>
-        <div class="actions" aria-label="页面操作">
-          <span id="currentUserBadge" class="user-badge"></span>
-          <button id="saveButton" type="button">保存当前内容</button>
-          <button id="exportButton" class="secondary" type="button">导出 JSON</button>
-          <button id="exportWordButton" class="secondary" type="button">导出 Word</button>
-          <button id="resetButton" class="danger" type="button">清空当前方案</button>
-          <button id="logoutButton" class="secondary" type="button">退出</button>
         </div>
       </header>
 
@@ -219,6 +219,18 @@
             <p>第一次使用也很简单：先填写信息，再选择方案，需要保留时保存一份备份。</p>
           </div>
           <span id="planningWorkspaceStatus" class="status" role="status" aria-live="polite">正在加载</span>
+        </div>
+        <div class="workspace-action-bar" aria-label="当前方案操作">
+          <div>
+            <strong>当前方案</strong>
+            <span>保存、导出或清空当前规划内容</span>
+          </div>
+          <div class="workspace-action-buttons">
+            <button id="saveButton" type="button">保存当前内容</button>
+            <button id="exportWordButton" class="secondary" type="button">导出 Word</button>
+            <button id="exportButton" class="secondary" type="button">导出 JSON</button>
+            <button id="resetButton" class="danger" type="button">清空当前方案</button>
+          </div>
         </div>
         <ol id="workspaceGuide" class="workspace-guide" aria-label="使用说明">
           <li>

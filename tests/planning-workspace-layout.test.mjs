@@ -90,9 +90,26 @@ for (const copy of [
   assert.match(html, new RegExp(copy), `Missing simplified workspace copy: ${copy}`);
 }
 
-for (const semanticClass of ["primary-links", "utility-links"]) {
+for (const semanticClass of ["primary-nav", "utility-nav"]) {
   assert.match(html, new RegExp(`class=["'][^"']*${semanticClass}[^"']*["']`), `Missing navigation group .${semanticClass}`);
 }
+
+const loggedInHeader = html.match(/<header class="topbar brand-page-header logged-in-header"[\s\S]*?<\/header>/)?.[0] || "";
+const workspaceActions = html.match(/<div class="workspace-action-bar"[\s\S]*?<\/div>\s*<\/section>/)?.[0] || "";
+
+assert.ok(loggedInHeader.includes('class="brand-mark"'), "Logged-in header should use the shared product brand link.");
+assert.ok(loggedInHeader.includes("College Compass"), "Logged-in header should use the shared product brand name.");
+assert.ok(loggedInHeader.includes('aria-label="主导航"'), "Logged-in header should expose a primary navigation group.");
+assert.ok(loggedInHeader.includes('aria-label="工具与支持"'), "Logged-in header should expose a compact tools/support group.");
+assert.ok(loggedInHeader.includes('id="logoutButton"'), "Logout should live in the account area.");
+assert.ok(!loggedInHeader.includes('id="saveButton"'), "Save should not live in the global header.");
+assert.ok(!loggedInHeader.includes('id="exportButton"'), "JSON export should not live in the global header.");
+assert.ok(!loggedInHeader.includes('id="exportWordButton"'), "Word export should not live in the global header.");
+assert.ok(!loggedInHeader.includes('id="resetButton"'), "Reset should not live in the global header.");
+assert.ok(workspaceActions.includes('id="saveButton"'), "Save should live in the workspace action bar.");
+assert.ok(workspaceActions.includes('id="exportButton"'), "JSON export should live in the workspace action bar.");
+assert.ok(workspaceActions.includes('id="exportWordButton"'), "Word export should live in the workspace action bar.");
+assert.ok(workspaceActions.includes('id="resetButton"'), "Reset should remain available in the workspace action bar.");
 
 assert.match(html, /id="exportButton"[^>]*class="secondary"/, "JSON export should use a secondary action style.");
 assert.match(html, /id="exportWordButton"[^>]*class="secondary"/, "Word export should use a secondary action style.");

@@ -4,14 +4,15 @@ import { readFileSync } from "node:fs";
 const indexHtml = readFileSync("index.html", "utf8");
 const pageHtml = readFileSync("school-encyclopedia.html", "utf8");
 const script = readFileSync("src/client/school-encyclopedia.js", "utf8");
-const navigation = indexHtml.match(/<nav class="title-link-group"[\s\S]*?<\/nav>/)?.[0] || "";
+const primaryNavigation = indexHtml.match(/<nav class="[^"]*\bprimary-nav\b[^"]*"[\s\S]*?<\/nav>/)?.[0] || "";
+const utilityNavigation = indexHtml.match(/<nav class="[^"]*\butility-nav\b[^"]*"[\s\S]*?<\/nav>/)?.[0] || "";
 
 assert.match(pageHtml, /class="[^"]*brand-page-header[^"]*"/, "School page should use the shared brand header.");
 assert.ok(pageHtml.includes('href="./index.html"'), "School page must retain access to the planning workspace.");
 assert.ok(
-  navigation.indexOf("resource-library.html") < navigation.indexOf("school-encyclopedia.html")
-    && navigation.indexOf("school-encyclopedia.html") < navigation.indexOf("disclaimer.html"),
-  "院校百科按钮应位于资源库与免责声明之间。",
+  primaryNavigation.indexOf("resource-library.html") < primaryNavigation.indexOf("school-encyclopedia.html")
+    && utilityNavigation.includes("disclaimer.html"),
+  "院校百科应保留在主导航，免责声明应保留在工具导航。",
 );
 assert.ok(pageHtml.includes('id="schoolSearch"'), "页面应提供院校搜索输入框。");
 assert.ok(pageHtml.includes('id="universityTab"') && pageHtml.includes('id="liberalArtsTab"'));
