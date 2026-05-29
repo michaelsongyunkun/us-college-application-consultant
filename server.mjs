@@ -27,6 +27,7 @@ const DEFAULT_RATE_LIMITS = {
   "/api/auth/login": { maxRequests: 10, windowMs: 60_000 },
   "/api/auth/request-password-reset": { maxRequests: 3, windowMs: 60_000 },
   "/api/auth/reset-password": { maxRequests: 5, windowMs: 60_000 },
+  "/api/feedback": { maxRequests: 10, windowMs: 60_000 },
   "/api/plan": { maxRequests: 10, windowMs: 60_000 },
   "/api/analytics/usage-event": { maxRequests: 120, windowMs: 60_000 },
 };
@@ -388,6 +389,16 @@ export function createAppServer({
       }
 
       if (await handleAuth(request, response, url.pathname)) return;
+
+      if (request.method === "POST" && url.pathname === "/api/feedback") {
+        const feedback = auth.recordFeedback({
+          user: auth.getUserForSession(getSessionToken(request)),
+          payload: await readJson(request),
+          metadata: getRequestMetadata(request),
+        });
+        sendJson(response, 201, { ok: true, feedback });
+        return;
+      }
 
       if (request.method === "GET" && url.pathname === "/api/prompt") {
         if (!requireUser(request, response, auth)) return;

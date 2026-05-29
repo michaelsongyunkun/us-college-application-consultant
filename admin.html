@@ -78,6 +78,7 @@
         <button type="button" class="active" data-admin-tab="behavior" aria-controls="behaviorPanel" aria-selected="true">行为趋势</button>
         <button type="button" data-admin-tab="users" aria-controls="usersPanel" aria-selected="false">用户分析</button>
         <button type="button" data-admin-tab="security" aria-controls="securityPanel" aria-selected="false">安全日志</button>
+        <button type="button" data-admin-tab="feedback" aria-controls="feedbackPanel" aria-selected="false">建议反馈</button>
       </nav>
 
       <div class="admin-panels">
@@ -178,6 +179,29 @@
                 </tr>
               </thead>
               <tbody id="loginEventsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="feedbackPanel" class="panel admin-section admin-tab-panel" data-admin-panel="feedback" aria-labelledby="feedback-title" hidden>
+          <div class="section-heading">
+            <h2 id="feedback-title">建议反馈</h2>
+            <p>查看用户从“建议反馈”页面提交的问题、页面位置和复现步骤。</p>
+          </div>
+          <div class="table-wrap focused-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>类型</th>
+                  <th>页面 / 功能</th>
+                  <th>用户 / 联系方式</th>
+                  <th>问题描述</th>
+                  <th>复现步骤</th>
+                  <th>技术信息</th>
+                </tr>
+              </thead>
+              <tbody id="feedbackEntriesBody"></tbody>
             </table>
           </div>
         </section>

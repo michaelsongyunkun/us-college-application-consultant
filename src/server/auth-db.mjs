@@ -104,6 +104,23 @@ export function createAuthDatabase({ databasePath }) {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS feedback_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      user_name TEXT NOT NULL DEFAULT '',
+      user_email TEXT NOT NULL DEFAULT '',
+      issue_type TEXT NOT NULL,
+      page_name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      steps TEXT NOT NULL DEFAULT '',
+      contact TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      feedback_date TEXT NOT NULL,
+      user_agent TEXT,
+      ip_address TEXT,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
     CREATE TABLE IF NOT EXISTS student_activity_portfolios (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL UNIQUE,
@@ -150,6 +167,9 @@ export function createAuthDatabase({ databasePath }) {
     CREATE INDEX IF NOT EXISTS idx_usage_events_user_id ON usage_events(user_id);
     CREATE INDEX IF NOT EXISTS idx_usage_events_event_type ON usage_events(event_type);
     CREATE INDEX IF NOT EXISTS idx_usage_events_occurred_at ON usage_events(occurred_at);
+    CREATE INDEX IF NOT EXISTS idx_feedback_entries_user_id ON feedback_entries(user_id);
+    CREATE INDEX IF NOT EXISTS idx_feedback_entries_created_at ON feedback_entries(created_at);
+    CREATE INDEX IF NOT EXISTS idx_feedback_entries_feedback_date ON feedback_entries(feedback_date);
     CREATE INDEX IF NOT EXISTS idx_student_activity_portfolios_user_id
       ON student_activity_portfolios(user_id);
     CREATE INDEX IF NOT EXISTS idx_planning_projects_user_id ON planning_projects(user_id);

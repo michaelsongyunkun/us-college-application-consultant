@@ -681,6 +681,13 @@ textarea {
   white-space: nowrap;
 }
 
+.admin-table-note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .security-trends {
   margin: 18px 0;
 }
@@ -1289,6 +1296,48 @@ button.danger:hover {
 
 .contact-panel {
   margin-bottom: 18px;
+}
+
+.feedback-shell {
+  width: min(980px, calc(100% - 40px));
+}
+
+.feedback-subtitle {
+  max-width: 620px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.feedback-panel {
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.feedback-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 18px 22px 22px;
+}
+
+.feedback-form textarea[name="description"] {
+  min-height: 140px;
+}
+
+.feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.feedback-status {
+  min-height: 20px;
+  margin: -4px 0 0;
+}
+
+.feedback-status:empty {
+  display: none;
 }
 
 .resource-panel {
@@ -3340,6 +3389,11 @@ button.neutral:hover {
   }
 
   .contact-team {
+    padding: 16px;
+  }
+
+  .feedback-form {
+    grid-template-columns: 1fr;
     padding: 16px;
   }
 

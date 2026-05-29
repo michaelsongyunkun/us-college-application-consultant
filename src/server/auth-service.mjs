@@ -377,7 +377,40 @@ export function createAuthService({
         .get(trendEventFilters.params).count,
     };
 
-    return { overview, users, events, dailyActivity, weeklyActivity, usageSummary, usageEvents };
+    const feedbackFilters = buildFeedbackFilters(filters);
+    const feedbackEntries = db
+      .prepare(
+        `SELECT
+          id,
+          user_id AS userId,
+          user_name AS userName,
+          user_email AS userEmail,
+          issue_type AS issueType,
+          page_name AS pageName,
+          description,
+          steps,
+          contact,
+          created_at AS createdAt,
+          feedback_date AS feedbackDate,
+          user_agent AS userAgent,
+          ip_address AS ipAddress
+        FROM feedback_entries
+        ${feedbackFilters.where}
+        ORDER BY created_at DESC
+        LIMIT 200`,
+      )
+      .all(feedbackFilters.params);
+
+    return {
+      overview,
+      users,
+      events,
+      dailyActivity,
+      weeklyActivity,
+      usageSummary,
+      usageEvents,
+      feedbackEntries,
+    };
 
     function countUsageEvents(eventType, activeFilters) {
       return db
@@ -388,6 +421,55 @@ export function createAuthService({
         )
         .get({ ...activeFilters.params, overviewEventType: eventType }).count;
     }
+  }
+
+  function recordFeedback({ user = null, payload = {}, metadata = {} } = {}) {
+    const issueType = normalizeLimitedLine(payload.issueType, 60);
+    const pageName = normalizeLimitedLine(payload.pageName, 80);
+    const description = normalizeLimitedText(payload.description, 2000);
+    const steps = normalizeLimitedText(payload.steps, 1600);
+    const contact = normalizeLimitedLine(payload.contact, 120);
+    if (!issueType) throw new AuthError("请选择问题类型", 400);
+    if (!pageName) throw new AuthError("请填写遇到问题的页面或功能", 400);
+    if (description.length < 10) throw new AuthError("请至少用 10 个字描述问题", 400);
+
+    const timestamp = now().toISOString();
+    const result = db
+      .prepare(
+        `INSERT INTO feedback_entries (
+          user_id,
+          user_name,
+          user_email,
+          issue_type,
+          page_name,
+          description,
+          steps,
+          contact,
+          created_at,
+          feedback_date,
+          user_agent,
+          ip_address
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        user?.id || null,
+        user?.name || "",
+        user?.email || "",
+        issueType,
+        pageName,
+        description,
+        steps,
+        contact,
+        timestamp,
+        timestamp.slice(0, 10),
+        metadata.userAgent || "",
+        metadata.ipAddress || "",
+      );
+
+    return {
+      id: Number(result.lastInsertRowid),
+      createdAt: timestamp,
+    };
   }
 
   function recordUsageEvent({
@@ -495,6 +577,29 @@ export function createAuthService({
     };
   }
 
+  function buildFeedbackFilters(filters) {
+    const conditions = [];
+    const params = {};
+    if (filters.query) {
+      conditions.push(
+        "(user_name LIKE @feedbackQuery OR user_email LIKE @feedbackQuery OR contact LIKE @feedbackQuery OR issue_type LIKE @feedbackQuery OR page_name LIKE @feedbackQuery OR description LIKE @feedbackQuery)",
+      );
+      params.feedbackQuery = `%${filters.query}%`;
+    }
+    if (filters.fromDate) {
+      conditions.push("feedback_date >= @feedbackFromDate");
+      params.feedbackFromDate = filters.fromDate;
+    }
+    if (filters.toDate) {
+      conditions.push("feedback_date <= @feedbackToDate");
+      params.feedbackToDate = filters.toDate;
+    }
+    return {
+      where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
+      params,
+    };
+  }
+
   function appendFilterCondition(where, condition) {
     return where ? `${where} AND ${condition}` : `WHERE ${condition}`;
   }
@@ -515,6 +620,7 @@ export function createAuthService({
     createPasswordReset,
     resetPassword,
     getLoginDashboard,
+    recordFeedback,
     recordUsageEvent,
     cleanupExpiredSessions,
   };
@@ -589,4 +695,18 @@ function getWeekKey(date) {
 function toNonNegativeInteger(value) {
   const number = Number(value || 0);
   return Number.isFinite(number) && number > 0 ? Math.round(number) : 0;
+}
+
+function normalizeLimitedLine(value, maxLength) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function normalizeLimitedText(value, maxLength) {
+  return String(value || "")
+    .replace(/\r\n?/g, "\n")
+    .trim()
+    .slice(0, maxLength);
 }

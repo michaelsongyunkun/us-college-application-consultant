@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>建议反馈</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css?v=20260529-feedback-local-trial" />
+  </head>
+  <body>
+    <main class="app-shell feedback-shell">
+      <header class="topbar brand-page-header">
+        <div class="brand-page-identity">
+          <a class="brand-mark" href="./index.html" data-safe-nav>
+            <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+            <span class="brand-mark-text"><span class="brand-prefix">US</span> College Compass</span>
+          </a>
+          <p class="eyebrow">Local Feedback</p>
+          <h1>建议反馈</h1>
+          <p class="feedback-subtitle">记录你遇到的问题、卡住的位置或希望优化的细节。</p>
+        </div>
+        <div class="actions" aria-label="页面操作">
+          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
+          <a class="button-link quiet-link" href="./contact.html" data-safe-nav>联系团队</a>
+        </div>
+      </header>
+
+      <section class="panel feedback-panel" aria-labelledby="feedback-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="feedback-title">反馈问题</h2>
+            <p>本地试行期间，提交后仅显示成功提示。</p>
+          </div>
+          <span id="feedbackSummary" class="status" role="status" aria-live="polite">本地试行</span>
+        </div>
+
+        <form id="feedbackForm" class="feedback-form" autocomplete="off">
+          <label>
+            <span>问题类型</span>
+            <select name="issueType" required>
+              <option value="">请选择</option>
+              <option>功能异常</option>
+              <option>内容不准确</option>
+              <option>页面显示问题</option>
+              <option>账号或登录问题</option>
+              <option>其他建议</option>
+            </select>
+          </label>
+
+          <label>
+            <span>遇到问题的页面或功能</span>
+            <input name="pageName" type="text" maxlength="80" required placeholder="例如：生成规划 / 我的申请 / 登录注册" />
+          </label>
+
+          <label class="full-span">
+            <span>问题描述</span>
+            <textarea
+              name="description"
+              minlength="10"
+              maxlength="2000"
+              required
+              placeholder="请描述你看到的异常、卡住的位置或希望改进的点"
+            ></textarea>
+          </label>
+
+          <label class="full-span">
+            <span>复现步骤</span>
+            <textarea
+              name="steps"
+              maxlength="1600"
+              placeholder="例如：填写背景后点击生成规划，页面一直停留在加载状态"
+            ></textarea>
+          </label>
+
+          <label class="full-span">
+            <span>联系方式（可选）</span>
+            <input name="contact" type="text" maxlength="120" placeholder="邮箱或微信，方便后续追问" />
+          </label>
+
+          <div class="feedback-actions full-span">
+            <button type="submit">提交反馈</button>
+            <button class="secondary" type="reset">清空</button>
+          </div>
+          <p id="feedbackStatus" class="status feedback-status full-span" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="./src/client/safe-navigation.mjs?v=20260529-feedback-local-trial"></script>
+    <script type="module" src="./src/client/feedback.js?v=20260529-feedback-local-trial"></script>
+  </body>
+</html>

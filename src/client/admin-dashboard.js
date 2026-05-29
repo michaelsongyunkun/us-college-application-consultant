@@ -11,6 +11,7 @@ const dailyActivityList = document.querySelector("#dailyActivityList");
 const weeklyActivityList = document.querySelector("#weeklyActivityList");
 const usageSummaryList = document.querySelector("#usageSummaryList");
 const usageEventsBody = document.querySelector("#usageEventsBody");
+const feedbackEntriesBody = document.querySelector("#feedbackEntriesBody");
 const metricActiveUsers = document.querySelector("#metricActiveUsers");
 const metricPlanGenerations = document.querySelector("#metricPlanGenerations");
 const metricWordExports = document.querySelector("#metricWordExports");
@@ -179,6 +180,31 @@ function renderUsageEvents(events) {
     .join("");
 }
 
+function renderFeedbackEntries(entries) {
+  if (!entries.length) {
+    feedbackEntriesBody.innerHTML = '<tr><td colspan="7">暂无建议反馈</td></tr>';
+    return;
+  }
+  feedbackEntriesBody.innerHTML = entries
+    .map(
+      (entry) => `
+        <tr>
+          <td>${formatDateTime(entry.createdAt)}</td>
+          <td>${escapeHtml(entry.issueType)}</td>
+          <td>${escapeHtml(entry.pageName)}</td>
+          <td>
+            <strong>${escapeHtml(entry.userName || "未登录用户")}</strong>
+            <p class="admin-table-note">${escapeHtml(entry.contact || entry.userEmail || "-")}</p>
+          </td>
+          <td>${escapeHtml(entry.description)}</td>
+          <td>${escapeHtml(entry.steps || "-")}</td>
+          <td>${technicalDetails(entry)}</td>
+        </tr>
+      `,
+    )
+    .join("");
+}
+
 function renderOverview(dashboard) {
   const overview = dashboard.overview || {};
   metricActiveUsers.textContent = overview.activeUsers || 0;
@@ -213,6 +239,7 @@ async function loadDashboard() {
     renderActivity(weeklyActivityList, dashboard.weeklyActivity || [], "week");
     renderUsageSummary(dashboard.usageSummary || []);
     renderUsageEvents(dashboard.usageEvents || []);
+    renderFeedbackEntries(dashboard.feedbackEntries || []);
     dashboardStatus.textContent = "已更新";
     dashboardStatus.classList.remove("error");
   } catch (error) {
@@ -270,6 +297,23 @@ function activeExportTable() {
         event.userEmail || "-",
         compactDevice(event.userAgent, event.ipAddress),
         event.failureReason || "-",
+      ]),
+    );
+  }
+  if (activeTab === "feedback") {
+    return makeExcelTable(
+      "建议反馈",
+      ["时间", "类型", "页面/功能", "用户", "邮箱", "联系方式", "问题描述", "复现步骤", "浏览器/IP"],
+      (latestDashboard.feedbackEntries || []).map((entry) => [
+        formatDateTime(entry.createdAt),
+        entry.issueType,
+        entry.pageName,
+        entry.userName || "未登录用户",
+        entry.userEmail || "-",
+        entry.contact || "-",
+        entry.description,
+        entry.steps || "-",
+        compactDevice(entry.userAgent, entry.ipAddress),
       ]),
     );
   }

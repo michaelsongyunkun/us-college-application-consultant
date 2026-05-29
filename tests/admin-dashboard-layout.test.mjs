@@ -16,11 +16,13 @@ for (const id of [
   "behaviorPanel",
   "usersPanel",
   "securityPanel",
+  "feedbackPanel",
+  "feedbackEntriesBody",
 ]) {
   assert.match(html, new RegExp(`id=["']${id}["']`), `Missing focused dashboard element #${id}`);
 }
 
-for (const tab of ["behavior", "users", "security"]) {
+for (const tab of ["behavior", "users", "security", "feedback"]) {
   assert.match(html, new RegExp(`data-admin-tab=["']${tab}["']`), `Missing ${tab} dashboard tab`);
 }
 
@@ -31,6 +33,8 @@ assert.doesNotMatch(
 );
 assert.match(script, /dashboard\.overview/, "Summary cards should render server-computed operational totals.");
 assert.match(script, /refresh_case_matches/, "Dashboard should label similar-case refresh events.");
+assert.match(script, /renderFeedbackEntries/, "Dashboard should render submitted feedback entries.");
+assert.match(script, /feedbackEntries/, "Dashboard should read feedback entries from the admin payload.");
 assert.match(script, /data-admin-tab/, "Dashboard script should activate focused tab panels.");
 assert.match(script, /<details class="technical-details">/, "Low-frequency browser and IP data should be expandable.");
 assert.match(styles, /\.admin-tabs/, "Tabbed dashboard navigation should be styled.");
