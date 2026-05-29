@@ -1,6 +1,9 @@
 const ACTIVITY_LIMIT = 10;
 const COMPETITION_LIMIT = 5;
 const SUMMER_SCHOOL_LIMIT = 3;
+const GPA_RECORD_LIMIT = 16;
+const SAT_TEST_LIMIT = 10;
+const AP_EXAM_LIMIT = 40;
 const APPLICATION_ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "uc", "rd"];
 const APPLICATION_ROUND_LIMITS = {
   rea: 1,
@@ -40,6 +43,16 @@ const SUMMER_SCHOOL_FIELDS = [
   "proofLink",
 ];
 const APPLICATION_PLAN_FIELDS = ["school", "major"];
+const GPA_RECORD_FIELDS = ["gradeLevel", "term", "gpa"];
+const SAT_TEST_FIELDS = ["totalScore", "englishScore", "mathScore", "testDate"];
+const AP_EXAM_FIELDS = ["courseName", "score", "examYear"];
+const GPA_SCALE_OPTIONS = new Set(["4.0分制", "100分制", "4.3分制", "5分制"]);
+const AP_SCORE_OPTIONS = new Set(["1", "2", "3", "4", "5", "未出分"]);
+const DEFAULT_GPA_RECORDS = Object.freeze(
+  ["9年级", "10年级", "11年级", "12年级"].flatMap((gradeLevel) =>
+    ["上学期", "下学期"].map((term) => ({ gradeLevel, term, gpa: "" })),
+  ),
+);
 
 export class ActivityPortfolioError extends Error {
   constructor(message, statusCode = 400) {
@@ -61,6 +74,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
           competitions_json,
           summer_schools_json,
           recommendation_letters_json,
+          academic_records_json,
           updated_at
         FROM student_activity_portfolios
         WHERE user_id = ?`,
@@ -84,6 +98,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
         "Summer schools",
       ),
       recommendationLetters: parseRecommendationLetters(row.recommendation_letters_json),
+      academicRecords: parseAcademicRecords(row.academic_records_json),
       updatedAt: row.updated_at,
     };
   }
@@ -100,15 +115,17 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
         competitions_json,
         summer_schools_json,
         recommendation_letters_json,
+        academic_records_json,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
         application_plan_json = excluded.application_plan_json,
         activities_json = excluded.activities_json,
         competitions_json = excluded.competitions_json,
         summer_schools_json = excluded.summer_schools_json,
         recommendation_letters_json = excluded.recommendation_letters_json,
+        academic_records_json = excluded.academic_records_json,
         updated_at = excluded.updated_at`,
     ).run(
       userId,
@@ -117,6 +134,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
       JSON.stringify(portfolio.competitions),
       JSON.stringify(portfolio.summerSchools),
       JSON.stringify(portfolio.recommendationLetters),
+      JSON.stringify(portfolio.academicRecords),
       timestamp,
       timestamp,
     );
@@ -136,6 +154,7 @@ function emptyPortfolio() {
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
+    academicRecords: defaultAcademicRecords(),
     updatedAt: null,
   };
 }
@@ -158,6 +177,7 @@ function normalizePortfolio(payload) {
       "Summer schools",
     ),
     recommendationLetters: normalizeRecommendationLetters(value.recommendationLetters),
+    academicRecords: normalizeAcademicRecords(value.academicRecords),
   };
 }
 
@@ -230,6 +250,68 @@ function normalizeRecommendationLetters(value) {
   });
 }
 
+function defaultAcademicRecords() {
+  return {
+    gpaScale: "",
+    gpaRecords: DEFAULT_GPA_RECORDS.map((record) => ({ ...record })),
+    satTests: [],
+    apExams: [],
+  };
+}
+
+function normalizeAcademicRecords(value) {
+  if (value === undefined || value === null) return defaultAcademicRecords();
+  const item = normalizeObject(value, "Academic records");
+  return {
+    gpaScale: GPA_SCALE_OPTIONS.has(cleanString(item.gpaScale)) ? cleanString(item.gpaScale) : "",
+    gpaRecords: Object.hasOwn(item, "gpaRecords")
+      ? normalizeCollection(item.gpaRecords, GPA_RECORD_LIMIT, GPA_RECORD_FIELDS, "GPA records")
+      : defaultAcademicRecords().gpaRecords,
+    satTests: normalizeSatTests(item.satTests),
+    apExams: normalizeApExams(item.apExams),
+  };
+}
+
+function normalizeSatTests(value) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) throw new ActivityPortfolioError("SAT tests must be an array", 400);
+  return value
+    .map((entry) => {
+      const item = normalizeObject(entry, "SAT test item");
+      return {
+        totalScore: normalizeScore(item.totalScore, 400, 1600),
+        englishScore: normalizeScore(item.englishScore, 200, 800),
+        mathScore: normalizeScore(item.mathScore, 200, 800),
+        testDate: cleanString(item.testDate),
+      };
+    })
+    .filter(hasAnyValue)
+    .slice(0, SAT_TEST_LIMIT);
+}
+
+function normalizeApExams(value) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) throw new ActivityPortfolioError("AP exams must be an array", 400);
+  return value
+    .map((entry) => {
+      const item = normalizeRecord(entry, AP_EXAM_FIELDS, "AP exam");
+      return {
+        ...item,
+        score: AP_SCORE_OPTIONS.has(item.score) ? item.score : "",
+      };
+    })
+    .filter(hasAnyValue)
+    .slice(0, AP_EXAM_LIMIT);
+}
+
+function normalizeScore(value, min, max) {
+  const text = cleanString(value);
+  if (!text) return "";
+  const score = Number(text);
+  if (!Number.isInteger(score) || score < min || score > max) return "";
+  return String(score);
+}
+
 function normalizeNestedRecord(value, fields) {
   if (value === undefined || value === null) return {};
   return pruneEmpty(normalizeRecord(value, fields, "Recommendation letter"));
@@ -257,6 +339,17 @@ function parseCollection(serialized, limit, fields, label) {
 function parseRecommendationLetters(serialized) {
   try {
     return normalizeRecommendationLetters(JSON.parse(serialized));
+  } catch (error) {
+    if (error instanceof ActivityPortfolioError || error instanceof SyntaxError) {
+      throw new ActivityPortfolioError("Stored activity portfolio is invalid", 500);
+    }
+    throw error;
+  }
+}
+
+function parseAcademicRecords(serialized) {
+  try {
+    return normalizeAcademicRecords(JSON.parse(serialized || "{}"));
   } catch (error) {
     if (error instanceof ActivityPortfolioError || error instanceof SyntaxError) {
       throw new ActivityPortfolioError("Stored activity portfolio is invalid", 500);

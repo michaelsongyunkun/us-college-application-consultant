@@ -41,6 +41,21 @@ try {
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
+    academicRecords: {
+      gpaScale: "",
+      gpaRecords: [
+        { gradeLevel: "9年级", term: "上学期", gpa: "" },
+        { gradeLevel: "9年级", term: "下学期", gpa: "" },
+        { gradeLevel: "10年级", term: "上学期", gpa: "" },
+        { gradeLevel: "10年级", term: "下学期", gpa: "" },
+        { gradeLevel: "11年级", term: "上学期", gpa: "" },
+        { gradeLevel: "11年级", term: "下学期", gpa: "" },
+        { gradeLevel: "12年级", term: "上学期", gpa: "" },
+        { gradeLevel: "12年级", term: "下学期", gpa: "" },
+      ],
+      satTests: [],
+      apExams: [],
+    },
     updatedAt: null,
   });
 
@@ -145,6 +160,25 @@ try {
         preparedMaterials: ["简历", "活动清单", "项目说明"],
         notes: "申请季前再更新成绩单",
       },
+      academicRecords: {
+        gpaScale: "100分制",
+        gpaRecords: [
+          { gradeLevel: "9年级", term: "上学期", gpa: "92" },
+          { gradeLevel: "9年级", term: "下学期", gpa: "94" },
+        ],
+        satTests: [
+          {
+            totalScore: "1480",
+            englishScore: "700",
+            mathScore: "780",
+            testDate: "2026-03-14",
+          },
+        ],
+        apExams: [
+          { courseName: "AP Calculus BC（微积分 BC）", score: "5", examYear: "2026" },
+          { courseName: "AP Biology（生物）", score: "未出分", examYear: "2026" },
+        ],
+      },
     },
     firstCookie,
   );
@@ -157,12 +191,17 @@ try {
   assert.equal(saved.competitions[0].competitionName, "Physics Bowl");
   assert.equal(saved.summerSchools[0].programName, "YYGS");
   assert.equal(saved.recommendationLetters.teacher1.teacherName, "Ms. Carter");
+  assert.equal(saved.academicRecords.gpaScale, "100分制");
+  assert.equal(saved.academicRecords.gpaRecords[0].gpa, "92");
+  assert.equal(saved.academicRecords.satTests[0].totalScore, "1480");
+  assert.equal(saved.academicRecords.apExams[1].score, "未出分");
   assert.ok(saved.updatedAt);
 
   const reloaded = await get("/api/my-activities", firstCookie);
   const reloadedPortfolio = await reloaded.json();
   assert.equal(reloadedPortfolio.activities[0].outcome, "覆盖 80 名学生");
   assert.deepEqual(reloadedPortfolio.applicationPlan, saved.applicationPlan);
+  assert.deepEqual(reloadedPortfolio.academicRecords, saved.academicRecords);
 
   const secondRegistration = await post("/api/auth/register", {
     email: "activities-b@example.com",
@@ -184,6 +223,21 @@ try {
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
+    academicRecords: {
+      gpaScale: "",
+      gpaRecords: [
+        { gradeLevel: "9年级", term: "上学期", gpa: "" },
+        { gradeLevel: "9年级", term: "下学期", gpa: "" },
+        { gradeLevel: "10年级", term: "上学期", gpa: "" },
+        { gradeLevel: "10年级", term: "下学期", gpa: "" },
+        { gradeLevel: "11年级", term: "上学期", gpa: "" },
+        { gradeLevel: "11年级", term: "下学期", gpa: "" },
+        { gradeLevel: "12年级", term: "上学期", gpa: "" },
+        { gradeLevel: "12年级", term: "下学期", gpa: "" },
+      ],
+      satTests: [],
+      apExams: [],
+    },
     updatedAt: null,
   });
   const secondImportSources = await get("/api/my-activities/import-sources", secondCookie);

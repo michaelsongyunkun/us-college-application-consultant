@@ -129,6 +129,7 @@ export function createAuthDatabase({ databasePath }) {
       competitions_json TEXT NOT NULL,
       summer_schools_json TEXT NOT NULL,
       recommendation_letters_json TEXT NOT NULL,
+      academic_records_json TEXT NOT NULL DEFAULT '{}',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -189,6 +190,12 @@ export function createAuthDatabase({ databasePath }) {
     db,
     "student_activity_portfolios",
     "application_plan_json",
+    "TEXT NOT NULL DEFAULT '{}'",
+  );
+  ensureColumn(
+    db,
+    "student_activity_portfolios",
+    "academic_records_json",
     "TEXT NOT NULL DEFAULT '{}'",
   );
   migrateUsageEventsConstraint(db);

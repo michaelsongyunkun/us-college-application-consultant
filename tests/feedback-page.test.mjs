@@ -15,11 +15,10 @@ assert.match(
   /<a class="button-link quiet-link title-link" href="\.\/feedback\.html" data-safe-nav>建议反馈<\/a>/,
   "Logged-in utility navigation should link to the feedback page.",
 );
-assert.match(
-  indexHtml,
-  /<a href="\.\/feedback\.html">建议反馈<\/a>/,
-  "Public login area should expose feedback for users who cannot enter the app.",
-);
+const authCardHtml = indexHtml.match(/<div id="authCard" class="auth-card">[\s\S]*?<\/div>\s*<\/div>/u)?.[0] ?? "";
+assert.ok(!authCardHtml.includes("免责声明与数据使用"), "Login card should not show the disclaimer link.");
+assert.ok(!authCardHtml.includes("联系团队"), "Login card should not show the contact link.");
+assert.ok(!authCardHtml.includes("建议反馈"), "Login card should not show the feedback link.");
 
 const feedbackHtml = await readFile("feedback.html", "utf8");
 

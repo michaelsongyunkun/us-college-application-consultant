@@ -11,6 +11,55 @@ const APPLICATION_ROUND_SCHOOLS_ENDPOINT = "./data/application-round-schools.md"
 const ACTIVITY_SLOT_COUNT = 10;
 const COMPETITION_SLOT_COUNT = 5;
 const SUMMER_SCHOOL_SLOT_COUNT = 3;
+const GPA_SCALE_OPTIONS = ["4.0分制", "100分制", "4.3分制", "5分制"];
+const GPA_GRADE_OPTIONS = ["9年级", "10年级", "11年级", "12年级"];
+const GPA_TERM_OPTIONS = ["上学期", "下学期"];
+const GPA_DEFAULT_RECORDS = GPA_GRADE_OPTIONS.flatMap((gradeLevel) =>
+  GPA_TERM_OPTIONS.map((term) => ({ gradeLevel, term, gpa: "" })),
+);
+const AP_SCORE_OPTIONS = ["1", "2", "3", "4", "5", "未出分"];
+const AP_COURSE_OPTIONS = [
+  "AP Seminar（专题研讨）",
+  "AP Research（研究）",
+  "AP 2-D Art and Design（二维设计）",
+  "AP 3-D Art and Design（三维设计）",
+  "AP Drawing（绘画）",
+  "AP Art History（艺术史）",
+  "AP Music Theory（乐理）",
+  "AP English Language and Composition（英语语言与写作）",
+  "AP English Literature and Composition（英语文学与写作）",
+  "AP Comparative Government and Politics（比较政府与政治）",
+  "AP European History（欧洲史）",
+  "AP Human Geography（人文地理）",
+  "AP Macroeconomics（宏观经济学）",
+  "AP Microeconomics（微观经济学）",
+  "AP Psychology（心理学）",
+  "AP US Government and Politics（美国政府与政治）",
+  "AP United States History（美国历史 APUSH）",
+  "AP World History: Modern（世界历史：现代）",
+  "AP African American Studies（非裔美国人研究）",
+  "AP Precalculus（微积分预备）",
+  "AP Calculus AB（微积分 AB）",
+  "AP Calculus BC（微积分 BC）",
+  "AP Statistics（统计学）",
+  "AP Computer Science A（计算机科学 A）",
+  "AP Computer Science Principles（计算机科学原理 CSP）",
+  "AP Biology（生物）",
+  "AP Chemistry（化学）",
+  "AP Environmental Science（环境科学 APES）",
+  "AP Physics 1（物理 1，代数基础）",
+  "AP Physics 2（物理 2，代数基础）",
+  "AP Physics C: Mechanics（物理 C：力学，微积分基础）",
+  "AP Physics C: Electricity and Magnetism（物理 C：电磁学）",
+  "AP Chinese Language and Culture（中文语言与文化）",
+  "AP French Language and Culture（法语语言与文化）",
+  "AP German Language and Culture（德语语言与文化）",
+  "AP Italian Language and Culture（意大利语语言与文化）",
+  "AP Japanese Language and Culture（日语语言与文化）",
+  "AP Latin（拉丁语）",
+  "AP Spanish Language and Culture（西班牙语语言与文化）",
+  "AP Spanish Literature and Culture（西班牙语文学与文化）",
+];
 
 const APPLICATION_ROUND_CONFIG = [
   { key: "rea", label: "REA", title: "REA", addable: false, note: "1所；不能与ED1同时申请" },
@@ -56,11 +105,19 @@ const summerSchoolFields = [
   "output",
   "proofLink",
 ];
+const gpaRecordFields = ["gradeLevel", "term", "gpa"];
+const satTestFields = ["totalScore", "englishScore", "mathScore", "testDate"];
+const apExamFields = ["courseName", "score", "examYear"];
 
 const portfolioForm = document.querySelector("#portfolioForm");
 const savePortfolioButton = document.querySelector("#savePortfolioButton");
 const savePortfolioButtons = document.querySelectorAll("[data-save-portfolio], #savePortfolioButton");
 const portfolioStatus = document.querySelector("#portfolioStatus");
+const academicRecordsProgress = document.querySelector("#academicRecordsProgress");
+const academicRecordsPanel = document.querySelector("#academicRecordsPanel");
+const gpaRecordsList = document.querySelector("#gpaRecordsList");
+const satTestsList = document.querySelector("#satTestsList");
+const apExamsList = document.querySelector("#apExamsList");
 const activitiesProgress = document.querySelector("#activitiesProgress");
 const competitionsProgress = document.querySelector("#competitionsProgress");
 const summerSchoolsProgress = document.querySelector("#summerSchoolsProgress");
@@ -94,6 +151,7 @@ function emptyApplicationPlan() {
 
 function emptyPortfolio() {
   return {
+    academicRecords: emptyAcademicRecords(),
     applicationPlan: emptyApplicationPlan(),
     activities: [],
     competitions: [],
@@ -103,10 +161,20 @@ function emptyPortfolio() {
   };
 }
 
+function emptyAcademicRecords() {
+  return {
+    gpaScale: "",
+    gpaRecords: GPA_DEFAULT_RECORDS.map((record) => ({ ...record })),
+    satTests: [],
+    apExams: [],
+  };
+}
+
 function renderPortfolio(portfolio = emptyPortfolio()) {
   currentPortfolio = normalizePortfolioForView(portfolio);
   syncApplicationRowCounts(currentPortfolio.applicationPlan);
   isRendering = true;
+  renderAcademicRecords(currentPortfolio.academicRecords);
   renderApplicationPlan(currentPortfolio.applicationPlan);
   activitiesList.innerHTML = renderActivityCards(currentPortfolio.activities || []);
   competitionsList.innerHTML = renderCompetitionCards(currentPortfolio.competitions || []);
@@ -123,11 +191,22 @@ function normalizePortfolioForView(portfolio = emptyPortfolio()) {
   return {
     ...fallback,
     ...portfolio,
+    academicRecords: normalizeAcademicRecordsForView(portfolio.academicRecords),
     applicationPlan: normalizeApplicationPlanForView(portfolio.applicationPlan),
     activities: portfolio.activities || [],
     competitions: portfolio.competitions || [],
     summerSchools: portfolio.summerSchools || [],
     recommendationLetters: portfolio.recommendationLetters || {},
+  };
+}
+
+function normalizeAcademicRecordsForView(records = emptyAcademicRecords()) {
+  const fallback = emptyAcademicRecords();
+  return {
+    gpaScale: records?.gpaScale || "",
+    gpaRecords: Array.isArray(records?.gpaRecords) ? records.gpaRecords : fallback.gpaRecords,
+    satTests: Array.isArray(records?.satTests) ? records.satTests : [],
+    apExams: Array.isArray(records?.apExams) ? records.apExams : [],
   };
 }
 
@@ -149,6 +228,84 @@ function syncApplicationRowCounts(plan = emptyApplicationPlan()) {
       1,
     );
   }
+}
+
+function renderAcademicRecords(records = emptyAcademicRecords()) {
+  const normalized = normalizeAcademicRecordsForView(records);
+  if (gpaRecordsList) {
+    gpaRecordsList.innerHTML = `
+      <div class="academic-record-scale">
+        ${renderStandaloneSelect("academicRecords_gpaScale", "GPA分制", GPA_SCALE_OPTIONS, normalized.gpaScale)}
+      </div>
+      ${renderGpaRecords(normalized.gpaRecords)}`;
+  }
+  if (satTestsList) {
+    satTestsList.innerHTML = renderSatTests(normalized.satTests);
+  }
+  if (apExamsList) {
+    apExamsList.innerHTML = renderApExams(normalized.apExams);
+  }
+}
+
+function renderGpaRecords(records = []) {
+  if (!records.length) return '<p class="portfolio-empty">暂无 GPA 学期记录，可点击“新增学期”补充。</p>';
+  return records
+    .map((record, index) => {
+      const title = `${record.gradeLevel || "GPA"} ${record.term || ""}`.trim() || `GPA ${index + 1}`;
+      return `
+        <div class="academic-record-row gpa-record-row" data-academic-row="gpa" data-academic-index="${index}">
+          <h4>${escapeHtml(title)}</h4>
+          ${renderSelect("academicGpa", index, "gradeLevel", "年级", GPA_GRADE_OPTIONS, record.gradeLevel)}
+          ${renderSelect("academicGpa", index, "term", "学期", GPA_TERM_OPTIONS, record.term)}
+          ${renderInput("academicGpa", index, "gpa", "GPA", record.gpa, "text")}
+          ${renderAcademicRemoveButton("gpa", index, "删除学期")}
+        </div>`;
+    })
+    .join("");
+}
+
+function renderSatTests(records = []) {
+  if (!records.length) return '<p class="portfolio-empty">暂无 SAT 考试记录，可点击“新增SAT”补充。</p>';
+  return records
+    .map(
+      (record, index) => `
+        <div class="academic-record-row sat-record-row" data-academic-row="sat" data-academic-index="${index}">
+          <h4>SAT ${index + 1}</h4>
+          ${renderNumberInput("academicSat", index, "totalScore", "SAT总分", record.totalScore, 400, 1600)}
+          ${renderNumberInput("academicSat", index, "englishScore", "英文分数", record.englishScore, 200, 800)}
+          ${renderNumberInput("academicSat", index, "mathScore", "数学分数", record.mathScore, 200, 800)}
+          ${renderInput("academicSat", index, "testDate", "考试日期", record.testDate, "date")}
+          ${renderAcademicRemoveButton("sat", index, "删除SAT")}
+        </div>`,
+    )
+    .join("");
+}
+
+function renderApExams(records = []) {
+  if (!records.length) return '<p class="portfolio-empty">暂无 AP 考试记录，可点击“新增AP”补充。</p>';
+  return records
+    .map(
+      (record, index) => `
+        <div class="academic-record-row ap-record-row" data-academic-row="ap" data-academic-index="${index}">
+          <h4>AP ${index + 1}</h4>
+          ${renderSelect("academicAp", index, "courseName", "AP科目", AP_COURSE_OPTIONS, record.courseName)}
+          ${renderSelect("academicAp", index, "score", "分数", AP_SCORE_OPTIONS, record.score)}
+          ${renderInput("academicAp", index, "examYear", "考试年份", record.examYear, "number")}
+          ${renderAcademicRemoveButton("ap", index, "删除AP")}
+        </div>`,
+    )
+    .join("");
+}
+
+function renderAcademicRemoveButton(type, index, label) {
+  return `
+    <button
+      type="button"
+      class="danger academic-record-remove-button"
+      data-remove-academic-record="${escapeHtml(type)}"
+      data-academic-index="${index}"
+      aria-label="${escapeHtml(label)} ${index + 1}"
+    >删除</button>`;
 }
 
 function renderApplicationPlan(plan = emptyApplicationPlan()) {
@@ -411,6 +568,21 @@ function renderInput(group, index, field, label, value = "", type = "text", clas
     </label>`;
 }
 
+function renderNumberInput(group, index, field, label, value = "", min = "", max = "") {
+  return `
+    <label>
+      <span>${escapeHtml(label)}</span>
+      <input
+        name="${controlName(group, index, field)}"
+        type="number"
+        min="${escapeHtml(min)}"
+        max="${escapeHtml(max)}"
+        step="1"
+        value="${escapeHtml(value)}"
+      />
+    </label>`;
+}
+
 function renderStandaloneInput(name, label, value = "") {
   return `
     <label>
@@ -449,12 +621,36 @@ function renderStandaloneSelect(name, label, options, value = "") {
 
 function collectPortfolio() {
   return {
+    academicRecords: collectAcademicRecords(),
     applicationPlan: collectApplicationPlan(),
     activities: collectEntries("activities", ACTIVITY_SLOT_COUNT, activityFields),
     competitions: collectEntries("competitions", COMPETITION_SLOT_COUNT, competitionFields),
     summerSchools: collectEntries("summerSchools", SUMMER_SCHOOL_SLOT_COUNT, summerSchoolFields),
     recommendationLetters: collectRecommendationLetters(),
   };
+}
+
+function collectAcademicRecords() {
+  return {
+    gpaScale: fieldValue("academicRecords_gpaScale"),
+    gpaRecords: collectAcademicRows("gpa", "academicGpa", gpaRecordFields),
+    satTests: collectAcademicRows("sat", "academicSat", satTestFields),
+    apExams: collectAcademicRows("ap", "academicAp", apExamFields),
+  };
+}
+
+function collectAcademicRows(section, group, fields) {
+  const rows = Array.from(
+    academicRecordsPanel?.querySelectorAll(`[data-academic-row="${section}"]`) || [],
+  );
+  return rows
+    .map((row) => {
+      const index = Number(row.dataset.academicIndex || 0);
+      return Object.fromEntries(
+        fields.map((field) => [field, fieldValue(controlName(group, index, field))]),
+      );
+    })
+    .filter(hasAnyValue);
 }
 
 function collectEntries(group, count, fields) {
@@ -558,6 +754,10 @@ function importPlanningActivity(sourceId, activityIndex) {
 
 function updateCompletion() {
   const portfolio = collectPortfolio();
+  if (academicRecordsProgress) {
+    const records = portfolio.academicRecords || emptyAcademicRecords();
+    academicRecordsProgress.textContent = `成绩档案：GPA ${records.gpaRecords.length} 学期 / SAT ${records.satTests.length} 次 / AP ${records.apExams.length} 门`;
+  }
   if (applicationPlanProgress) {
     applicationPlanProgress.textContent = `选校计划：已填写 ${countApplicationPlanSchools(portfolio.applicationPlan)} 所`;
   }
@@ -652,6 +852,55 @@ async function requestJson(url, options = {}) {
   }
   if (!response.ok) throw new Error(data.error || "请求失败");
   return data;
+}
+
+function addAcademicRecord(type) {
+  const portfolio = collectPortfolio();
+  portfolio.academicRecords = portfolio.academicRecords || emptyAcademicRecords();
+  if (type === "gpa") {
+    portfolio.academicRecords.gpaRecords.push({ gradeLevel: "", term: "", gpa: "" });
+  }
+  if (type === "sat") {
+    portfolio.academicRecords.satTests.push({
+      totalScore: "",
+      englishScore: "",
+      mathScore: "",
+      testDate: "",
+    });
+  }
+  if (type === "ap") {
+    portfolio.academicRecords.apExams.push({ courseName: "", score: "", examYear: "" });
+  }
+  renderPortfolio(portfolio);
+  isDirty = true;
+  setStatus("有未保存修改");
+  updateCompletion();
+  focusAcademicRecord(type, portfolio.academicRecords);
+}
+
+function removeAcademicRecord(type, index) {
+  if (!Number.isInteger(index) || index < 0) return;
+  const portfolio = collectPortfolio();
+  const academicRecords = portfolio.academicRecords || emptyAcademicRecords();
+  if (type === "gpa") academicRecords.gpaRecords.splice(index, 1);
+  if (type === "sat") academicRecords.satTests.splice(index, 1);
+  if (type === "ap") academicRecords.apExams.splice(index, 1);
+  portfolio.academicRecords = academicRecords;
+  renderPortfolio(portfolio);
+  isDirty = true;
+  setStatus("有未保存修改");
+  updateCompletion();
+}
+
+function focusAcademicRecord(type, records) {
+  const focusMap = {
+    gpa: ["academicGpa", records.gpaRecords.length - 1, "gradeLevel"],
+    sat: ["academicSat", records.satTests.length - 1, "totalScore"],
+    ap: ["academicAp", records.apExams.length - 1, "courseName"],
+  };
+  const [group, index, field] = focusMap[type] || [];
+  if (!group || index < 0) return;
+  portfolioForm.elements.namedItem(controlName(group, index, field))?.focus();
 }
 
 function addApplicationRound(roundKey) {
@@ -785,6 +1034,19 @@ portfolioForm.addEventListener("change", (event) => {
 });
 savePortfolioButtons.forEach((button) => {
   button.addEventListener("click", savePortfolio);
+});
+academicRecordsPanel?.addEventListener("click", (event) => {
+  const addButton = event.target.closest("[data-add-academic-record]");
+  if (addButton) {
+    addAcademicRecord(addButton.dataset.addAcademicRecord);
+    return;
+  }
+  const removeButton = event.target.closest("[data-remove-academic-record]");
+  if (!removeButton) return;
+  removeAcademicRecord(
+    removeButton.dataset.removeAcademicRecord,
+    Number(removeButton.dataset.academicIndex),
+  );
 });
 applicationPlanList?.addEventListener("click", (event) => {
   const addButton = event.target.closest("[data-add-application-round]");

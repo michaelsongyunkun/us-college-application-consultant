@@ -16,10 +16,14 @@ assert.ok(
 
 for (const expected of [
   "我的申请",
-  "整理选校计划、活动、竞赛、夏校和推荐信材料，作为后续申请复盘的基础。",
+  "整理 GPA、SAT、AP、选校计划、活动、竞赛、夏校和推荐信材料，作为后续申请复盘的基础。",
   'id="portfolioForm"',
   'id="savePortfolioButton"',
   'id="portfolioStatus"',
+  'id="academicRecordsProgress"',
+  'id="gpaRecordsList"',
+  'id="satTestsList"',
+  'id="apExamsList"',
   'id="applicationPlanList"',
   'id="applicationPlanProgress"',
   'id="activityImportSources"',
@@ -37,6 +41,12 @@ for (const expected of [
 }
 
 assert.ok(
+  pageHtml.indexOf('id="academicRecordsProgress"') < pageHtml.indexOf('id="activityImportSources"')
+    && pageHtml.indexOf('id="activityImportSources"') < pageHtml.indexOf('id="activitiesList"'),
+  "成绩与考试模块应位于我的申请页面最开始、规划导入模块之前。"
+);
+
+assert.ok(
   pageHtml.indexOf('id="recommendationLettersPanel"') < pageHtml.indexOf('id="applicationPlanList"')
     && pageHtml.indexOf('id="applicationPlanList"') < pageHtml.indexOf('class="portfolio-save-bar"'),
   "选校计划应位于页面内容区最下面，放在推荐信之后、保存栏之前。"
@@ -44,6 +54,7 @@ assert.ok(
 
 for (const copy of [
   "选校计划：已填写 0 所",
+  "成绩档案：GPA 8 学期 / SAT 0 次 / AP 0 门",
   "课外活动：已填写 0/10",
   "竞赛：已填写 0/5",
   "夏校：已填写 0/3",
@@ -65,6 +76,22 @@ for (const field of [
   "counselorStatus",
   "preparedMaterials",
   "applicationPlan",
+  "academicRecords",
+  "GPA分制",
+  "4.0分制",
+  "100分制",
+  "4.3分制",
+  "5分制",
+  "renderAcademicRecords",
+  "data-add-academic-record",
+  "data-remove-academic-record",
+  "AP_COURSE_OPTIONS",
+  "AP Calculus BC（微积分 BC）",
+  "SAT总分",
+  "英文分数",
+  "数学分数",
+  "考试日期",
+  "考试年份",
   "renderApplicationPlan",
   "data-add-application-round",
   "data-remove-application-round",
@@ -78,6 +105,14 @@ for (const field of [
 assert.match(script, /const ACTIVITY_SLOT_COUNT = 10/);
 assert.match(script, /const COMPETITION_SLOT_COUNT = 5/);
 assert.match(script, /const SUMMER_SCHOOL_SLOT_COUNT = 3/);
+assert.match(script, /const GPA_DEFAULT_RECORDS/);
+assert.equal(
+  [...script.matchAll(/"AP [^"]+（[^"]+）"/g)].filter((match) =>
+    script.slice(script.lastIndexOf("const AP_COURSE_OPTIONS"), script.indexOf("];", script.lastIndexOf("const AP_COURSE_OPTIONS"))).includes(match[0]),
+  ).length,
+  40,
+  "AP 课程下拉应包含本地 AP 资料库中的 40 门课程。"
+);
 assert.ok(script.includes('"/api/my-activities"'), "页面脚本应读取和保存 /api/my-activities。");
 assert.ok(
   script.includes('"/api/my-activities/import-sources"'),
@@ -90,8 +125,8 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260528-application-plan-delete")
-    && pageHtml.includes("./src/client/my-activities.js?v=20260528-application-plan-delete"),
+  pageHtml.includes("./styles.css?v=20260529-academic-records-local-trial")
+    && pageHtml.includes("./src/client/my-activities.js?v=20260529-academic-records-local-trial"),
   "我的申请页面应更新 CSS 版本号，避免用户继续加载缓存的平行布局。"
 );
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");
@@ -117,3 +152,5 @@ assert.match(
   /\.application-plan-row\.with-action\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(0,\s*0\.9fr\)\s*auto;/,
   "可新增轮次应为删除按钮预留操作列。"
 );
+assert.match(styles, /\.academic-records-layout\s*\{/, "成绩与考试模块应有专用布局样式。");
+assert.match(styles, /\.academic-record-row\s*\{/, "GPA/SAT/AP 可增删记录应有稳定行布局。");

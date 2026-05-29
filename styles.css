@@ -1444,6 +1444,75 @@ button.danger:hover {
   min-height: 36px;
 }
 
+.academic-records-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 18px 18px;
+}
+
+.academic-record-block {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 14px;
+}
+
+.academic-record-block .portfolio-card-heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.academic-record-list {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.academic-record-scale {
+  max-width: 320px;
+}
+
+.academic-record-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(92px, 0.6fr) repeat(3, minmax(0, 1fr)) auto;
+  gap: 10px 12px;
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfe;
+  padding: 12px;
+}
+
+.sat-record-row {
+  grid-template-columns: minmax(92px, 0.55fr) repeat(4, minmax(0, 1fr)) auto;
+}
+
+.ap-record-row {
+  grid-template-columns: minmax(92px, 0.55fr) minmax(220px, 1.35fr) minmax(0, 0.75fr) minmax(0, 0.75fr) auto;
+}
+
+.academic-record-row h4 {
+  margin: 0;
+  color: #2c3645;
+  font-size: 15px;
+}
+
+.academic-record-row label,
+.academic-record-row input,
+.academic-record-row select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.academic-record-remove-button {
+  min-height: 42px;
+  white-space: nowrap;
+}
+
 .portfolio-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(390px, 1fr));
@@ -3430,6 +3499,7 @@ button.neutral:hover {
   }
 
   .activity-import-sources,
+  .academic-records-layout,
   .application-plan-grid,
   .portfolio-grid,
   .recommendation-portfolio {
@@ -3438,6 +3508,9 @@ button.neutral:hover {
   }
 
   .portfolio-card-heading,
+  .academic-record-row,
+  .sat-record-row,
+  .ap-record-row,
   .application-plan-row,
   .application-plan-row.with-action,
   .portfolio-fields.two-column,

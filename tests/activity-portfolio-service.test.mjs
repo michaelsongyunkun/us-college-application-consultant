@@ -44,6 +44,21 @@ try {
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
+    academicRecords: {
+      gpaScale: "",
+      gpaRecords: [
+        { gradeLevel: "9年级", term: "上学期", gpa: "" },
+        { gradeLevel: "9年级", term: "下学期", gpa: "" },
+        { gradeLevel: "10年级", term: "上学期", gpa: "" },
+        { gradeLevel: "10年级", term: "下学期", gpa: "" },
+        { gradeLevel: "11年级", term: "上学期", gpa: "" },
+        { gradeLevel: "11年级", term: "下学期", gpa: "" },
+        { gradeLevel: "12年级", term: "上学期", gpa: "" },
+        { gradeLevel: "12年级", term: "下学期", gpa: "" },
+      ],
+      satTests: [],
+      apExams: [],
+    },
     updatedAt: null,
   });
 
@@ -97,6 +112,25 @@ try {
       preparedMaterials: ["简历", "活动清单"],
       notes: "6 月更新材料",
     },
+    academicRecords: {
+      gpaScale: "4.0分制",
+      gpaRecords: [
+        { gradeLevel: "9年级", term: "上学期", gpa: "3.80" },
+        { gradeLevel: "9年级", term: "下学期", gpa: "3.92" },
+      ],
+      satTests: [
+        {
+          totalScore: "1510",
+          englishScore: "730",
+          mathScore: "780",
+          testDate: "2026-03-14",
+        },
+      ],
+      apExams: [
+        { courseName: "AP Calculus BC（微积分 BC）", score: "5", examYear: "2026" },
+        { courseName: "AP Biology（生物）", score: "未出分", examYear: "2026" },
+      ],
+    },
   });
 
   assert.equal(saved.applicationPlan.rea.length, 0);
@@ -115,11 +149,21 @@ try {
   assert.equal(saved.summerSchools[0].programName, "Summer Research");
   assert.equal(saved.recommendationLetters.teacher1.teacherName, "Ms. Lin");
   assert.deepEqual(saved.recommendationLetters.preparedMaterials, ["简历", "活动清单"]);
+  assert.equal(saved.academicRecords.gpaRecords.length, 2);
+  assert.equal(saved.academicRecords.gpaScale, "4.0分制");
+  assert.equal(saved.academicRecords.gpaRecords[0].gradeLevel, "9年级");
+  assert.equal(saved.academicRecords.satTests[0].totalScore, "1510");
+  assert.equal(saved.academicRecords.satTests[0].englishScore, "730");
+  assert.equal(saved.academicRecords.satTests[0].mathScore, "780");
+  assert.equal(saved.academicRecords.satTests[0].testDate, "2026-03-14");
+  assert.equal(saved.academicRecords.apExams[0].courseName, "AP Calculus BC（微积分 BC）");
+  assert.equal(saved.academicRecords.apExams[1].score, "未出分");
   assert.equal(saved.updatedAt, "2026-05-28T00:00:00.000Z");
 
   const reloaded = portfolios.getPortfolio(firstStudent);
   assert.deepEqual(reloaded.applicationPlan, saved.applicationPlan);
   assert.deepEqual(reloaded.activities, saved.activities);
+  assert.deepEqual(reloaded.academicRecords, saved.academicRecords);
   assert.equal(reloaded.recommendationLetters.notes, "6 月更新材料");
   assert.deepEqual(portfolios.getPortfolio(secondStudent), {
     applicationPlan: {
@@ -134,6 +178,21 @@ try {
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
+    academicRecords: {
+      gpaScale: "",
+      gpaRecords: [
+        { gradeLevel: "9年级", term: "上学期", gpa: "" },
+        { gradeLevel: "9年级", term: "下学期", gpa: "" },
+        { gradeLevel: "10年级", term: "上学期", gpa: "" },
+        { gradeLevel: "10年级", term: "下学期", gpa: "" },
+        { gradeLevel: "11年级", term: "上学期", gpa: "" },
+        { gradeLevel: "11年级", term: "下学期", gpa: "" },
+        { gradeLevel: "12年级", term: "上学期", gpa: "" },
+        { gradeLevel: "12年级", term: "下学期", gpa: "" },
+      ],
+      satTests: [],
+      apExams: [],
+    },
     updatedAt: null,
   });
 
