@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="92" viewBox="0 0 360 92" role="img" aria-label="US College Compass">
+  <rect width="360" height="92" rx="18" fill="#fbfaf5"/>
+  <g transform="translate(18 14)">
+    <rect width="64" height="64" rx="15" fill="#fbfaf5"/>
+    <path d="M32 7 52 17v16c0 13-8 22-20 26-12-4-20-13-20-26V17L32 7Z" fill="#287250"/>
+    <path d="M32 15 45 21.2V32c0 8.4-5.1 14.5-13 17.7C24.1 46.5 19 40.4 19 32V21.2L32 15Z" fill="#fffaf0"/>
+    <path d="M26 39 33.5 23 38.5 37 26 39Z" fill="#a86400"/>
+    <circle cx="32" cy="34" r="2.8" fill="#287250"/>
+    <path d="M24.5 44.5h15" stroke="#287250" stroke-width="3.8" stroke-linecap="round"/>
+  </g>
+  <text x="98" y="44" fill="#287250" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="26" font-weight="800" letter-spacing="0">US</text>
+  <text x="139" y="44" fill="#19233a" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="26" font-weight="800" letter-spacing="0">College Compass</text>
+  <text x="100" y="66" fill="#637084" font-family="Inter, PingFang SC, Microsoft YaHei, Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="0">AI 美本规划工作台</text>
+</svg>

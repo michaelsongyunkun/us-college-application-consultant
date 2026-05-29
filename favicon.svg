@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="US College Compass">
   <rect width="64" height="64" rx="14" fill="#fbfaf5"/>
-  <path d="M32 8 52 18v15c0 11.6-8.1 19.3-20 23-11.9-3.7-20-11.4-20-23V18L32 8Z" fill="#287250"/>
-  <path d="M32 16 45 22v10c0 7.6-5 12.8-13 15.6-8-2.8-13-8-13-15.6V22l13-6Z" fill="#fffaf0"/>
-  <path d="M22 30h20M26 38h12" stroke="#a86400" stroke-width="5" stroke-linecap="round"/>
+  <path d="M32 7 54 18v16c0 13-8.7 21.2-22 25-13.3-3.8-22-12-22-25V18L32 7Z" fill="#287250"/>
+  <path d="M32 16 45 22v10c0 8-5 13.8-13 17-8-3.2-13-9-13-17V22l13-6Z" fill="#fffaf0"/>
+  <path d="M25 39 33.3 22 39 37l-14 2Z" fill="#a86400"/>
+  <circle cx="32" cy="34" r="3" fill="#287250"/>
+  <path d="M24 44h16" stroke="#287250" stroke-width="4" stroke-linecap="round"/>
 </svg>
