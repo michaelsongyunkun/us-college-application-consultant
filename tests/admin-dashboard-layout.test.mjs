@@ -32,6 +32,10 @@ assert.doesNotMatch(
   "Login status should not be presented as a global dashboard filter.",
 );
 assert.match(script, /dashboard\.overview/, "Summary cards should render server-computed operational totals.");
+assert.match(html, /解析 Codex 回答进表格/, "Overview metric should use the clearer Codex parsing label.");
+assert.doesNotMatch(html, /规划生成/, "Admin dashboard should not show the old planning-generation label.");
+assert.match(script, /generate_plan_success: "解析 Codex 回答进表格成功"/, "Usage event label should match the updated dashboard wording.");
+assert.doesNotMatch(script, /规划生成/, "Dashboard script should not show the old planning-generation label.");
 assert.match(script, /refresh_case_matches/, "Dashboard should label similar-case refresh events.");
 assert.match(script, /renderFeedbackEntries/, "Dashboard should render submitted feedback entries.");
 assert.match(script, /feedbackEntries/, "Dashboard should read feedback entries from the admin payload.");
