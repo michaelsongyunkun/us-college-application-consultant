@@ -114,6 +114,8 @@ export function createAuthDatabase({ databasePath }) {
       description TEXT NOT NULL,
       steps TEXT NOT NULL DEFAULT '',
       contact TEXT NOT NULL DEFAULT '',
+      feedback_status TEXT NOT NULL DEFAULT '未处理',
+      admin_note TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL,
       feedback_date TEXT NOT NULL,
       user_agent TEXT,
@@ -186,6 +188,8 @@ export function createAuthDatabase({ databasePath }) {
   ensureColumn(db, "usage_events", "duration_ms", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "usage_events", "failure_reason", "TEXT");
   ensureColumn(db, "usage_events", "details_json", "TEXT");
+  ensureColumn(db, "feedback_entries", "feedback_status", "TEXT NOT NULL DEFAULT '未处理'");
+  ensureColumn(db, "feedback_entries", "admin_note", "TEXT NOT NULL DEFAULT ''");
   ensureColumn(
     db,
     "student_activity_portfolios",

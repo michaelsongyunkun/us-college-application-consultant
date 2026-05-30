@@ -13,8 +13,9 @@ try {
   const blockedApi = await fetch(`${serverUrl()}/api/my-activities`);
   assert.equal(blockedApi.status, 401);
 
-  const blockedPage = await fetch(`${serverUrl()}/my-activities.html`);
-  assert.equal(blockedPage.status, 401);
+  const blockedPage = await fetch(`${serverUrl()}/my-activities.html`, { redirect: "manual" });
+  assert.equal(blockedPage.status, 302);
+  assert.equal(blockedPage.headers.get("location"), "/?next=%2Fmy-activities.html");
 
   const firstRegistration = await post("/api/auth/register", {
     email: "activities-a@example.com",

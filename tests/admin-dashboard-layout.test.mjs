@@ -39,6 +39,12 @@ assert.doesNotMatch(script, /规划生成/, "Dashboard script should not show th
 assert.match(script, /refresh_case_matches/, "Dashboard should label similar-case refresh events.");
 assert.match(script, /renderFeedbackEntries/, "Dashboard should render submitted feedback entries.");
 assert.match(script, /feedbackEntries/, "Dashboard should read feedback entries from the admin payload.");
+assert.match(html, /处理状态/, "Feedback table should expose an admin handling status column.");
+assert.match(html, /处理备注/, "Feedback table should expose admin notes.");
+assert.match(script, /feedbackStatusOptions/, "Dashboard should render feedback status options.");
+assert.match(script, /data-feedback-status/, "Dashboard should mark feedback status controls.");
+assert.match(script, /saveFeedbackStatus/, "Dashboard should save feedback status changes.");
+assert.match(script, /\/api\/admin\/feedback\/\$\{feedbackId\}/, "Dashboard should call the feedback status API.");
 assert.match(script, /data-admin-tab/, "Dashboard script should activate focused tab panels.");
 assert.match(script, /<details class="technical-details">/, "Low-frequency browser and IP data should be expandable.");
 assert.match(styles, /\.admin-tabs/, "Tabbed dashboard navigation should be styled.");

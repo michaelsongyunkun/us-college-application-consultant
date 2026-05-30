@@ -133,6 +133,26 @@ let currentPlan = null;
 let snapshots = [];
 let workspaceDirty = false;
 const initialResetToken = new URLSearchParams(window.location.search).get("resetToken");
+const PROTECTED_NEXT_PATHS = new Set([
+  "/course-helper.html",
+  "/gpa-calculator.html",
+  "/my-activities.html",
+  "/resource-library.html",
+  "/school-encyclopedia.html",
+]);
+
+function getSafeNextPath() {
+  const next = new URLSearchParams(window.location.search).get("next") || "";
+  if (!next.startsWith("/") || next.startsWith("//")) return "";
+  return PROTECTED_NEXT_PATHS.has(next) ? next : "";
+}
+
+function redirectToNextPath() {
+  const nextPath = getSafeNextPath();
+  if (!nextPath) return false;
+  window.location.assign(nextPath);
+  return true;
+}
 
 function setAuthMode(mode) {
   authMode = mode;
@@ -204,10 +224,11 @@ async function requestJson(url, options = {}) {
 async function loadCurrentUser() {
   try {
     const data = await requestJson("/api/auth/me", { method: "GET" });
+    if (redirectToNextPath()) return;
     await initializeApp(data.user);
     showAppView(data.user);
   } catch {
-    showAuthView();
+    showAuthView(getSafeNextPath() ? "请先登录后继续访问该页面。" : "");
   }
 }
 
@@ -259,6 +280,7 @@ async function submitAuthForm(event) {
       body: JSON.stringify(payload),
     });
     authForm.reset();
+    if (redirectToNextPath()) return;
     await initializeApp(data.user);
     showAppView(data.user);
   } catch (error) {

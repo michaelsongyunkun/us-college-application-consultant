@@ -78,6 +78,7 @@ assert.ok(sitemap.includes("<urlset"));
 assert.ok(sitemap.includes(`<loc>${productionOrigin}/</loc>`));
 assert.ok(sitemap.includes(`<loc>${productionOrigin}/contact.html</loc>`));
 assert.ok(sitemap.includes(`<loc>${productionOrigin}/disclaimer.html</loc>`));
+assert.ok(sitemap.includes(`<loc>${productionOrigin}/feedback.html</loc>`));
 
 const css = await readFile("styles.css", "utf8");
 assert.ok(contrastRatio("#ffffff", cssVariable(css, "brand-orange")) >= 4.5);
@@ -92,7 +93,14 @@ try {
   const { port } = server.address();
   const baseUrl = `http://127.0.0.1:${port}`;
 
-  for (const publicPath of ["/contact.html", "/disclaimer.html", "/robots.txt", "/sitemap.xml", "/favicon.svg"]) {
+  for (const publicPath of [
+    "/contact.html",
+    "/disclaimer.html",
+    "/feedback.html",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/favicon.svg",
+  ]) {
     const response = await fetch(`${baseUrl}${publicPath}`);
     assert.equal(response.status, 200, `${publicPath} should be public`);
   }
@@ -103,6 +111,17 @@ try {
     "/my-activities.html",
     "/resource-library.html",
     "/school-encyclopedia.html",
+  ]) {
+    const response = await fetch(`${baseUrl}${protectedPath}`, { redirect: "manual" });
+    assert.equal(response.status, 302, `${protectedPath} should redirect to login`);
+    assert.equal(
+      response.headers.get("location"),
+      `/?next=${encodeURIComponent(protectedPath)}`,
+      `${protectedPath} should preserve its return path`,
+    );
+  }
+
+  for (const protectedPath of [
     "/data/application-round-schools.md",
     "/data/schools.md",
     "/data/international-schools.md",

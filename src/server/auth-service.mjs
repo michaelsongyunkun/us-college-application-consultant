@@ -26,6 +26,7 @@ const USAGE_EVENT_TYPES = new Set([
   "refresh_ap_recommendations",
   "data_load_failure",
 ]);
+const FEEDBACK_STATUS_OPTIONS = new Set(["未处理", "处理中", "已解决", "已忽略"]);
 
 class AuthError extends Error {
   constructor(message, statusCode) {
@@ -390,6 +391,8 @@ export function createAuthService({
           description,
           steps,
           contact,
+          feedback_status AS feedbackStatus,
+          admin_note AS adminNote,
           created_at AS createdAt,
           feedback_date AS feedbackDate,
           user_agent AS userAgent,
@@ -469,7 +472,32 @@ export function createAuthService({
     return {
       id: Number(result.lastInsertRowid),
       createdAt: timestamp,
+      feedbackStatus: "未处理",
+      adminNote: "",
     };
+  }
+
+  function updateFeedbackEntry({ requester, feedbackId, payload = {} } = {}) {
+    assertAdmin(requester);
+    const id = Number(feedbackId);
+    if (!Number.isInteger(id) || id < 1) {
+      throw new AuthError("Invalid feedback id", 400);
+    }
+    const existing = selectFeedbackEntryById(id);
+    if (!existing) throw new AuthError("Feedback entry not found", 404);
+
+    const feedbackStatus = normalizeFeedbackStatus(payload.feedbackStatus ?? existing.feedbackStatus);
+    const adminNote = Object.hasOwn(payload, "adminNote")
+      ? normalizeLimitedText(payload.adminNote, 1000)
+      : existing.adminNote;
+
+    db.prepare(
+      `UPDATE feedback_entries
+       SET feedback_status = ?, admin_note = ?
+       WHERE id = ?`,
+    ).run(feedbackStatus, adminNote, id);
+
+    return selectFeedbackEntryById(id);
   }
 
   function recordUsageEvent({
@@ -582,7 +610,7 @@ export function createAuthService({
     const params = {};
     if (filters.query) {
       conditions.push(
-        "(user_name LIKE @feedbackQuery OR user_email LIKE @feedbackQuery OR contact LIKE @feedbackQuery OR issue_type LIKE @feedbackQuery OR page_name LIKE @feedbackQuery OR description LIKE @feedbackQuery)",
+        "(user_name LIKE @feedbackQuery OR user_email LIKE @feedbackQuery OR contact LIKE @feedbackQuery OR issue_type LIKE @feedbackQuery OR page_name LIKE @feedbackQuery OR description LIKE @feedbackQuery OR feedback_status LIKE @feedbackQuery OR admin_note LIKE @feedbackQuery)",
       );
       params.feedbackQuery = `%${filters.query}%`;
     }
@@ -598,6 +626,31 @@ export function createAuthService({
       where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
       params,
     };
+  }
+
+  function selectFeedbackEntryById(feedbackId) {
+    return db
+      .prepare(
+        `SELECT
+          id,
+          user_id AS userId,
+          user_name AS userName,
+          user_email AS userEmail,
+          issue_type AS issueType,
+          page_name AS pageName,
+          description,
+          steps,
+          contact,
+          feedback_status AS feedbackStatus,
+          admin_note AS adminNote,
+          created_at AS createdAt,
+          feedback_date AS feedbackDate,
+          user_agent AS userAgent,
+          ip_address AS ipAddress
+        FROM feedback_entries
+        WHERE id = ?`,
+      )
+      .get(feedbackId);
   }
 
   function appendFilterCondition(where, condition) {
@@ -621,6 +674,7 @@ export function createAuthService({
     resetPassword,
     getLoginDashboard,
     recordFeedback,
+    updateFeedbackEntry,
     recordUsageEvent,
     cleanupExpiredSessions,
   };
@@ -681,6 +735,14 @@ function assertAdmin(user) {
   if (!user || user.role !== "admin") {
     throw new AuthError("Admin access required", 403);
   }
+}
+
+function normalizeFeedbackStatus(value) {
+  const status = normalizeLimitedLine(value, 20);
+  if (!FEEDBACK_STATUS_OPTIONS.has(status)) {
+    throw new AuthError("Unsupported feedback status", 400);
+  }
+  return status;
 }
 
 function getWeekKey(date) {

@@ -319,6 +319,13 @@ function requireUser(request, response, auth) {
   return null;
 }
 
+function requirePageUser(request, response, auth, requestPath) {
+  const user = auth.getUserForSession(getSessionToken(request));
+  if (user) return user;
+  redirectToLogin(response, requestPath);
+  return null;
+}
+
 function requireAdmin(request, response, auth, { redirect = false } = {}) {
   const user = auth.getUserForSession(getSessionToken(request));
   if (user?.role === "admin") return user;
@@ -331,6 +338,13 @@ function requireAdmin(request, response, auth, { redirect = false } = {}) {
     error: user ? "Admin access required" : "Not authenticated",
   });
   return null;
+}
+
+function redirectToLogin(response, requestPath = "/") {
+  response.writeHead(302, withSecurityHeaders({
+    Location: `/?next=${encodeURIComponent(requestPath)}`,
+  }));
+  response.end();
 }
 
 function createRateLimiter(rateLimits) {
@@ -557,6 +571,19 @@ export function createAppServer({
         return;
       }
 
+      const adminFeedbackMatch = url.pathname.match(/^\/api\/admin\/feedback\/(\d+)$/);
+      if (request.method === "PUT" && adminFeedbackMatch) {
+        const admin = requireAdmin(request, response, auth);
+        if (!admin) return;
+        const feedback = auth.updateFeedbackEntry({
+          requester: admin,
+          feedbackId: adminFeedbackMatch[1],
+          payload: await readJson(request),
+        });
+        sendJson(response, 200, { feedback });
+        return;
+      }
+
       if (request.method !== "GET") {
         response.writeHead(405, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
         response.end("Method Not Allowed");
@@ -573,14 +600,16 @@ export function createAppServer({
         return;
       }
       if (
-        ((requestPath === "/course-helper.html" ||
+        (requestPath === "/course-helper.html" ||
           requestPath === "/gpa-calculator.html" ||
           requestPath === "/my-activities.html" ||
           requestPath === "/resource-library.html" ||
-          requestPath === "/school-encyclopedia.html") ||
-          requestPath.startsWith("/data/")) &&
-        !requireUser(request, response, auth)
+          requestPath === "/school-encyclopedia.html") &&
+        !requirePageUser(request, response, auth, requestPath)
       ) {
+        return;
+      }
+      if (requestPath.startsWith("/data/") && !requireUser(request, response, auth)) {
         return;
       }
 

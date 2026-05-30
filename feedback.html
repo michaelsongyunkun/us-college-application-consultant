@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>建议反馈</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260529-feedback-local-trial" />
+    <link rel="stylesheet" href="./styles.css?v=20260530-online-feedback-status" />
   </head>
   <body>
     <main class="app-shell feedback-shell">
@@ -15,7 +15,7 @@
             <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
             <span class="brand-mark-text"><span class="brand-prefix">US</span> College Compass</span>
           </a>
-          <p class="eyebrow">Local Feedback</p>
+          <p class="eyebrow">Feedback Channel</p>
           <h1>建议反馈</h1>
           <p class="feedback-subtitle">记录你遇到的问题、卡住的位置或希望优化的细节。</p>
         </div>
@@ -29,9 +29,9 @@
         <div class="section-heading table-heading">
           <div>
             <h2 id="feedback-title">反馈问题</h2>
-            <p>本地试行期间，提交后仅显示成功提示。</p>
+            <p>提交后会进入后台建议反馈列表，便于后续跟进处理。</p>
           </div>
-          <span id="feedbackSummary" class="status" role="status" aria-live="polite">本地试行</span>
+          <span id="feedbackSummary" class="status" role="status" aria-live="polite">线上反馈通道</span>
         </div>
 
         <form id="feedbackForm" class="feedback-form" autocomplete="off">
@@ -85,7 +85,7 @@
         </form>
       </section>
     </main>
-    <script type="module" src="./src/client/safe-navigation.mjs?v=20260529-feedback-local-trial"></script>
-    <script type="module" src="./src/client/feedback.js?v=20260529-feedback-local-trial"></script>
+    <script type="module" src="./src/client/safe-navigation.mjs?v=20260530-online-feedback-status"></script>
+    <script type="module" src="./src/client/feedback.js?v=20260530-online-feedback-status"></script>
   </body>
 </html>

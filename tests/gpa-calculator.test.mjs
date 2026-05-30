@@ -1,9 +1,30 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
   calculateGpa,
   convertPercentageToGradePoint,
   normalizeGradeThresholds,
 } from "../src/domain/gpa-calculator.mjs";
+
+const pageHtml = await readFile("gpa-calculator.html", "utf8");
+const pageScript = await readFile("src/client/gpa-calculator.js", "utf8");
+
+for (const expected of [
+  'id="syncGpaGradeLevel"',
+  'id="syncGpaTerm"',
+  'id="syncGpaToPortfolioButton"',
+  'id="gpaSyncStatus"',
+  "同步到我的申请",
+]) {
+  assert.ok(pageHtml.includes(expected), `GPA calculator page should include ${expected}`);
+}
+
+assert.ok(
+  pageScript.includes('"/api/my-activities"'),
+  "GPA calculator should read and save the application workspace portfolio.",
+);
+assert.match(pageScript, /function buildSyncedAcademicRecords/, "GPA calculator should build academic record sync payloads.");
+assert.match(pageScript, /syncGpaToPortfolioButton/, "GPA calculator should wire the sync button.");
 
 assert.deepEqual(normalizeGradeThresholds({}), { a: 90, b: 80, c: 70, d: 60 });
 assert.deepEqual(

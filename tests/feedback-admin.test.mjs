@@ -83,6 +83,40 @@ try {
   assert.equal(dashboard.feedbackEntries[0].contact, "student-wechat");
   assert.equal(dashboard.feedbackEntries[0].userName, "Feedback Student");
   assert.equal(dashboard.feedbackEntries[0].userEmail, "feedback-student@example.com");
+  assert.equal(dashboard.feedbackEntries[0].feedbackStatus, "未处理");
+  assert.equal(dashboard.feedbackEntries[0].adminNote, "");
+
+  const forbiddenStatusUpdate = await put(
+    `/api/admin/feedback/${dashboard.feedbackEntries[0].id}`,
+    {
+      feedbackStatus: "处理中",
+      adminNote: "学生已补充截图",
+    },
+    studentCookie,
+  );
+  assert.equal(forbiddenStatusUpdate.status, 403);
+
+  const statusUpdateResponse = await put(
+    `/api/admin/feedback/${dashboard.feedbackEntries[0].id}`,
+    {
+      feedbackStatus: "处理中",
+      adminNote: "学生已补充截图，排查生成流程。",
+    },
+    adminCookie,
+  );
+  assert.equal(statusUpdateResponse.status, 200);
+  const statusUpdate = await statusUpdateResponse.json();
+  assert.equal(statusUpdate.feedback.feedbackStatus, "处理中");
+  assert.equal(statusUpdate.feedback.adminNote, "学生已补充截图，排查生成流程。");
+
+  const invalidStatusUpdate = await put(
+    `/api/admin/feedback/${dashboard.feedbackEntries[0].id}`,
+    {
+      feedbackStatus: "已关闭",
+    },
+    adminCookie,
+  );
+  assert.equal(invalidStatusUpdate.status, 400);
 
   const filteredDashboardResponse = await fetch(`${baseUrl}/api/admin/login-dashboard?query=生成规划`, {
     headers: { Cookie: adminCookie },
@@ -90,6 +124,8 @@ try {
   assert.equal(filteredDashboardResponse.status, 200);
   const filteredDashboard = await filteredDashboardResponse.json();
   assert.equal(filteredDashboard.feedbackEntries.length, 1);
+  assert.equal(filteredDashboard.feedbackEntries[0].feedbackStatus, "处理中");
+  assert.equal(filteredDashboard.feedbackEntries[0].adminNote, "学生已补充截图，排查生成流程。");
 
   const emptyFilteredDashboardResponse = await fetch(`${baseUrl}/api/admin/login-dashboard?query=不存在`, {
     headers: { Cookie: adminCookie },
@@ -106,6 +142,17 @@ try {
 function post(path, payload, cookie = "") {
   return fetch(`${serverUrl()}${path}`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(cookie ? { Cookie: cookie } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+function put(path, payload, cookie = "") {
+  return fetch(`${serverUrl()}${path}`, {
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
       ...(cookie ? { Cookie: cookie } : {}),

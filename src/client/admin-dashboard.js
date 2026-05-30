@@ -40,6 +40,7 @@ const usageEventLabels = {
   refresh_ap_recommendations: "重新生成 AP 推荐",
   data_load_failure: "数据加载失败",
 };
+const feedbackStatusOptions = ["未处理", "处理中", "已解决", "已忽略"];
 
 async function requestJson(url, options = {}) {
   const response = await fetch(url, {
@@ -180,15 +181,24 @@ function renderUsageEvents(events) {
     .join("");
 }
 
+function renderFeedbackStatusOptions(currentStatus) {
+  return feedbackStatusOptions
+    .map(
+      (status) =>
+        `<option value="${escapeHtml(status)}" ${status === currentStatus ? "selected" : ""}>${escapeHtml(status)}</option>`,
+    )
+    .join("");
+}
+
 function renderFeedbackEntries(entries) {
   if (!entries.length) {
-    feedbackEntriesBody.innerHTML = '<tr><td colspan="7">暂无建议反馈</td></tr>';
+    feedbackEntriesBody.innerHTML = '<tr><td colspan="9">暂无建议反馈</td></tr>';
     return;
   }
   feedbackEntriesBody.innerHTML = entries
     .map(
       (entry) => `
-        <tr>
+        <tr data-feedback-row="${entry.id}">
           <td>${formatDateTime(entry.createdAt)}</td>
           <td>${escapeHtml(entry.issueType)}</td>
           <td>${escapeHtml(entry.pageName)}</td>
@@ -198,6 +208,17 @@ function renderFeedbackEntries(entries) {
           </td>
           <td>${escapeHtml(entry.description)}</td>
           <td>${escapeHtml(entry.steps || "-")}</td>
+          <td>
+            <select class="feedback-status-select" data-feedback-status>
+              ${renderFeedbackStatusOptions(entry.feedbackStatus || "未处理")}
+            </select>
+          </td>
+          <td>
+            <div class="feedback-admin-controls">
+              <textarea data-feedback-note maxlength="1000" placeholder="处理备注">${escapeHtml(entry.adminNote || "")}</textarea>
+              <button type="button" class="quiet neutral" data-save-feedback-status="${entry.id}">保存</button>
+            </div>
+          </td>
           <td>${technicalDetails(entry)}</td>
         </tr>
       `,
@@ -248,6 +269,35 @@ async function loadDashboard() {
     if (/admin|authenticated|权限|登录/i.test(error.message)) {
       window.location.href = "/";
     }
+  }
+}
+
+async function saveFeedbackStatus(feedbackId, row) {
+  const statusControl = row.querySelector("[data-feedback-status]");
+  const noteControl = row.querySelector("[data-feedback-note]");
+  const saveButton = row.querySelector("[data-save-feedback-status]");
+  saveButton.disabled = true;
+  dashboardStatus.textContent = "正在保存反馈状态";
+  dashboardStatus.classList.remove("error");
+  try {
+    const data = await requestJson(`/api/admin/feedback/${feedbackId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        feedbackStatus: statusControl?.value || "未处理",
+        adminNote: noteControl?.value || "",
+      }),
+    });
+    if (latestDashboard) {
+      latestDashboard.feedbackEntries = (latestDashboard.feedbackEntries || []).map((entry) =>
+        entry.id === Number(feedbackId) ? data.feedback : entry,
+      );
+    }
+    renderFeedbackEntries(latestDashboard?.feedbackEntries || []);
+    dashboardStatus.textContent = "反馈状态已保存";
+  } catch (error) {
+    dashboardStatus.textContent = error.message;
+    dashboardStatus.classList.add("error");
+    saveButton.disabled = false;
   }
 }
 
@@ -303,7 +353,19 @@ function activeExportTable() {
   if (activeTab === "feedback") {
     return makeExcelTable(
       "建议反馈",
-      ["时间", "类型", "页面/功能", "用户", "邮箱", "联系方式", "问题描述", "复现步骤", "浏览器/IP"],
+      [
+        "时间",
+        "类型",
+        "页面/功能",
+        "用户",
+        "邮箱",
+        "联系方式",
+        "问题描述",
+        "复现步骤",
+        "处理状态",
+        "处理备注",
+        "浏览器/IP",
+      ],
       (latestDashboard.feedbackEntries || []).map((entry) => [
         formatDateTime(entry.createdAt),
         entry.issueType,
@@ -313,6 +375,8 @@ function activeExportTable() {
         entry.contact || "-",
         entry.description,
         entry.steps || "-",
+        entry.feedbackStatus || "未处理",
+        entry.adminNote || "-",
         compactDevice(entry.userAgent, entry.ipAddress),
       ]),
     );
@@ -367,6 +431,13 @@ securityFilters.addEventListener("change", loadDashboard);
 for (const tab of adminTabs) {
   tab.addEventListener("click", () => activateTab(tab.dataset.adminTab));
 }
+feedbackEntriesBody?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-save-feedback-status]");
+  if (!button) return;
+  const row = button.closest("[data-feedback-row]");
+  if (!row) return;
+  saveFeedbackStatus(button.dataset.saveFeedbackStatus, row);
+});
 adminLogoutButton.addEventListener("click", async () => {
   await requestJson("/api/auth/logout", { method: "POST", body: "{}" }).catch(() => ({}));
   window.location.href = "/";

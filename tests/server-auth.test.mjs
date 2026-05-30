@@ -30,11 +30,16 @@ try {
   assert.equal(blockedPrompt.headers.get("x-content-type-options"), "nosniff");
   assert.equal(blockedPrompt.headers.get("x-frame-options"), "DENY");
 
-  const blockedResourceLibrary = await fetch(`${baseUrl}/resource-library.html`);
-  assert.equal(blockedResourceLibrary.status, 401);
+  const blockedResourceLibrary = await fetch(`${baseUrl}/resource-library.html`, { redirect: "manual" });
+  assert.equal(blockedResourceLibrary.status, 302);
+  assert.equal(blockedResourceLibrary.headers.get("location"), "/?next=%2Fresource-library.html");
 
-  const blockedSchoolEncyclopedia = await fetch(`${baseUrl}/school-encyclopedia.html`);
-  assert.equal(blockedSchoolEncyclopedia.status, 401);
+  const blockedSchoolEncyclopedia = await fetch(`${baseUrl}/school-encyclopedia.html`, { redirect: "manual" });
+  assert.equal(blockedSchoolEncyclopedia.status, 302);
+  assert.equal(
+    blockedSchoolEncyclopedia.headers.get("location"),
+    "/?next=%2Fschool-encyclopedia.html",
+  );
 
   const faviconResponse = await fetch(`${baseUrl}/favicon.ico`);
   assert.equal(faviconResponse.status, 200);

@@ -325,6 +325,48 @@ textarea {
   line-height: 1.65;
 }
 
+.logged-in-preview {
+  display: grid;
+  gap: 22px;
+}
+
+.preview-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.preview-feature-grid article {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: #fff;
+  padding: 20px;
+}
+
+.preview-feature-grid span {
+  display: inline-flex;
+  min-width: 34px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--surface-green);
+  color: var(--brand-green);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.preview-feature-grid h3 {
+  margin: 14px 0 8px;
+  font-size: 18px;
+}
+
+.preview-feature-grid p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
 .landing-process {
   display: grid;
   gap: 24px;
@@ -686,6 +728,27 @@ textarea {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.4;
+}
+
+.feedback-status-select {
+  min-width: 104px;
+}
+
+.feedback-admin-controls {
+  display: grid;
+  min-width: 220px;
+  gap: 8px;
+}
+
+.feedback-admin-controls textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.feedback-admin-controls button {
+  justify-self: start;
+  min-height: 36px;
+  padding: 0 14px;
 }
 
 .security-trends {
@@ -2534,6 +2597,37 @@ button.neutral:hover {
   color: var(--muted);
 }
 
+.gpa-sync-panel {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfe;
+  padding: 16px;
+}
+
+.gpa-sync-panel h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.gpa-sync-panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.gpa-sync-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.gpa-sync-fields button {
+  min-height: 48px;
+}
+
 .gpa-breakdown {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
@@ -3256,6 +3350,7 @@ button.neutral:hover {
   .landing-header,
   .landing-hero,
   .capability-highlights,
+  .preview-feature-grid,
   .process-grid,
   .risk-control-grid,
   .audience-fit-grid,
@@ -3451,6 +3546,10 @@ button.neutral:hover {
 
   .gpa-result-body {
     padding: 0 16px 16px;
+  }
+
+  .gpa-sync-fields {
+    grid-template-columns: 1fr;
   }
 
   .disclaimer-body {

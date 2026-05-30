@@ -29,7 +29,12 @@ assert.ok(feedbackHtml.includes('name="pageName"'), "Feedback form should captur
 assert.ok(feedbackHtml.includes('name="description"'), "Feedback form should capture the problem description.");
 assert.ok(feedbackHtml.includes('name="steps"'), "Feedback form should capture reproduction steps.");
 assert.ok(feedbackHtml.includes('name="contact"'), "Feedback form should allow optional contact details.");
-assert.ok(feedbackHtml.includes("本地试行"), "Feedback page should clearly label the local trial behavior.");
+assert.ok(feedbackHtml.includes("线上反馈通道"), "Feedback page should label the live feedback channel.");
+assert.ok(
+  feedbackHtml.includes("提交后会进入后台建议反馈列表"),
+  "Feedback page should explain that submissions are tracked in the admin dashboard.",
+);
+assert.ok(!feedbackHtml.includes("本地试行"), "Feedback page should not mention local-trial behavior online.");
 assert.ok(feedbackHtml.includes('id="feedbackStatus"'), "Feedback page should show submit status.");
 assert.ok(!feedbackHtml.includes("本地记录"), "Feedback page should not show a local history section.");
 assert.ok(!feedbackHtml.includes('id="feedbackLatest"'), "Feedback page should not include local feedback history.");

@@ -12,8 +12,14 @@ const gpaTotalCredits = document.querySelector("#gpaTotalCredits");
 const gpaScaleLabel = document.querySelector("#gpaScaleLabel");
 const gpaNotice = document.querySelector("#gpaNotice");
 const gpaBreakdown = document.querySelector("#gpaBreakdown");
+const syncGpaGradeLevel = document.querySelector("#syncGpaGradeLevel");
+const syncGpaTerm = document.querySelector("#syncGpaTerm");
+const syncGpaToPortfolioButton = document.querySelector("#syncGpaToPortfolioButton");
+const gpaSyncStatus = document.querySelector("#gpaSyncStatus");
+const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 
 let nextCourseId = 1;
+let latestGpaResult = null;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -25,6 +31,27 @@ function escapeHtml(value) {
 
 function getScaleLabel(scale) {
   return scale === "four-point" ? "4.0制度" : "百分制";
+}
+
+function getPortfolioScaleLabel(scale) {
+  return scale === "four-point" ? "4.0分制" : "100分制";
+}
+
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error || "请求失败");
+    error.status = response.status;
+    throw error;
+  }
+  return data;
 }
 
 function createCourseRow({ name = "", grade = "", credits = "", isAp = false } = {}) {
@@ -91,6 +118,7 @@ function updateGradeInputs() {
 function renderResult() {
   if (!form) return;
   const result = calculateGpa(collectInput());
+  latestGpaResult = result;
   const scaleLabel = getScaleLabel(result.scale);
 
   gpaResultValue.textContent = result.gpa === null ? "--" : result.gpa.toFixed(2);
@@ -98,6 +126,7 @@ function renderResult() {
   gpaTotalCredits.textContent = String(Number(result.totalCredits.toFixed(2)));
   gpaScaleLabel.textContent = scaleLabel;
   gpaStatus.textContent = result.gpa === null ? "等待输入" : "已计算";
+  if (syncGpaToPortfolioButton) syncGpaToPortfolioButton.disabled = result.gpa === null;
 
   if (result.errors.length) {
     gpaNotice.textContent = result.errors.join("；");
@@ -128,6 +157,75 @@ function renderResult() {
     .join("");
 }
 
+function buildSyncedAcademicRecords(portfolio, result) {
+  const gradeLevel = syncGpaGradeLevel?.value || "9年级";
+  const term = syncGpaTerm?.value || "上学期";
+  const existingRecords = portfolio.academicRecords || {};
+  const gpaRecords = Array.isArray(existingRecords.gpaRecords)
+    ? existingRecords.gpaRecords.map((record) => ({ ...record }))
+    : [];
+  const syncedRecord = {
+    gradeLevel,
+    term,
+    gpa: result.gpa.toFixed(2),
+  };
+  const existingIndex = gpaRecords.findIndex(
+    (record) => record.gradeLevel === gradeLevel && record.term === term,
+  );
+  if (existingIndex >= 0) {
+    gpaRecords[existingIndex] = { ...gpaRecords[existingIndex], ...syncedRecord };
+  } else {
+    gpaRecords.push(syncedRecord);
+  }
+  return {
+    ...existingRecords,
+    gpaScale: getPortfolioScaleLabel(result.scale),
+    gpaRecords,
+  };
+}
+
+async function syncGpaToPortfolio() {
+  if (!latestGpaResult || latestGpaResult.gpa === null) {
+    if (gpaSyncStatus) {
+      gpaSyncStatus.textContent = "请先输入有效课程成绩后再同步。";
+      gpaSyncStatus.classList.add("error");
+    }
+    return;
+  }
+
+  syncGpaToPortfolioButton.disabled = true;
+  if (gpaSyncStatus) {
+    gpaSyncStatus.textContent = "正在同步";
+    gpaSyncStatus.classList.remove("error");
+  }
+
+  try {
+    const portfolio = await requestJson(MY_ACTIVITIES_ENDPOINT, { method: "GET" });
+    const academicRecords = buildSyncedAcademicRecords(portfolio, latestGpaResult);
+    const saved = await requestJson(MY_ACTIVITIES_ENDPOINT, {
+      method: "PUT",
+      body: JSON.stringify({ ...portfolio, academicRecords }),
+    });
+    if (gpaSyncStatus) {
+      gpaSyncStatus.textContent = `已同步到我的申请：${syncGpaGradeLevel.value} ${syncGpaTerm.value} GPA ${saved.academicRecords.gpaRecords.find(
+        (record) => record.gradeLevel === syncGpaGradeLevel.value && record.term === syncGpaTerm.value,
+      )?.gpa || latestGpaResult.gpa.toFixed(2)}`;
+      gpaSyncStatus.classList.remove("error");
+    }
+  } catch (error) {
+    if (error.status === 401) {
+      window.location.href = "/?next=/gpa-calculator.html";
+      return;
+    }
+    if (gpaSyncStatus) {
+      gpaSyncStatus.textContent = error.message;
+      gpaSyncStatus.classList.add("error");
+    }
+  } finally {
+    syncGpaToPortfolioButton.disabled = latestGpaResult?.gpa === null;
+  }
+}
+
 function addCourse(initialValue) {
   courseRows?.append(createCourseRow(initialValue));
   updateGradeInputs();
@@ -146,6 +244,7 @@ form?.addEventListener("input", () => {
   updateGradeInputs();
   renderResult();
 });
+syncGpaToPortfolioButton?.addEventListener("click", syncGpaToPortfolio);
 
 addCourse();
 addCourse();
