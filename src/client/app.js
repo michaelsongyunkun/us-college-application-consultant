@@ -65,6 +65,7 @@ const saveStatus = document.querySelector("#saveStatus");
 const agentStatus = document.querySelector("#agentStatus");
 const generateDeepSeekButton = document.querySelector("#generateDeepSeekButton");
 const deepSeekStatus = document.querySelector("#deepSeekStatus");
+const deepSeekWorkingIndicator = document.querySelector("#deepSeekWorkingIndicator");
 const rawAnswer = document.querySelector("#rawAnswer");
 const narrativeOutput = document.querySelector("#narrativeOutput");
 const parseDiagnostics = document.querySelector("#parseDiagnostics");
@@ -724,7 +725,16 @@ function updateDeepSeekAvailability(promptLoaded = Boolean(fixedPrompt)) {
   deepSeekStatus.textContent = availability.message;
   deepSeekStatus.classList.toggle("error", !availability.canGenerate);
   generateDeepSeekButton.disabled = !availability.canGenerate;
+  if (!availability.canGenerate) setDeepSeekWorking(false);
   return availability;
+}
+
+function setDeepSeekWorking(isWorking) {
+  if (!deepSeekWorkingIndicator) return;
+
+  deepSeekWorkingIndicator.hidden = !isWorking;
+  deepSeekWorkingIndicator.classList.toggle("is-active", isWorking);
+  generateDeepSeekButton?.setAttribute("aria-busy", isWorking ? "true" : "false");
 }
 
 function fillActivities(activities) {
@@ -1040,9 +1050,12 @@ async function generateDeepSeekPlan() {
   const availability = updateDeepSeekAvailability(Boolean(fixedPrompt));
   if (!availability?.canGenerate) return;
 
+  const originalButtonText = generateDeepSeekButton.textContent;
   generateDeepSeekButton.disabled = true;
+  generateDeepSeekButton.textContent = "DeepSeek 生成中...";
   deepSeekStatus.textContent = "DeepSeek 正在生成规划回答...";
   deepSeekStatus.classList.remove("error");
+  setDeepSeekWorking(true);
   const startedAt = performance.now();
 
   try {
@@ -1079,6 +1092,8 @@ async function generateDeepSeekPlan() {
       details: { failureReason: error.message },
     });
   } finally {
+    setDeepSeekWorking(false);
+    generateDeepSeekButton.textContent = originalButtonText;
     const availability = getDeepSeekGenerationAvailability({
       protocol: window.location.protocol,
       promptLoaded: Boolean(fixedPrompt),

@@ -406,8 +406,15 @@
               <p>由站点统一配置的 DeepSeek API 生成规划回答并直接写入下方表格，用户无需提供自己的 API Key。</p>
             </div>
             <div class="deepseek-actions">
-              <button id="generateDeepSeekButton" type="button">用 DeepSeek 生成规划</button>
+              <button id="generateDeepSeekButton" type="button" aria-describedby="deepSeekStatus deepSeekWorkingIndicator">用 DeepSeek 生成规划</button>
               <span id="deepSeekStatus" class="status" role="status" aria-live="polite">等待 DeepSeek 服务配置</span>
+            </div>
+            <div id="deepSeekWorkingIndicator" class="deepseek-working" role="status" aria-live="polite" hidden>
+              <span class="deepseek-working__pulse" aria-hidden="true"></span>
+              <div class="deepseek-working__copy">
+                <strong>DeepSeek 正在生成规划</strong>
+                <span>正在分析学生背景、整理活动路线，并准备写入下方表格。</span>
+              </div>
             </div>
           </div>
           <div
@@ -627,7 +634,7 @@
       </div>
     </main>
 
-    <script type="module" src="./src/client/app.js?v=20260531-deepseek-only"></script>
+    <script type="module" src="./src/client/app.js?v=20260531-deepseek-working"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-case-refresh"></script>
   </body>
 </html>

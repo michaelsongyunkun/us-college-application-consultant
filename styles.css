@@ -2506,6 +2506,75 @@ button.danger:hover {
   gap: 10px;
 }
 
+.deepseek-working {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  border: 1px solid #c9dfd2;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f3faf6 0%, #fffaf0 100%);
+  padding: 14px 16px;
+  color: var(--ink);
+}
+
+.deepseek-working[hidden] {
+  display: none;
+}
+
+.deepseek-working__pulse {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 7px rgba(50, 130, 99, 0.12);
+}
+
+.deepseek-working__pulse::after {
+  position: absolute;
+  inset: -7px;
+  border: 2px solid rgba(50, 130, 99, 0.28);
+  border-radius: inherit;
+  content: "";
+  animation: deepseekPulse 1.25s ease-out infinite;
+}
+
+.deepseek-working__copy {
+  display: grid;
+  gap: 3px;
+}
+
+.deepseek-working__copy strong {
+  color: var(--accent-strong);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.deepseek-working__copy span {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+@keyframes deepseekPulse {
+  0% {
+    opacity: 0.78;
+    transform: scale(0.74);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.28);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deepseek-working__pulse::after {
+    animation: none;
+  }
+}
+
 .parse-diagnostics {
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
