@@ -394,20 +394,11 @@
       <section class="panel agent-panel" aria-labelledby="agent-title">
         <div class="section-heading table-heading">
           <div>
-            <h2 id="agent-title">中间 Agent 层</h2>
-            <p>固定提示词由后端自动读取，用来生成可复制给外部 AI 对话的任务包。</p>
+            <h2 id="agent-title">DeepSeek 生成规划</h2>
+            <p>由站点统一配置的 DeepSeek API 生成规划回答，并直接写入下方表格。</p>
           </div>
         </div>
         <div class="agent-body">
-          <div class="agent-note">
-            <strong>固定 Agent 提示词：</strong>
-            <span id="promptStatus">等待检测</span>
-          </div>
-          <div class="agent-usage-note">
-            <p>
-              可以先用 DeepSeek API 在站内自动生成规划；也可以点击“生成任务包”后再点击“复制任务包”，将任务包复制给任意 AI（推荐使用 DeepSeek 或 ChatGPT）。AI 生成回答后，将回答粘贴到“AI回答粘贴区”里，最后点击“解析回答进表格”生成活动规划。
-            </p>
-          </div>
           <textarea id="rawAnswer" class="is-hidden" hidden></textarea>
           <div id="deepSeekAutoGenerate" class="deepseek-auto-generate" aria-labelledby="deepseek-title">
             <div class="deepseek-copy">
@@ -419,29 +410,14 @@
               <span id="deepSeekStatus" class="status" role="status" aria-live="polite">等待 DeepSeek 服务配置</span>
             </div>
           </div>
-          <div class="codex-mode">
-            <div class="codex-actions">
-              <button id="buildCodexTaskButton" type="button" class="quiet">生成任务包</button>
-              <button id="copyCodexTaskButton" type="button" class="quiet">复制任务包</button>
-              <button id="parseCodexAnswerButton" type="button">解析回答进表格</button>
-            </div>
-            <label>
-              <span>任务包（复制给AI对话）</span>
-              <textarea id="codexTaskPackage" placeholder="点击“生成任务包”后，再点击“复制任务包”，把任务包复制给 DeepSeek、ChatGPT 或其他 AI 对话。"></textarea>
-            </label>
-            <label>
-              <span>AI回答粘贴区</span>
-              <textarea id="codexAnswerInput" placeholder="把 AI 生成的完整回答粘贴到这里，再点击“解析回答进表格”。"></textarea>
-            </label>
-            <div
-              id="parseDiagnostics"
-              class="parse-diagnostics is-hidden"
-              role="status"
-              aria-live="polite"
-              aria-label="解析诊断"
-              hidden
-            ></div>
-          </div>
+          <div
+            id="parseDiagnostics"
+            class="parse-diagnostics is-hidden"
+            role="status"
+            aria-live="polite"
+            aria-label="解析诊断"
+            hidden
+          ></div>
         </div>
         <div class="agent-footer">
           <span id="agentStatus" class="status" role="status" aria-live="polite">等待生成</span>
@@ -651,7 +627,7 @@
       </div>
     </main>
 
-    <script type="module" src="./src/client/app.js?v=20260531-narrative-cleanup"></script>
+    <script type="module" src="./src/client/app.js?v=20260531-deepseek-only"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-case-refresh"></script>
   </body>
 </html>

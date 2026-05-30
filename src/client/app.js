@@ -3,8 +3,7 @@ import {
   getDeepSeekGenerationAvailability,
 } from "./ui-state.mjs";
 import { clearDraftFields } from "./draft-state.mjs";
-import { buildCodexTaskPackage } from "../domain/codex-mode.mjs";
-import { markdownToPlainText, parseAgentOutput } from "../domain/agent-output-parser.mjs?v=20260531-narrative-cleanup";
+import { markdownToPlainText } from "../domain/agent-output-parser.mjs?v=20260531-deepseek-only";
 import {
   buildStudentCaseProfile,
   matchAdmissionCases,
@@ -22,10 +21,7 @@ import {
 } from "../domain/summer-school-recommender.mjs";
 import { buildRecommendationLetterStrategy } from "../domain/recommendation-letter-recommender.mjs";
 import { renderActivityQualityPanel } from "./activity-quality-ui.mjs";
-import {
-  buildParseFailureMessage,
-  renderParseDiagnostics,
-} from "./agent-answer-diagnostics-ui.mjs";
+import { renderParseDiagnostics } from "./agent-answer-diagnostics-ui.mjs";
 import { buildWordDocument } from "../domain/word-export.mjs";
 import { getRequestErrorMessage } from "./auth-client-errors.mjs";
 import { escapeHtml } from "./html-utils.mjs";
@@ -67,16 +63,10 @@ const exportWordButton = document.querySelector("#exportWordButton");
 const resetButton = document.querySelector("#resetButton");
 const saveStatus = document.querySelector("#saveStatus");
 const agentStatus = document.querySelector("#agentStatus");
-const promptStatus = document.querySelector("#promptStatus");
 const generateDeepSeekButton = document.querySelector("#generateDeepSeekButton");
 const deepSeekStatus = document.querySelector("#deepSeekStatus");
 const rawAnswer = document.querySelector("#rawAnswer");
 const narrativeOutput = document.querySelector("#narrativeOutput");
-const buildCodexTaskButton = document.querySelector("#buildCodexTaskButton");
-const copyCodexTaskButton = document.querySelector("#copyCodexTaskButton");
-const parseCodexAnswerButton = document.querySelector("#parseCodexAnswerButton");
-const codexTaskPackage = document.querySelector("#codexTaskPackage");
-const codexAnswerInput = document.querySelector("#codexAnswerInput");
 const parseDiagnostics = document.querySelector("#parseDiagnostics");
 const caseMatchStatus = document.querySelector("#caseMatchStatus");
 const caseMatchNotice = document.querySelector("#caseMatchNotice");
@@ -716,8 +706,7 @@ function updateAgentAvailability(promptLoaded = true) {
     promptLoaded,
   });
 
-  promptStatus.textContent = availability.message;
-  agentStatus.textContent = availability.canGenerate ? "等待生成任务包" : availability.message;
+  agentStatus.textContent = availability.canGenerate ? "等待 DeepSeek 生成规划" : availability.message;
   agentStatus.classList.toggle("error", !availability.canGenerate);
   updateDeepSeekAvailability(promptLoaded);
   return availability;
@@ -752,8 +741,6 @@ function clearPlanFields() {
   });
   rawAnswer.value = "";
   narrativeOutput.value = "";
-  codexTaskPackage.value = "";
-  codexAnswerInput.value = "";
   latestCompetitionRecommendations = [];
   latestSummerSchoolRecommendations = [];
   latestRecommendationLetterStrategy = { items: [] };
@@ -1021,7 +1008,6 @@ async function checkPrompt() {
       protocol: window.location.protocol,
       promptLoaded: false,
     });
-    promptStatus.textContent = availability.message;
     agentStatus.textContent = availability.message;
     agentStatus.classList.add("error");
     rawAnswer.value = availability.message;
@@ -1043,29 +1029,11 @@ async function checkPrompt() {
       protocol: window.location.protocol,
       promptLoaded: false,
     });
-    promptStatus.textContent = availability.message;
     agentStatus.textContent = availability.message;
     agentStatus.classList.add("error");
     rawAnswer.value = availability.message;
     updateDeepSeekAvailability(false);
   }
-}
-
-function buildCodexTask() {
-  trackUsageEvent("build_codex_task");
-  if (!fixedPrompt) {
-    agentStatus.textContent = "固定提示词尚未加载，无法生成任务包。";
-    agentStatus.classList.add("error");
-    return;
-  }
-
-  codexTaskPackage.value = buildCodexTaskPackage({
-    fixedPrompt,
-    profile: collectPlanningProfile(),
-    activities: collectActivities(),
-  });
-  agentStatus.textContent = "任务包已生成，可复制给 DeepSeek、ChatGPT 或其他 AI 对话。";
-  agentStatus.classList.remove("error");
 }
 
 async function generateDeepSeekPlan() {
@@ -1087,7 +1055,6 @@ async function generateDeepSeekPlan() {
     });
 
     rawAnswer.value = data.answer || "";
-    codexAnswerInput.value = data.answer || "";
     fillActivities(data.parsed?.activities || []);
     narrativeOutput.value = cleanNarrative(data.parsed?.narrative || "");
     renderParseDiagnostics(parseDiagnostics, data.parsed?.diagnostics);
@@ -1119,38 +1086,6 @@ async function generateDeepSeekPlan() {
     });
     generateDeepSeekButton.disabled = !availability.canGenerate;
   }
-}
-
-async function copyCodexTask() {
-  trackUsageEvent("copy_codex_task");
-  if (!codexTaskPackage.value) buildCodexTask();
-  await navigator.clipboard.writeText(codexTaskPackage.value);
-  agentStatus.textContent = "任务包已复制。";
-  agentStatus.classList.remove("error");
-}
-
-async function parseCodexAnswer() {
-  const parsed = parseAgentOutput(codexAnswerInput.value);
-  renderParseDiagnostics(parseDiagnostics, parsed.diagnostics);
-  trackUsageEvent("parse_codex_answer", {
-    metrics: { generatedActivityCount: parsed.activities?.length || 0 },
-    details: {
-      parseStrategy: parsed.diagnostics?.strategy || "none",
-      narrativeFound: Boolean(parsed.diagnostics?.narrativeFound),
-    },
-  });
-  if (!parsed.activities?.length) {
-    agentStatus.textContent = buildParseFailureMessage(parsed.diagnostics);
-    agentStatus.classList.add("error");
-    return;
-  }
-  rawAnswer.value = codexAnswerInput.value;
-  fillActivities(parsed.activities || []);
-  narrativeOutput.value = cleanNarrative(parsed.narrative || "");
-  renderStudentDependentRecommendations();
-  agentStatus.textContent = `已解析 AI 回答，并填入 ${parsed.activities?.length || 0} 项活动`;
-  agentStatus.classList.remove("error");
-  await saveDraft();
 }
 
 async function saveDraft() {
@@ -1228,8 +1163,6 @@ function clearVisibleDraft() {
     activityTable,
     rawAnswer,
     narrativeOutput,
-    codexTaskPackage,
-    codexAnswerInput,
     snapshotNote,
   });
   renderStudentDependentRecommendations();
@@ -1240,9 +1173,6 @@ exportButton.addEventListener("click", exportDraft);
 exportWordButton.addEventListener("click", exportWordDocument);
 resetButton.addEventListener("click", () => runWorkspaceAction(resetDraft));
 generateDeepSeekButton?.addEventListener("click", () => runWorkspaceAction(generateDeepSeekPlan));
-buildCodexTaskButton.addEventListener("click", buildCodexTask);
-copyCodexTaskButton.addEventListener("click", copyCodexTask);
-parseCodexAnswerButton.addEventListener("click", () => runWorkspaceAction(parseCodexAnswer));
 refreshCompetitionsButton?.addEventListener("click", () => {
   trackUsageEvent("refresh_competitions", {
     metrics: { generatedActivityCount: latestCompetitionRecommendations.length },

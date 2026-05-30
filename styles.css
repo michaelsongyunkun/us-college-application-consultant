@@ -2475,31 +2475,6 @@ button.danger:hover {
   font-family: "Microsoft YaHei", "Noto Sans SC", Arial, sans-serif;
 }
 
-.agent-note {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--soft);
-  color: var(--accent-strong);
-  padding: 12px 14px;
-  line-height: 1.5;
-}
-
-.agent-usage-note {
-  border-left: 3px solid var(--brand-green);
-  background: #f7fbf8;
-  color: var(--muted);
-  padding: 10px 14px;
-  line-height: 1.65;
-}
-
-.agent-usage-note p {
-  margin: 0;
-}
-
-.agent-usage-note p + p {
-  margin-top: 6px;
-}
-
 .deepseek-auto-generate {
   display: grid;
   gap: 14px;
@@ -2617,19 +2592,6 @@ button.danger:hover {
   margin: 8px 0 0 18px;
   padding: 0;
   color: #27354a;
-}
-
-.codex-mode {
-  display: grid;
-  gap: 14px;
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
-}
-
-.codex-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
 }
 
 .agent-footer {

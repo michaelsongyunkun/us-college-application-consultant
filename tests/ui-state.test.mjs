@@ -16,7 +16,7 @@ assert.deepEqual(
   getAgentAvailability({ protocol: "http:", promptLoaded: true }),
   {
     canGenerate: true,
-    message: "固定提示词已加载，可生成任务包。",
+    message: "固定提示词已加载，可使用 DeepSeek 自动生成规划。",
   },
 );
 
