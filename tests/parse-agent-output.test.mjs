@@ -37,6 +37,20 @@ const parsedLoosePipeTable = parseAgentOutput(loosePipeTable);
 assert.equal(parsedLoosePipeTable.activities.length, 1);
 assert.equal(parsedLoosePipeTable.activities[0].type, "个人兴趣");
 
+const markdownFormattedCells = `| 序号 | 活动类型（Type） | 活动名称（精准描述） | 具体执行描述（需含：问题/成果/影响） | 建议年级 |
+|---|---|---|---|---|
+| 1 | 学术突破 | **独立研究：基于NLP的初中生数学错题归因分析模型** | **问题**：发现传统错题本效率低下，无法精准定位知识盲区。**行动**：利用Python爬取Github开源题库及社区论坛文本数据。**成果**：构建分类模型，准确率达82%。 | 10-11 |`;
+
+const parsedMarkdownFormattedCells = parseAgentOutput(markdownFormattedCells);
+assert.equal(
+  parsedMarkdownFormattedCells.activities[0].activityName,
+  "独立研究：基于NLP的初中生数学错题归因分析模型",
+);
+assert.equal(
+  parsedMarkdownFormattedCells.activities[0].executionDescription,
+  "问题：发现传统错题本效率低下，无法精准定位知识盲区。行动：利用Python爬取Github开源题库及社区论坛文本数据。成果：构建分类模型，准确率达82%。",
+);
+
 const numberedAnswer = `1. 活动类型（Type）：学术突破
 活动名称（精准描述）：城市热岛数据建模
 具体执行描述（需含：问题/成果/影响）：问题：校园缺少热岛观测；成果：建模分析30个点位；影响：提交节能建议

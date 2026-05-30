@@ -254,8 +254,33 @@ function normalizeId(value) {
 }
 
 function cleanCell(value) {
-  return String(value ?? "")
+  const unquoted = String(value ?? "")
     .trim()
     .replace(/^["“”]+|["“”]+$/g, "")
+    .trim();
+  return markdownToPlainText(unquoted);
+}
+
+function markdownToPlainText(value) {
+  return String(value ?? "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) =>
+      line
+        .trim()
+        .replace(/^#{1,6}\s+/, "")
+        .replace(/^>\s*/, "")
+        .replace(/^[-*+]\s+/, "")
+        .replace(/^\d+[.)]\s+/, ""),
+    )
+    .join("\n")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1")
+    .replace(/_([^_\n]+)_/g, "$1")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }

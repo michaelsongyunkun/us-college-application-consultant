@@ -27,7 +27,6 @@ import {
   renderParseDiagnostics,
 } from "./agent-answer-diagnostics-ui.mjs";
 import { buildWordDocument } from "../domain/word-export.mjs";
-import { renderMarkdown } from "../domain/markdown-renderer.mjs";
 import { getRequestErrorMessage } from "./auth-client-errors.mjs";
 import { escapeHtml } from "./html-utils.mjs";
 import {
@@ -404,31 +403,6 @@ function buildCurrentSummerSchoolStudentProfile() {
   });
 }
 
-function hasMarkdownSyntax(value) {
-  return /(^|\n)\s*(#{1,4}\s+|[-*]\s+|\d+[.)]\s+|>\s+)|(\*\*[^*]+\*\*)|(__[^_]+__)|(`[^`]+`)|(\[[^\]]+\]\(https?:\/\/[^)\s]+\))/m.test(
-    String(value ?? ""),
-  );
-}
-
-function updateActivityMarkdownPreviews() {
-  activityTable.querySelectorAll("tbody tr").forEach((row, index) => {
-    const textarea = row.querySelector(`[name="description-${index + 1}"]`);
-    if (!textarea) return;
-
-    let preview = row.querySelector(".markdown-preview");
-    if (!preview) {
-      preview = document.createElement("div");
-      preview.className = "markdown-preview";
-      preview.setAttribute("aria-label", "具体执行描述预览");
-      textarea.insertAdjacentElement("afterend", preview);
-    }
-
-    const rendered = renderMarkdown(textarea.value);
-    preview.innerHTML = rendered;
-    preview.hidden = !rendered || !hasMarkdownSyntax(textarea.value);
-  });
-}
-
 function renderActivityQuality() {
   renderActivityQualityPanel({
     elements: {
@@ -667,7 +641,6 @@ function renderCaseMatches({ refresh = false } = {}) {
 }
 
 function renderStudentDependentRecommendations() {
-  updateActivityMarkdownPreviews();
   renderActivityQuality();
   previousCompetitionBatchIds = [];
   competitionBatchIndex = 0;
@@ -758,9 +731,7 @@ function updateDeepSeekAvailability(promptLoaded = Boolean(fixedPrompt)) {
 }
 
 function fillActivities(activities) {
-  fillActivityTable(activityTable, activities, {
-    afterFill: updateActivityMarkdownPreviews,
-  });
+  fillActivityTable(activityTable, activities);
 }
 
 function applyProfile(profile = {}) {

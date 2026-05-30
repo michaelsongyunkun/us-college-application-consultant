@@ -2731,60 +2731,6 @@ td textarea {
   min-height: 108px;
 }
 
-.markdown-preview {
-  margin-top: 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #fbfcfe;
-  padding: 10px 12px;
-  color: #243044;
-  font-size: 14px;
-  line-height: 1.55;
-}
-
-.markdown-preview[hidden] {
-  display: none;
-}
-
-.markdown-preview p {
-  margin: 0 0 8px;
-}
-
-.markdown-preview p:last-child,
-.markdown-preview ul:last-child,
-.markdown-preview ol:last-child,
-.markdown-preview blockquote:last-child {
-  margin-bottom: 0;
-}
-
-.markdown-preview ul,
-.markdown-preview ol {
-  margin: 0 0 8px 20px;
-  padding: 0;
-}
-
-.markdown-preview h3,
-.markdown-preview h4,
-.markdown-preview h5,
-.markdown-preview h6 {
-  margin: 0 0 8px;
-  font-size: 15px;
-  color: #172033;
-}
-
-.markdown-preview blockquote {
-  margin: 0 0 8px;
-  border-left: 3px solid var(--accent);
-  padding-left: 10px;
-  color: var(--muted);
-}
-
-.markdown-preview code {
-  border-radius: 4px;
-  background: var(--soft);
-  padding: 1px 4px;
-}
-
 /* Diagnostics and insight panels */
 .activity-quality-check {
   margin: 18px 22px 0;

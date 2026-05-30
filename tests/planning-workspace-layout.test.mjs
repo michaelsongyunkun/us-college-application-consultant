@@ -166,6 +166,7 @@ assert.match(styles, /\.auth-status:empty\s*\{/, "An empty auth status should be
 assert.match(styles, /\.agent-usage-note\s*\{/, "Agent usage instructions should have a distinct style.");
 assert.match(styles, /\.activity-quality-check\s*\{/, "Activity quality checker should have a distinct style.");
 assert.match(styles, /\.parse-diagnostics\s*\{/, "Parse diagnostics should have a distinct style.");
+assert.doesNotMatch(styles, /\.markdown-preview/, "Activity descriptions should not render a separate Markdown preview under the table field.");
 assert.match(styles, /\/\* Design tokens \*\//, "Stylesheet should expose a design token section.");
 assert.match(styles, /\/\* Diagnostics and insight panels \*\//, "Stylesheet should group diagnostic panel styles.");
 for (const token of ["--brand-green", "--brand-orange", "--surface-warm", "--radius-card"]) {
@@ -208,6 +209,7 @@ assert.match(
 );
 assert.match(appJs, /renderActivityQualityPanel/, "Activity quality checker should be wired through a UI module.");
 assert.match(appJs, /renderParseDiagnostics/, "Parse diagnostics should be wired into the main app.");
+assert.doesNotMatch(appJs, /updateActivityMarkdownPreviews|markdown-preview|renderMarkdown/, "Markdown should be normalized during parsing, not rendered as a separate table preview.");
 assert.match(appJs, /collectActivitiesFromTable/, "Planning form state should be collected through a module.");
 assert.match(appJs, /data-delete-snapshot-id/, "Snapshot rows should expose a delete action.");
 assert.match(appJs, /确认删除这份历史备份吗/, "Snapshot deletion should require confirmation.");
