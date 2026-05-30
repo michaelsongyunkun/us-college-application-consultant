@@ -4,7 +4,7 @@ import {
 } from "./ui-state.mjs";
 import { clearDraftFields } from "./draft-state.mjs";
 import { buildCodexTaskPackage } from "../domain/codex-mode.mjs";
-import { parseAgentOutput } from "../domain/agent-output-parser.mjs";
+import { parseAgentOutput } from "../domain/agent-output-parser.mjs?v=20260530-markdown-parse-cleanup";
 import {
   buildStudentCaseProfile,
   matchAdmissionCases,

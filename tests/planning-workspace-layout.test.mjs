@@ -198,6 +198,11 @@ assert.match(
 );
 assert.match(
   appJs,
+  /from "\.\.\/domain\/agent-output-parser\.mjs\?v=20260530-markdown-parse-cleanup"/,
+  "Agent output parser import should be cache-busted when parsing behavior changes.",
+);
+assert.match(
+  appJs,
   /from "\.\.\/domain\/admission-case-matcher\.mjs\?v=[a-z0-9-]+"/,
   "The admission case matcher import should be cache-busted when matching behavior changes.",
 );
