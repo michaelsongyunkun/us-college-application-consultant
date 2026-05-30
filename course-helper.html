@@ -4,21 +4,52 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>选课辅助器</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260530-light-sidebar" />
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell command-shell">
+      <aside class="command-sidebar" aria-label="Application Command Center">
+        <a class="command-sidebar-brand" href="./index.html" data-safe-nav>
+          <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+          <span><strong>US College Compass</strong><small>Application Command Center</small></span>
+        </a>
+        <nav class="command-sidebar-nav" aria-label="登录后功能导航">
+          <a href="./index.html" data-safe-nav>申请指挥中心</a>
+          <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
+          <a href="./resource-library.html" data-safe-nav>资源库</a>
+          <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+          <a href="./course-helper.html" data-safe-nav aria-current="page">选课辅助器</a>
+          <a href="./gpa-calculator.html" data-safe-nav>GPA / AP 工具</a>
+          <a href="./disclaimer.html" data-safe-nav>免责声明</a>
+          <a href="./feedback.html" data-safe-nav>反馈与支持</a>
+          <a href="./contact.html" data-safe-nav>联系我们</a>
+        </nav>
+        <div class="command-sidebar-note">
+          <strong>Course Planning</strong>
+          <span>选课建议会围绕目标专业与已修 AP 课程生成，帮助学术路线更连贯。</span>
+        </div>
+      </aside>
+
+      <div class="command-main">
       <header class="topbar">
         <div>
           <p class="eyebrow">Course Planning Assistant</p>
           <h1>选课辅助器</h1>
         </div>
-        <div class="actions" aria-label="页面操作">
-          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
-          <a class="button-link quiet-link" href="./my-activities.html" data-safe-nav>我的申请</a>
-          <a class="button-link quiet-link" href="./gpa-calculator.html" data-safe-nav>GPA计算器</a>
-        </div>
       </header>
+
+      <section class="command-page-summary" aria-label="选课工具自动化状态">
+        <div>
+          <p class="eyebrow">AP Route Builder</p>
+          <h2>把课程选择转成申请路线</h2>
+          <p>基于年级、专业方向和已修 AP 课程生成后续选课优先级，减少“课程堆砌”带来的规划噪音。</p>
+        </div>
+        <div class="command-summary-metrics">
+          <span><strong>40</strong>AP 课程</span>
+          <span><strong>专业</strong>匹配</span>
+          <span><strong>路线</strong>建议</span>
+        </div>
+      </section>
 
       <section class="panel course-helper-panel" aria-labelledby="course-helper-title">
         <div class="section-heading table-heading">
@@ -77,6 +108,7 @@
           <div id="apRecommendationList" class="ap-recommendation-list"></div>
         </div>
       </section>
+      </div>
     </main>
     <script type="module" src="./src/client/safe-navigation.mjs"></script>
     <script type="module" src="./src/client/course-helper.js"></script>

@@ -4,21 +4,52 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>免责声明与数据使用说明</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260530-light-sidebar" />
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell command-shell">
+      <aside class="command-sidebar" aria-label="Application Command Center">
+        <a class="command-sidebar-brand" href="./index.html" data-safe-nav>
+          <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+          <span><strong>US College Compass</strong><small>Application Command Center</small></span>
+        </a>
+        <nav class="command-sidebar-nav" aria-label="登录后功能导航">
+          <a href="./index.html" data-safe-nav>申请指挥中心</a>
+          <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
+          <a href="./resource-library.html" data-safe-nav>资源库</a>
+          <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+          <a href="./course-helper.html" data-safe-nav>选课辅助器</a>
+          <a href="./gpa-calculator.html" data-safe-nav>GPA / AP 工具</a>
+          <a href="./disclaimer.html" data-safe-nav aria-current="page">免责声明</a>
+          <a href="./feedback.html" data-safe-nav>反馈与支持</a>
+          <a href="./contact.html" data-safe-nav>联系我们</a>
+        </nav>
+        <div class="command-sidebar-note">
+          <strong>Trust Center</strong>
+          <span>免责声明集中说明 AI 辅助、数据使用、未成年人信息和最终决策责任。</span>
+        </div>
+      </aside>
+
+      <div class="command-main">
       <header class="topbar">
         <div>
           <p class="eyebrow">Disclaimer</p>
           <h1>免责声明与数据使用说明</h1>
         </div>
-        <div class="actions" aria-label="页面操作">
-          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
-          <a class="button-link quiet-link" href="./gpa-calculator.html" data-safe-nav>GPA计算器</a>
-          <a class="button-link quiet-link" href="./course-helper.html" data-safe-nav>选课辅助器</a>
-        </div>
       </header>
+
+      <section class="command-page-summary" aria-label="信任中心状态">
+        <div>
+          <p class="eyebrow">Trust & Data Use</p>
+          <h2>把服务边界和数据使用讲清楚</h2>
+          <p>在用户提交学生信息前，明确 AI 生成限制、项目核验边界、账号数据和未成年人信息处理方式。</p>
+        </div>
+        <div class="command-summary-metrics">
+          <span><strong>AI</strong>边界</span>
+          <span><strong>数据</strong>说明</span>
+          <span><strong>核验</strong>责任</span>
+        </div>
+      </section>
 
       <section class="panel disclaimer-panel" aria-labelledby="disclaimer-title">
         <div class="section-heading">
@@ -100,6 +131,7 @@
           </article>
         </div>
       </section>
+      </div>
     </main>
     <script type="module" src="./src/client/safe-navigation.mjs"></script>
   </body>

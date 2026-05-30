@@ -5,10 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>我的申请</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260529-academic-records-local-trial" />
+    <link rel="stylesheet" href="./styles.css?v=20260530-light-sidebar" />
   </head>
   <body>
-    <main class="app-shell portfolio-shell">
+    <main class="app-shell command-shell portfolio-shell">
+      <aside class="command-sidebar" aria-label="Application Command Center">
+        <a class="command-sidebar-brand" href="./index.html" data-safe-nav>
+          <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+          <span><strong>US College Compass</strong><small>Application Command Center</small></span>
+        </a>
+        <nav class="command-sidebar-nav" aria-label="登录后功能导航">
+          <a href="./index.html" data-safe-nav>申请指挥中心</a>
+          <a href="./my-activities.html" data-safe-nav aria-current="page">我的申请档案</a>
+          <a href="./resource-library.html" data-safe-nav>资源库</a>
+          <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+          <a href="./course-helper.html" data-safe-nav>选课辅助器</a>
+          <a href="./gpa-calculator.html" data-safe-nav>GPA / AP 工具</a>
+          <a href="./disclaimer.html" data-safe-nav>免责声明</a>
+          <a href="./feedback.html" data-safe-nav>反馈与支持</a>
+          <a href="./contact.html" data-safe-nav>联系我们</a>
+        </nav>
+        <div class="command-sidebar-note">
+          <strong>档案自动同步</strong>
+          <span>成绩、活动、竞赛、夏校、推荐信和选校计划会成为后续规划报告的结构化输入。</span>
+        </div>
+      </aside>
+
+      <div class="command-main">
       <header class="topbar brand-page-header">
         <div class="brand-page-identity">
           <a class="brand-mark" href="./index.html" data-safe-nav>
@@ -22,12 +45,22 @@
           </p>
         </div>
         <div class="actions" aria-label="页面操作">
-          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
-          <a class="button-link quiet-link" href="./resource-library.html" data-safe-nav>资源库</a>
-          <a class="button-link quiet-link" href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
           <button id="savePortfolioButton" type="button">保存进度</button>
         </div>
       </header>
+
+      <section class="command-page-summary" aria-label="申请档案自动化状态">
+        <div>
+          <p class="eyebrow">Portfolio Automation</p>
+          <h2>把申请材料整理成可复盘档案</h2>
+          <p>这里负责沉淀 GPA、SAT、AP、活动、竞赛、夏校、推荐信与选校计划，让规划 Agent 后续能直接调用结构化信息。</p>
+        </div>
+        <div class="command-summary-metrics">
+          <span><strong>10</strong>活动槽位</span>
+          <span><strong>5</strong>竞赛槽位</span>
+          <span><strong>3</strong>夏校槽位</span>
+        </div>
+      </section>
 
       <form id="portfolioForm" autocomplete="off">
         <section class="panel portfolio-panel academic-records-panel" aria-labelledby="academic-records-title">
@@ -134,6 +167,7 @@
           <button type="button" data-save-portfolio>保存进度</button>
         </footer>
       </form>
+      </div>
     </main>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-application-plan"></script>
     <script type="module" src="./src/client/my-activities.js?v=20260529-academic-records-local-trial"></script>

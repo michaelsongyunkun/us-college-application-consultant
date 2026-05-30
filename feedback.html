@@ -5,10 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>建议反馈</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260530-online-feedback-status" />
+    <link rel="stylesheet" href="./styles.css?v=20260530-light-sidebar" />
   </head>
   <body>
-    <main class="app-shell feedback-shell">
+    <main class="app-shell command-shell feedback-shell">
+      <aside class="command-sidebar" aria-label="Application Command Center">
+        <a class="command-sidebar-brand" href="./index.html" data-safe-nav>
+          <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+          <span><strong>US College Compass</strong><small>Application Command Center</small></span>
+        </a>
+        <nav class="command-sidebar-nav" aria-label="登录后功能导航">
+          <a href="./index.html" data-safe-nav>申请指挥中心</a>
+          <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
+          <a href="./resource-library.html" data-safe-nav>资源库</a>
+          <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+          <a href="./course-helper.html" data-safe-nav>选课辅助器</a>
+          <a href="./gpa-calculator.html" data-safe-nav>GPA / AP 工具</a>
+          <a href="./disclaimer.html" data-safe-nav>免责声明</a>
+          <a href="./feedback.html" data-safe-nav aria-current="page">反馈与支持</a>
+          <a href="./contact.html" data-safe-nav>联系我们</a>
+        </nav>
+        <div class="command-sidebar-note">
+          <strong>Support Loop</strong>
+          <span>问题反馈会进入后台列表，用于持续修复内容准确性、页面显示和账号体验。</span>
+        </div>
+      </aside>
+
+      <div class="command-main">
       <header class="topbar brand-page-header">
         <div class="brand-page-identity">
           <a class="brand-mark" href="./index.html" data-safe-nav>
@@ -19,11 +42,20 @@
           <h1>建议反馈</h1>
           <p class="feedback-subtitle">记录你遇到的问题、卡住的位置或希望优化的细节。</p>
         </div>
-        <div class="actions" aria-label="页面操作">
-          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
-          <a class="button-link quiet-link" href="./contact.html" data-safe-nav>联系团队</a>
-        </div>
       </header>
+
+      <section class="command-page-summary" aria-label="反馈通道状态">
+        <div>
+          <p class="eyebrow">Feedback Operations</p>
+          <h2>把问题反馈纳入产品迭代</h2>
+          <p>提交功能异常、内容不准确或页面显示问题，后台会按类型、页面和复现步骤跟进处理。</p>
+        </div>
+        <div class="command-summary-metrics">
+          <span><strong>线上</strong>通道</span>
+          <span><strong>后台</strong>追踪</span>
+          <span><strong>复现</strong>记录</span>
+        </div>
+      </section>
 
       <section class="panel feedback-panel" aria-labelledby="feedback-title">
         <div class="section-heading table-heading">
@@ -84,6 +116,7 @@
           <p id="feedbackStatus" class="status feedback-status full-span" role="status" aria-live="polite"></p>
         </form>
       </section>
+      </div>
     </main>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260530-online-feedback-status"></script>
     <script type="module" src="./src/client/feedback.js?v=20260530-online-feedback-status"></script>

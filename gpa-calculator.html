@@ -4,21 +4,52 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GPA计算器</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260530-light-sidebar" />
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell command-shell">
+      <aside class="command-sidebar" aria-label="Application Command Center">
+        <a class="command-sidebar-brand" href="./index.html" data-safe-nav>
+          <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+          <span><strong>US College Compass</strong><small>Application Command Center</small></span>
+        </a>
+        <nav class="command-sidebar-nav" aria-label="登录后功能导航">
+          <a href="./index.html" data-safe-nav>申请指挥中心</a>
+          <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
+          <a href="./resource-library.html" data-safe-nav>资源库</a>
+          <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+          <a href="./course-helper.html" data-safe-nav>选课辅助器</a>
+          <a href="./gpa-calculator.html" data-safe-nav aria-current="page">GPA / AP 工具</a>
+          <a href="./disclaimer.html" data-safe-nav>免责声明</a>
+          <a href="./feedback.html" data-safe-nav>反馈与支持</a>
+          <a href="./contact.html" data-safe-nav>联系我们</a>
+        </nav>
+        <div class="command-sidebar-note">
+          <strong>Academic Tools</strong>
+          <span>GPA 与 AP 选课结果可以同步回申请档案，作为规划报告的学术输入。</span>
+        </div>
+      </aside>
+
+      <div class="command-main">
       <header class="topbar">
         <div>
           <p class="eyebrow">GPA Calculator</p>
           <h1>GPA计算器</h1>
         </div>
-        <div class="actions" aria-label="页面操作">
-          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
-          <a class="button-link quiet-link" href="./my-activities.html" data-safe-nav>我的申请</a>
-          <a class="button-link quiet-link" href="./course-helper.html" data-safe-nav>选课辅助器</a>
-        </div>
       </header>
+
+      <section class="command-page-summary" aria-label="GPA 工具自动化状态">
+        <div>
+          <p class="eyebrow">Academic Signal</p>
+          <h2>把成绩计算接入申请档案</h2>
+          <p>完成 GPA 计算后，可同步到我的申请档案，让活动规划、推荐信策略和选校复盘引用统一成绩口径。</p>
+        </div>
+        <div class="command-summary-metrics">
+          <span><strong>AP</strong>加权</span>
+          <span><strong>GPA</strong>同步</span>
+          <span><strong>档案</strong>沉淀</span>
+        </div>
+      </section>
 
       <section class="panel gpa-calculator-panel" aria-labelledby="gpa-form-title">
         <div class="section-heading table-heading">
@@ -113,6 +144,7 @@
           <div id="gpaBreakdown" class="gpa-breakdown"></div>
         </div>
       </section>
+      </div>
     </main>
     <script type="module" src="./src/client/safe-navigation.mjs"></script>
     <script type="module" src="./src/client/gpa-calculator.js"></script>

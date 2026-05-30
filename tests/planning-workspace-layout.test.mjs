@@ -109,17 +109,16 @@ for (const copy of [
   assert.ok(html.includes(copy), `Missing simplified workspace copy: ${copy}`);
 }
 
-for (const semanticClass of ["primary-nav", "utility-nav"]) {
-  assert.match(html, new RegExp(`class=["'][^"']*${semanticClass}[^"']*["']`), `Missing navigation group .${semanticClass}`);
-}
-
 const loggedInHeader = html.match(/<header class="topbar brand-page-header logged-in-header"[\s\S]*?<\/header>/)?.[0] || "";
+const commandNavigation = html.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";
 const workspaceActions = html.match(/<div class="workspace-action-bar"[\s\S]*?<\/div>\s*<\/section>/)?.[0] || "";
 
 assert.ok(loggedInHeader.includes('class="brand-mark"'), "Logged-in header should use the shared product brand link.");
 assert.ok(loggedInHeader.includes("College Compass"), "Logged-in header should use the shared product brand name.");
-assert.ok(loggedInHeader.includes('aria-label="主导航"'), "Logged-in header should expose a primary navigation group.");
-assert.ok(loggedInHeader.includes('aria-label="工具与支持"'), "Logged-in header should expose a compact tools/support group.");
+assert.ok(!loggedInHeader.includes("primary-nav"), "Logged-in header should not repeat the left-sidebar primary navigation.");
+assert.ok(!loggedInHeader.includes("utility-nav"), "Logged-in header should not repeat the left-sidebar utility navigation.");
+assert.ok(commandNavigation.includes("我的申请档案"), "Left command sidebar should expose the primary navigation group.");
+assert.ok(commandNavigation.includes("免责声明"), "Left command sidebar should expose the tools and support entries.");
 assert.ok(loggedInHeader.includes('id="logoutButton"'), "Logout should live in the account area.");
 assert.ok(!loggedInHeader.includes('id="saveButton"'), "Save should not live in the global header.");
 assert.ok(!loggedInHeader.includes('id="exportButton"'), "JSON export should not live in the global header.");

@@ -4,16 +4,39 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>数据看板 / 登录数据</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260530-light-sidebar" />
   </head>
   <body>
-    <main class="app-shell admin-shell">
+    <main class="app-shell command-shell admin-shell">
+      <aside class="command-sidebar" aria-label="Application Command Center">
+        <a class="command-sidebar-brand" href="./index.html" data-safe-nav>
+          <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+          <span><strong>US College Compass</strong><small>Application Command Center</small></span>
+        </a>
+        <nav class="command-sidebar-nav" aria-label="登录后功能导航">
+          <a href="./index.html" data-safe-nav>申请指挥中心</a>
+          <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
+          <a href="./resource-library.html" data-safe-nav>资源库</a>
+          <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+          <a href="./course-helper.html" data-safe-nav>选课辅助器</a>
+          <a href="./gpa-calculator.html" data-safe-nav>GPA / AP 工具</a>
+          <a href="./disclaimer.html" data-safe-nav>免责声明</a>
+          <a href="./feedback.html" data-safe-nav>反馈与支持</a>
+          <a href="./contact.html" data-safe-nav>联系我们</a>
+          <a href="./admin.html" data-safe-nav aria-current="page">数据看板</a>
+        </nav>
+        <div class="command-sidebar-note">
+          <strong>Operations Monitor</strong>
+          <span>后台用于观察登录、安全、使用行为和反馈处理，帮助产品持续迭代。</span>
+        </div>
+      </aside>
+
+      <div class="command-main">
       <header class="topbar">
         <div>
           <p class="eyebrow">Admin Dashboard</p>
           <div class="title-row">
             <h1>数据看板 / 登录数据</h1>
-            <a class="button-link quiet-link title-link" href="/" data-safe-nav>返回主页</a>
           </div>
         </div>
         <div class="actions">
@@ -22,6 +45,19 @@
           <button id="adminLogoutButton" type="button" class="quiet">退出</button>
         </div>
       </header>
+
+      <section class="command-page-summary" aria-label="后台自动化状态">
+        <div>
+          <p class="eyebrow">Operations Intelligence</p>
+          <h2>用数据监控真实产品使用</h2>
+          <p>统一查看活跃用户、计划生成、导出、推荐刷新、登录失败和反馈状态，让工具运营更像正式系统。</p>
+        </div>
+        <div class="command-summary-metrics">
+          <span><strong>行为</strong>趋势</span>
+          <span><strong>安全</strong>日志</span>
+          <span><strong>反馈</strong>闭环</span>
+        </div>
+      </section>
 
       <section class="panel admin-toolbar" aria-labelledby="filters-title">
         <div>
@@ -207,6 +243,7 @@
             </table>
           </div>
         </section>
+      </div>
       </div>
     </main>
 

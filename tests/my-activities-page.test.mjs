@@ -5,13 +5,13 @@ const indexHtml = readFileSync("index.html", "utf8");
 const pageHtml = readFileSync("my-activities.html", "utf8");
 const script = readFileSync("src/client/my-activities.js", "utf8");
 const styles = readFileSync("styles.css", "utf8");
-const navigation = indexHtml.match(/<nav class="[^"]*\bprimary-nav\b[^"]*"[\s\S]*?<\/nav>/)?.[0] || "";
+const navigation = indexHtml.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";
 
-assert.ok(navigation.includes('href="./my-activities.html"'), "主导航应包含我的申请入口。");
+assert.ok(navigation.includes('href="./my-activities.html"'), "左侧导航应包含我的申请入口。");
 assert.ok(
-  navigation.indexOf("申请规划") < navigation.indexOf("my-activities.html")
+  navigation.indexOf("申请指挥中心") < navigation.indexOf("my-activities.html")
     && navigation.indexOf("my-activities.html") < navigation.indexOf("resource-library.html"),
-  "我的申请应与申请规划 / 资源库 / 院校百科同级，并位于资源库前。"
+  "我的申请应与申请指挥中心 / 资源库 / 院校百科同级，并位于资源库前。"
 );
 
 for (const expected of [
@@ -125,7 +125,7 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260529-academic-records-local-trial")
+  pageHtml.includes("./styles.css?v=20260530-light-sidebar")
     && pageHtml.includes("./src/client/my-activities.js?v=20260529-academic-records-local-trial"),
   "我的申请页面应更新 CSS 版本号，避免用户继续加载缓存的平行布局。"
 );

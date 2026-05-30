@@ -5,10 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>资源库</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260529-logo-mark" />
+    <link rel="stylesheet" href="./styles.css?v=20260530-light-sidebar" />
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell command-shell">
+      <aside class="command-sidebar" aria-label="Application Command Center">
+        <a class="command-sidebar-brand" href="./index.html" data-safe-nav>
+          <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+          <span><strong>US College Compass</strong><small>Application Command Center</small></span>
+        </a>
+        <nav class="command-sidebar-nav" aria-label="登录后功能导航">
+          <a href="./index.html" data-safe-nav>申请指挥中心</a>
+          <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
+          <a href="./resource-library.html" data-safe-nav aria-current="page">资源库</a>
+          <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+          <a href="./course-helper.html" data-safe-nav>选课辅助器</a>
+          <a href="./gpa-calculator.html" data-safe-nav>GPA / AP 工具</a>
+          <a href="./disclaimer.html" data-safe-nav>免责声明</a>
+          <a href="./feedback.html" data-safe-nav>反馈与支持</a>
+          <a href="./contact.html" data-safe-nav>联系我们</a>
+        </nav>
+        <div class="command-sidebar-note">
+          <strong>资源核验提醒</strong>
+          <span>资源库用于生成方向和候选项，报名资格、截止日期和费用仍以项目官网为准。</span>
+        </div>
+      </aside>
+
+      <div class="command-main">
       <header class="topbar brand-page-header">
         <div class="brand-page-identity">
           <a class="brand-mark" href="./index.html" data-safe-nav>
@@ -18,12 +41,20 @@
           <p class="eyebrow">Resource Library</p>
           <h1>资源库</h1>
         </div>
-        <div class="actions" aria-label="页面操作">
-          <a class="button-link quiet-link" href="./index.html" data-safe-nav>返回规划 Agent</a>
-          <a class="button-link quiet-link" href="./my-activities.html" data-safe-nav>我的申请</a>
-          <a class="button-link quiet-link" href="./course-helper.html" data-safe-nav>选课辅助器</a>
-        </div>
       </header>
+
+      <section class="command-page-summary" aria-label="资源库自动化状态">
+        <div>
+          <p class="eyebrow">Resource Matching</p>
+          <h2>从资源库筛出可行动项目</h2>
+          <p>根据国籍、身份、就读体系和参加方式筛选竞赛、夏校、科研项目，辅助 Agent 给出更可信的项目匹配。</p>
+        </div>
+        <div class="command-summary-metrics">
+          <span><strong>650+</strong>项目资源</span>
+          <span><strong>3</strong>资源类型</span>
+          <span><strong>资格</strong>筛选</span>
+        </div>
+      </section>
 
       <section class="panel resource-panel" aria-labelledby="resource-title">
         <div class="section-heading table-heading">
@@ -130,6 +161,7 @@
           <button id="loadMoreResources" class="secondary is-hidden" type="button">加载更多</button>
         </div>
       </section>
+      </div>
     </main>
     <script type="module" src="./src/client/safe-navigation.mjs"></script>
     <script type="module" src="./src/client/resource-library.js"></script>

@@ -9,11 +9,16 @@ import {
 } from "../src/client/feedback.js";
 
 const indexHtml = await readFile("index.html", "utf8");
+const commandNavigation = indexHtml.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/u)?.[0] ?? "";
 
-assert.match(
-  indexHtml,
-  /<a class="button-link quiet-link title-link" href="\.\/feedback\.html" data-safe-nav>建议反馈<\/a>/,
-  "Logged-in utility navigation should link to the feedback page.",
+assert.ok(
+  commandNavigation.includes('href="./feedback.html" data-safe-nav>反馈与支持</a>'),
+  "Logged-in command sidebar should link to the feedback page.",
+);
+assert.ok(
+  commandNavigation.indexOf("免责声明") < commandNavigation.indexOf("反馈与支持")
+    && commandNavigation.indexOf("反馈与支持") < commandNavigation.indexOf("联系我们"),
+  "Feedback, disclaimer, and contact should live in the left command sidebar in the requested order.",
 );
 const authCardHtml = indexHtml.match(/<div id="authCard" class="auth-card">[\s\S]*?<\/div>\s*<\/div>/u)?.[0] ?? "";
 assert.ok(!authCardHtml.includes("免责声明与数据使用"), "Login card should not show the disclaimer link.");
