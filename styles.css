@@ -175,15 +175,21 @@ textarea {
 }
 
 .hero-proof {
-  display: flex;
-  gap: 28px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 620px;
   margin-top: 34px;
 }
 
 .hero-proof p {
   display: grid;
-  gap: 4px;
+  gap: 6px;
   margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 14px 15px;
 }
 
 .hero-proof strong {
@@ -3381,8 +3387,7 @@ button.neutral:hover {
   }
 
   .hero-proof {
-    flex-wrap: wrap;
-    gap: 18px 24px;
+    grid-template-columns: 1fr;
   }
 
   .auth-card {

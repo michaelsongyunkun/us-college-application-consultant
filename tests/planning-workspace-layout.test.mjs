@@ -67,6 +67,21 @@ for (const id of [
 for (const copy of [
   "三步完成申请规划",
   "AI 美本规划工作台",
+  "生成规划，",
+  "顺手匹配资源",
+  "免费生成我的行动地图",
+  "课外活动资源库",
+  "院校百科",
+  "中国AI升学规划行业TOP级",
+  "全站免费使用",
+  "资深升学顾问认可",
+  "650+资源支持",
+  "150+院校详解",
+  "全免费开放",
+  "全免费使用",
+  "领取你的申请行动地图",
+  "网站核心功能目前全免费",
+  "免费注册并生成规划",
   "可执行、可核验、可复盘",
   "我们如何降低 AI 幻觉风险",
   "登录后能做什么",
@@ -92,7 +107,7 @@ for (const copy of [
   "逐项提示",
   "解析诊断",
 ]) {
-  assert.match(html, new RegExp(copy), `Missing simplified workspace copy: ${copy}`);
+  assert.ok(html.includes(copy), `Missing simplified workspace copy: ${copy}`);
 }
 
 for (const semanticClass of ["primary-nav", "utility-nav"]) {
@@ -155,7 +170,8 @@ for (const selector of [
 assert.match(styles, /@media \(max-width: 780px\)[\s\S]*\.landing-hero/, "Landing hero should stack on small screens.");
 assert.match(appJs, /const heroStartButton = document\.querySelector\("#heroStartButton"\)/);
 assert.match(appJs, /heroStartButton\?\.addEventListener\("click"/);
-assert.match(appJs, /authEmailInput\.focus\(\)/);
+assert.match(appJs, /setAuthMode\(getSafeNextPath\(\) \? "login" : "register"\)/);
+assert.match(appJs, /authNameInput\.focus\(\)/);
 assert.match(
   appJs,
   /refreshCaseMatchesButton\?\.addEventListener\("click"[\s\S]*renderCaseMatches\(\{ refresh: true \}\)/,

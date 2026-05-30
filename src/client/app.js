@@ -124,7 +124,7 @@ let previousSummerSchoolBatchIds = [];
 let seenSummerSchoolIds = [];
 let summerSchoolBatchIndex = 0;
 let latestRecommendationLetterStrategy = { items: [] };
-let authMode = "login";
+let authMode = "register";
 let appInitialized = false;
 let currentUser = null;
 let currentProfileUpdatedAt = null;
@@ -162,13 +162,13 @@ function setAuthMode(mode) {
 
   authTitle.textContent = {
     login: "登录",
-    register: "注册",
+    register: "领取你的申请行动地图",
     forgot: "找回密码",
     reset: "设置新密码",
   }[authMode];
   authSubmitButton.textContent = {
     login: "登录",
-    register: "注册并进入",
+    register: "免费注册并生成规划",
     forgot: "发送重置邮件",
     reset: "更新密码",
   }[authMode];
@@ -1293,7 +1293,8 @@ apiKeyInput.addEventListener("input", () => {
 
 authForm.addEventListener("submit", submitAuthForm);
 heroStartButton?.addEventListener("click", () => {
-  authEmailInput.focus();
+  setAuthMode("register");
+  authNameInput.focus();
 });
 authModeButton.addEventListener("click", () => {
   setAuthMode(authMode === "login" ? "register" : "login");
@@ -1352,6 +1353,6 @@ if (initialResetToken) {
   setAuthMode("reset");
   showAuthView();
 } else {
-  setAuthMode("login");
+  setAuthMode(getSafeNextPath() ? "login" : "register");
   loadCurrentUser();
 }

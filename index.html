@@ -15,7 +15,7 @@
     <meta name="twitter:description" content="面向学生与家长的 AI 美本规划工作台：背景整理、活动规划、资源匹配和报告导出。" />
     <title>AI 美本规划工作台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260529-logged-in-horizontal-brand" />
+    <link rel="stylesheet" href="./styles.css?v=20260530-free-landing" />
   </head>
   <body>
     <section id="authShell" class="landing-shell is-hidden" aria-labelledby="landing-title">
@@ -34,25 +34,26 @@
 
       <div class="landing-hero">
         <div class="hero-copy">
-          <p class="eyebrow">自助式美本规划工作台</p>
-          <h1 id="landing-title">AI 美本<br /><span>规划工作台</span></h1>
+          <p class="eyebrow">中国AI升学规划行业TOP级 · 全站免费使用</p>
+          <h1 id="landing-title">生成规划，<br /><span>顺手匹配资源</span></h1>
           <p class="hero-description">
-            不是普通 AI 聊天工具，而是把学生背景、兴趣方向与院校资料转化为可执行、可核验、可复盘的规划工作台。
+            输入年级、方向、成绩和已有活动，免费生成一张美本申请行动地图，再连接 650+ 课外活动资源库和 150+ 院校百科，把建议落到可查、可核验的选择上。
           </p>
-          <button id="heroStartButton" type="button">免费开始规划</button>
+          <button id="heroStartButton" type="button">免费生成我的行动地图</button>
           <div class="hero-proof" aria-label="产品能力">
-            <p><strong>可执行</strong><span>拆成行动方向</span></p>
-            <p><strong>可核验</strong><span>对照资料边界</span></p>
-            <p><strong>可复盘</strong><span>保存导出版本</span></p>
+            <p><strong>资深升学顾问认可</strong><span>活动规划更贴近申请实战</span></p>
+            <p><strong>650+资源支持</strong><span>覆盖竞赛、夏校、研究和项目方向</span></p>
+            <p><strong>150+院校详解</strong><span>对照学校要求与申请轮次</span></p>
+            <p><strong>全免费开放</strong><span>规划工具、资源库与院校百科均可免费使用</span></p>
           </div>
         </div>
 
         <div id="authCard" class="auth-card">
-          <p class="eyebrow">开始你的规划</p>
-          <h2 id="auth-title">登录</h2>
-          <p class="auth-copy">登录或免费注册后，使用完整的美本申请规划工具。</p>
+          <p class="eyebrow">全免费使用</p>
+          <h2 id="auth-title">领取你的申请行动地图</h2>
+          <p class="auth-copy">注册后免费保存规划，并解锁 650+ 资源库、150+ 院校百科、GPA/SAT/AP 档案。网站核心功能目前全免费。</p>
           <form id="authForm" class="auth-form">
-            <label id="authNameField" class="is-hidden">
+            <label id="authNameField">
               <span>姓名</span>
               <input id="authName" name="name" type="text" autocomplete="name" />
             </label>
@@ -65,10 +66,10 @@
               <input id="authPassword" name="password" type="password" autocomplete="current-password" required />
             </label>
             <p id="authStatus" class="status auth-status" role="status" aria-live="polite"></p>
-            <button id="authSubmitButton" type="submit">登录</button>
+            <button id="authSubmitButton" type="submit">免费注册并生成规划</button>
           </form>
-          <button id="forgotPasswordButton" type="button" class="quiet auth-mode-button">忘记密码？</button>
-          <button id="authModeButton" type="button" class="quiet auth-mode-button">没有账号？注册</button>
+          <button id="forgotPasswordButton" type="button" class="quiet auth-mode-button is-hidden">忘记密码？</button>
+          <button id="authModeButton" type="button" class="quiet auth-mode-button">已有账号？登录</button>
         </div>
       </div>
 
