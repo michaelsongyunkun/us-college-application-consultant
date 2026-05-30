@@ -198,8 +198,13 @@ assert.match(
 );
 assert.match(
   appJs,
-  /from "\.\.\/domain\/agent-output-parser\.mjs\?v=20260530-markdown-parse-cleanup"/,
+  /from "\.\.\/domain\/agent-output-parser\.mjs\?v=20260530-markdown-field-cleanup"/,
   "Agent output parser import should be cache-busted when parsing behavior changes.",
+);
+assert.match(
+  appJs,
+  /from "\.\/planning-form-state\.mjs\?v=20260530-markdown-field-cleanup"/,
+  "Planning form state import should be cache-busted when table fill behavior changes.",
 );
 assert.match(
   appJs,

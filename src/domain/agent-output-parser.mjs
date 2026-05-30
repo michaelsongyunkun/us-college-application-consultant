@@ -261,7 +261,7 @@ function cleanCell(value) {
   return markdownToPlainText(unquoted);
 }
 
-function markdownToPlainText(value) {
+export function markdownToPlainText(value) {
   return String(value ?? "")
     .replace(/\r\n/g, "\n")
     .split("\n")

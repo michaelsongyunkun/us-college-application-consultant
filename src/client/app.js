@@ -4,7 +4,7 @@ import {
 } from "./ui-state.mjs";
 import { clearDraftFields } from "./draft-state.mjs";
 import { buildCodexTaskPackage } from "../domain/codex-mode.mjs";
-import { parseAgentOutput } from "../domain/agent-output-parser.mjs?v=20260530-markdown-parse-cleanup";
+import { parseAgentOutput } from "../domain/agent-output-parser.mjs?v=20260530-markdown-field-cleanup";
 import {
   buildStudentCaseProfile,
   matchAdmissionCases,
@@ -35,7 +35,7 @@ import {
   collectPlanningProfileFromForm,
   collectProfileFromForm,
   fillActivityTable,
-} from "./planning-form-state.mjs";
+} from "./planning-form-state.mjs?v=20260530-markdown-field-cleanup";
 import {
   readUserDraft,
   removeLegacySharedDraft,
