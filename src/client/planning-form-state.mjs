@@ -1,4 +1,4 @@
-import { markdownToPlainText } from "../domain/agent-output-parser.mjs?v=20260530-markdown-field-cleanup";
+import { markdownToPlainText } from "../domain/agent-output-parser.mjs?v=20260531-narrative-cleanup";
 
 export function collectProfileFromForm(profileForm) {
   return Object.fromEntries(new FormData(profileForm).entries());

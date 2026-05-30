@@ -4,7 +4,7 @@ import {
 } from "./ui-state.mjs";
 import { clearDraftFields } from "./draft-state.mjs";
 import { buildCodexTaskPackage } from "../domain/codex-mode.mjs";
-import { parseAgentOutput } from "../domain/agent-output-parser.mjs?v=20260530-markdown-field-cleanup";
+import { markdownToPlainText, parseAgentOutput } from "../domain/agent-output-parser.mjs?v=20260531-narrative-cleanup";
 import {
   buildStudentCaseProfile,
   matchAdmissionCases,
@@ -35,7 +35,7 @@ import {
   collectPlanningProfileFromForm,
   collectProfileFromForm,
   fillActivityTable,
-} from "./planning-form-state.mjs?v=20260530-markdown-field-cleanup";
+} from "./planning-form-state.mjs?v=20260531-narrative-cleanup";
 import {
   readUserDraft,
   removeLegacySharedDraft,
@@ -317,12 +317,20 @@ function collectActivities() {
   return collectActivitiesFromTable(activityTable);
 }
 
+function cleanNarrative(value) {
+  return markdownToPlainText(value);
+}
+
+function getNarrativeText() {
+  return cleanNarrative(narrativeOutput.value);
+}
+
 function collectDraft() {
   return stripSensitiveDraftFields({
     profile: collectProfile(),
     activities: collectActivities(),
     rawAnswer: rawAnswer.value,
-    narrative: narrativeOutput.value,
+    narrative: getNarrativeText(),
     competitionRecommendations: latestCompetitionRecommendations,
     summerSchoolRecommendations: latestSummerSchoolRecommendations,
     recommendationLetterStrategy: latestRecommendationLetterStrategy,
@@ -383,7 +391,7 @@ function buildCurrentStudentCaseProfile() {
   return buildStudentCaseProfile({
     profile: collectPlanningProfile(),
     activities: collectActivities(),
-    narrative: narrativeOutput.value,
+    narrative: getNarrativeText(),
   });
 }
 
@@ -391,7 +399,7 @@ function buildCurrentCompetitionStudentProfile() {
   return buildCompetitionStudentProfile({
     profile: collectProfile(),
     activities: collectActivities(),
-    narrative: narrativeOutput.value,
+    narrative: getNarrativeText(),
   });
 }
 
@@ -399,7 +407,7 @@ function buildCurrentSummerSchoolStudentProfile() {
   return buildSummerSchoolStudentProfile({
     profile: collectProfile(),
     activities: collectActivities(),
-    narrative: narrativeOutput.value,
+    narrative: getNarrativeText(),
   });
 }
 
@@ -534,7 +542,7 @@ function renderRecommendationLetterStrategy() {
   latestRecommendationLetterStrategy = buildRecommendationLetterStrategy({
     profile: collectPlanningProfile(),
     activities: collectActivities(),
-    narrative: narrativeOutput.value,
+    narrative: getNarrativeText(),
   });
 
   recommendationLetterStatus.textContent = latestRecommendationLetterStrategy.ready ? "已生成策略" : "等待完整输入";
@@ -757,7 +765,7 @@ function applyPlanDraft(draft = {}) {
   clearPlanFields();
   fillActivities(draft.activities || []);
   rawAnswer.value = draft.rawAnswer || "";
-  narrativeOutput.value = draft.narrative || "";
+  narrativeOutput.value = cleanNarrative(draft.narrative || "");
   renderStudentDependentRecommendations();
 }
 
@@ -1081,7 +1089,7 @@ async function generateDeepSeekPlan() {
     rawAnswer.value = data.answer || "";
     codexAnswerInput.value = data.answer || "";
     fillActivities(data.parsed?.activities || []);
-    narrativeOutput.value = data.parsed?.narrative || "";
+    narrativeOutput.value = cleanNarrative(data.parsed?.narrative || "");
     renderParseDiagnostics(parseDiagnostics, data.parsed?.diagnostics);
     renderStudentDependentRecommendations();
     deepSeekStatus.textContent = `DeepSeek 已生成，并写入 ${data.parsed?.activities?.length || 0} 项活动`;
@@ -1138,7 +1146,7 @@ async function parseCodexAnswer() {
   }
   rawAnswer.value = codexAnswerInput.value;
   fillActivities(parsed.activities || []);
-  narrativeOutput.value = parsed.narrative || "";
+  narrativeOutput.value = cleanNarrative(parsed.narrative || "");
   renderStudentDependentRecommendations();
   agentStatus.textContent = `已解析 AI 回答，并填入 ${parsed.activities?.length || 0} 项活动`;
   agentStatus.classList.remove("error");
@@ -1188,7 +1196,7 @@ function exportWordDocument() {
   const html = buildWordDocument({
     profile: collectProfile(),
     activities: collectActivities(),
-    narrative: narrativeOutput.value,
+    narrative: getNarrativeText(),
     competitionRecommendations: latestCompetitionRecommendations,
     summerSchoolRecommendations: latestSummerSchoolRecommendations,
     recommendationLetterStrategy: latestRecommendationLetterStrategy,

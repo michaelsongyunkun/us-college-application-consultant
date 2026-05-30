@@ -181,7 +181,7 @@ function parseLabeledLine(line) {
 
 function extractNarrative(source) {
   const match = source.match(/^\s*#{0,4}\s*【?活动叙事逻辑解读】?\s*[:：]?\s*([\s\S]*)$/m);
-  return match ? match[1].trim() : "";
+  return match ? markdownToPlainText(match[1]) : "";
 }
 
 function buildParseDiagnostics({ source, activities, tabularActivities, plainTextActivities, numberedActivities, narrative }) {

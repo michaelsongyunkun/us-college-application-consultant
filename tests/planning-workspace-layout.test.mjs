@@ -198,14 +198,17 @@ assert.match(
 );
 assert.match(
   appJs,
-  /from "\.\.\/domain\/agent-output-parser\.mjs\?v=20260530-markdown-field-cleanup"/,
+  /from "\.\.\/domain\/agent-output-parser\.mjs\?v=20260531-narrative-cleanup"/,
   "Agent output parser import should be cache-busted when parsing behavior changes.",
 );
 assert.match(
   appJs,
-  /from "\.\/planning-form-state\.mjs\?v=20260530-markdown-field-cleanup"/,
+  /from "\.\/planning-form-state\.mjs\?v=20260531-narrative-cleanup"/,
   "Planning form state import should be cache-busted when table fill behavior changes.",
 );
+assert.match(appJs, /markdownToPlainText/, "Narrative output should share the Markdown-to-readable-text normalizer.");
+assert.match(appJs, /narrativeOutput\.value = cleanNarrative/, "Loaded narrative drafts should be normalized before display.");
+assert.match(appJs, /narrative: getNarrativeText\(\)/, "Saved narrative output should be normalized before persistence.");
 assert.match(
   appJs,
   /from "\.\.\/domain\/admission-case-matcher\.mjs\?v=[a-z0-9-]+"/,
