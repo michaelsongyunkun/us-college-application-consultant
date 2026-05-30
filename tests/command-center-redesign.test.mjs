@@ -26,6 +26,14 @@ assert.ok(!indexHtml.includes("美本申请规划 Agent"), "Logged-in home shoul
 assert.ok(!indexHtml.includes("Automation Status"), "Logged-in home should not show the removed automation status board.");
 assert.ok(!indexHtml.includes('class="command-center-hero"'), "Logged-in home should not render the removed automation status board.");
 assert.ok(!indexHtml.includes("Planning Readiness"), "Logged-in home should not show the removed readiness card.");
+assert.ok(
+  indexHtml.includes('./src/client/app.js?v=20260530-light-sidebar'),
+  "Logged-in shell should cache-bust the main app module with the current command-center release.",
+);
+assert.ok(
+  !indexHtml.includes('./src/client/app.js?v=20260528-case-refresh'),
+  "Logged-in shell should not keep serving the previous app module cache key.",
+);
 
 for (const [file, activeLabel] of pages) {
   const html = readFileSync(file, "utf8");
