@@ -19,7 +19,6 @@ const activityTable = {
 };
 const rawAnswer = { value: "raw" };
 const narrativeOutput = { value: "narrative" };
-const apiKeyInput = { value: "sk-secret" };
 const codexTaskPackage = { value: "task package" };
 const codexAnswerInput = { value: "codex answer" };
 const snapshotNote = { value: "3152482377@qq.com" };
@@ -29,7 +28,6 @@ clearDraftFields({
   activityTable,
   rawAnswer,
   narrativeOutput,
-  apiKeyInput,
   codexTaskPackage,
   codexAnswerInput,
   snapshotNote,
@@ -39,7 +37,6 @@ assert.equal(profileForm.resetCalled, true);
 assert.deepEqual(fields.map((field) => field.value), ["", ""]);
 assert.equal(rawAnswer.value, "");
 assert.equal(narrativeOutput.value, "");
-assert.equal(apiKeyInput.value, "");
 assert.equal(codexTaskPackage.value, "");
 assert.equal(codexAnswerInput.value, "");
 assert.equal(snapshotNote.value, "");

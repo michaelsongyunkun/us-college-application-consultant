@@ -9,9 +9,11 @@ assert.deepEqual(
   stripSensitiveDraftFields({
     rawAnswer: "answer",
     apiKey: "sk-request",
+    deepSeekApiKey: "deepseek-request",
     openAiApiKey: "sk-openai",
     openaiApiKey: "sk-openai-lower",
     OPENAI_API_KEY: "sk-env",
+    DEEPSEEK_API_KEY: "deepseek-env",
   }),
   { rawAnswer: "answer" },
 );

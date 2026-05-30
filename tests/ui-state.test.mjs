@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
-import { getAgentAvailability } from "../src/client/ui-state.mjs";
+import {
+  getAgentAvailability,
+  getDeepSeekGenerationAvailability,
+} from "../src/client/ui-state.mjs";
 
 assert.deepEqual(
-  getAgentAvailability({ protocol: "file:", promptLoaded: false, hasApiKey: false }),
+  getAgentAvailability({ protocol: "file:", promptLoaded: false }),
   {
     canGenerate: false,
     message: "未连接后端服务。请通过 http://127.0.0.1:4177 打开页面。",
@@ -10,25 +13,49 @@ assert.deepEqual(
 );
 
 assert.deepEqual(
-  getAgentAvailability({ protocol: "http:", promptLoaded: true, hasApiKey: false }),
+  getAgentAvailability({ protocol: "http:", promptLoaded: true }),
+  {
+    canGenerate: true,
+    message: "固定提示词已加载，可生成任务包。",
+  },
+);
+
+assert.deepEqual(
+  getAgentAvailability({ protocol: "http:", promptLoaded: false }),
   {
     canGenerate: false,
-    message: "缺少 API Key。请在中间 Agent 层临时输入 OpenAI API Key，或用 OPENAI_API_KEY 启动服务。",
+    message: "后端服务未就绪，无法加载固定提示词。",
   },
 );
 
 assert.deepEqual(
-  getAgentAvailability({ protocol: "http:", promptLoaded: true, hasApiKey: true }),
+  getDeepSeekGenerationAvailability({ protocol: "file:", promptLoaded: false, hasServerApiKey: false }),
   {
-    canGenerate: true,
-    message: "已由后端加载，将自动注入 Agent。",
+    canGenerate: false,
+    message: "未连接后端服务。请通过 http://127.0.0.1:4177 打开页面。",
   },
 );
 
 assert.deepEqual(
-  getAgentAvailability({ protocol: "http:", promptLoaded: true, hasApiKey: true }),
+  getDeepSeekGenerationAvailability({ protocol: "http:", promptLoaded: false, hasServerApiKey: true }),
+  {
+    canGenerate: false,
+    message: "后端服务未就绪，无法加载固定提示词。",
+  },
+);
+
+assert.deepEqual(
+  getDeepSeekGenerationAvailability({ protocol: "http:", promptLoaded: true, hasServerApiKey: false }),
+  {
+    canGenerate: false,
+    message: "站点 DeepSeek API 尚未配置，请联系管理员配置 DEEPSEEK_API_KEY。",
+  },
+);
+
+assert.deepEqual(
+  getDeepSeekGenerationAvailability({ protocol: "http:", promptLoaded: true, hasServerApiKey: true }),
   {
     canGenerate: true,
-    message: "已由后端加载，将自动注入 Agent。",
+    message: "DeepSeek 已就绪，可自动生成并填入表格。",
   },
 );

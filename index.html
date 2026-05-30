@@ -392,39 +392,30 @@
         <div class="section-heading table-heading">
           <div>
             <h2 id="agent-title">中间 Agent 层</h2>
-            <p>固定提示词由后端自动读取并作为 system prompt 注入，用户不需要输入或查看提示词。</p>
+            <p>固定提示词由后端自动读取，用来生成可复制给外部 AI 对话的任务包。</p>
           </div>
-          <button id="generateButton" type="button">生成并填入表格</button>
         </div>
         <div class="agent-body">
           <div class="agent-note">
             <strong>固定 Agent 提示词：</strong>
             <span id="promptStatus">等待检测</span>
           </div>
-          <label>
-            <span>OpenAI API Key（仅本次请求使用，不保存）</span>
-            <input
-              id="apiKeyInput"
-              type="password"
-              autocomplete="one-time-code"
-              autocapitalize="off"
-              autocorrect="off"
-              data-lpignore="true"
-              data-1p-ignore="true"
-              spellcheck="false"
-              placeholder="粘贴 sk-...；如果服务端已设置 OPENAI_API_KEY 可留空"
-            />
-          </label>
           <div class="agent-usage-note">
-            <p>使用方式①：输入 OpenAI API Key，点击“生成并填入表格”。</p>
             <p>
-              使用方式②：若无 OpenAI API Key，点击“生成任务包”后再点击“复制任务包”，将任务包复制给任意 AI（推荐使用 DeepSeek 或 ChatGPT）。AI 生成回答后，将回答粘贴到“AI回答粘贴区”里，最后点击“解析回答进表格”生成活动规划。
+              可以先用 DeepSeek API 在站内自动生成规划；也可以点击“生成任务包”后再点击“复制任务包”，将任务包复制给任意 AI（推荐使用 DeepSeek 或 ChatGPT）。AI 生成回答后，将回答粘贴到“AI回答粘贴区”里，最后点击“解析回答进表格”生成活动规划。
             </p>
           </div>
-          <label>
-            <span>Agent 原始规划回答</span>
-            <textarea id="rawAnswer" placeholder="生成后会显示 Agent 完整回答；其中的表格会自动写入下方结构化表格。"></textarea>
-          </label>
+          <textarea id="rawAnswer" class="is-hidden" hidden></textarea>
+          <div id="deepSeekAutoGenerate" class="deepseek-auto-generate" aria-labelledby="deepseek-title">
+            <div class="deepseek-copy">
+              <h3 id="deepseek-title">DeepSeek 自动生成</h3>
+              <p>由站点统一配置的 DeepSeek API 生成规划回答并直接写入下方表格，用户无需提供自己的 API Key。</p>
+            </div>
+            <div class="deepseek-actions">
+              <button id="generateDeepSeekButton" type="button">用 DeepSeek 生成规划</button>
+              <span id="deepSeekStatus" class="status" role="status" aria-live="polite">等待 DeepSeek 服务配置</span>
+            </div>
+          </div>
           <div class="codex-mode">
             <div class="codex-actions">
               <button id="buildCodexTaskButton" type="button" class="quiet">生成任务包</button>

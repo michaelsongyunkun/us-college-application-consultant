@@ -69,6 +69,8 @@ export function createAuthDatabase({ databasePath }) {
           'clear_draft',
           'generate_plan_success',
           'generate_plan_failure',
+          'generate_deepseek_plan_success',
+          'generate_deepseek_plan_failure',
           'build_codex_task',
           'copy_codex_task',
           'refresh_competitions',
@@ -215,7 +217,7 @@ function migrateUsageEventsConstraint(db) {
   const table = db
     .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usage_events'")
     .get();
-  if (!table?.sql || table.sql.includes("refresh_case_matches")) return;
+  if (!table?.sql || table.sql.includes("generate_deepseek_plan_success")) return;
 
   db.exec(`
     ALTER TABLE usage_events RENAME TO usage_events_old;
@@ -235,6 +237,8 @@ function migrateUsageEventsConstraint(db) {
           'clear_draft',
           'generate_plan_success',
           'generate_plan_failure',
+          'generate_deepseek_plan_success',
+          'generate_deepseek_plan_failure',
           'build_codex_task',
           'copy_codex_task',
           'refresh_competitions',

@@ -31,6 +31,8 @@ const usageEventLabels = {
   clear_draft: "清空草稿",
   generate_plan_success: "解析 Codex 回答进表格成功",
   generate_plan_failure: "解析 Codex 回答进表格失败",
+  generate_deepseek_plan_success: "DeepSeek 自动生成成功",
+  generate_deepseek_plan_failure: "DeepSeek 自动生成失败",
   build_codex_task: "生成 Codex 任务包",
   copy_codex_task: "复制 Codex 任务包",
   refresh_competitions: "竞赛换一批",

@@ -1,9 +1,12 @@
 const emailAddressPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const sensitiveDraftKeys = new Set([
   "apiKey",
+  "deepSeekApiKey",
+  "deepseekApiKey",
   "openAiApiKey",
   "openaiApiKey",
   "OPENAI_API_KEY",
+  "DEEPSEEK_API_KEY",
 ]);
 
 export function normalizeSnapshotNote(value) {

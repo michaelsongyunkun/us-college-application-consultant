@@ -1,13 +1,13 @@
 # 美本申请规划 Agent
 
-这是一个本地运行的美本申请规划工具。用户填写国际生背景信息后，可以通过两种方式生成 10 项 Common App 课外活动规划，并把结果自动解析进表格。
+这是一个本地运行的美本申请规划工具。用户填写国际生背景信息后，可以通过 AI 任务包生成 10 项 Common App 课外活动规划，并把结果自动解析进表格。
 
 ## 功能
 
 - 用户背景输入：年级、专业方向、核心能力 / 特长、可利用资源、性格 / 行为倾向、兴趣方向、现有课外活动。
 - 固定 Agent 提示词：位于 `prompts/us-college-admissions-strategist-agent.md`，请勿篡改。
-- API 模式：用户临时输入自己的 OpenAI API Key，一键生成并填入表格。
-- AI 任务包模式：不调用外部 API，生成任务包给 DeepSeek、ChatGPT 或其他 AI，再粘贴回答并解析进表格。
+- DeepSeek 自动生成：由站点服务端统一配置 `DEEPSEEK_API_KEY`，用户无需提供自己的 API Key，一键生成规划回答并写入表格。
+- AI 任务包模式：生成任务包给 DeepSeek、ChatGPT 或其他 AI，再粘贴回答并解析进表格。
 - 解析诊断：AI 回答未能填入表格时，会显示识别到的候选行、编号段落和可执行修正建议。
 - 活动质量检查：自动检查 10 项活动的完整度、数字证据、影响表达、领导力线索和专业连接。
 - 导出：支持导出 JSON 和 Word 可打开的 `.doc` 文件。
@@ -21,7 +21,7 @@
 - `src/client/html-utils.mjs`：共享 HTML 转义工具。
 - `src/client/agent-answer-diagnostics-ui.mjs`：AI 回答解析诊断面板。
 - `src/client/activity-quality-ui.mjs`：活动质量检查面板渲染。
-- `server.mjs`：本地服务，读取固定提示词，处理 API 模式请求。
+- `server.mjs`：本地服务，读取固定提示词，处理登录、规划存储和资料接口。
 - `src/domain/agent-output-parser.mjs`：解析 Agent 输出中的 markdown 表格和【活动叙事逻辑解读】。
 - `src/domain/activity-quality-checker.mjs`：检查活动列表质量并生成可执行优化提示。
 - `src/domain/codex-mode.mjs`：生成给外部 AI 对话使用的任务包。
@@ -48,9 +48,30 @@ http://127.0.0.1:4179
 
 不要直接双击 `index.html`，也不要用 `file://` 打开。那样页面无法访问本地服务接口。
 
-## 两种生成方式
+## 生成方式
 
-### 方式一：AI 任务包模式（不需要 API Key）
+### DeepSeek 自动生成
+
+1. 填写用户背景信息。
+2. 点击 `用 DeepSeek 生成规划`。
+3. 系统会调用站点统一配置的 DeepSeek API，生成回答后自动解析并写入下方活动表格。
+
+用户不需要输入 API Key。站点所有者需要在启动服务或部署环境中配置 `DEEPSEEK_API_KEY`。
+
+也可以在启动服务前设置环境变量：
+
+```powershell
+$env:DEEPSEEK_API_KEY="你的key"
+node server.mjs
+```
+
+可选模型：
+
+```powershell
+$env:DEEPSEEK_MODEL="deepseek-v4-pro"
+```
+
+### AI 任务包模式
 
 1. 填写用户背景信息。
 2. 点击 `生成任务包`。
@@ -59,28 +80,7 @@ http://127.0.0.1:4179
 5. 把 AI 的完整回答粘贴到 `AI回答粘贴区`。
 6. 点击 `解析回答进表格`。
 
-这种方式不调用外部 API，不需要用户提供 OpenAI API Key。
-
-### 方式二：API 模式（用户自备 API Key）
-
-1. 填写用户背景信息。
-2. 在中间 Agent 层临时粘贴自己的 OpenAI API Key。
-3. 点击 `生成并填入表格`。
-
-API Key 只用于本次请求，不保存、不导出。
-
-也可以在启动服务前设置环境变量：
-
-```powershell
-$env:OPENAI_API_KEY="你的key"
-node server.mjs
-```
-
-可选模型：
-
-```powershell
-$env:OPENAI_MODEL="gpt-4.1-mini"
-```
+这种方式不调用站内模型 API，不需要用户提供任何 API Key。
 
 ## Render 部署配置
 
@@ -102,11 +102,9 @@ NODE_ENV=production
 可选环境变量：
 
 ```text
-OPENAI_API_KEY=你的 OpenAI API Key
-OPENAI_MODEL=gpt-4.1-mini
+DEEPSEEK_API_KEY=你的 DeepSeek API Key
+DEEPSEEK_MODEL=deepseek-v4-pro
 ```
-
-`OPENAI_API_KEY` 不必填；不填时用户仍可使用 AI 任务包模式。
 
 ## GitHub 发布注意事项
 
@@ -124,9 +122,9 @@ OPENAI_MODEL=gpt-4.1-mini
 
 发布到 GitHub 后，别人下载项目也可以使用：
 
+- DeepSeek 自动生成：由部署环境配置 `DEEPSEEK_API_KEY` 后即可供用户使用。
 - AI 任务包模式：无需 API Key。
 - 导出 JSON / Word：无需 API Key。
-- API 模式：需要他们自己的 OpenAI API Key。
 
 ## 找回密码邮件配置
 

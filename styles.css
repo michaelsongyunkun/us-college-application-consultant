@@ -2013,6 +2013,37 @@ button.danger:hover {
   margin-top: 6px;
 }
 
+.deepseek-auto-generate {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  padding: 16px;
+}
+
+.deepseek-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.deepseek-copy h3,
+.deepseek-copy p {
+  margin: 0;
+}
+
+.deepseek-copy p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.deepseek-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .parse-diagnostics {
   border: 1px solid var(--line);
   border-radius: var(--radius-card);

@@ -1,4 +1,7 @@
-import { getAgentAvailability } from "./ui-state.mjs";
+import {
+  getAgentAvailability,
+  getDeepSeekGenerationAvailability,
+} from "./ui-state.mjs";
 import { clearDraftFields } from "./draft-state.mjs";
 import { buildCodexTaskPackage } from "../domain/codex-mode.mjs";
 import { parseAgentOutput } from "../domain/agent-output-parser.mjs";
@@ -63,11 +66,11 @@ const saveButton = document.querySelector("#saveButton");
 const exportButton = document.querySelector("#exportButton");
 const exportWordButton = document.querySelector("#exportWordButton");
 const resetButton = document.querySelector("#resetButton");
-const generateButton = document.querySelector("#generateButton");
 const saveStatus = document.querySelector("#saveStatus");
 const agentStatus = document.querySelector("#agentStatus");
 const promptStatus = document.querySelector("#promptStatus");
-const apiKeyInput = document.querySelector("#apiKeyInput");
+const generateDeepSeekButton = document.querySelector("#generateDeepSeekButton");
+const deepSeekStatus = document.querySelector("#deepSeekStatus");
 const rawAnswer = document.querySelector("#rawAnswer");
 const narrativeOutput = document.querySelector("#narrativeOutput");
 const buildCodexTaskButton = document.querySelector("#buildCodexTaskButton");
@@ -109,8 +112,8 @@ const snapshotNote = document.querySelector("#snapshotNote");
 const createSnapshotButton = document.querySelector("#createSnapshotButton");
 const snapshotList = document.querySelector("#snapshotList");
 
-let serverHasApiKey = false;
 let fixedPrompt = "";
+let serverHasDeepSeekApiKey = false;
 let admissionCases = [];
 let latestCaseMatches = [];
 let caseMatchBatchIndex = 0;
@@ -332,15 +335,6 @@ function collectDraft() {
 function collectPlanDraft() {
   const { profile, updatedAt, ...draft } = collectDraft();
   return draft;
-}
-
-function collectGenerationPayload() {
-  const draft = collectDraft();
-  return {
-    ...draft,
-    profile: collectPlanningProfile(),
-    apiKey: apiKeyInput.value.trim(),
-  };
 }
 
 function collectAnalyticsProfile() {
@@ -739,13 +733,27 @@ function updateAgentAvailability(promptLoaded = true) {
   const availability = getAgentAvailability({
     protocol: window.location.protocol,
     promptLoaded,
-    hasApiKey: serverHasApiKey || Boolean(apiKeyInput.value.trim()),
   });
 
   promptStatus.textContent = availability.message;
-  agentStatus.textContent = availability.canGenerate ? "等待生成" : availability.message;
+  agentStatus.textContent = availability.canGenerate ? "等待生成任务包" : availability.message;
   agentStatus.classList.toggle("error", !availability.canGenerate);
-  generateButton.disabled = !availability.canGenerate;
+  updateDeepSeekAvailability(promptLoaded);
+  return availability;
+}
+
+function updateDeepSeekAvailability(promptLoaded = Boolean(fixedPrompt)) {
+  if (!deepSeekStatus || !generateDeepSeekButton) return null;
+
+  const availability = getDeepSeekGenerationAvailability({
+    protocol: window.location.protocol,
+    promptLoaded,
+    hasServerApiKey: serverHasDeepSeekApiKey,
+  });
+
+  deepSeekStatus.textContent = availability.message;
+  deepSeekStatus.classList.toggle("error", !availability.canGenerate);
+  generateDeepSeekButton.disabled = !availability.canGenerate;
   return availability;
 }
 
@@ -765,7 +773,6 @@ function clearPlanFields() {
   });
   rawAnswer.value = "";
   narrativeOutput.value = "";
-  if (apiKeyInput) apiKeyInput.value = "";
   codexTaskPackage.value = "";
   codexAnswerInput.value = "";
   latestCompetitionRecommendations = [];
@@ -1034,13 +1041,12 @@ async function checkPrompt() {
     const availability = getAgentAvailability({
       protocol: window.location.protocol,
       promptLoaded: false,
-      hasApiKey: false,
     });
     promptStatus.textContent = availability.message;
     agentStatus.textContent = availability.message;
     agentStatus.classList.add("error");
     rawAnswer.value = availability.message;
-    generateButton.disabled = true;
+    updateDeepSeekAvailability(false);
     return;
   }
 
@@ -1049,20 +1055,20 @@ async function checkPrompt() {
     if (!response.ok) throw new Error("prompt unavailable");
     const data = await response.json();
     fixedPrompt = data.prompt || "";
-    serverHasApiKey = Boolean(data.hasApiKey);
+    serverHasDeepSeekApiKey = Boolean(data.hasDeepSeekApiKey);
     const availability = updateAgentAvailability(Boolean(data.prompt));
     if (!availability.canGenerate) rawAnswer.value = availability.message;
   } catch {
+    serverHasDeepSeekApiKey = false;
     const availability = getAgentAvailability({
       protocol: window.location.protocol,
       promptLoaded: false,
-      hasApiKey: false,
     });
     promptStatus.textContent = availability.message;
     agentStatus.textContent = availability.message;
     agentStatus.classList.add("error");
     rawAnswer.value = availability.message;
-    generateButton.disabled = true;
+    updateDeepSeekAvailability(false);
   }
 }
 
@@ -1081,6 +1087,59 @@ function buildCodexTask() {
   });
   agentStatus.textContent = "任务包已生成，可复制给 DeepSeek、ChatGPT 或其他 AI 对话。";
   agentStatus.classList.remove("error");
+}
+
+async function generateDeepSeekPlan() {
+  const availability = updateDeepSeekAvailability(Boolean(fixedPrompt));
+  if (!availability?.canGenerate) return;
+
+  generateDeepSeekButton.disabled = true;
+  deepSeekStatus.textContent = "DeepSeek 正在生成规划回答...";
+  deepSeekStatus.classList.remove("error");
+  const startedAt = performance.now();
+
+  try {
+    const data = await requestJson("/api/deepseek-plan", {
+      method: "POST",
+      body: JSON.stringify({
+        profile: collectPlanningProfile(),
+        activities: collectActivities(),
+      }),
+    });
+
+    rawAnswer.value = data.answer || "";
+    codexAnswerInput.value = data.answer || "";
+    fillActivities(data.parsed?.activities || []);
+    narrativeOutput.value = data.parsed?.narrative || "";
+    renderParseDiagnostics(parseDiagnostics, data.parsed?.diagnostics);
+    renderStudentDependentRecommendations();
+    deepSeekStatus.textContent = `DeepSeek 已生成，并写入 ${data.parsed?.activities?.length || 0} 项活动`;
+    agentStatus.textContent = deepSeekStatus.textContent;
+    agentStatus.classList.remove("error");
+    trackUsageEvent("generate_deepseek_plan_success", {
+      metrics: {
+        generatedActivityCount: data.parsed?.activities?.length || 0,
+        durationMs: performance.now() - startedAt,
+      },
+    });
+    await saveDraft();
+  } catch (error) {
+    deepSeekStatus.textContent = error.message;
+    deepSeekStatus.classList.add("error");
+    agentStatus.textContent = error.message;
+    agentStatus.classList.add("error");
+    trackUsageEvent("generate_deepseek_plan_failure", {
+      metrics: { durationMs: performance.now() - startedAt },
+      details: { failureReason: error.message },
+    });
+  } finally {
+    const availability = getDeepSeekGenerationAvailability({
+      protocol: window.location.protocol,
+      promptLoaded: Boolean(fixedPrompt),
+      hasServerApiKey: serverHasDeepSeekApiKey,
+    });
+    generateDeepSeekButton.disabled = !availability.canGenerate;
+  }
 }
 
 async function copyCodexTask() {
@@ -1190,7 +1249,6 @@ function clearVisibleDraft() {
     activityTable,
     rawAnswer,
     narrativeOutput,
-    apiKeyInput,
     codexTaskPackage,
     codexAnswerInput,
     snapshotNote,
@@ -1198,56 +1256,11 @@ function clearVisibleDraft() {
   renderStudentDependentRecommendations();
 }
 
-async function generatePlan() {
-  generateButton.disabled = true;
-  const startedAt = performance.now();
-  agentStatus.textContent = "Agent 正在根据固定提示词生成规划回答...";
-
-  try {
-    const payload = collectGenerationPayload();
-    apiKeyInput.value = "";
-    updateAgentAvailability();
-    const response = await fetch("/api/plan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Agent 调用失败");
-    }
-
-    rawAnswer.value = data.answer || "";
-    fillActivities(data.parsed?.activities || []);
-    narrativeOutput.value = data.parsed?.narrative || "";
-    renderStudentDependentRecommendations();
-    agentStatus.textContent = `已生成，并填入 ${data.parsed?.activities?.length || 0} 项活动`;
-    trackUsageEvent("generate_plan_success", {
-      metrics: {
-        generatedActivityCount: data.parsed?.activities?.length || 0,
-        durationMs: performance.now() - startedAt,
-      },
-    });
-    await saveDraft();
-  } catch (error) {
-    trackUsageEvent("generate_plan_failure", {
-      metrics: { durationMs: performance.now() - startedAt },
-      details: { failureReason: error.message },
-    });
-    agentStatus.textContent = error.message;
-    agentStatus.classList.add("error");
-    rawAnswer.value = error.message;
-  } finally {
-    if (window.location.protocol !== "file:") generateButton.disabled = false;
-  }
-}
-
 saveButton.addEventListener("click", () => runWorkspaceAction(saveDraft));
 exportButton.addEventListener("click", exportDraft);
 exportWordButton.addEventListener("click", exportWordDocument);
 resetButton.addEventListener("click", () => runWorkspaceAction(resetDraft));
-generateButton.addEventListener("click", generatePlan);
+generateDeepSeekButton?.addEventListener("click", () => runWorkspaceAction(generateDeepSeekPlan));
 buildCodexTaskButton.addEventListener("click", buildCodexTask);
 copyCodexTaskButton.addEventListener("click", copyCodexTask);
 parseCodexAnswerButton.addEventListener("click", () => runWorkspaceAction(parseCodexAnswer));
@@ -1272,7 +1285,7 @@ refreshCaseMatchesButton?.addEventListener("click", () => {
 });
 function isWorkspaceDataInput(event) {
   const target = event.target;
-  return appShell.contains(target) && target !== apiKeyInput && target !== snapshotNote;
+  return appShell.contains(target) && target !== snapshotNote;
 }
 
 document.addEventListener("input", (event) => {
@@ -1285,10 +1298,6 @@ document.addEventListener("input", (event) => {
   workspaceDirty = true;
   saveStatus.textContent = "有未保存修改";
   renderProfileSummary();
-});
-
-apiKeyInput.addEventListener("input", () => {
-  updateAgentAvailability();
 });
 
 authForm.addEventListener("submit", submitAuthForm);

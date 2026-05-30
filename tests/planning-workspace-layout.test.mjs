@@ -31,7 +31,6 @@ for (const preservedId of [
   "forgotPasswordButton",
   "authModeButton",
   "appShell",
-  "generateButton",
   "saveButton",
   "exportButton",
   "exportWordButton",
@@ -137,13 +136,33 @@ assert.match(html, /id="logoutButton"[^>]*class="secondary"/, "Log out should us
 assert.match(html, /id="resetButton"[^>]*class="danger"/, "Reset should use a danger action style.");
 assert.match(html, /id=["']codexTaskPackage["']/, "The AI task package field should remain available.");
 assert.match(html, /id=["']codexAnswerInput["']/, "The AI answer paste field should remain available.");
-assert.match(html, /使用方式①/, "OpenAI API Key help text should explain direct generation.");
+assert.match(html, /id=["']deepSeekAutoGenerate["']/, "DeepSeek automatic generation panel should be available.");
+assert.doesNotMatch(html, /id=["']deepSeekApiKeyInput["']/, "Users should not provide their own DeepSeek API Key.");
+assert.doesNotMatch(html, /DeepSeek API Key（仅本次请求使用，不保存）/, "DeepSeek Key input copy should not be shown.");
+assert.doesNotMatch(html, /粘贴 DeepSeek API Key/, "DeepSeek Key placeholder should not be shown.");
+assert.match(html, /id=["']generateDeepSeekButton["']/, "DeepSeek generation button should be available.");
+assert.match(html, /DeepSeek 自动生成/, "DeepSeek panel should be labeled clearly.");
+assert.ok(
+  html.indexOf('id="deepSeekAutoGenerate"') < html.indexOf('id="codexTaskPackage"'),
+  "DeepSeek automatic generation panel should appear before the task package area.",
+);
+assert.doesNotMatch(html, /id=["']generateButton["']/, "Direct OpenAI generation button should be removed.");
+assert.doesNotMatch(html, /id=["']apiKeyInput["']/, "OpenAI API Key input should be removed.");
+assert.doesNotMatch(html, /OpenAI API Key/, "OpenAI API Key copy should not be shown.");
+assert.doesNotMatch(html, /生成并填入表格/, "Direct generation copy should not be shown.");
 assert.match(html, /生成任务包/, "Task package button copy should be generic.");
 assert.match(html, /解析回答进表格/, "Parse answer button copy should be generic.");
 assert.match(html, /任务包（复制给AI对话）/, "Task package label should mention generic AI chats.");
 assert.match(html, /AI回答粘贴区/, "Answer paste label should mention AI instead of Codex.");
 assert.match(html, /DeepSeek/, "Help text should recommend DeepSeek.");
 assert.match(html, /ChatGPT/, "Help text should recommend ChatGPT.");
+assert.doesNotMatch(appJs, /querySelector\("#generateButton"\)/, "Main app should not bind the removed direct generation button.");
+assert.doesNotMatch(appJs, /querySelector\("#apiKeyInput"\)/, "Main app should not bind the removed OpenAI API Key input.");
+assert.doesNotMatch(appJs, /querySelector\("#deepSeekApiKeyInput"\)/, "Main app should not bind a user DeepSeek Key input.");
+assert.doesNotMatch(appJs, /deepSeekApiKey:/, "Main app should not send a user-provided DeepSeek API Key.");
+assert.doesNotMatch(appJs, /fetch\("\/api\/plan"/, "Main app should not call the direct OpenAI planning endpoint.");
+assert.match(appJs, /querySelector\("#generateDeepSeekButton"\)/, "Main app should bind DeepSeek generation.");
+assert.match(appJs, /"\/api\/deepseek-plan"/, "Main app should call the DeepSeek planning endpoint.");
 assert.match(styles, /\.auth-status:empty\s*\{/, "An empty auth status should be visually hidden.");
 assert.match(styles, /\.agent-usage-note\s*\{/, "Agent usage instructions should have a distinct style.");
 assert.match(styles, /\.activity-quality-check\s*\{/, "Activity quality checker should have a distinct style.");

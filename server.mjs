@@ -28,7 +28,7 @@ const DEFAULT_RATE_LIMITS = {
   "/api/auth/request-password-reset": { maxRequests: 3, windowMs: 60_000 },
   "/api/auth/reset-password": { maxRequests: 5, windowMs: 60_000 },
   "/api/feedback": { maxRequests: 10, windowMs: 60_000 },
-  "/api/plan": { maxRequests: 10, windowMs: 60_000 },
+  "/api/deepseek-plan": { maxRequests: 10, windowMs: 60_000 },
   "/api/analytics/usage-event": { maxRequests: 120, windowMs: 60_000 },
 };
 const SECURITY_HEADERS = Object.freeze({
@@ -168,35 +168,31 @@ function buildUserMessage(payload) {
   ].join("\n");
 }
 
-function extractResponseText(data) {
-  if (typeof data.output_text === "string") return data.output_text;
-
-  const parts = [];
-  for (const item of data.output || []) {
-    for (const content of item.content || []) {
-      if (typeof content.text === "string") parts.push(content.text);
-    }
-  }
-  return parts.join("\n").trim();
+function extractDeepSeekResponseText(data) {
+  return data?.choices?.[0]?.message?.content?.trim() || "";
 }
 
-async function handlePlan(request, response, readJson = readRequestJson) {
+async function handleDeepSeekPlan(
+  request,
+  response,
+  { readJson = readRequestJson, env = process.env, deepSeekFetch = fetch } = {},
+) {
   const payload = await readJson(request);
   const apiKey = resolveApiKey({
-    environmentApiKey: process.env.OPENAI_API_KEY,
-    requestApiKey: payload.apiKey,
+    environmentApiKey: env.DEEPSEEK_API_KEY,
+    requestApiKey: "",
   });
   if (!apiKey) {
-    sendJson(response, 500, {
-      error: "缺少 OPENAI_API_KEY。请在启动服务前设置环境变量，或在页面中间 Agent 层临时输入 API Key 后再生成规划回答。",
+    sendJson(response, 400, {
+      error: "DeepSeek API 尚未配置。请在服务端配置 DEEPSEEK_API_KEY。",
     });
     return;
   }
 
   const systemPrompt = await readFile(promptPath, "utf8");
-  const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+  const model = env.DEEPSEEK_MODEL || "deepseek-v4-pro";
 
-  const apiResponse = await fetch("https://api.openai.com/v1/responses", {
+  const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -204,10 +200,12 @@ async function handlePlan(request, response, readJson = readRequestJson) {
     },
     body: JSON.stringify({
       model,
-      input: [
+      messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: buildUserMessage(payload) },
       ],
+      thinking: { type: "disabled" },
+      stream: false,
       temperature: 0.4,
     }),
   });
@@ -220,7 +218,12 @@ async function handlePlan(request, response, readJson = readRequestJson) {
     return;
   }
 
-  const answer = extractResponseText(data);
+  const answer = extractDeepSeekResponseText(data);
+  if (!answer) {
+    sendJson(response, 502, { error: "DeepSeek 未返回可解析的规划回答。" });
+    return;
+  }
+
   sendJson(response, 200, {
     answer,
     parsed: parseAgentOutput(answer),
@@ -375,13 +378,15 @@ export function resolveDatabasePath(env = process.env) {
 }
 
 export function createAppServer({
-  databasePath = resolveDatabasePath(),
+  env = process.env,
+  databasePath = resolveDatabasePath(env),
   authDb = createAuthDatabase({ databasePath }),
   auth = createAuthService({ authDb }),
   planning = createPlanningService({ authDb }),
   activityPortfolio = createActivityPortfolioService({ authDb }),
-  mailer = createMailerFromEnv(),
-  appBaseUrl = process.env.APP_BASE_URL || "",
+  mailer = createMailerFromEnv(env),
+  appBaseUrl = env.APP_BASE_URL || "",
+  deepSeekFetch = fetch,
   maxRequestBodyBytes = DEFAULT_MAX_REQUEST_BODY_BYTES,
   rateLimits = DEFAULT_RATE_LIMITS,
 } = {}) {
@@ -417,13 +422,13 @@ export function createAppServer({
       if (request.method === "GET" && url.pathname === "/api/prompt") {
         if (!requireUser(request, response, auth)) return;
         const prompt = await readFile(promptPath, "utf8");
-        sendJson(response, 200, { prompt, hasApiKey: Boolean(process.env.OPENAI_API_KEY) });
+        sendJson(response, 200, { prompt, hasDeepSeekApiKey: Boolean(env.DEEPSEEK_API_KEY) });
         return;
       }
 
-      if (request.method === "POST" && url.pathname === "/api/plan") {
+      if (request.method === "POST" && url.pathname === "/api/deepseek-plan") {
         if (!requireUser(request, response, auth)) return;
-        await handlePlan(request, response, readJson);
+        await handleDeepSeekPlan(request, response, { readJson, env, deepSeekFetch });
         return;
       }
 

@@ -17,6 +17,8 @@ const USAGE_EVENT_TYPES = new Set([
   "clear_draft",
   "generate_plan_success",
   "generate_plan_failure",
+  "generate_deepseek_plan_success",
+  "generate_deepseek_plan_failure",
   "build_codex_task",
   "copy_codex_task",
   "refresh_competitions",
