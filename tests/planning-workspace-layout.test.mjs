@@ -390,13 +390,37 @@ for (const fieldName of ["coreStrengths", "availableResources", "personality"]) 
     `${fieldName} should use checkbox choices so users can select more than one.`,
   );
   assert.ok(
-    (fieldHtml.match(/data-profile-choice-input/g) || []).length >= 14,
-    `${fieldName} should provide a richer set of at least 14 choices.`,
+    (fieldHtml.match(/data-profile-choice-input/g) || []).length >= 24,
+    `${fieldName} should provide a richer set of at least 24 choices.`,
   );
 }
 assert.match(html, /数学建模 \/ 逻辑推理/, "Core strength options should include more academic skill choices.");
 assert.match(html, /大学教授 \/ 研究员连接/, "Resource options should include more mentor/research network choices.");
 assert.match(html, /好奇心强 \/ 喜欢追问/, "Personality options should include more behavior tendency choices.");
+for (const choiceLabel of [
+  "论文阅读 / 文献综述",
+  "数据可视化 / 信息图表达",
+  "产品思维 / 原型设计",
+  "实验记录 / 结果复盘",
+]) {
+  assert.match(html, new RegExp(choiceLabel.replace("/", "\\/")), `Core strength choices should include ${choiceLabel}.`);
+}
+for (const choiceLabel of [
+  "校友网络 / 学长学姐",
+  "实验设备 / 创客空间",
+  "非营利项目合作方",
+  "公开数据库 / 政府数据",
+]) {
+  assert.match(html, new RegExp(choiceLabel.replace("/", "\\/")), `Resource choices should include ${choiceLabel}.`);
+}
+for (const choiceLabel of [
+  "善于复盘 / 从反馈中迭代",
+  "主动建立关系",
+  "需要明确截止时间推动",
+  "喜欢挑战开放性问题",
+]) {
+  assert.match(html, new RegExp(choiceLabel.replace("/", "\\/")), `Personality choices should include ${choiceLabel}.`);
+}
 assert.match(styles, /\.profile-choice-options\s*\{/, "Multi-choice profile fields should have a dropdown menu style.");
 assert.match(
   styles,
