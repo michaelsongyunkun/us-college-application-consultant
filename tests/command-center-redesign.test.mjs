@@ -27,7 +27,7 @@ assert.ok(!indexHtml.includes("Automation Status"), "Logged-in home should not s
 assert.ok(!indexHtml.includes('class="command-center-hero"'), "Logged-in home should not render the removed automation status board.");
 assert.ok(!indexHtml.includes("Planning Readiness"), "Logged-in home should not show the removed readiness card.");
 assert.ok(
-  indexHtml.includes('./src/client/app.js?v=20260601-auth-mode-fallback'),
+  indexHtml.includes('./src/client/app.js?v=20260601-auth-form-fallback'),
   "Logged-in shell should cache-bust the main app module with the current logout release.",
 );
 assert.ok(
@@ -41,7 +41,7 @@ for (const [file, activeLabel] of pages) {
   assert.ok(html.includes('class="command-sidebar"'), `${file} should include the command sidebar.`);
   assert.ok(html.includes('class="command-main"'), `${file} should wrap page content in command-main.`);
   assert.ok(html.includes("./assets/logo-mark.svg"), `${file} should preserve the current logo mark.`);
-  assert.ok(html.includes("./styles.css?v=20260601-profile-choice-dropdown"), `${file} should load the cache-busted command center stylesheet.`);
+  assert.ok(html.includes("./styles.css?v=20260601-auth-form-fallback"), `${file} should load the cache-busted command center stylesheet.`);
   assert.ok(html.includes("US College Compass"), `${file} should preserve the current brand name.`);
   assert.ok(html.includes("Application Command Center"), `${file} should position the logged-in product as a command center.`);
   assert.ok(html.includes(`aria-current="page">${activeLabel}`), `${file} should mark ${activeLabel} as the active command nav item.`);

@@ -15,7 +15,7 @@
     <meta name="twitter:description" content="面向学生与家长的 AI 美本规划工作台：背景整理、活动规划、资源匹配和报告导出。" />
     <title>AI 美本规划工作台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260601-profile-choice-dropdown" />
+    <link rel="stylesheet" href="./styles.css?v=20260601-auth-form-fallback" />
   </head>
   <body>
     <section id="authShell" class="landing-shell" aria-labelledby="landing-title">
@@ -52,7 +52,7 @@
           <p class="eyebrow">全免费使用</p>
           <h2 id="auth-title">领取你的申请行动地图</h2>
           <p class="auth-copy">注册后免费保存规划，并解锁 3500+ 课外活动资源、150+ 院校百科、GPA/SAT/AP 档案。网站核心功能目前全免费。</p>
-          <form id="authForm" class="auth-form">
+          <form id="authForm" class="auth-form" method="post" action="/api/auth/register">
             <label id="authNameField">
               <span>姓名</span>
               <input id="authName" name="name" type="text" autocomplete="name" />
@@ -826,7 +826,7 @@
       </div>
     </main>
 
-    <script type="module" src="./src/client/app.js?v=20260601-auth-mode-fallback"></script>
+    <script type="module" src="./src/client/app.js?v=20260601-auth-form-fallback"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-case-refresh"></script>
   </body>
 </html>

@@ -54,6 +54,7 @@ try {
   assert.equal(publicLoginModeResponse.status, 200);
   const publicLoginModeHtml = await publicLoginModeResponse.text();
   assert.match(publicLoginModeHtml, /<h2 id="auth-title">登录<\/h2>/);
+  assert.match(publicLoginModeHtml, /<form id="authForm" class="auth-form" method="post" action="\/api\/auth\/login">/);
   assert.match(publicLoginModeHtml, /<label id="authNameField" class="is-hidden">/);
   assert.match(publicLoginModeHtml, /<button id="authSubmitButton" type="submit">登录<\/button>/);
   assert.match(publicLoginModeHtml, /<a id="authModeButton"[^>]*href="\/\?auth=register"[^>]*>没有账号？注册<\/a>/);
@@ -397,9 +398,57 @@ try {
   const exportedReportDashboard = await exportedReportResponse.json();
   assert.deepEqual(exportedReportDashboard.usageEvents.map((event) => event.eventType), ["export_svg"]);
   assert.equal(exportedReportDashboard.overview.planGenerations, 1);
+
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });
+}
+
+const nativeFormTempDir = await mkdtemp(join(tmpdir(), "consultant-native-form-auth-"));
+const nativeFormServer = createAppServer({
+  databasePath: join(nativeFormTempDir, "auth.sqlite"),
+  rateLimits: {},
+});
+
+try {
+  await new Promise((resolve) => nativeFormServer.listen(0, "127.0.0.1", resolve));
+  const { port } = nativeFormServer.address();
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  const nativeRegisterResponse = await fetch(`${baseUrl}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "native-form@example.com",
+      name: "Native Form",
+      password: "password123",
+    }),
+  });
+  assert.equal(nativeRegisterResponse.status, 200);
+
+  const nativeLoginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: {
+      Accept: "text/html",
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      email: "native-form@example.com",
+      password: "password123",
+    }),
+    redirect: "manual",
+  });
+  assert.equal(nativeLoginResponse.status, 303);
+  assert.equal(nativeLoginResponse.headers.get("location"), "/");
+  assert.match(nativeLoginResponse.headers.get("set-cookie"), /consultant_session=/);
+
+  const nativeLoginMeResponse = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: { Cookie: nativeLoginResponse.headers.get("set-cookie") },
+  });
+  assert.equal(nativeLoginMeResponse.status, 200);
+} finally {
+  await new Promise((resolve) => nativeFormServer.close(resolve));
+  await rm(nativeFormTempDir, { recursive: true, force: true });
 }
 
 const protectionTempDir = await mkdtemp(join(tmpdir(), "consultant-server-protection-"));

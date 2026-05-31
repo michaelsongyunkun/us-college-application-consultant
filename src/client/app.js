@@ -180,6 +180,16 @@ function setAuthMode(mode) {
     forgot: "发送重置邮件",
     reset: "更新密码",
   }[authMode];
+  authForm.setAttribute("method", "post");
+  authForm.setAttribute(
+    "action",
+    {
+      login: "/api/auth/login",
+      register: "/api/auth/register",
+      forgot: "/api/auth/request-password-reset",
+      reset: "/api/auth/reset-password",
+    }[authMode],
+  );
   authModeButton.textContent = isRegistering ? "已有账号？登录" : "返回登录";
   if (authMode === "login") authModeButton.textContent = "没有账号？注册";
   authModeButton.setAttribute("href", authMode === "login" ? "/?auth=register" : "/?auth=login");

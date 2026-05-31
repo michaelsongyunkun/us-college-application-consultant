@@ -48,6 +48,11 @@ assert.match(
   /<a id="authModeButton"[^>]*href="\/\?auth=login"[^>]*>已有账号？登录<\/a>/,
   "The login toggle should keep an href fallback so clicking it visibly responds even before client JavaScript runs.",
 );
+assert.match(
+  html,
+  /<form id="authForm" class="auth-form" method="post" action="\/api\/auth\/register">/,
+  "The auth form should keep a native POST fallback instead of defaulting to an unsafe GET submission.",
+);
 
 for (const id of [
   "workspaceNextAction",
@@ -145,7 +150,7 @@ const workspacePanelTop = html.match(/<section class="panel workspace-panel"[\s\
 const planningActivityTableBody = html.match(/<table id="activityTable"[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/)?.[1] || "";
 const commandSubnav = html.match(/<div class="command-subnav"[\s\S]*?<\/div>/)?.[0] || "";
 
-assert.ok(html.includes("./styles.css?v=20260601-profile-choice-dropdown"), "Planning workspace should bust the stylesheet cache for profile choice dropdown fixes.");
+assert.ok(html.includes("./styles.css?v=20260601-auth-form-fallback"), "Planning workspace should bust the stylesheet cache for auth form fallback fixes.");
 assert.ok(loggedInHeader.includes('class="brand-mark"'), "Logged-in header should use the shared product brand link.");
 assert.ok(loggedInHeader.includes("College Compass"), "Logged-in header should use the shared product brand name.");
 assert.ok(!loggedInHeader.includes("primary-nav"), "Logged-in header should not repeat the left-sidebar primary navigation.");
@@ -212,7 +217,7 @@ assert.match(
 );
 assert.match(
   html,
-  /src="\.\/src\/client\/app\.js\?v=20260601-auth-mode-fallback"/,
+  /src="\.\/src\/client\/app\.js\?v=20260601-auth-form-fallback"/,
   "Main app script should be cache-busted when logout behavior changes.",
 );
 assert.match(html, /id="resetButton"[^>]*class="danger"/, "Reset should use a danger action style.");

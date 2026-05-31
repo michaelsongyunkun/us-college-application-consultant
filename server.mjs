@@ -93,7 +93,7 @@ function withSecurityHeaders(headers = {}) {
   return { ...SECURITY_HEADERS, ...headers };
 }
 
-async function readRequestJson(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_BYTES) {
+async function readRequestText(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_BYTES) {
   const chunks = [];
   let size = 0;
   for await (const chunk of request) {
@@ -101,7 +101,11 @@ async function readRequestJson(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_BYTE
     if (size > maxBytes) throw new RequestError("Request body too large", 413);
     chunks.push(chunk);
   }
-  const raw = Buffer.concat(chunks).toString("utf8");
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+async function readRequestJson(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_BYTES) {
+  const raw = await readRequestText(request, maxBytes);
   if (!raw) return {};
   try {
     return JSON.parse(raw);
@@ -160,6 +164,14 @@ function buildClearSessionCookies(request) {
 function wantsHtmlResponse(request) {
   const accept = request.headers.accept || "";
   return accept.includes("text/html") && !accept.includes("application/json");
+}
+
+async function readAuthPayload(request, readJson) {
+  const contentType = request.headers["content-type"] || "";
+  if (contentType.toLowerCase().includes("application/x-www-form-urlencoded")) {
+    return Object.fromEntries(new URLSearchParams(await readRequestText(request)));
+  }
+  return readJson(request);
 }
 
 export function shouldUseSecureCookies(env = process.env) {
@@ -286,20 +298,42 @@ function createAuthHandler(auth, { mailer, appBaseUrl, readJson = readRequestJso
     }
 
     if (request.method === "POST" && pathname === "/api/auth/register") {
-      const result = auth.register(await readJson(request), getRequestMetadata(request));
-      response.writeHead(200, withSecurityHeaders({
-        "Content-Type": "application/json;charset=utf-8",
+      const result = auth.register(await readAuthPayload(request, readJson), getRequestMetadata(request));
+      const headers = {
         "Set-Cookie": buildSessionCookie(result.sessionToken, { expiresAt: result.expiresAt }),
+      };
+      if (wantsHtmlResponse(request)) {
+        response.writeHead(303, withSecurityHeaders({
+          ...headers,
+          Location: "/",
+        }));
+        response.end();
+        return true;
+      }
+      response.writeHead(200, withSecurityHeaders({
+        ...headers,
+        "Content-Type": "application/json;charset=utf-8",
       }));
       response.end(JSON.stringify({ user: result.user }));
       return true;
     }
 
     if (request.method === "POST" && pathname === "/api/auth/login") {
-      const result = auth.login(await readJson(request), getRequestMetadata(request));
-      response.writeHead(200, withSecurityHeaders({
-        "Content-Type": "application/json;charset=utf-8",
+      const result = auth.login(await readAuthPayload(request, readJson), getRequestMetadata(request));
+      const headers = {
         "Set-Cookie": buildSessionCookie(result.sessionToken, { expiresAt: result.expiresAt }),
+      };
+      if (wantsHtmlResponse(request)) {
+        response.writeHead(303, withSecurityHeaders({
+          ...headers,
+          Location: "/",
+        }));
+        response.end();
+        return true;
+      }
+      response.writeHead(200, withSecurityHeaders({
+        ...headers,
+        "Content-Type": "application/json;charset=utf-8",
       }));
       response.end(JSON.stringify({ user: result.user }));
       return true;
@@ -403,6 +437,10 @@ function redirectToLogin(response, requestPath = "/") {
 function renderIndexForAuthMode(html, authMode) {
   if (authMode !== "login") return html;
   return html
+    .replace(
+      '<form id="authForm" class="auth-form" method="post" action="/api/auth/register">',
+      '<form id="authForm" class="auth-form" method="post" action="/api/auth/login">',
+    )
     .replace('<h2 id="auth-title">领取你的申请行动地图</h2>', '<h2 id="auth-title">登录</h2>')
     .replace('<label id="authNameField">', '<label id="authNameField" class="is-hidden">')
     .replace(
