@@ -15,7 +15,7 @@
     <meta name="twitter:description" content="面向学生与家长的 AI 美本规划工作台：背景整理、活动规划、资源匹配和报告导出。" />
     <title>AI 美本规划工作台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260531-planning-next-action-fix" />
+    <link rel="stylesheet" href="./styles.css?v=20260531-command-center-subnav" />
   </head>
   <body>
     <section id="authShell" class="landing-shell" aria-labelledby="landing-title">
@@ -209,7 +209,16 @@
           <span><strong>US College Compass</strong><small>Application Command Center</small></span>
         </a>
         <nav class="command-sidebar-nav" aria-label="登录后功能导航">
-          <a href="./index.html" data-safe-nav aria-current="page">申请指挥中心</a>
+          <div class="command-nav-group">
+            <a href="./index.html" data-safe-nav aria-current="page">申请指挥中心</a>
+            <div class="command-subnav" aria-label="申请指挥中心快捷导航">
+              <a href="./index.html#planningOutputTable">规划回答输出表格</a>
+              <a href="./index.html#competitionRecommendations">国际竞赛推荐</a>
+              <a href="./index.html#summerSchoolRecommendations">夏校推荐</a>
+              <a href="./index.html#recommendationLetterRecommendations">推荐信推荐</a>
+              <a href="./index.html#similarAdmissionCases">相似录取案例参考</a>
+            </div>
+          </div>
           <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
           <a href="./ask-deepseek.html" data-safe-nav>问DeepSeek</a>
           <a href="./resource-library.html" data-safe-nav>资源库</a>
@@ -282,6 +291,16 @@
             </div>
           </div>
         </div>
+        <div id="workspacePriorityActions" class="workspace-priority-actions" aria-label="常用方案操作">
+          <div>
+            <strong>常用方案操作</strong>
+            <span>生成后可立即导出报告；需要重做时可清空当前方案。</span>
+          </div>
+          <div class="workspace-action-buttons workspace-priority-buttons">
+            <button id="exportSvgButton" class="secondary" type="button">导出 SVG</button>
+            <button id="resetButton" class="danger" type="button">清空当前方案</button>
+          </div>
+        </div>
         <details id="workspaceAdvancedActions" class="workspace-advanced">
           <summary>
             <span>高级操作：方案、备份与导出</span>
@@ -294,8 +313,6 @@
             </div>
             <div class="workspace-action-buttons">
               <button id="saveButton" type="button">保存当前内容</button>
-              <button id="exportSvgButton" class="secondary" type="button">导出 SVG</button>
-              <button id="resetButton" class="danger" type="button">清空当前方案</button>
             </div>
           </div>
           <div class="workspace-grid">
@@ -451,7 +468,7 @@
         </div>
       </section>
 
-      <section class="panel" aria-labelledby="activities-title">
+      <section id="planningOutputTable" class="panel" aria-labelledby="activities-title">
         <div class="section-heading table-heading">
           <div>
             <h2 id="activities-title">规划回答输出表格</h2>
@@ -620,7 +637,7 @@
 
       </section>
 
-      <section class="panel competition-panel" aria-labelledby="competition-title">
+      <section id="competitionRecommendations" class="panel competition-panel" aria-labelledby="competition-title">
         <div class="section-heading table-heading">
           <div>
             <h2 id="competition-title">国际竞赛推荐</h2>
@@ -637,7 +654,7 @@
         </div>
       </section>
 
-      <section class="panel summer-school-panel" aria-labelledby="summer-school-title">
+      <section id="summerSchoolRecommendations" class="panel summer-school-panel" aria-labelledby="summer-school-title">
         <div class="section-heading table-heading">
           <div>
             <h2 id="summer-school-title">夏校推荐</h2>
@@ -654,7 +671,7 @@
         </div>
       </section>
 
-      <section class="panel recommendation-letter-panel" aria-labelledby="recommendation-letter-title">
+      <section id="recommendationLetterRecommendations" class="panel recommendation-letter-panel" aria-labelledby="recommendation-letter-title">
         <div class="section-heading table-heading">
           <div>
             <h2 id="recommendation-letter-title">推荐信推荐</h2>
@@ -670,7 +687,7 @@
         </div>
       </section>
 
-      <section class="panel case-match-panel" aria-labelledby="case-match-title">
+      <section id="similarAdmissionCases" class="panel case-match-panel" aria-labelledby="case-match-title">
         <div class="section-heading table-heading">
           <div>
             <h2 id="case-match-title">相似录取案例参考</h2>

@@ -133,15 +133,31 @@ for (const copy of [
 const loggedInHeader = html.match(/<header class="topbar brand-page-header logged-in-header"[\s\S]*?<\/header>/)?.[0] || "";
 const commandNavigation = html.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";
 const workspaceAdvancedActions = html.match(/<details id="workspaceAdvancedActions"[\s\S]*?<\/details>/)?.[0] || "";
+const workspacePriorityActions = html.match(/<div id="workspacePriorityActions"[\s\S]*?<\/div>\s*<\/div>/)?.[0] || "";
+const workspacePanelTop = html.match(/<section class="panel workspace-panel"[\s\S]*?<details id="workspaceAdvancedActions"/)?.[0] || "";
 const planningActivityTableBody = html.match(/<table id="activityTable"[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/)?.[1] || "";
+const commandSubnav = html.match(/<div class="command-subnav"[\s\S]*?<\/div>/)?.[0] || "";
 
-assert.ok(html.includes("./styles.css?v=20260531-planning-next-action-fix"), "Planning workspace should bust the stylesheet cache for next-action layout fixes.");
+assert.ok(html.includes("./styles.css?v=20260531-command-center-subnav"), "Planning workspace should bust the stylesheet cache for command center sub navigation fixes.");
 assert.ok(loggedInHeader.includes('class="brand-mark"'), "Logged-in header should use the shared product brand link.");
 assert.ok(loggedInHeader.includes("College Compass"), "Logged-in header should use the shared product brand name.");
 assert.ok(!loggedInHeader.includes("primary-nav"), "Logged-in header should not repeat the left-sidebar primary navigation.");
 assert.ok(!loggedInHeader.includes("utility-nav"), "Logged-in header should not repeat the left-sidebar utility navigation.");
 assert.ok(commandNavigation.includes("我的申请档案"), "Left command sidebar should expose the primary navigation group.");
 assert.ok(commandNavigation.includes("免责声明"), "Left command sidebar should expose the tools and support entries.");
+assert.ok(commandNavigation.includes('class="command-nav-group"'), "Application command center nav item should support a sub navigation group.");
+assert.ok(commandNavigation.includes('aria-label="申请指挥中心快捷导航"'), "Application command center should expose a labeled sub navigation.");
+for (const [label, targetId] of [
+  ["规划回答输出表格", "planningOutputTable"],
+  ["国际竞赛推荐", "competitionRecommendations"],
+  ["夏校推荐", "summerSchoolRecommendations"],
+  ["推荐信推荐", "recommendationLetterRecommendations"],
+  ["相似录取案例参考", "similarAdmissionCases"],
+]) {
+  assert.ok(commandSubnav.includes(`>${label}</a>`), `Command center sub navigation should include ${label}.`);
+  assert.ok(commandSubnav.includes(`href="./index.html#${targetId}"`), `Command center sub navigation should link ${label} to #${targetId}.`);
+  assert.match(html, new RegExp(`id=["']${targetId}["']`), `Missing quick-jump target #${targetId}.`);
+}
 assert.ok(loggedInHeader.includes('id="logoutButton"'), "Logout should live in the account area.");
 assert.ok(!loggedInHeader.includes('id="saveButton"'), "Save should not live in the global header.");
 assert.ok(!loggedInHeader.includes('id="exportButton"'), "JSON export should not live in the global header.");
@@ -149,8 +165,15 @@ assert.ok(!loggedInHeader.includes('id="exportSvgButton"'), "SVG export should n
 assert.ok(!loggedInHeader.includes('id="resetButton"'), "Reset should not live in the global header.");
 assert.ok(workspaceAdvancedActions.includes('id="saveButton"'), "Save should live in the advanced workspace actions.");
 assert.ok(!workspaceAdvancedActions.includes('id="exportButton"'), "JSON export should be removed from advanced workspace actions.");
-assert.ok(workspaceAdvancedActions.includes('id="exportSvgButton"'), "SVG export should live in the advanced workspace actions.");
-assert.ok(workspaceAdvancedActions.includes('id="resetButton"'), "Reset should remain available in advanced workspace actions.");
+assert.ok(!workspaceAdvancedActions.includes('id="exportSvgButton"'), "SVG export should move out of the collapsed advanced workspace actions.");
+assert.ok(!workspaceAdvancedActions.includes('id="resetButton"'), "Reset should move out of the collapsed advanced workspace actions.");
+assert.ok(workspacePriorityActions.includes('id="exportSvgButton"'), "SVG export should live in the visible priority action bar.");
+assert.ok(workspacePriorityActions.includes('id="resetButton"'), "Reset should live in the visible priority action bar.");
+assert.ok(
+  workspacePanelTop.indexOf('id="workspaceNextAction"') < workspacePanelTop.indexOf('id="workspacePriorityActions"') &&
+    workspacePanelTop.indexOf('id="workspacePriorityActions"') < workspacePanelTop.indexOf('id="workspaceAdvancedActions"'),
+  "Priority plan actions should sit visibly between the next-action card and collapsed advanced section.",
+);
 assert.ok(!/<details id="workspaceAdvancedActions"[^>]*open/.test(html), "Advanced plan, backup, and export actions should be collapsed by default.");
 assert.ok(html.includes("Agent 输出的 15 项课外活动最终填入这里。"), "Planning output table should describe 15 generated activities.");
 assert.equal((planningActivityTableBody.match(/<th scope="row">/g) || []).length, 15, "Planning output table should render 15 activity rows.");
@@ -226,9 +249,13 @@ assert.match(styles, /\.auth-status:empty\s*\{/, "An empty auth status should be
 assert.doesNotMatch(styles, /\.agent-usage-note|\.codex-mode|\.codex-actions/, "Removed task package UI styles should not remain.");
 assert.match(styles, /\.deepseek-working\s*\{/, "DeepSeek working indicator should have panel styling.");
 assert.match(styles, /\.workspace-next-action\s*\{/, "Workspace next-action card should have dedicated styling.");
+assert.match(styles, /\.workspace-priority-actions\s*\{/, "Visible priority plan actions should have dedicated styling.");
+assert.match(styles, /\.workspace-priority-actions\s+button\.danger\s*\{/, "Visible reset action should be styled prominently.");
 assert.match(styles, /\.workspace-primary-action\s*\{/, "Workspace primary CTA should have dedicated styling.");
 assert.match(styles, /\.workspace-progress-steps\s*\{/, "Workspace progress steps should have dedicated styling.");
 assert.match(styles, /\.workspace-progress-step\s*\{/, "Workspace progress items should have dedicated styling.");
+assert.match(styles, /\.command-nav-group\s*\{/, "Command center sub navigation group should have dedicated styling.");
+assert.match(styles, /\.command-subnav\s*\{/, "Command center sub navigation should have dedicated styling.");
 assert.doesNotMatch(styles, /\.workspace-progress-steps li/, "Progress item styles should not depend on ordered-list markup.");
 assert.match(styles, /\.workspace-advanced\s*\{/, "Workspace advanced actions should have dedicated styling.");
 assert.match(styles, /\.workspace-advanced summary\s*\{/, "Workspace advanced summary should be styled as a quiet disclosure.");
