@@ -150,7 +150,7 @@ try {
   });
   auth.recordUsageEvent({
     user: registration.user,
-    eventType: "export_word",
+    eventType: "export_svg",
   });
   auth.recordUsageEvent({
     user: registration.user,
@@ -171,16 +171,16 @@ try {
   assert.deepEqual(dashboard.overview, {
     activeUsers: 1,
     planGenerations: 1,
-    wordExports: 1,
+    svgExports: 1,
     recommendationRefreshes: 1,
     failedLogins: 3,
   });
 
   const exportsOnly = auth.getLoginDashboard({
     requester: adminLogin.user,
-    filters: { eventType: "export_word" },
+    filters: { eventType: "export_svg" },
   });
-  assert.deepEqual(exportsOnly.usageEvents.map((event) => event.eventType), ["export_word"]);
+  assert.deepEqual(exportsOnly.usageEvents.map((event) => event.eventType), ["export_svg"]);
   assert.equal(exportsOnly.overview.planGenerations, 1);
 
   assert.throws(

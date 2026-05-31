@@ -22,7 +22,7 @@ import {
 import { buildRecommendationLetterStrategy } from "../domain/recommendation-letter-recommender.mjs";
 import { renderActivityQualityPanel } from "./activity-quality-ui.mjs";
 import { renderParseDiagnostics } from "./agent-answer-diagnostics-ui.mjs";
-import { buildWordDocument } from "../domain/word-export.mjs";
+import { buildSvgDocument } from "../domain/svg-export.mjs?v=20260531-svg-export";
 import { getRequestErrorMessage } from "./auth-client-errors.mjs";
 import { escapeHtml } from "./html-utils.mjs";
 import {
@@ -59,7 +59,7 @@ const profileForm = document.querySelector("#profileForm");
 const activityTable = document.querySelector("#activityTable");
 const saveButton = document.querySelector("#saveButton");
 const exportButton = document.querySelector("#exportButton");
-const exportWordButton = document.querySelector("#exportWordButton");
+const exportSvgButton = document.querySelector("#exportSvgButton");
 const resetButton = document.querySelector("#resetButton");
 const saveStatus = document.querySelector("#saveStatus");
 const agentStatus = document.querySelector("#agentStatus");
@@ -1129,8 +1129,8 @@ function exportDraft() {
   URL.revokeObjectURL(url);
 }
 
-function exportWordDocument() {
-  trackUsageEvent("export_word", {
+function exportSvgDocument() {
+  trackUsageEvent("export_svg", {
     metrics: { filledActivityCount: countFilledActivities() },
     details: {
       hasCompetitions: latestCompetitionRecommendations.length > 0,
@@ -1143,7 +1143,7 @@ function exportWordDocument() {
   renderSummerSchoolRecommendations();
   renderRecommendationLetterStrategy();
   renderCaseMatches();
-  const html = buildWordDocument({
+  const svg = buildSvgDocument({
     profile: collectProfile(),
     activities: collectActivities(),
     narrative: getNarrativeText(),
@@ -1152,13 +1152,13 @@ function exportWordDocument() {
     recommendationLetterStrategy: latestRecommendationLetterStrategy,
     caseMatches: latestCaseMatches,
   });
-  const blob = new Blob(["\ufeff", html], {
-    type: "application/msword;charset=utf-8",
+  const blob = new Blob([svg], {
+    type: "image/svg+xml;charset=utf-8",
   });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "美本申请顾问-活动规划.doc";
+  link.download = "美本申请顾问-活动规划.svg";
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -1185,7 +1185,7 @@ function clearVisibleDraft() {
 
 saveButton.addEventListener("click", () => runWorkspaceAction(saveDraft));
 exportButton.addEventListener("click", exportDraft);
-exportWordButton.addEventListener("click", exportWordDocument);
+exportSvgButton.addEventListener("click", exportSvgDocument);
 resetButton.addEventListener("click", () => runWorkspaceAction(resetDraft));
 generateDeepSeekButton?.addEventListener("click", () => runWorkspaceAction(generateDeepSeekPlan));
 refreshCompetitionsButton?.addEventListener("click", () => {

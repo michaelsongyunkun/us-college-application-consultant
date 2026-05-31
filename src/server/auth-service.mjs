@@ -12,6 +12,7 @@ const USAGE_EVENT_TYPES = new Set([
   "parse_codex_answer",
   "parse_codex_failure",
   "export_json",
+  "export_svg",
   "export_word",
   "save_draft",
   "clear_draft",
@@ -363,7 +364,7 @@ export function createAuthService({
         .prepare(`SELECT COUNT(DISTINCT user_id) AS count FROM usage_events ${baseUsageFilters.where}`)
         .get(baseUsageFilters.params).count,
       planGenerations: countUsageEvents("generate_plan_success", baseUsageFilters),
-      wordExports: countUsageEvents("export_word", baseUsageFilters),
+      svgExports: countUsageEvents("export_svg", baseUsageFilters),
       recommendationRefreshes: db
         .prepare(
           `SELECT COUNT(*) AS count

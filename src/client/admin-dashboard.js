@@ -14,7 +14,7 @@ const usageEventsBody = document.querySelector("#usageEventsBody");
 const feedbackEntriesBody = document.querySelector("#feedbackEntriesBody");
 const metricActiveUsers = document.querySelector("#metricActiveUsers");
 const metricPlanGenerations = document.querySelector("#metricPlanGenerations");
-const metricWordExports = document.querySelector("#metricWordExports");
+const metricSvgExports = document.querySelector("#metricSvgExports");
 const metricRecommendationRefreshes = document.querySelector("#metricRecommendationRefreshes");
 const metricFailedLogins = document.querySelector("#metricFailedLogins");
 const adminTabs = [...document.querySelectorAll("[data-admin-tab]")];
@@ -26,7 +26,8 @@ const usageEventLabels = {
   parse_codex_answer: "解析 Codex 回答进表格",
   parse_codex_failure: "解析 Codex 失败",
   export_json: "导出 JSON",
-  export_word: "导出 Word",
+  export_svg: "导出 SVG",
+  export_word: "导出 Word（历史）",
   save_draft: "保存草稿",
   clear_draft: "清空草稿",
   generate_plan_success: "解析 Codex 回答进表格成功",
@@ -232,7 +233,7 @@ function renderOverview(dashboard) {
   const overview = dashboard.overview || {};
   metricActiveUsers.textContent = overview.activeUsers || 0;
   metricPlanGenerations.textContent = overview.planGenerations || 0;
-  metricWordExports.textContent = overview.wordExports || 0;
+  metricSvgExports.textContent = overview.svgExports || 0;
   metricRecommendationRefreshes.textContent = overview.recommendationRefreshes || 0;
   metricFailedLogins.textContent = overview.failedLogins || 0;
 }

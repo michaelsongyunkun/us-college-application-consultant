@@ -112,7 +112,7 @@ try {
   for (const eventType of [
     "parse_codex_answer",
     "export_json",
-    "export_word",
+    "export_svg",
     "save_draft",
     "clear_draft",
     "generate_plan_success",
@@ -265,15 +265,15 @@ try {
   assert.ok(dashboard.usageEvents.some((event) => event.failureReason === "test failure"));
   assert.equal(dashboard.overview.activeUsers, 1);
   assert.equal(dashboard.overview.planGenerations, 1);
-  assert.equal(dashboard.overview.wordExports, 1);
+  assert.equal(dashboard.overview.svgExports, 1);
   assert.equal(dashboard.overview.recommendationRefreshes, 3);
 
-  const exportedReportResponse = await fetch(`${baseUrl}/api/admin/login-dashboard?eventType=export_word`, {
+  const exportedReportResponse = await fetch(`${baseUrl}/api/admin/login-dashboard?eventType=export_svg`, {
     headers: { Cookie: adminLoginResponse.headers.get("set-cookie") },
   });
   assert.equal(exportedReportResponse.status, 200);
   const exportedReportDashboard = await exportedReportResponse.json();
-  assert.deepEqual(exportedReportDashboard.usageEvents.map((event) => event.eventType), ["export_word"]);
+  assert.deepEqual(exportedReportDashboard.usageEvents.map((event) => event.eventType), ["export_svg"]);
   assert.equal(exportedReportDashboard.overview.planGenerations, 1);
 } finally {
   await new Promise((resolve) => server.close(resolve));

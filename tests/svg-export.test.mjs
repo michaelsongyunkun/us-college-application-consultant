@@ -1,0 +1,41 @@
+import assert from "node:assert/strict";
+import { buildSvgDocument } from "../src/domain/svg-export.mjs";
+
+const svg = buildSvgDocument({
+  profile: {
+    grade: "10年级",
+    majorDirection: "计算机科学",
+    coreStrengths: "数学建模 / NLP",
+  },
+  activities: [
+    {
+      id: "1",
+      type: "学术突破",
+      activityName: "**独立研究：NLP 错题归因模型**",
+      executionDescription:
+        "**问题**：传统错题本效率低。**行动**：用 Python 分析 5000+ 条文本。**成果**：准确率达到 82%。",
+      suggestedGrade: "10-11",
+    },
+  ],
+  narrative: "**主线**：用 AI 解决真实学习问题。",
+  competitionRecommendations: [
+    {
+      name: "Kaggle 教育文本挑战",
+      rating: "A-",
+      recommendationReason: "与 NLP 和教育数据方向匹配。",
+      applicationHelp: "可形成可展示的项目成果。",
+      prepTime: "3个月",
+      url: "https://example.com",
+    },
+  ],
+});
+
+assert.match(svg, /^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/, "SVG export should return an SVG document.");
+assert.match(svg, /美本申请规划报告/, "SVG export should use a report title.");
+assert.match(svg, /10年级/, "SVG export should include student profile fields.");
+assert.match(svg, /独立研究：NLP 错题归因模型/, "SVG export should include normalized activity names.");
+assert.match(svg, /问题：传统错题本效率低。行动：用 Python/, "SVG export should normalize markdown in activity descriptions.");
+assert.match(svg, /活动叙事逻辑解读/, "SVG export should include narrative output.");
+assert.match(svg, /国际竞赛推荐/, "SVG export should include recommendation sections.");
+assert.doesNotMatch(svg, /\*\*/, "SVG export should not expose markdown syntax.");
+assert.doesNotMatch(svg, /<script/i, "SVG export should escape unsafe markup.");

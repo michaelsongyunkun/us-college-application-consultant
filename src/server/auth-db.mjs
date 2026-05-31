@@ -64,6 +64,7 @@ export function createAuthDatabase({ databasePath }) {
           'parse_codex_answer',
           'parse_codex_failure',
           'export_json',
+          'export_svg',
           'export_word',
           'save_draft',
           'clear_draft',
@@ -217,7 +218,7 @@ function migrateUsageEventsConstraint(db) {
   const table = db
     .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usage_events'")
     .get();
-  if (!table?.sql || table.sql.includes("generate_deepseek_plan_success")) return;
+  if (!table?.sql || table.sql.includes("export_svg")) return;
 
   db.exec(`
     ALTER TABLE usage_events RENAME TO usage_events_old;
@@ -232,6 +233,7 @@ function migrateUsageEventsConstraint(db) {
           'parse_codex_answer',
           'parse_codex_failure',
           'export_json',
+          'export_svg',
           'export_word',
           'save_draft',
           'clear_draft',
