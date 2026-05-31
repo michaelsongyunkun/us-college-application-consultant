@@ -142,7 +142,7 @@ export function analyzeActivityQuality({ activities = [], profile = {} } = {}) {
     return {
       score: 0,
       statusLabel: "等待活动内容",
-      summary: "填入活动后，系统会自动检查完整度、证据、影响和结构平衡。",
+      summary: "填入活动后开始检查。",
       metrics,
       strengths: [],
       issues: ["还没有可检查的活动内容。"],

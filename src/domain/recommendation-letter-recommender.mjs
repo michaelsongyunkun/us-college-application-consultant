@@ -141,7 +141,7 @@ export function buildRecommendationLetterStrategy({ profile, activities, narrati
     return {
       ready: false,
       items: [],
-      notice: "推荐信策略需要同时基于“用户背景输入”和“规划回答输出表格”生成。请先补充用户背景并生成或填写规划表格。",
+      notice: "补充背景和活动后生成。",
     };
   }
 

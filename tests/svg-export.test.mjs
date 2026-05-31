@@ -48,7 +48,7 @@ assert.match(svg, /美本申请规划报告/, "SVG export should use a report ti
 assert.match(svg, /10年级/, "SVG export should include student profile fields.");
 assert.match(svg, /独立研究：NLP 错题归因模型/, "SVG export should include normalized activity names.");
 assert.match(svg, /问题：传统错题本效率低。行动：用 Python/, "SVG export should normalize markdown in activity descriptions.");
-assert.match(svg, /活动叙事逻辑解读/, "SVG export should include narrative output.");
+assert.match(svg, /活动叙事/, "SVG export should include narrative output.");
 assert.match(svg, /国际竞赛推荐/, "SVG export should include recommendation sections.");
 assert.doesNotMatch(svg, /\*\*/, "SVG export should not expose markdown syntax.");
 assert.doesNotMatch(svg, /<script/i, "SVG export should escape unsafe markup.");

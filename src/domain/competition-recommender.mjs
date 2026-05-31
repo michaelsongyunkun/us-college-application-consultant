@@ -402,7 +402,7 @@ function filterEligibleCompetitions(competitions, studentProfile) {
 export function recommendCompetitions({ studentProfile, competitions, previousBatchIds = [], batchIndex = 0 }) {
   const normalized = competitions || [];
   if (!studentProfile || !normalized.length) {
-    return { items: [], notice: "当前竞赛库暂未找到合适竞赛，请补充竞赛资料后再生成推荐。" };
+    return { items: [], notice: "竞赛库暂无匹配项。" };
   }
   if (!studentProfile.hasAnyInput) {
     return { items: [], notice: "填写用户背景信息后，将根据学生方向生成国际竞赛推荐。" };

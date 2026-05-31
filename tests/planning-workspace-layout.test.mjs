@@ -83,12 +83,12 @@ for (const copy of [
   "生成规划，",
   "顺手匹配资源",
   "免费生成我的行动地图",
-  "课外活动资源库",
+  "3500+ 课外活动资源",
   "院校百科",
   "中国AI升学规划行业TOP级",
   "全站免费使用",
   "资深升学顾问认可",
-  "650+资源支持",
+  "3500+课外活动资源",
   "150+院校详解",
   "全免费开放",
   "全免费使用",
@@ -108,16 +108,16 @@ for (const copy of [
   "代写",
   "人工顾问全案服务",
   "开始申请规划",
-  "系统会根据你当前进度，只显示最应该做的一件事。",
+  "按当前进度推进。",
   "下一步",
   "先填写学生信息",
-  "你现在只需要做一件事：先填写学生信息。",
+  "先填写学生信息。",
   "学生信息",
   "生成规划",
   "保存版本",
   "问DeepSeek优化",
   "查看我的申请档案",
-  "高级操作：方案、备份与导出",
+  "方案、备份、导出",
   "历史备份",
   "保存备份",
   "保存当前内容",
@@ -149,7 +149,7 @@ assert.ok(commandNavigation.includes("免责声明"), "Left command sidebar shou
 assert.ok(commandNavigation.includes('class="command-nav-group"'), "Application command center nav item should support a sub navigation group.");
 assert.ok(commandNavigation.includes('aria-label="申请指挥中心快捷导航"'), "Application command center should expose a labeled sub navigation.");
 for (const [label, targetId] of [
-  ["规划回答输出表格", "planningOutputTable"],
+  ["活动规划表", "planningOutputTable"],
   ["国际竞赛推荐", "competitionRecommendations"],
   ["夏校推荐", "summerSchoolRecommendations"],
   ["推荐信推荐", "recommendationLetterRecommendations"],
@@ -179,7 +179,7 @@ assert.ok(
   "Priority plan actions should sit visibly between the next-action card and collapsed advanced section.",
 );
 assert.ok(!/<details id="workspaceAdvancedActions"[^>]*open/.test(html), "Advanced plan, backup, and export actions should be collapsed by default.");
-assert.ok(html.includes("Agent 输出的 15 项课外活动最终填入这里。"), "Planning output table should describe 15 generated activities.");
+assert.ok(html.includes("15 项活动建议。"), "Planning output table should describe 15 generated activities.");
 assert.equal((planningActivityTableBody.match(/<th scope="row">/g) || []).length, 15, "Planning output table should render 15 activity rows.");
 assert.ok(planningActivityTableBody.includes('name="type-15"'), "Planning output table should include the 15th activity controls.");
 assert.match(html, /id="workspaceGuide" class="workspace-progress-steps" role="list"/, "Progress steps should use an unnumbered list role to avoid raw ordered-list fallback.");
@@ -210,7 +210,7 @@ assert.doesNotMatch(html, /id=["']deepSeekApiKeyInput["']/, "Users should not pr
 assert.doesNotMatch(html, /DeepSeek API Key（仅本次请求使用，不保存）/, "DeepSeek Key input copy should not be shown.");
 assert.doesNotMatch(html, /粘贴 DeepSeek API Key/, "DeepSeek Key placeholder should not be shown.");
 assert.match(html, /id=["']generateDeepSeekButton["']/, "DeepSeek generation button should be available.");
-assert.match(html, /DeepSeek 自动生成/, "DeepSeek panel should be labeled clearly.");
+assert.match(html, /自动生成/, "DeepSeek panel should be labeled clearly.");
 assert.match(html, /id=["']deepSeekWorkingIndicator["']/, "DeepSeek panel should include a visible working indicator.");
 assert.match(html, /class=["'][^"']*\bdeepseek-working\b/, "DeepSeek working indicator should have a dedicated style hook.");
 assert.match(html, /DeepSeek 正在生成规划/, "DeepSeek working indicator should tell users generation is in progress.");
@@ -329,7 +329,7 @@ assert.match(
   /from "\.\.\/domain\/admission-case-matcher\.mjs\?v=[a-z0-9-]+"/,
   "The admission case matcher import should be cache-busted when matching behavior changes.",
 );
-assert.match(appJs, /匹配度排名第 \$\{selectedIndex \+ 1\}/, "Case refresh should describe the next-ranked match.");
+assert.match(appJs, /相似案例第 \$\{selectedIndex \+ 1\}/, "Case refresh should describe the next-ranked match.");
 assert.match(
   appJs,
   /async function resetDraft\(\) \{[\s\S]*clearVisibleDraft\(\);[\s\S]*await saveDraft\(\);[\s\S]*\}/,

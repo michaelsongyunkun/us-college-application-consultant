@@ -28,7 +28,7 @@ function buildCaseMatchSections(caseMatches) {
   if (!caseMatches?.length) {
     return `
     <h2>相似录取案例参考</h2>
-    <p>当前案例库暂未找到合适案例，建议后续补充更多录取案例数据后再生成匹配结果。</p>`;
+    <p>案例库暂无匹配项。</p>`;
   }
 
   return `
@@ -56,7 +56,7 @@ function buildCompetitionSections(competitionRecommendations) {
   if (!competitionRecommendations?.length) {
     return `
     <h2>国际竞赛推荐</h2>
-    <p>当前竞赛库暂未找到合适竞赛，请补充竞赛资料后再生成推荐。</p>`;
+    <p>竞赛库暂无匹配项。</p>`;
   }
 
   return `
@@ -116,7 +116,7 @@ function buildRecommendationLetterSections(recommendationLetterStrategy) {
   if (!items.length) {
     return `
     <h2>推荐信推荐</h2>
-    <p>推荐信策略需要同时基于用户背景输入和规划回答输出表格生成。请先补充用户背景并生成或填写规划表格。</p>`;
+    <p>补充背景和活动后生成。</p>`;
   }
 
   return `
@@ -197,7 +197,7 @@ export function buildWordDocument({
       </thead>
       <tbody>${activityRows}</tbody>
     </table>
-    <h2>活动叙事逻辑解读</h2>
+    <h2>活动叙事</h2>
     <p>${escapeHtml(narrative).replaceAll("\n", "<br>")}</p>
     ${buildCompetitionSections(competitionRecommendations)}
     ${buildSummerSchoolSections(summerSchoolRecommendations)}

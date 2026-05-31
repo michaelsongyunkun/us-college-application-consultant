@@ -54,7 +54,7 @@ const missingPlan = buildRecommendationLetterStrategy({
 
 assert.equal(missingPlan.ready, false);
 assert.deepEqual(missingPlan.items, []);
-assert.ok(missingPlan.notice.includes("用户背景输入"));
+assert.ok(missingPlan.notice.includes("补充背景和活动"));
 
 const missingProfile = buildRecommendationLetterStrategy({
   profile: {},

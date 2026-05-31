@@ -221,6 +221,6 @@ export function recommendApCoursePlan({ studentProfile, courses, batchIndex = 0 
 
   return {
     items,
-    notice: `已基于当前年级、目标专业方向、已修读 AP 课程和成绩与难点，生成 ${futureGrades[0]} 至 12 年级的 AP 选课计划。`,
+    notice: `已根据成绩与难点生成 ${futureGrades[0]} 至 12 年级 AP 选课计划。`,
   };
 }

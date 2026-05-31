@@ -37,12 +37,12 @@
           <p class="eyebrow">中国AI升学规划行业TOP级 · 全站免费使用</p>
           <h1 id="landing-title">生成规划，<br /><span>顺手匹配资源</span></h1>
           <p class="hero-description">
-            输入年级、方向、成绩和已有活动，免费生成一张美本申请行动地图，再连接 650+ 课外活动资源库和 150+ 院校百科，把建议落到可查、可核验的选择上。
+            输入年级、方向、成绩和已有活动，免费生成一张美本申请行动地图，再连接 3500+ 课外活动资源和 150+ 院校百科，把建议落到可查、可核验的选择上。
           </p>
           <button id="heroStartButton" type="button">免费生成我的行动地图</button>
           <div class="hero-proof" aria-label="产品能力">
             <p><strong>资深升学顾问认可</strong><span>活动规划更贴近申请实战</span></p>
-            <p><strong>650+资源支持</strong><span>覆盖竞赛、夏校、研究和项目方向</span></p>
+            <p><strong>3500+课外活动资源</strong><span>覆盖竞赛、夏校、研究和项目方向</span></p>
             <p><strong>150+院校详解</strong><span>对照学校要求与申请轮次</span></p>
             <p><strong>全免费开放</strong><span>规划工具、资源库与院校百科均可免费使用</span></p>
           </div>
@@ -51,7 +51,7 @@
         <div id="authCard" class="auth-card">
           <p class="eyebrow">全免费使用</p>
           <h2 id="auth-title">领取你的申请行动地图</h2>
-          <p class="auth-copy">注册后免费保存规划，并解锁 650+ 资源库、150+ 院校百科、GPA/SAT/AP 档案。网站核心功能目前全免费。</p>
+          <p class="auth-copy">注册后免费保存规划，并解锁 3500+ 课外活动资源、150+ 院校百科、GPA/SAT/AP 档案。网站核心功能目前全免费。</p>
           <form id="authForm" class="auth-form">
             <label id="authNameField">
               <span>姓名</span>
@@ -212,7 +212,7 @@
           <div class="command-nav-group">
             <a href="./index.html" data-safe-nav aria-current="page">申请指挥中心</a>
             <div class="command-subnav" aria-label="申请指挥中心快捷导航">
-              <a href="./index.html#planningOutputTable">规划回答输出表格</a>
+              <a href="./index.html#planningOutputTable">活动规划表</a>
               <a href="./index.html#competitionRecommendations">国际竞赛推荐</a>
               <a href="./index.html#summerSchoolRecommendations">夏校推荐</a>
               <a href="./index.html#recommendationLetterRecommendations">推荐信推荐</a>
@@ -231,8 +231,8 @@
           <a id="adminDashboardLink" class="is-hidden" href="./admin.html" data-safe-nav>数据看板</a>
         </nav>
         <div class="command-sidebar-note">
-          <strong>Automation Guardrails</strong>
-          <span>AI 生成内容只做规划参考，关键项目资格、院校政策和申请材料保留人工核验提醒。</span>
+          <strong>使用边界</strong>
+          <span>AI 仅供规划参考，关键要求需人工核验。</span>
         </div>
       </aside>
 
@@ -259,7 +259,7 @@
         <div class="section-heading table-heading">
           <div>
             <h2 id="workspace-title">开始申请规划</h2>
-            <p>系统会根据你当前进度，只显示最应该做的一件事。</p>
+            <p>按当前进度推进。</p>
           </div>
           <span id="planningWorkspaceStatus" class="status" role="status" aria-live="polite">正在加载</span>
         </div>
@@ -267,7 +267,7 @@
           <div class="workspace-next-copy">
             <p class="workspace-next-eyebrow">下一步</p>
             <h3 id="workspaceNextActionTitle">先填写学生信息</h3>
-            <p id="workspaceNextActionText">你现在只需要做一件事：先填写学生信息。</p>
+            <p id="workspaceNextActionText">先填写学生信息。</p>
           </div>
           <div class="workspace-next-actions">
             <button id="workspacePrimaryActionButton" class="workspace-primary-action" type="button">先填写学生信息</button>
@@ -294,7 +294,7 @@
         <div id="workspacePriorityActions" class="workspace-priority-actions" aria-label="常用方案操作">
           <div>
             <strong>常用方案操作</strong>
-            <span>生成后可立即导出报告；需要重做时可清空当前方案。</span>
+            <span>生成后可导出；重做时可清空。</span>
           </div>
           <div class="workspace-action-buttons workspace-priority-buttons">
             <button id="exportSvgButton" class="secondary" type="button">导出 SVG</button>
@@ -304,13 +304,13 @@
         </div>
         <details id="workspaceAdvancedActions" class="workspace-advanced">
           <summary>
-            <span>高级操作：方案、备份与导出</span>
-            <small>需要管理多个版本时再打开</small>
+            <span>方案、备份、导出</span>
+            <small>管理多版本时打开</small>
           </summary>
           <div class="workspace-action-bar" aria-label="当前方案操作">
             <div>
               <strong>当前方案</strong>
-              <span>保存、导出或清空当前规划内容</span>
+              <span>保存当前规划</span>
             </div>
             <div class="workspace-action-buttons">
               <button id="saveButton" type="button">保存当前内容</button>
@@ -336,7 +336,7 @@
             </article>
             <article class="workspace-card snapshots-card">
               <p class="workspace-label">历史备份</p>
-              <p class="workspace-help">保存重要节点；需要时点“恢复”，回到当时的内容。</p>
+              <p class="workspace-help">保存节点，可随时恢复。</p>
               <label class="snapshot-note">
                 <span>备份备注（可选）</span>
                 <input
@@ -360,8 +360,8 @@
 
       <section class="panel intake-panel" aria-labelledby="intake-title">
         <div class="section-heading">
-          <h2 id="intake-title">用户背景输入</h2>
-          <p>这些信息会作为用户背景传给中间 Agent 层。</p>
+          <h2 id="intake-title">学生信息</h2>
+          <p>用于生成规划。</p>
         </div>
 
         <form id="profileForm" class="profile-grid">
@@ -550,15 +550,15 @@
         <div class="section-heading table-heading">
           <div>
             <h2 id="agent-title">DeepSeek 生成规划</h2>
-            <p>由站点统一配置的 DeepSeek API 生成规划回答，并直接写入下方表格。</p>
+            <p>生成后写入下方表格。</p>
           </div>
         </div>
         <div class="agent-body">
           <textarea id="rawAnswer" class="is-hidden" hidden></textarea>
           <div id="deepSeekAutoGenerate" class="deepseek-auto-generate" aria-labelledby="deepseek-title">
             <div class="deepseek-copy">
-              <h3 id="deepseek-title">DeepSeek 自动生成</h3>
-              <p>由站点统一配置的 DeepSeek API 生成规划回答并直接写入下方表格，用户无需提供自己的 API Key。</p>
+              <h3 id="deepseek-title">自动生成</h3>
+              <p>无需自备 API Key。</p>
             </div>
             <div class="deepseek-actions">
               <button id="generateDeepSeekButton" type="button" aria-describedby="deepSeekStatus deepSeekWorkingIndicator">用 DeepSeek 生成规划</button>
@@ -568,7 +568,7 @@
               <span class="deepseek-working__pulse" aria-hidden="true"></span>
               <div class="deepseek-working__copy">
                 <strong>DeepSeek 正在生成规划</strong>
-                <span>正在分析学生背景、整理活动路线，并准备写入下方表格。</span>
+                <span>分析背景并写入表格。</span>
               </div>
             </div>
           </div>
@@ -589,8 +589,8 @@
       <section id="planningOutputTable" class="panel" aria-labelledby="activities-title">
         <div class="section-heading table-heading">
           <div>
-            <h2 id="activities-title">规划回答输出表格</h2>
-            <p>Agent 输出的 15 项课外活动最终填入这里。</p>
+            <h2 id="activities-title">活动规划表</h2>
+            <p>15 项活动建议。</p>
           </div>
           <span id="saveStatus" class="status" role="status" aria-live="polite">未保存</span>
         </div>
@@ -720,7 +720,7 @@
           <div class="activity-quality-heading">
             <div>
               <h3 id="activity-quality-title">活动质量检查</h3>
-              <p>自动检查完整度、数字证据、影响表达、领导力线索和专业连接。</p>
+              <p>检查完整度、数字证据、影响和专业连接。</p>
             </div>
             <span id="activityQualityStatus" class="status" role="status" aria-live="polite">等待活动内容</span>
           </div>
@@ -729,7 +729,7 @@
               <span>综合评分</span>
               <strong id="activityQualityScore">--</strong>
             </div>
-            <p id="activityQualitySummary">填入活动后，系统会自动检查活动列表质量。</p>
+            <p id="activityQualitySummary">填入活动后开始检查。</p>
           </div>
           <div id="activityQualityMetrics" class="activity-quality-metrics" aria-label="活动质量指标"></div>
           <div class="activity-quality-columns">
@@ -749,8 +749,8 @@
         </div>
 
         <label class="narrative-box">
-          <span>活动叙事逻辑解读</span>
-          <textarea id="narrativeOutput" placeholder="Agent 输出的【活动叙事逻辑解读】会填入这里。"></textarea>
+          <span>活动叙事</span>
+          <textarea id="narrativeOutput" placeholder="活动叙事会显示在这里。"></textarea>
         </label>
 
       </section>
@@ -759,7 +759,7 @@
         <div class="section-heading table-heading">
           <div>
             <h2 id="competition-title">国际竞赛推荐</h2>
-            <p>基于当前学生背景和竞赛资料库，推荐 3 个学科强相关竞赛与 2 个拓展型竞赛。</p>
+            <p>推荐 5 个竞赛。</p>
           </div>
           <div class="inline-actions">
             <span id="competitionStatus" class="status" role="status" aria-live="polite">竞赛库加载中</span>
@@ -767,7 +767,7 @@
           </div>
         </div>
         <div class="competition-body">
-          <p id="competitionNotice" class="case-notice">正在读取竞赛资料并生成推荐。</p>
+          <p id="competitionNotice" class="case-notice">读取竞赛资料中。</p>
           <div id="competitionList" class="competition-list"></div>
         </div>
       </section>
@@ -776,7 +776,7 @@
         <div class="section-heading table-heading">
           <div>
             <h2 id="summer-school-title">夏校推荐</h2>
-            <p>基于当前学生背景和国际夏校资料库，推荐冲刺型、匹配型和保底型各 1 个项目。</p>
+            <p>推荐 3 个夏校。</p>
           </div>
           <div class="inline-actions">
             <span id="summerSchoolStatus" class="status" role="status" aria-live="polite">夏校库加载中</span>
@@ -784,7 +784,7 @@
           </div>
         </div>
         <div class="summer-school-body">
-          <p id="summerSchoolNotice" class="case-notice">正在读取夏校资料并生成推荐。</p>
+          <p id="summerSchoolNotice" class="case-notice">读取夏校资料中。</p>
           <div id="summerSchoolList" class="summer-school-list"></div>
         </div>
       </section>
@@ -793,13 +793,13 @@
         <div class="section-heading table-heading">
           <div>
             <h2 id="recommendation-letter-title">推荐信推荐</h2>
-            <p>基于用户背景输入和规划回答输出表格，制定 Counselor、校内教师和校外推荐信策略。</p>
+            <p>生成推荐信策略。</p>
           </div>
           <span id="recommendationLetterStatus" class="status" role="status" aria-live="polite">等待完整输入</span>
         </div>
         <div class="recommendation-letter-body">
           <p id="recommendationLetterNotice" class="case-notice">
-            推荐信策略需要同时基于用户背景输入和规划回答输出表格生成。
+            补充背景和活动后生成。
           </p>
           <div id="recommendationLetterList" class="recommendation-letter-list"></div>
         </div>
@@ -809,7 +809,7 @@
         <div class="section-heading table-heading">
           <div>
             <h2 id="case-match-title">相似录取案例参考</h2>
-            <p>基于当前学生的专业方向、学术背景与活动规划，匹配可参考的录取案例。</p>
+            <p>匹配相似录取案例。</p>
           </div>
           <div class="inline-actions">
             <span id="caseMatchStatus" class="status" role="status" aria-live="polite">案例库加载中</span>
@@ -817,7 +817,7 @@
           </div>
         </div>
         <div class="case-match-body">
-          <p id="caseMatchNotice" class="case-notice">正在读取案例库并分析当前学生背景。</p>
+          <p id="caseMatchNotice" class="case-notice">读取案例库中。</p>
           <div id="caseMatchList" class="case-list"></div>
         </div>
       </section>

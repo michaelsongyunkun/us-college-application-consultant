@@ -223,7 +223,7 @@ function createSvgLayout() {
   }
 
   function addNarrative(narrative) {
-    addSectionTitle("活动叙事逻辑解读", "用于把活动表串成一条清晰的申请主线。");
+    addSectionTitle("活动叙事", "申请主线参考。");
     const lines = wrapText(narrative || "暂未生成活动叙事逻辑。", maxUnitsForWidth(CONTENT_WIDTH - 48, 17));
     const height = 62 + lines.length * 23;
     rect(MARGIN, y, CONTENT_WIDTH, height, { fill: SURFACE_GREEN, stroke: "#c9dfd2", radius: 20 });
@@ -311,7 +311,7 @@ export function buildSvgDocument({
       `申请帮助：${normalizeText(competition.applicationHelp, "暂无申请帮助说明")}`,
       `准备时间：${normalizeText(competition.prepTime, "待定")}；官网：${normalizeText(competition.url, "官网待确认")}`,
     ],
-    "当前竞赛库暂未找到合适竞赛，请补充竞赛资料后再生成推荐。",
+    "竞赛库暂无匹配项。",
   );
   layout.addListSection(
     "夏校推荐",
@@ -333,7 +333,7 @@ export function buildSvgDocument({
       `可用证据：${normalizeText(letter.evidence, "暂无证据")}`,
       `准备建议：${normalizeText(letter.preparationAdvice, "暂无准备建议")}`,
     ],
-    "推荐信策略需要同时基于用户背景输入和规划回答输出表格生成。",
+    "补充背景和活动后生成。",
   );
   layout.addListSection(
     "相似录取案例参考",
@@ -343,7 +343,7 @@ export function buildSvgDocument({
       `匹配理由：${normalizeText(match.matchReason, "暂无匹配理由")}`,
       `可借鉴点：${normalizeText(match.takeaway, "暂无可借鉴点")}`,
     ],
-    "当前案例库暂未找到合适案例，建议后续补充更多录取案例数据后再生成匹配结果。",
+    "案例库暂无匹配项。",
   );
   layout.addFooter();
   return layout.output();

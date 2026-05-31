@@ -450,7 +450,7 @@ function renderCompetitionRecommendations({ refresh = false } = {}) {
   if (!competitions.length) {
     latestCompetitionRecommendations = [];
     competitionStatus.textContent = "竞赛库为空";
-    competitionNotice.textContent = "当前竞赛库暂未找到合适竞赛，请补充竞赛资料后再生成推荐。";
+    competitionNotice.textContent = "竞赛库暂无匹配项。";
     competitionList.innerHTML = "";
     return;
   }
@@ -464,7 +464,7 @@ function renderCompetitionRecommendations({ refresh = false } = {}) {
 
   latestCompetitionRecommendations = result.items;
   competitionStatus.textContent = `已载入 ${competitions.length} 个竞赛`;
-  competitionNotice.textContent = result.notice || "已根据当前学生背景生成 3 个学科强相关竞赛和 2 个拓展型竞赛。";
+  competitionNotice.textContent = result.notice || "已生成竞赛推荐。";
 
   competitionList.innerHTML = latestCompetitionRecommendations
     .map(
@@ -506,7 +506,7 @@ function renderSummerSchoolRecommendations({ refresh = false } = {}) {
   if (!summerSchools.length) {
     latestSummerSchoolRecommendations = [];
     summerSchoolStatus.textContent = "夏校库为空";
-    summerSchoolNotice.textContent = "当前夏校库暂未找到合适项目，请补充夏校资料后再生成推荐。";
+    summerSchoolNotice.textContent = "夏校库暂无匹配项。";
     summerSchoolList.innerHTML = "";
     return;
   }
@@ -521,7 +521,7 @@ function renderSummerSchoolRecommendations({ refresh = false } = {}) {
 
   latestSummerSchoolRecommendations = result.items;
   summerSchoolStatus.textContent = `已载入 ${summerSchools.length} 个夏校`;
-  summerSchoolNotice.textContent = result.notice || "已根据当前学生背景生成冲刺型、匹配型和保底型夏校推荐。";
+  summerSchoolNotice.textContent = result.notice || "已生成夏校推荐。";
 
   summerSchoolList.innerHTML = latestSummerSchoolRecommendations
     .map(
@@ -597,7 +597,7 @@ function renderCaseMatches({ refresh = false } = {}) {
     caseMatchBatchIndex = 0;
     caseMatchStatus.textContent = "案例库为空";
     caseMatchNotice.textContent =
-      "当前案例库暂未找到合适案例，建议后续补充更多录取案例数据后再生成匹配结果。";
+      "案例库暂无匹配项。";
     caseMatchList.innerHTML = "";
     if (refreshCaseMatchesButton) refreshCaseMatchesButton.disabled = true;
     return;
@@ -614,7 +614,7 @@ function renderCaseMatches({ refresh = false } = {}) {
     caseMatchBatchIndex = 0;
     caseMatchStatus.textContent = `已载入 ${admissionCases.length} 个案例`;
     caseMatchNotice.textContent =
-      "当前案例库暂未找到合适案例，建议后续补充更多录取案例数据后再生成匹配结果。";
+      "案例库暂无匹配项。";
     caseMatchList.innerHTML = "";
     if (refreshCaseMatchesButton) refreshCaseMatchesButton.disabled = true;
     return;
@@ -627,11 +627,11 @@ function renderCaseMatches({ refresh = false } = {}) {
 
   const hasHighMatch = latestCaseMatches.some((match) => match.strength === "high");
   if (selectedIndex > 0) {
-    caseMatchNotice.textContent = `以下为匹配度排名第 ${selectedIndex + 1} 的相似案例，匹配度仅次于上一条推荐案例。`;
+    caseMatchNotice.textContent = `相似案例第 ${selectedIndex + 1} 条。`;
   } else {
     caseMatchNotice.textContent = hasHighMatch
-      ? "以下为当前案例库中专业方向和背景最接近的一个录取案例。点击“换一批”可查看匹配度次高的案例。"
-      : "以下为当前案例库中专业方向接近、但整体相似度仍需谨慎参考的一个案例。点击“换一批”可查看匹配度次高的案例。";
+      ? "当前最相似案例。"
+      : "相似度有限，仅供参考。";
   }
 
   caseMatchList.innerHTML = latestCaseMatches
@@ -848,7 +848,7 @@ function getWorkspaceNextActionState() {
     return {
       step: "profile",
       title: "先填写学生信息",
-      text: "你现在只需要做一件事：先填写学生信息。填完后系统会提示你生成申请规划。",
+      text: "填写后生成规划。",
       button: "先填写学生信息",
     };
   }
@@ -857,7 +857,7 @@ function getWorkspaceNextActionState() {
     return {
       step: "generate",
       title: "生成申请规划",
-      text: "学生信息已经有了，下一步直接生成申请规划、活动建议和资源匹配。",
+      text: "生成活动建议和资源匹配。",
       button: "生成申请规划",
     };
   }
@@ -866,7 +866,7 @@ function getWorkspaceNextActionState() {
     return {
       step: "save",
       title: "保存当前规划",
-      text: "你已经有规划内容了，先保存当前版本，避免刷新或切换方案时丢失。",
+      text: "保存当前版本。",
       button: "保存当前规划",
     };
   }
@@ -874,7 +874,7 @@ function getWorkspaceNextActionState() {
   return {
     step: "optimize",
     title: "继续优化规划",
-    text: "当前规划已经保存。可以继续问 DeepSeek，也可以查看申请档案整理成果。",
+    text: "继续优化或查看档案。",
     button: "继续优化规划",
   };
 }
