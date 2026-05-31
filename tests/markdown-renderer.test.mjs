@@ -17,3 +17,23 @@ assert.ok(!html.includes("<script>"));
 
 const escaped = renderMarkdown("<script>alert(1)</script>");
 assert.ok(escaped.includes("&lt;script&gt;alert(1)&lt;/script&gt;"));
+
+const visualHtml = renderMarkdown(`
+## Recommended Actions
+
+| Step | Reason |
+| --- | --- |
+| **Build profile** | Match CS + AI direction |
+| Verify links | Use [official page](https://example.com) |
+
+\`\`\`text
+deadline: confirm with school
+\`\`\`
+`);
+
+assert.ok(visualHtml.includes("<table>"));
+assert.ok(visualHtml.includes("<thead>"));
+assert.ok(visualHtml.includes("<tbody>"));
+assert.ok(visualHtml.includes("<strong>Build profile</strong>"));
+assert.ok(visualHtml.includes('<a href="https://example.com" target="_blank" rel="noreferrer">official page</a>'));
+assert.ok(visualHtml.includes("<pre><code>deadline: confirm with school</code></pre>"));

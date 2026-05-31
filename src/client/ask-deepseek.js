@@ -1,4 +1,5 @@
 import { escapeHtml } from "./html-utils.mjs";
+import { renderMarkdown } from "../domain/markdown-renderer.mjs?v=20260531-deepseek-markdown";
 
 const form = document.querySelector("#deepSeekQuestionForm");
 const questionInput = document.querySelector("#deepSeekQuestion");
@@ -38,7 +39,7 @@ async function requestJson(url, options = {}) {
   return data;
 }
 
-function renderTextBlocks(text) {
+function renderPlainText(text) {
   const blocks = String(text || "")
     .trim()
     .split(/\n{2,}/)
@@ -49,6 +50,11 @@ function renderTextBlocks(text) {
   return blocks
     .map((block) => `<p>${escapeHtml(block).replaceAll("\n", "<br />")}</p>`)
     .join("");
+}
+
+function renderBubbleContent(content, { isUser = false, error = false } = {}) {
+  if (isUser || error) return renderPlainText(content);
+  return renderMarkdown(content) || renderPlainText(content);
 }
 
 function renderSourceCards(sources = []) {
@@ -82,7 +88,7 @@ function renderMessage({ id = "", role, content, sources = [], thinking = false,
   const speaker = isUser ? "你" : "DeepSeek";
   const bubbleContent = thinking
     ? `<span class="thinking-dots" aria-label="DeepSeek 正在思考">${THINKING_TEXT}</span>`
-    : renderTextBlocks(content);
+    : renderBubbleContent(content, { isUser, error });
   const referenceContent = !isUser && !thinking && !error ? renderSourceCards(sources) : "";
   const idAttribute = id ? ` id="${escapeHtml(id)}"` : "";
 

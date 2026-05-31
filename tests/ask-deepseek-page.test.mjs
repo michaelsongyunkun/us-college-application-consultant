@@ -48,6 +48,15 @@ for (const expected of [
 }
 
 assert.ok(script.includes('"/api/deepseek-rag"'), "Ask DeepSeek should call the RAG API.");
+assert.ok(
+  script.includes("renderMarkdown"),
+  "Ask DeepSeek should render DeepSeek markdown as visual HTML before showing answers.",
+);
+assert.doesNotMatch(
+  script,
+  /renderTextBlocks/,
+  "Ask DeepSeek should not expose markdown syntax through plain text block rendering.",
+);
 assert.ok(script.includes("renderThinkingMessage"), "Ask DeepSeek should render a thinking message.");
 assert.ok(script.includes("......"), "DeepSeek thinking state should show six dots.");
 assert.ok(script.includes("renderSourceCards"), "Ask DeepSeek should show retrieved source cards inside the answer.");
