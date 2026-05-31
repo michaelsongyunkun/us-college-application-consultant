@@ -359,6 +359,19 @@ function redirectToLogin(response, requestPath = "/") {
   response.end();
 }
 
+function renderIndexForSession(html, user) {
+  if (!user) return html;
+  return html
+    .replace(
+      '<section id="authShell" class="landing-shell" aria-labelledby="landing-title">',
+      '<section id="authShell" class="landing-shell is-hidden" aria-labelledby="landing-title">',
+    )
+    .replace(
+      '<main id="appShell" class="app-shell command-shell is-hidden">',
+      '<main id="appShell" class="app-shell command-shell">',
+    );
+}
+
 function createRateLimiter(rateLimits) {
   const entries = new Map();
 
@@ -652,9 +665,15 @@ export function createAppServer({
       response.writeHead(200, withSecurityHeaders({
         "Content-Type": contentTypes[extname(filePath)] || "text/plain;charset=utf-8",
         ...cacheHeadersForPath(filePath),
+        ...(requestPath === "/index.html" ? { Vary: "Cookie" } : {}),
       }));
       if (request.method === "HEAD") {
         response.end();
+        return;
+      }
+      if (requestPath === "/index.html") {
+        const user = auth.getUserForSession(getSessionToken(request));
+        response.end(renderIndexForSession(await readFile(filePath, "utf8"), user));
         return;
       }
       createReadStream(filePath).pipe(response);

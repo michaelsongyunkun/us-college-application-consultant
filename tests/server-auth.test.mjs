@@ -78,6 +78,40 @@ try {
   const me = await meResponse.json();
   assert.equal(me.user.email, "student@example.com");
 
+  const authenticatedHomeResponse = await fetch(`${baseUrl}/`, {
+    headers: { Cookie: cookie },
+  });
+  assert.equal(authenticatedHomeResponse.status, 200);
+  assert.match(authenticatedHomeResponse.headers.get("vary") || "", /Cookie/i);
+  const authenticatedHomeHtml = await authenticatedHomeResponse.text();
+  const authenticatedAuthShellTag = authenticatedHomeHtml.match(/<section id="authShell"[^>]*>/)?.[0] || "";
+  const authenticatedAppShellTag = authenticatedHomeHtml.match(/<main id="appShell"[^>]*>/)?.[0] || "";
+  assert.match(
+    authenticatedAuthShellTag,
+    /\bis-hidden\b/u,
+    "Authenticated home should not briefly show the logged-out shell before client auth resolves.",
+  );
+  assert.doesNotMatch(
+    authenticatedAppShellTag,
+    /\bis-hidden\b/u,
+    "Authenticated home should render the command center shell immediately.",
+  );
+  const authenticatedIndexResponse = await fetch(`${baseUrl}/index.html`, {
+    headers: { Cookie: cookie },
+  });
+  assert.equal(authenticatedIndexResponse.status, 200);
+  const authenticatedIndexHtml = await authenticatedIndexResponse.text();
+  assert.match(
+    authenticatedIndexHtml.match(/<section id="authShell"[^>]*>/)?.[0] || "",
+    /\bis-hidden\b/u,
+    "Authenticated logo navigation to index.html should keep the logged-out shell hidden.",
+  );
+  assert.doesNotMatch(
+    authenticatedIndexHtml.match(/<main id="appShell"[^>]*>/)?.[0] || "",
+    /\bis-hidden\b/u,
+    "Authenticated logo navigation to index.html should show the command center shell immediately.",
+  );
+
   const promptResponse = await fetch(`${baseUrl}/api/prompt`, {
     headers: { Cookie: cookie },
   });
