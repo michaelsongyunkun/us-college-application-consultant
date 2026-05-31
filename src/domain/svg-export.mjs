@@ -41,7 +41,23 @@ function profileLabel(key) {
   return PROFILE_LABELS[key] || key;
 }
 
-function wrapText(value, maxChars = 46) {
+function characterWidthUnit(character) {
+  if (/[\u4e00-\u9fff\u3040-\u30ff\uff00-\uffef]/u.test(character)) return 1;
+  if (/[A-Z0-9]/.test(character)) return 0.66;
+  if (/[a-z]/.test(character)) return 0.56;
+  if (/\s/.test(character)) return 0.34;
+  return 0.5;
+}
+
+function textWidthUnits(value) {
+  return [...String(value || "")].reduce((width, character) => width + characterWidthUnit(character), 0);
+}
+
+function maxUnitsForWidth(width, fontSize, safety = 0.95) {
+  return Math.max(8, Math.floor((width / fontSize) * safety));
+}
+
+function wrapText(value, maxUnits = 46) {
   const text = normalizeText(value, "");
   if (!text) return [];
 
@@ -50,22 +66,27 @@ function wrapText(value, maxChars = 46) {
     let current = "";
     for (const token of paragraph.split(/(\s+)/).filter(Boolean)) {
       if (/^\s+$/.test(token)) {
-        if (current && current.length < maxChars) current += " ";
+        if (current && textWidthUnits(`${current} `) <= maxUnits) current += " ";
         continue;
       }
 
-      if (token.length > maxChars) {
+      if (textWidthUnits(token) > maxUnits) {
         if (current) {
           lines.push(current.trim());
           current = "";
         }
-        for (let index = 0; index < token.length; index += maxChars) {
-          lines.push(token.slice(index, index + maxChars));
+        for (const character of token) {
+          if (current && textWidthUnits(current + character) > maxUnits) {
+            lines.push(current.trim());
+            current = character;
+          } else {
+            current += character;
+          }
         }
         continue;
       }
 
-      if ((current + token).length > maxChars) {
+      if (textWidthUnits(current + token) > maxUnits) {
         lines.push(current.trim());
         current = token;
       } else {
@@ -121,7 +142,15 @@ function createSvgLayout() {
     text({ x: MARGIN, y, lines: [title], size: 25, weight: 900 });
     y += 10;
     if (description) {
-      y += text({ x: MARGIN, y: y + 22, lines: wrapText(description, 76), size: 15, weight: 500, color: MUTED, lineHeight: 22 });
+      y += text({
+        x: MARGIN,
+        y: y + 22,
+        lines: wrapText(description, maxUnitsForWidth(CONTENT_WIDTH, 15)),
+        size: 15,
+        weight: 500,
+        color: MUTED,
+        lineHeight: 22,
+      });
     }
     y += 28;
   }
@@ -142,7 +171,7 @@ function createSvgLayout() {
     entries.forEach(([key, value], index) => {
       const x = index % 2 === 0 ? MARGIN : MARGIN + columnWidth + 18;
       const top = index % 2 === 0 ? leftY : rightY;
-      const valueLines = wrapText(value, 34);
+      const valueLines = wrapText(value, maxUnitsForWidth(columnWidth - 36, 17));
       const height = 58 + valueLines.length * 21;
       rect(x, top, columnWidth, height, { fill: SURFACE, stroke: LINE, radius: 16 });
       text({ x: x + 18, y: top + 27, lines: [profileLabel(key)], size: 14, weight: 800, color: BRAND_GREEN });
@@ -169,8 +198,12 @@ function createSvgLayout() {
     }
 
     filledActivities.forEach((activity, index) => {
-      const titleLines = wrapText(activity.activityName || `活动 ${index + 1}`, 54);
-      const descriptionLines = wrapText(activity.executionDescription || "暂无具体执行描述", 74);
+      const activityTextWidth = CONTENT_WIDTH - 144;
+      const titleLines = wrapText(activity.activityName || `活动 ${index + 1}`, maxUnitsForWidth(activityTextWidth, 22));
+      const descriptionLines = wrapText(
+        activity.executionDescription || "暂无具体执行描述",
+        maxUnitsForWidth(activityTextWidth, 16),
+      );
       const cardHeight = 120 + titleLines.length * 25 + descriptionLines.length * 23;
       rect(MARGIN, y, CONTENT_WIDTH, cardHeight, {
         fill: index % 2 === 0 ? SURFACE : "#fdfcf8",
@@ -191,7 +224,7 @@ function createSvgLayout() {
 
   function addNarrative(narrative) {
     addSectionTitle("活动叙事逻辑解读", "用于把活动表串成一条清晰的申请主线。");
-    const lines = wrapText(narrative || "暂未生成活动叙事逻辑。", 78);
+    const lines = wrapText(narrative || "暂未生成活动叙事逻辑。", maxUnitsForWidth(CONTENT_WIDTH - 48, 17));
     const height = 62 + lines.length * 23;
     rect(MARGIN, y, CONTENT_WIDTH, height, { fill: SURFACE_GREEN, stroke: "#c9dfd2", radius: 20 });
     text({ x: MARGIN + 24, y: y + 40, lines, size: 17, weight: 550, color: INK, lineHeight: 24 });
@@ -208,7 +241,8 @@ function createSvgLayout() {
     }
 
     items.forEach((item, index) => {
-      const lines = getLines(item, index).flatMap((line) => wrapText(line, 72));
+      const bodyUnits = maxUnitsForWidth(CONTENT_WIDTH - 48, 15);
+      const lines = getLines(item, index).flatMap((line) => wrapText(line, bodyUnits));
       const height = 52 + lines.length * 22;
       rect(MARGIN, y, CONTENT_WIDTH, height, { fill: SURFACE, stroke: LINE, radius: 18 });
       text({ x: MARGIN + 24, y: y + 34, lines: [`${index + 1}. ${lines[0] || "推荐项"}`], size: 18, weight: 850 });

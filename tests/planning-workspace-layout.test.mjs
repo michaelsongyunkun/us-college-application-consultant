@@ -163,6 +163,11 @@ assert.doesNotMatch(appJs, /buildCodexTask|copyCodexTask|parseCodexAnswer|codexT
 assert.doesNotMatch(appJs, /exportWordButton|exportWordDocument|buildWordDocument|export_word|application\/msword|\.doc"/, "Main app should replace Word export with SVG export.");
 assert.match(appJs, /querySelector\("#exportSvgButton"\)/, "Main app should bind SVG export.");
 assert.match(appJs, /buildSvgDocument/, "Main app should build an SVG export document.");
+assert.match(
+  appJs,
+  /from "\.\.\/domain\/svg-export\.mjs\?v=20260531-svg-wrap"/,
+  "SVG export module import should be cache-busted when wrapping behavior changes.",
+);
 assert.match(appJs, /export_svg/, "Main app should track SVG exports.");
 assert.match(appJs, /image\/svg\+xml;charset=utf-8/, "Main app should download SVG with the correct MIME type.");
 assert.match(appJs, /querySelector\("#generateDeepSeekButton"\)/, "Main app should bind DeepSeek generation.");

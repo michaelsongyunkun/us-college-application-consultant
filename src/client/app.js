@@ -22,7 +22,7 @@ import {
 import { buildRecommendationLetterStrategy } from "../domain/recommendation-letter-recommender.mjs";
 import { renderActivityQualityPanel } from "./activity-quality-ui.mjs";
 import { renderParseDiagnostics } from "./agent-answer-diagnostics-ui.mjs";
-import { buildSvgDocument } from "../domain/svg-export.mjs?v=20260531-svg-export";
+import { buildSvgDocument } from "../domain/svg-export.mjs?v=20260531-svg-wrap";
 import { getRequestErrorMessage } from "./auth-client-errors.mjs";
 import { escapeHtml } from "./html-utils.mjs";
 import {
