@@ -194,6 +194,16 @@ assert.match(html, /id="exportSvgButton"[^>]*class="secondary"/, "SVG export sho
 assert.match(html, /id="exportWordButton"[^>]*class="secondary"/, "Word export should use a secondary action style.");
 assert.match(html, /导出 Word 文档/, "Logged-in workspace should offer Word export.");
 assert.match(html, /id="logoutButton"[^>]*class="secondary"/, "Log out should use a secondary action style.");
+assert.match(
+  appJs,
+  /async function logout\(\) \{[\s\S]*logoutButton\.disabled = true;[\s\S]*logoutButton\.textContent = "退出中\.\.\.";[\s\S]*window\.location\.assign\("\/"\);[\s\S]*\}/,
+  "Logout should immediately show progress and reload to the public home page after clearing the session.",
+);
+assert.match(
+  html,
+  /src="\.\/src\/client\/app\.js\?v=20260601-logout-redirect"/,
+  "Main app script should be cache-busted when logout behavior changes.",
+);
 assert.match(html, /id="resetButton"[^>]*class="danger"/, "Reset should use a danger action style.");
 assert.match(html, /id=["']deepSeekAutoGenerate["']/, "DeepSeek automatic generation panel should be available.");
 assert.doesNotMatch(html, /id=["']deepSeekApiKeyInput["']/, "Users should not provide their own DeepSeek API Key.");

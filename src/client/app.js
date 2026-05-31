@@ -297,15 +297,24 @@ async function submitAuthForm(event) {
 }
 
 async function logout() {
-  await requestJson("/api/auth/logout", { method: "POST", body: "{}" }).catch(() => ({}));
-  clearVisibleDraft();
-  currentUser = null;
-  currentPlan = null;
-  plans = [];
-  snapshots = [];
-  workspaceDirty = false;
-  setAuthMode("login");
-  showAuthView("已退出登录");
+  const originalText = logoutButton.textContent;
+  logoutButton.disabled = true;
+  logoutButton.textContent = "退出中...";
+  try {
+    await requestJson("/api/auth/logout", { method: "POST", body: "{}" }).catch(() => ({}));
+    clearVisibleDraft();
+    currentUser = null;
+    currentPlan = null;
+    plans = [];
+    snapshots = [];
+    workspaceDirty = false;
+    setAuthMode("login");
+    showAuthView("已退出登录");
+    window.location.assign("/");
+  } finally {
+    logoutButton.disabled = false;
+    logoutButton.textContent = originalText;
+  }
 }
 
 function collectProfile() {
