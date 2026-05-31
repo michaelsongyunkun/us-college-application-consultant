@@ -47,6 +47,11 @@ for (const expected of [
   assert.ok(pageHtml.includes(expected), `Ask DeepSeek page should include ${expected}.`);
 }
 
+assert.ok(
+  !pageHtml.includes("把学生备份、资料库和院校百科一起问"),
+  "Ask DeepSeek page should not show the removed RAG summary heading.",
+);
+
 assert.ok(script.includes('"/api/deepseek-rag"'), "Ask DeepSeek should call the RAG API.");
 assert.ok(
   script.includes("renderMarkdown"),
