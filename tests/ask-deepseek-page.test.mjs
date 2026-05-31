@@ -53,6 +53,10 @@ for (const workflow of [
   ["school-strategy", "选校策略分析"],
   ["activity-boost", "活动补强方案"],
   ["recommendation-strategy", "推荐信策略"],
+  ["resource-match", "项目/竞赛/夏校匹配"],
+  ["school-gap", "院校匹配与差距分析"],
+  ["academic-plan", "成绩与课程规划诊断"],
+  ["material-checklist", "申请材料清单生成"],
 ]) {
   assert.ok(
     pageHtml.includes(`data-deepseek-workflow="${workflow[0]}"`),
@@ -92,6 +96,10 @@ assert.ok(script.includes("请进行一次申请档案体检"), "Ask DeepSeek sh
 assert.ok(script.includes("请分析我的选校策略"), "Ask DeepSeek should prompt the school strategy workflow.");
 assert.ok(script.includes("请给出活动补强方案"), "Ask DeepSeek should prompt the activity boost workflow.");
 assert.ok(script.includes("请制定推荐信策略"), "Ask DeepSeek should prompt the recommendation strategy workflow.");
+assert.ok(script.includes("请匹配适合我的项目、竞赛和夏校"), "Ask DeepSeek should prompt the resource match workflow.");
+assert.ok(script.includes("请做院校匹配与差距分析"), "Ask DeepSeek should prompt the school gap workflow.");
+assert.ok(script.includes("请进行成绩与课程规划诊断"), "Ask DeepSeek should prompt the academic plan workflow.");
+assert.ok(script.includes("请生成申请材料清单"), "Ask DeepSeek should prompt the material checklist workflow.");
 
 assert.ok(script.includes('"/api/deepseek-rag"'), "Ask DeepSeek should call the RAG API.");
 assert.ok(
