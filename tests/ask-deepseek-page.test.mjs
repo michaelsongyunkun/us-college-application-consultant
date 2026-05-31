@@ -121,9 +121,19 @@ assert.match(
   /src="\.\/src\/client\/ask-deepseek\.js\?v=[a-z0-9-]+"/,
   "Ask DeepSeek script should be cache-busted.",
 );
+assert.ok(
+  pageHtml.includes("styles.css?v=20260531-deepseek-layout"),
+  "Ask DeepSeek page should refresh the stylesheet cache after layout changes.",
+);
 assert.match(styles, /\.deepseek-chat-log\s*\{/, "Ask DeepSeek should style the chat log.");
 assert.match(styles, /\.chat-message\.user\s*\{/, "Ask DeepSeek should have right-side user messages.");
 assert.match(styles, /\.chat-message\.assistant\s*\{/, "Ask DeepSeek should have left-side assistant messages.");
 assert.match(styles, /\.thinking-dots\s*\{/, "Ask DeepSeek should style the thinking dots.");
 assert.match(styles, /\.deepseek-workflow-grid\s*\{/, "Ask DeepSeek should style workflow quick actions.");
 assert.match(styles, /\.workflow-button\s*\{/, "Ask DeepSeek should style workflow buttons.");
+assert.match(
+  styles,
+  /\.ask-deepseek-shell \.command-summary-metrics\s*\{/,
+  "Ask DeepSeek should compact the RAG source metrics for the chat layout.",
+);
+assert.match(styles, /\.workflow-button::before\s*\{/, "Ask DeepSeek workflow buttons should have a compact visual accent.");
