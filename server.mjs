@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { createReadStream, existsSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseAgentOutput } from "./src/domain/agent-output-parser.mjs";
+import { PLANNING_ACTIVITY_COUNT, parseAgentOutput } from "./src/domain/agent-output-parser.mjs";
 import { resolveApiKey } from "./src/server/api-key.mjs";
 import { createAuthDatabase } from "./src/server/auth-db.mjs";
 import { AuthError, createAuthService } from "./src/server/auth-service.mjs";
@@ -63,12 +63,16 @@ const contentTypes = {
   ".md": "text/markdown;charset=utf-8",
 };
 
-const staticCacheExtensions = new Set([".css", ".js", ".mjs", ".svg"]);
+const staticCacheExtensions = new Set([".css", ".svg"]);
+const revalidatedCacheExtensions = new Set([".js", ".mjs"]);
 
 function cacheHeadersForPath(filePath) {
   const extension = extname(filePath);
   if (staticCacheExtensions.has(extension)) {
     return { "Cache-Control": "public, max-age=86400" };
+  }
+  if (revalidatedCacheExtensions.has(extension)) {
+    return { "Cache-Control": "no-cache" };
   }
   if (extension === ".html") {
     return { "Cache-Control": "no-cache" };
@@ -161,7 +165,7 @@ function buildUserMessage(payload) {
     "以下是用户提供的国际生背景信息。请基于固定Agent提示词完成规划，并严格按照提示词中的Expected Output Format输出。",
     "",
     "重要要求：",
-    "- 输出列表必须恰好10项。",
+    `- 输出列表必须恰好${PLANNING_ACTIVITY_COUNT}项。`,
     "- 最终回答中的表格将被系统解析并填入页面表格。",
     "- 不要省略【活动叙事逻辑解读】。",
     "",
@@ -608,7 +612,7 @@ export function createAppServer({
         return;
       }
 
-      if (request.method !== "GET") {
+      if (request.method !== "GET" && request.method !== "HEAD") {
         response.writeHead(405, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
         response.end("Method Not Allowed");
         return;
@@ -649,6 +653,10 @@ export function createAppServer({
         "Content-Type": contentTypes[extname(filePath)] || "text/plain;charset=utf-8",
         ...cacheHeadersForPath(filePath),
       }));
+      if (request.method === "HEAD") {
+        response.end();
+        return;
+      }
       createReadStream(filePath).pipe(response);
     } catch (error) {
       if (

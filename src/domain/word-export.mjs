@@ -184,7 +184,7 @@ export function buildWordDocument({
     <table>
       <tbody>${profileRows}</tbody>
     </table>
-    <h2>10项课外活动列表</h2>
+    <h2>15项课外活动规划列表</h2>
     <table>
       <thead>
         <tr>

@@ -7,7 +7,7 @@ assert.equal(emptyResult.statusLabel, "等待活动内容");
 assert.equal(emptyResult.metrics.completedCount, 0);
 assert.match(emptyResult.issues[0], /还没有可检查/);
 
-const strongActivities = Array.from({ length: 10 }, (_, index) => ({
+const strongActivities = Array.from({ length: 15 }, (_, index) => ({
   id: index + 1,
   type: index < 5 ? "学术研究" : index < 8 ? "领导力/服务" : "个人项目",
   activityName:
@@ -29,10 +29,10 @@ const strongResult = analyzeActivityQuality({
   profile: { majorDirection: "物理", interests: "计算物理 科普" },
   activities: strongActivities,
 });
-assert.equal(strongResult.metrics.completedCount, 10);
+assert.equal(strongResult.metrics.completedCount, 15);
 assert.ok(strongResult.score >= 80);
 assert.match(strongResult.statusLabel, /结构稳健/);
-assert.ok(strongResult.strengths.some((item) => item.includes("10 项活动")));
+assert.ok(strongResult.strengths.some((item) => item.includes("15 项活动")));
 
 const weakResult = analyzeActivityQuality({
   profile: { majorDirection: "物理" },

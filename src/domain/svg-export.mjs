@@ -183,7 +183,7 @@ function createSvgLayout() {
   }
 
   function addActivities(activities) {
-    addSectionTitle("10项课外活动规划", "活动名称与具体执行描述已转为可视化文本，可直接给学生和家长复盘。");
+    addSectionTitle("15项课外活动规划", "活动名称与具体执行描述已转为可视化文本，可直接给学生和家长复盘。");
     const filledActivities = (activities || []).filter((activity) =>
       [activity.type, activity.activityName, activity.executionDescription, activity.suggestedGrade].some((value) =>
         normalizeText(value, ""),

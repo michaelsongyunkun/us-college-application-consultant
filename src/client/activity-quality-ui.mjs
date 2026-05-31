@@ -6,7 +6,7 @@ export function renderActivityQualityPanel({ elements, profile, activities }) {
 
   const result = analyzeActivityQuality({ profile, activities });
   const metricItems = [
-    ["完整活动", `${result.metrics.completedCount}/10`],
+    ["完整活动", `${result.metrics.completedCount}/${result.metrics.targetCount}`],
     ["数字证据", result.metrics.quantifiedCount],
     ["影响表达", result.metrics.impactCount],
     ["领导力线索", result.metrics.leadershipCount],

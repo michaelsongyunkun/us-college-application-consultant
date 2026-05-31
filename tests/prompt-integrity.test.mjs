@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const prompt = await readFile(new URL("../prompts/us-college-admissions-strategist-agent.md", import.meta.url), "utf8");
+assert.ok(prompt.includes("15项活动"));
 
 assert.ok(prompt.includes("# Role: 美本申请资深规划顾问 (US College Admissions Strategist)   "));
 assert.ok(prompt.includes("*专注于帮助国际生突破美本申请瓶颈，深度挖掘独特闪光点，打造差异化申请故事*  "));

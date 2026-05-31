@@ -1,4 +1,7 @@
-import { markdownToPlainText } from "../domain/agent-output-parser.mjs?v=20260531-narrative-cleanup";
+import {
+  PLANNING_ACTIVITY_COUNT,
+  markdownToPlainText,
+} from "../domain/agent-output-parser.mjs?v=20260531-narrative-cleanup";
 
 export function collectProfileFromForm(profileForm) {
   return Object.fromEntries(new FormData(profileForm).entries());
@@ -29,7 +32,7 @@ export function setNamedFieldValue(name, value, root = document) {
 }
 
 export function fillActivityTable(activityTable, activities, { afterFill } = {}) {
-  activities.slice(0, 10).forEach((activity, index) => {
+  activities.slice(0, PLANNING_ACTIVITY_COUNT).forEach((activity, index) => {
     const rowNumber = index + 1;
     setNamedFieldValue(`type-${rowNumber}`, activity.type, activityTable);
     setNamedFieldValue(`name-${rowNumber}`, activity.activityName, activityTable);

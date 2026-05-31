@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.mjs",
     "test": "node scripts/run-tests.mjs",
-    "check": "node scripts/check-syntax.mjs"
+    "check": "node scripts/check-syntax.mjs",
+    "verify": "npm run check && npm test"
   },
   "engines": {
     "node": ">=20"

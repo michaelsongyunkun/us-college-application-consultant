@@ -67,6 +67,7 @@ try {
   assert.deepEqual(sentPayload.thinking, { type: "disabled" });
   assert.equal(sentPayload.messages[0].role, "system");
   assert.equal(sentPayload.messages[1].role, "user");
+  assert.match(sentPayload.messages[1].content, /恰好15项/);
   assert.match(sentPayload.messages[1].content, /10年级/);
 
   const requestKeyOnlyServer = createAppServer({

@@ -24,6 +24,7 @@ const LEADERSHIP_TERMS = ["创始", "发起", "主导", "负责人", "主席", "
 const ACADEMIC_TERMS = ["学术", "研究", "科研", "论文", "竞赛", "实验", "数据", "模型", "算法", "工程", "物理", "数学", "计算机", "ap", "physics", "machine"];
 const SERVICE_TERMS = ["公益", "志愿", "社区", "服务", "教学", "科普", "帮扶", "mentor", "workshop"];
 const PROFILE_STOP_TERMS = new Set(["未定", "方向", "兴趣", "申请", "专业", "学生", "例如"]);
+const PLANNING_ACTIVITY_TARGET = 15;
 
 function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
@@ -118,6 +119,7 @@ export function analyzeActivityQuality({ activities = [], profile = {} } = {}) {
   const profileTerms = buildProfileTerms(profile);
   const metrics = {
     completedCount,
+    targetCount: PLANNING_ACTIVITY_TARGET,
     structuredCount: filledActivities.filter(
       (activity) =>
         compactText(activity.type) &&
@@ -151,7 +153,7 @@ export function analyzeActivityQuality({ activities = [], profile = {} } = {}) {
   const score = Math.min(
     100,
     Math.round(
-      Math.min(completedCount, 10) * 3 +
+      Math.min(completedCount, PLANNING_ACTIVITY_TARGET) * 2 +
         (metrics.structuredCount / completedCount) * 20 +
         (metrics.quantifiedCount / completedCount) * 15 +
         (metrics.impactCount / completedCount) * 15 +
@@ -165,7 +167,7 @@ export function analyzeActivityQuality({ activities = [], profile = {} } = {}) {
   );
 
   const issues = [];
-  if (completedCount < 10) issues.push(`目前只有 ${completedCount}/10 项活动有内容，建议补齐 Common App 活动列表。`);
+  if (completedCount < PLANNING_ACTIVITY_TARGET) issues.push(`目前只有 ${completedCount}/${PLANNING_ACTIVITY_TARGET} 项活动有内容，建议补齐规划活动候选列表。`);
   if (metrics.quantifiedCount < Math.ceil(completedCount * 0.5)) issues.push("数字证据偏少，建议至少一半活动加入人数、排名、时长、成果规模或链接证据。");
   if (metrics.impactCount < Math.ceil(completedCount * 0.6)) issues.push("影响表达偏弱，建议更多说明服务对象、团队规模、传播范围或实际改变。");
   if (metrics.leadershipCount < 2 && completedCount >= 5) issues.push("领导力线索偏少，建议突出发起、主导、组织、带领或长期负责的经历。");
@@ -175,7 +177,7 @@ export function analyzeActivityQuality({ activities = [], profile = {} } = {}) {
   if (metrics.gradeCoverageCount <= 1 && completedCount >= 6) issues.push("活动年级分布较集中，建议呈现 9-12 年级的持续投入或进阶轨迹。");
 
   const strengths = [];
-  if (completedCount === 10) strengths.push("10 项活动框架完整，已经具备完整列表基础。");
+  if (completedCount >= PLANNING_ACTIVITY_TARGET) strengths.push("15 项活动框架完整，已经具备完整规划候选基础。");
   if (metrics.quantifiedCount >= 5) strengths.push("多项活动包含数字证据，便于后续压缩成 Common App 描述。");
   if (metrics.leadershipCount >= 3) strengths.push("领导力表达较充分，能体现主动性和组织能力。");
   if (metrics.academicCount >= 3 && metrics.serviceCount >= 1) strengths.push("学术探索和外部影响都有呈现，叙事不会只停留在单一维度。");

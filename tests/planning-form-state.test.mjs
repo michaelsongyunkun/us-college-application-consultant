@@ -7,7 +7,7 @@ function createField(value = "") {
 
 function createActivityTable() {
   const fields = new Map();
-  const rows = Array.from({ length: 10 }, (_, index) => {
+  const rows = Array.from({ length: 15 }, (_, index) => {
     const rowNumber = index + 1;
     for (const field of ["type", "name", "description", "grade"]) {
       fields.set(`${field}-${rowNumber}`, createField());
@@ -55,4 +55,17 @@ assert.equal(
 activityTable.fields.get("description-1").value =
   "**问题**：旧草稿仍有Markdown。**行动**：保存时也要清理。";
 const collected = collectActivitiesFromTable(activityTable);
+const fifteenRowTable = createActivityTable();
+fillActivityTable(
+  fifteenRowTable,
+  Array.from({ length: 15 }, (_, index) => ({
+    id: String(index + 1),
+    type: `Type ${index + 1}`,
+    activityName: `Activity ${index + 1}`,
+    executionDescription: `Description ${index + 1}`,
+    suggestedGrade: `Grade ${index + 1}`,
+  })),
+);
+
+assert.equal(fifteenRowTable.fields.get("name-15").value, "Activity 15");
 assert.equal(collected[0].executionDescription, "问题：旧草稿仍有Markdown。行动：保存时也要清理。");

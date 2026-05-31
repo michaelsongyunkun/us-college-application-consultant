@@ -1,3 +1,5 @@
+export const PLANNING_ACTIVITY_COUNT = 15;
+
 export function parseAgentOutput(markdown) {
   const source = String(markdown || "");
   const activities = parseTabularActivities(source);
@@ -8,7 +10,7 @@ export function parseAgentOutput(markdown) {
     : plainTextActivities.length
       ? plainTextActivities
       : numberedActivities
-  ).slice(0, 10);
+  ).slice(0, PLANNING_ACTIVITY_COUNT);
   const narrative = extractNarrative(source);
 
   return {
@@ -220,9 +222,9 @@ function buildParseDiagnostics({ source, activities, tabularActivities, plainTex
     issues.push(`检测到 ${candidateNumberedBlocks} 个疑似编号段落，但缺少稳定字段标签。`);
     suggestions.push("每项活动请尽量写出：活动类型、活动名称、具体执行描述、建议年级。");
   }
-  if (activities.length > 0 && activities.length < 10) {
-    issues.push(`已识别 ${activities.length} 项活动，但少于 Common App 10 项完整列表。`);
-    suggestions.push("如果需要完整规划，请让 AI 补齐到 10 项，或检查是否有部分行被复制漏掉。");
+  if (activities.length > 0 && activities.length < PLANNING_ACTIVITY_COUNT) {
+    issues.push(`已识别 ${activities.length} 项活动，但少于规划输出 ${PLANNING_ACTIVITY_COUNT} 项完整列表。`);
+    suggestions.push(`如果需要完整规划，请让 AI 补齐到 ${PLANNING_ACTIVITY_COUNT} 项，或检查是否有部分行被复制漏掉。`);
   }
   if (!narrative) {
     issues.push("未识别到【活动叙事逻辑解读】。");

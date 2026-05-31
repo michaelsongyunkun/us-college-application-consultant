@@ -360,7 +360,7 @@ function buildActivityImportSource(source) {
 function normalizeImportActivities(activities) {
   if (!Array.isArray(activities)) return [];
   return activities
-    .slice(0, 10)
+    .slice(0, 15)
     .map((activity, index) => ({
       id: Number(activity?.id) || index + 1,
       type: normalizeText(activity?.type),

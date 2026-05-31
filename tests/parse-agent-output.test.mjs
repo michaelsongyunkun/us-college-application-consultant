@@ -35,6 +35,20 @@ const loosePipeTable = `1 | 个人兴趣 | 古籍修复学习日志 | 问题：�
 
 const parsedLoosePipeTable = parseAgentOutput(loosePipeTable);
 assert.equal(parsedLoosePipeTable.activities.length, 1);
+const sixteenRowTable = [
+  "| 序号 | 活动类型（Type） | 活动名称（精准描述） | 具体执行描述（需含：问题/成果/影响） | 建议年级 |",
+  "|---|---|---|---|---|",
+  ...Array.from(
+    { length: 16 },
+    (_, index) =>
+      `| ${index + 1} | Type ${index + 1} | Activity ${index + 1} | Problem ${index + 1}; Outcome ${index + 1}; Impact ${index + 1} | 10 |`,
+  ),
+].join("\n");
+
+const parsedFifteenRowLimit = parseAgentOutput(sixteenRowTable);
+assert.equal(parsedFifteenRowLimit.activities.length, 15);
+assert.equal(parsedFifteenRowLimit.activities.at(-1).id, "15");
+assert.equal(parsedFifteenRowLimit.activities.at(-1).activityName, "Activity 15");
 assert.equal(parsedLoosePipeTable.activities[0].type, "个人兴趣");
 
 const markdownFormattedCells = `| 序号 | 活动类型（Type） | 活动名称（精准描述） | 具体执行描述（需含：问题/成果/影响） | 建议年级 |

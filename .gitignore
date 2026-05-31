@@ -16,6 +16,7 @@ spawn.out.log
 spawn.err.log
 
 # Local exports and drafts
+output/
 *.doc
 *.docx
 *.json

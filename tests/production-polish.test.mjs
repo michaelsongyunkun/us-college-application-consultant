@@ -68,6 +68,13 @@ assert.match(
   getTagAttribute(indexHtml, /<script type="module" src="\.\/src\/client\/safe-navigation\.mjs[^"]*"[^>]*>/, "src"),
   /^\.\/src\/client\/safe-navigation\.mjs\?v=[a-z0-9-]+$/u,
 );
+const authShellTag = indexHtml.match(/<section id="authShell"[^>]*>/)?.[0] || "";
+assert.ok(authShellTag, "Home page should include the public auth shell.");
+assert.doesNotMatch(
+  authShellTag,
+  /\bis-hidden\b/u,
+  "The public auth shell should be visible even if client modules fail to load.",
+);
 
 const robots = await readFile("robots.txt", "utf8");
 assert.ok(robots.includes("User-agent: *"));
@@ -142,10 +149,17 @@ try {
   assert.match(stylesheetResponse.headers.get("cache-control") || "", /public, max-age=86400/);
 
   const moduleResponse = await fetch(`${baseUrl}/src/client/app.js`);
-  assert.match(moduleResponse.headers.get("cache-control") || "", /public, max-age=86400/);
+  assert.match(moduleResponse.headers.get("cache-control") || "", /no-cache/);
+
+  const moduleDependencyResponse = await fetch(`${baseUrl}/src/client/ui-state.mjs`);
+  assert.match(moduleDependencyResponse.headers.get("cache-control") || "", /no-cache/);
 
   const htmlResponse = await fetch(`${baseUrl}/`);
   assert.match(htmlResponse.headers.get("cache-control") || "", /no-cache/);
+
+  const headResponse = await fetch(`${baseUrl}/`, { method: "HEAD" });
+  assert.equal(headResponse.status, 200);
+  assert.match(headResponse.headers.get("cache-control") || "", /no-cache/);
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });

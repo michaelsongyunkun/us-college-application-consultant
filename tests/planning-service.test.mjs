@@ -46,6 +46,12 @@ try {
         executionDescription: "**问题**：社区空气质量数据不足。**行动**：设计传感器采样并写成报告。",
         suggestedGrade: "10 年级暑假",
       },
+      ...Array.from({ length: 14 }, (_, index) => ({
+        type: "备选活动",
+        activityName: `规划候选活动 ${index + 2}`,
+        executionDescription: `问题：补充第 ${index + 2} 项活动。行动：完成执行记录。成果：形成可验证材料。`,
+        suggestedGrade: "11 年级",
+      })),
     ],
     rawAnswer: "answer",
     narrative: "narrative",
@@ -81,6 +87,7 @@ try {
   assert.equal(importSources.length, 2);
   assert.equal(importSources[0].sourceType, "current_plan");
   assert.equal(importSources[0].planName, "冲刺规划");
+  assert.equal(importSources[0].activities.length, 15);
   assert.equal(importSources[0].activities[0].activityName, "社区空气质量研究");
   assert.equal(importSources[0].activities[0].description, "问题：社区空气质量数据不足。行动：设计传感器采样并写成报告。");
   assert.equal(importSources[0].activities[0].timeStage, "10 年级暑假");
