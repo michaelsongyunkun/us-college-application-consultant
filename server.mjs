@@ -150,10 +150,16 @@ function buildClearSessionCookie({ domain } = {}) {
 function buildClearSessionCookies(request) {
   const host = (request.headers.host || "").split(":")[0].toLowerCase();
   const cookies = [buildClearSessionCookie()];
-  if (host && host !== "localhost" && host.includes(".")) {
+  const isIpAddress = /^(\d{1,3}\.){3}\d{1,3}$/u.test(host);
+  if (host && host !== "localhost" && host.includes(".") && !isIpAddress) {
     cookies.push(buildClearSessionCookie({ domain: host }));
   }
   return cookies;
+}
+
+function wantsHtmlResponse(request) {
+  const accept = request.headers.accept || "";
+  return accept.includes("text/html") && !accept.includes("application/json");
 }
 
 export function shouldUseSecureCookies(env = process.env) {
@@ -303,9 +309,21 @@ function createAuthHandler(auth, { mailer, appBaseUrl, readJson = readRequestJso
       for (const sessionToken of getSessionTokens(request)) {
         auth.logout(sessionToken);
       }
-      response.writeHead(200, withSecurityHeaders({
-        "Content-Type": "application/json;charset=utf-8",
+      const logoutHeaders = {
         "Set-Cookie": buildClearSessionCookies(request),
+        "Clear-Site-Data": '"cookies"',
+      };
+      if (wantsHtmlResponse(request)) {
+        response.writeHead(303, withSecurityHeaders({
+          ...logoutHeaders,
+          Location: "/",
+        }));
+        response.end();
+        return true;
+      }
+      response.writeHead(200, withSecurityHeaders({
+        ...logoutHeaders,
+        "Content-Type": "application/json;charset=utf-8",
       }));
       response.end(JSON.stringify({ ok: true }));
       return true;

@@ -232,6 +232,7 @@ try {
   assert.equal(duplicateLogoutResponse.status, 200);
   assert.match(duplicateLogoutResponse.headers.get("set-cookie"), /Max-Age=0/);
   assert.match(duplicateLogoutResponse.headers.get("set-cookie"), /Expires=Thu, 01 Jan 1970 00:00:00 GMT/);
+  assert.equal(duplicateLogoutResponse.headers.get("clear-site-data"), '"cookies"');
 
   const duplicateFirstMeResponse = await fetch(`${baseUrl}/api/auth/me`, {
     headers: { Cookie: `consultant_session=${duplicateFirstToken}` },
@@ -243,12 +244,43 @@ try {
   });
   assert.equal(duplicateSecondMeResponse.status, 401);
 
+  const formLoginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "student@example.com",
+      password: "password123",
+    }),
+  });
+  assert.equal(formLoginResponse.status, 200);
+  const formSessionToken = getSessionTokenFromSetCookie(formLoginResponse.headers.get("set-cookie"));
+  assert.ok(formSessionToken);
+
+  const formLogoutResponse = await fetch(`${baseUrl}/api/auth/logout`, {
+    method: "POST",
+    headers: {
+      Accept: "text/html",
+      Cookie: `consultant_session=${formSessionToken}`,
+    },
+    redirect: "manual",
+  });
+  assert.equal(formLogoutResponse.status, 303);
+  assert.equal(formLogoutResponse.headers.get("location"), "/");
+  assert.match(formLogoutResponse.headers.get("set-cookie"), /Max-Age=0/);
+  assert.equal(formLogoutResponse.headers.get("clear-site-data"), '"cookies"');
+
+  const formLoggedOutMeResponse = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: { Cookie: `consultant_session=${formSessionToken}` },
+  });
+  assert.equal(formLoggedOutMeResponse.status, 401);
+
   const logoutResponse = await fetch(`${baseUrl}/api/auth/logout`, {
     method: "POST",
     headers: { Cookie: cookie },
   });
   assert.equal(logoutResponse.status, 200);
   assert.match(logoutResponse.headers.get("set-cookie"), /Max-Age=0/);
+  assert.equal(logoutResponse.headers.get("clear-site-data"), '"cookies"');
 
   const loggedOutMeResponse = await fetch(`${baseUrl}/api/auth/me`, {
     headers: { Cookie: cookie },

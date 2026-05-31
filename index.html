@@ -250,7 +250,9 @@
         <div class="logged-in-nav-area">
           <div class="account-actions" aria-label="账号操作">
             <span id="currentUserBadge" class="user-badge"></span>
-            <button id="logoutButton" class="secondary" type="button">退出</button>
+            <form id="logoutForm" action="/api/auth/logout" method="post">
+              <button id="logoutButton" class="secondary" type="submit">退出</button>
+            </form>
           </div>
         </div>
       </header>
@@ -824,7 +826,7 @@
       </div>
     </main>
 
-    <script type="module" src="./src/client/app.js?v=20260601-logout-cookie-clear"></script>
+    <script type="module" src="./src/client/app.js?v=20260601-logout-form-fallback"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-case-refresh"></script>
   </body>
 </html>

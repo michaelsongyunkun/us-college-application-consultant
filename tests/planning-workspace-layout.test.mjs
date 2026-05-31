@@ -195,13 +195,18 @@ assert.match(html, /id="exportWordButton"[^>]*class="secondary"/, "Word export s
 assert.match(html, /导出 Word 文档/, "Logged-in workspace should offer Word export.");
 assert.match(html, /id="logoutButton"[^>]*class="secondary"/, "Log out should use a secondary action style.");
 assert.match(
+  html,
+  /<form id="logoutForm" action="\/api\/auth\/logout" method="post">[\s\S]*id="logoutButton"/,
+  "Logout should keep a native POST fallback when client JavaScript does not run.",
+);
+assert.match(
   appJs,
-  /async function logout\(\) \{[\s\S]*logoutButton\.disabled = true;[\s\S]*logoutButton\.textContent = "退出中\.\.\.";[\s\S]*window\.location\.assign\("\/"\);[\s\S]*\}/,
+  /async function logout\(event\) \{[\s\S]*event\?\.preventDefault\(\);[\s\S]*logoutButton\.disabled = true;[\s\S]*logoutButton\.textContent = "退出中\.\.\.";[\s\S]*window\.location\.assign\("\/"\);[\s\S]*\}/,
   "Logout should immediately show progress and reload to the public home page after clearing the session.",
 );
 assert.match(
   html,
-  /src="\.\/src\/client\/app\.js\?v=20260601-logout-cookie-clear"/,
+  /src="\.\/src\/client\/app\.js\?v=20260601-logout-form-fallback"/,
   "Main app script should be cache-busted when logout behavior changes.",
 );
 assert.match(html, /id="resetButton"[^>]*class="danger"/, "Reset should use a danger action style.");

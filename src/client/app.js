@@ -55,6 +55,7 @@ const authModeButton = document.querySelector("#authModeButton");
 const forgotPasswordButton = document.querySelector("#forgotPasswordButton");
 const authStatus = document.querySelector("#authStatus");
 const currentUserBadge = document.querySelector("#currentUserBadge");
+const logoutForm = document.querySelector("#logoutForm");
 const logoutButton = document.querySelector("#logoutButton");
 const adminDashboardLink = document.querySelector("#adminDashboardLink");
 const profileForm = document.querySelector("#profileForm");
@@ -296,7 +297,8 @@ async function submitAuthForm(event) {
   }
 }
 
-async function logout() {
+async function logout(event) {
+  event?.preventDefault();
   const originalText = logoutButton.textContent;
   logoutButton.disabled = true;
   logoutButton.textContent = "退出中...";
@@ -1398,7 +1400,8 @@ authModeButton.addEventListener("click", () => {
   setAuthMode(authMode === "login" ? "register" : "login");
 });
 forgotPasswordButton.addEventListener("click", () => setAuthMode("forgot"));
-logoutButton.addEventListener("click", logout);
+logoutForm?.addEventListener("submit", logout);
+if (!logoutForm) logoutButton.addEventListener("click", logout);
 
 newPlanButton?.addEventListener("click", () => runWorkspaceAction(createPlan));
 renamePlanButton?.addEventListener("click", () => runWorkspaceAction(renameCurrentPlan));
