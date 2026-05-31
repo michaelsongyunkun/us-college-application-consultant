@@ -1683,29 +1683,200 @@ button.danger:hover {
   background: #fffdf7;
 }
 
-.workspace-guide {
+.workspace-next-action {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
+  gap: 16px;
+  align-items: center;
   margin: 18px 22px 0;
+  border: 1px solid #d7e7dc;
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(237, 245, 240, 0.98), rgba(255, 253, 247, 0.98)),
+    #fffdf7;
+  padding: 18px;
+  box-shadow: 0 14px 28px rgba(22, 97, 70, 0.08);
+}
+
+.workspace-next-copy {
+  min-width: 0;
+}
+
+.workspace-next-eyebrow {
+  margin: 0 0 4px;
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.workspace-next-copy h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.workspace-next-copy p:last-child {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.workspace-next-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.workspace-primary-action {
+  min-width: 220px;
+  min-height: 48px;
+  border-radius: 16px;
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.workspace-next-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.workspace-next-links .quiet-link {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 12px;
+  text-decoration: none;
+}
+
+.workspace-progress-steps {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.workspace-guide li {
-  display: grid;
-  gap: 6px;
+.workspace-progress-step {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
   border: 1px solid #dfe8df;
-  border-radius: 15px;
-  background: var(--soft);
-  padding: 13px 14px;
+  border-radius: 999px;
+  background: #fff;
+  padding: 9px 11px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
-.workspace-guide strong {
+.workspace-progress-step strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-progress-step span {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #edf2ef;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.workspace-progress-step.is-active {
+  border-color: #d7b36b;
+  background: #fff8e8;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.workspace-progress-step.is-active span {
+  background: var(--brand-orange);
+  color: #fff;
+}
+
+.workspace-progress-step.is-complete {
+  border-color: #cae0d2;
+  background: #edf7f0;
   color: var(--accent-strong);
 }
 
-.workspace-guide span,
+.workspace-progress-step.is-complete span {
+  background: var(--brand-green);
+  color: #fff;
+}
+
+.workspace-advanced {
+  margin: 16px 22px 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.workspace-advanced summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+  padding: 0 18px;
+  cursor: pointer;
+  color: var(--accent-strong);
+  font-weight: 900;
+}
+
+.workspace-advanced summary::-webkit-details-marker {
+  display: none;
+}
+
+.workspace-advanced summary small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.workspace-advanced summary::after {
+  content: "展开";
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #fffdf7;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.workspace-advanced[open] summary::after {
+  content: "收起";
+}
+
+.workspace-advanced .workspace-action-bar {
+  border-top: 1px solid var(--line);
+}
+
+.workspace-advanced .workspace-grid {
+  padding: 16px;
+}
+
 .workspace-help {
   color: var(--muted);
   font-size: 13px;
@@ -4493,6 +4664,40 @@ button.neutral:hover {
     padding: 14px 16px;
   }
 
+  .workspace-next-action {
+    grid-template-columns: 1fr;
+    margin: 16px 16px 0;
+    padding: 16px;
+  }
+
+  .workspace-next-actions {
+    justify-items: stretch;
+  }
+
+  .workspace-primary-action {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .workspace-next-links {
+    justify-content: flex-start;
+  }
+
+  .workspace-progress-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-advanced {
+    margin: 16px;
+  }
+
+  .workspace-advanced summary {
+    min-height: auto;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px 16px;
+  }
+
   .utility-links {
     width: 100%;
     border-left: 0;
@@ -4509,11 +4714,6 @@ button.neutral:hover {
   .workspace-grid {
     grid-template-columns: 1fr;
     padding: 16px;
-  }
-
-  .workspace-guide {
-    grid-template-columns: 1fr;
-    margin: 16px 16px 0;
   }
 
   .course-helper-body {

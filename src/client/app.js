@@ -100,6 +100,15 @@ const planningWorkspaceStatus = document.querySelector("#planningWorkspaceStatus
 const snapshotNote = document.querySelector("#snapshotNote");
 const createSnapshotButton = document.querySelector("#createSnapshotButton");
 const snapshotList = document.querySelector("#snapshotList");
+const workspaceNextAction = document.querySelector("#workspaceNextAction");
+const workspaceNextActionTitle = document.querySelector("#workspaceNextActionTitle");
+const workspaceNextActionText = document.querySelector("#workspaceNextActionText");
+const workspacePrimaryActionButton = document.querySelector("#workspacePrimaryActionButton");
+const workspaceProgressProfile = document.querySelector("#workspaceProgressProfile");
+const workspaceProgressPlan = document.querySelector("#workspaceProgressPlan");
+const workspaceProgressSave = document.querySelector("#workspaceProgressSave");
+const workspaceAskDeepSeekLink = document.querySelector("#workspaceAskDeepSeekLink");
+const workspacePortfolioLink = document.querySelector("#workspacePortfolioLink");
 
 let fixedPrompt = "";
 let serverHasDeepSeekApiKey = false;
@@ -790,21 +799,131 @@ function formatWorkspaceDate(value) {
 }
 
 function renderProfileSummary() {
-  if (!studentProfileSummary || !profileUpdatedAt) return;
   const profile = collectProfile();
-  const summary = [profile.grade, profile.majorDirection, profile.interests]
-    .filter((item) => String(item || "").trim())
-    .join(" / ");
-  studentProfileSummary.textContent = summary || "还没有填写学生信息。";
-  profileUpdatedAt.textContent = currentProfileUpdatedAt
-    ? `最近保存：${formatWorkspaceDate(currentProfileUpdatedAt)}`
-    : "尚未保存";
+  if (studentProfileSummary && profileUpdatedAt) {
+    const summary = [profile.grade, profile.majorDirection, profile.interests]
+      .filter((item) => String(item || "").trim())
+      .join(" / ");
+    studentProfileSummary.textContent = summary || "还没有填写学生信息。";
+    profileUpdatedAt.textContent = currentProfileUpdatedAt
+      ? `最近保存：${formatWorkspaceDate(currentProfileUpdatedAt)}`
+      : "尚未保存";
+  }
+  updateWorkspaceNextAction();
 }
 
 function setWorkspaceStatus(message, isError = false) {
   if (!planningWorkspaceStatus) return;
   planningWorkspaceStatus.textContent = message;
   planningWorkspaceStatus.classList.toggle("error", isError);
+}
+
+function hasPlanningProfile() {
+  return countCompletedProfileFields() > 0;
+}
+
+function hasPlanningOutput() {
+  const draft = collectPlanDraft();
+  return (
+    countFilledActivities() > 0 ||
+    Boolean(String(draft.rawAnswer || "").trim()) ||
+    Boolean(String(draft.narrative || "").trim())
+  );
+}
+
+function getWorkspaceNextActionState() {
+  if (!hasPlanningProfile()) {
+    return {
+      step: "profile",
+      title: "先填写学生信息",
+      text: "你现在只需要做一件事：先填写学生信息。填完后系统会提示你生成申请规划。",
+      button: "先填写学生信息",
+    };
+  }
+
+  if (!hasPlanningOutput()) {
+    return {
+      step: "generate",
+      title: "生成申请规划",
+      text: "学生信息已经有了，下一步直接生成申请规划、活动建议和资源匹配。",
+      button: "生成申请规划",
+    };
+  }
+
+  if (workspaceDirty) {
+    return {
+      step: "save",
+      title: "保存当前规划",
+      text: "你已经有规划内容了，先保存当前版本，避免刷新或切换方案时丢失。",
+      button: "保存当前规划",
+    };
+  }
+
+  return {
+    step: "optimize",
+    title: "继续优化规划",
+    text: "当前规划已经保存。可以继续问 DeepSeek，也可以查看申请档案整理成果。",
+    button: "继续优化规划",
+  };
+}
+
+function setProgressStep(element, status) {
+  if (!element) return;
+  element.classList.toggle("is-active", status === "active");
+  element.classList.toggle("is-complete", status === "complete");
+}
+
+function updateWorkspaceNextAction() {
+  if (!workspaceNextAction || !workspaceNextActionTitle || !workspaceNextActionText || !workspacePrimaryActionButton) return;
+
+  const state = getWorkspaceNextActionState();
+  workspaceNextAction.dataset.step = state.step;
+  workspaceNextActionTitle.textContent = state.title;
+  workspaceNextActionText.textContent = state.text;
+  workspacePrimaryActionButton.textContent = state.button;
+
+  setProgressStep(workspaceProgressProfile, state.step === "profile" ? "active" : "complete");
+  setProgressStep(
+    workspaceProgressPlan,
+    state.step === "profile" ? "" : state.step === "generate" ? "active" : "complete",
+  );
+  setProgressStep(
+    workspaceProgressSave,
+    state.step === "profile" || state.step === "generate" ? "" : state.step === "save" ? "active" : "complete",
+  );
+
+  const showFollowUpLinks = state.step === "optimize";
+  workspaceAskDeepSeekLink?.classList.toggle("is-hidden", !showFollowUpLinks);
+  workspacePortfolioLink?.classList.toggle("is-hidden", !showFollowUpLinks);
+}
+
+function focusFirstProfileField() {
+  if (!profileForm) return;
+  profileForm.scrollIntoView({ behavior: "smooth", block: "start" });
+  const fields = [...profileForm.querySelectorAll("select, input, textarea")];
+  const firstEmptyField = fields.find((field) => !String(field.value || "").trim());
+  (firstEmptyField || fields[0])?.focus({ preventScroll: true });
+}
+
+async function runWorkspacePrimaryAction() {
+  const state = getWorkspaceNextActionState();
+
+  if (state.step === "profile") {
+    focusFirstProfileField();
+    return;
+  }
+
+  if (state.step === "generate") {
+    await generateDeepSeekPlan();
+    return;
+  }
+
+  if (state.step === "save") {
+    await saveDraft();
+    return;
+  }
+
+  window.location.href = "./ask-deepseek.html";
 }
 
 function renderPlanList() {
@@ -943,6 +1062,7 @@ async function createPlan() {
   currentPlan = data.plan;
   applyPlanDraft(currentPlan.draft);
   workspaceDirty = false;
+  renderProfileSummary();
   renderPlanList();
   await loadSnapshots();
   setWorkspaceStatus("新方案已创建");
@@ -1172,6 +1292,7 @@ saveButton.addEventListener("click", () => runWorkspaceAction(saveDraft));
 exportSvgButton.addEventListener("click", exportSvgDocument);
 resetButton.addEventListener("click", () => runWorkspaceAction(resetDraft));
 generateDeepSeekButton?.addEventListener("click", () => runWorkspaceAction(generateDeepSeekPlan));
+workspacePrimaryActionButton?.addEventListener("click", () => runWorkspaceAction(runWorkspacePrimaryAction));
 refreshCompetitionsButton?.addEventListener("click", () => {
   trackUsageEvent("refresh_competitions", {
     metrics: { generatedActivityCount: latestCompetitionRecommendations.length },

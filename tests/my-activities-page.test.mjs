@@ -141,7 +141,7 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260530-light-sidebar")
+  pageHtml.includes("./styles.css?v=20260531-planning-next-action-fix")
     && pageHtml.includes("./src/client/my-activities.js?v=20260531-import-visual-text"),
   "我的申请页面应更新 CSS 版本号，避免用户继续加载缓存的平行布局。"
 );

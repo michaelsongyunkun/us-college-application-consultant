@@ -5,10 +5,15 @@ const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const styles = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 const appJs = await readFile(new URL("../src/client/app.js", import.meta.url), "utf8");
 
-assert.match(
+assert.doesNotMatch(
   html,
   /id=["']authShell["'][^>]*class=["'][^"']*\bis-hidden\b[^"']*["']/,
-  "Authentication landing view should stay hidden until the session check resolves.",
+  "Authentication landing view should stay visible if client modules fail to load.",
+);
+assert.match(
+  html,
+  /id=["']appShell["'][^>]*class=["'][^"']*\bis-hidden\b[^"']*["']/,
+  "Authenticated workspace should stay hidden until the session check resolves.",
 );
 
 for (const id of [
@@ -38,6 +43,16 @@ for (const preservedId of [
 }
 
 for (const id of [
+  "workspaceNextAction",
+  "workspaceNextActionTitle",
+  "workspaceNextActionText",
+  "workspacePrimaryActionButton",
+  "workspaceProgressProfile",
+  "workspaceProgressPlan",
+  "workspaceProgressSave",
+  "workspaceAskDeepSeekLink",
+  "workspacePortfolioLink",
+  "workspaceAdvancedActions",
   "workspaceGuide",
   "studentProfileSummary",
   "profileUpdatedAt",
@@ -63,7 +78,6 @@ for (const id of [
 }
 
 for (const copy of [
-  "三步完成申请规划",
   "AI 美本规划工作台",
   "生成规划，",
   "顺手匹配资源",
@@ -92,9 +106,17 @@ for (const copy of [
   "保录",
   "代写",
   "人工顾问全案服务",
-  "第 1 步：填写学生信息",
-  "第 2 步：选择规划方案",
-  "第 3 步：保存重要版本",
+  "开始申请规划",
+  "系统会根据你当前进度，只显示最应该做的一件事。",
+  "下一步",
+  "先填写学生信息",
+  "你现在只需要做一件事：先填写学生信息。",
+  "学生信息",
+  "生成规划",
+  "保存版本",
+  "问DeepSeek优化",
+  "查看我的申请档案",
+  "高级操作：方案、备份与导出",
   "历史备份",
   "保存备份",
   "保存当前内容",
@@ -110,8 +132,10 @@ for (const copy of [
 
 const loggedInHeader = html.match(/<header class="topbar brand-page-header logged-in-header"[\s\S]*?<\/header>/)?.[0] || "";
 const commandNavigation = html.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";
-const workspaceActions = html.match(/<div class="workspace-action-bar"[\s\S]*?<\/div>\s*<\/section>/)?.[0] || "";
+const workspaceAdvancedActions = html.match(/<details id="workspaceAdvancedActions"[\s\S]*?<\/details>/)?.[0] || "";
+const planningActivityTableBody = html.match(/<table id="activityTable"[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/)?.[1] || "";
 
+assert.ok(html.includes("./styles.css?v=20260531-planning-next-action-fix"), "Planning workspace should bust the stylesheet cache for next-action layout fixes.");
 assert.ok(loggedInHeader.includes('class="brand-mark"'), "Logged-in header should use the shared product brand link.");
 assert.ok(loggedInHeader.includes("College Compass"), "Logged-in header should use the shared product brand name.");
 assert.ok(!loggedInHeader.includes("primary-nav"), "Logged-in header should not repeat the left-sidebar primary navigation.");
@@ -123,10 +147,19 @@ assert.ok(!loggedInHeader.includes('id="saveButton"'), "Save should not live in 
 assert.ok(!loggedInHeader.includes('id="exportButton"'), "JSON export should not live in the global header.");
 assert.ok(!loggedInHeader.includes('id="exportSvgButton"'), "SVG export should not live in the global header.");
 assert.ok(!loggedInHeader.includes('id="resetButton"'), "Reset should not live in the global header.");
-assert.ok(workspaceActions.includes('id="saveButton"'), "Save should live in the workspace action bar.");
-assert.ok(!workspaceActions.includes('id="exportButton"'), "JSON export should be removed from the workspace action bar.");
-assert.ok(workspaceActions.includes('id="exportSvgButton"'), "SVG export should live in the workspace action bar.");
-assert.ok(workspaceActions.includes('id="resetButton"'), "Reset should remain available in the workspace action bar.");
+assert.ok(workspaceAdvancedActions.includes('id="saveButton"'), "Save should live in the advanced workspace actions.");
+assert.ok(!workspaceAdvancedActions.includes('id="exportButton"'), "JSON export should be removed from advanced workspace actions.");
+assert.ok(workspaceAdvancedActions.includes('id="exportSvgButton"'), "SVG export should live in the advanced workspace actions.");
+assert.ok(workspaceAdvancedActions.includes('id="resetButton"'), "Reset should remain available in advanced workspace actions.");
+assert.ok(!/<details id="workspaceAdvancedActions"[^>]*open/.test(html), "Advanced plan, backup, and export actions should be collapsed by default.");
+assert.ok(html.includes("Agent 输出的 15 项课外活动最终填入这里。"), "Planning output table should describe 15 generated activities.");
+assert.equal((planningActivityTableBody.match(/<th scope="row">/g) || []).length, 15, "Planning output table should render 15 activity rows.");
+assert.ok(planningActivityTableBody.includes('name="type-15"'), "Planning output table should include the 15th activity controls.");
+assert.match(html, /id="workspaceGuide" class="workspace-progress-steps" role="list"/, "Progress steps should use an unnumbered list role to avoid raw ordered-list fallback.");
+assert.doesNotMatch(html, /<ol id="workspaceGuide"/, "Progress steps should not fall back to browser ordered-list numbering.");
+assert.match(html, /class="workspace-progress-step/, "Progress items should have a direct styling class.");
+assert.doesNotMatch(html, /三步完成申请规划/, "Workspace should not lead with the old three-step planning copy.");
+assert.doesNotMatch(html, /第 1 步：填写学生信息|第 2 步：选择规划方案|第 3 步：保存重要版本/, "Workspace should not show verbose three-step instruction cards.");
 
 assert.doesNotMatch(html, /id="exportButton"/, "Logged-in workspace should not render JSON export.");
 assert.doesNotMatch(html, /导出 JSON/, "Logged-in workspace should remove JSON export copy.");
@@ -173,12 +206,32 @@ assert.match(appJs, /export_svg/, "Main app should track SVG exports.");
 assert.match(appJs, /image\/svg\+xml;charset=utf-8/, "Main app should download SVG with the correct MIME type.");
 assert.match(appJs, /querySelector\("#generateDeepSeekButton"\)/, "Main app should bind DeepSeek generation.");
 assert.match(appJs, /querySelector\("#deepSeekWorkingIndicator"\)/, "Main app should bind the DeepSeek working indicator.");
+assert.match(appJs, /querySelector\("#workspacePrimaryActionButton"\)/, "Main app should bind the workspace next-action button.");
+assert.match(appJs, /function getWorkspaceNextActionState/, "Main app should derive the recommended next action from workspace state.");
+assert.match(appJs, /function updateWorkspaceNextAction/, "Main app should render the recommended next action.");
+const hasPlanningOutputBody = appJs.match(/function hasPlanningOutput\(\) \{([\s\S]*?)\n\}/)?.[1] || "";
+assert.ok(hasPlanningOutputBody.includes("countFilledActivities()"), "Derived recommendations should not make the workspace skip generation.");
+assert.ok(!hasPlanningOutputBody.includes("isPlanDraftEmpty"), "Workspace output detection should ignore auto-derived recommendation panels.");
+assert.match(appJs, /workspacePrimaryActionButton\?\.addEventListener\("click"/, "Workspace primary action should be clickable.");
+assert.match(appJs, /先填写学生信息/, "Workspace next action should guide empty profiles first.");
+assert.match(appJs, /生成申请规划/, "Workspace next action should guide generation after profile entry.");
+assert.match(appJs, /保存当前规划/, "Workspace next action should guide saving unsaved planning edits.");
+assert.match(appJs, /继续优化规划/, "Workspace next action should guide optimization after saving.");
+assert.match(appJs, /scrollIntoView\(\{ behavior: "smooth"/, "Workspace next action should scroll users to the right area.");
+assert.match(appJs, /window\.location\.href = "\.\/ask-deepseek\.html"/, "Workspace optimization action should route to Ask DeepSeek.");
 assert.match(appJs, /setDeepSeekWorking\(true\)/, "Main app should show the DeepSeek working indicator during generation.");
 assert.match(appJs, /setDeepSeekWorking\(false\)/, "Main app should hide the DeepSeek working indicator after generation.");
 assert.match(appJs, /"\/api\/deepseek-plan"/, "Main app should call the DeepSeek planning endpoint.");
 assert.match(styles, /\.auth-status:empty\s*\{/, "An empty auth status should be visually hidden.");
 assert.doesNotMatch(styles, /\.agent-usage-note|\.codex-mode|\.codex-actions/, "Removed task package UI styles should not remain.");
 assert.match(styles, /\.deepseek-working\s*\{/, "DeepSeek working indicator should have panel styling.");
+assert.match(styles, /\.workspace-next-action\s*\{/, "Workspace next-action card should have dedicated styling.");
+assert.match(styles, /\.workspace-primary-action\s*\{/, "Workspace primary CTA should have dedicated styling.");
+assert.match(styles, /\.workspace-progress-steps\s*\{/, "Workspace progress steps should have dedicated styling.");
+assert.match(styles, /\.workspace-progress-step\s*\{/, "Workspace progress items should have dedicated styling.");
+assert.doesNotMatch(styles, /\.workspace-progress-steps li/, "Progress item styles should not depend on ordered-list markup.");
+assert.match(styles, /\.workspace-advanced\s*\{/, "Workspace advanced actions should have dedicated styling.");
+assert.match(styles, /\.workspace-advanced summary\s*\{/, "Workspace advanced summary should be styled as a quiet disclosure.");
 assert.match(styles, /@keyframes deepseek/, "DeepSeek working indicator should include a subtle motion cue.");
 assert.match(styles, /\.activity-quality-check\s*\{/, "Activity quality checker should have a distinct style.");
 assert.match(styles, /\.parse-diagnostics\s*\{/, "Parse diagnostics should have a distinct style.");

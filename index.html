@@ -15,10 +15,10 @@
     <meta name="twitter:description" content="面向学生与家长的 AI 美本规划工作台：背景整理、活动规划、资源匹配和报告导出。" />
     <title>AI 美本规划工作台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260530-light-sidebar" />
+    <link rel="stylesheet" href="./styles.css?v=20260531-planning-next-action-fix" />
   </head>
   <body>
-    <section id="authShell" class="landing-shell is-hidden" aria-labelledby="landing-title">
+    <section id="authShell" class="landing-shell" aria-labelledby="landing-title">
       <header id="landingHeader" class="landing-header">
         <a class="brand-mark" href="./index.html" aria-label="US College Compass 首页">
           <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
@@ -249,75 +249,95 @@
       <section class="panel workspace-panel" aria-labelledby="workspace-title">
         <div class="section-heading table-heading">
           <div>
-            <h2 id="workspace-title">三步完成申请规划</h2>
-            <p>第一次使用也很简单：先填写信息，再选择方案，需要保留时保存一份备份。</p>
+            <h2 id="workspace-title">开始申请规划</h2>
+            <p>系统会根据你当前进度，只显示最应该做的一件事。</p>
           </div>
           <span id="planningWorkspaceStatus" class="status" role="status" aria-live="polite">正在加载</span>
         </div>
-        <div class="workspace-action-bar" aria-label="当前方案操作">
-          <div>
-            <strong>当前方案</strong>
-            <span>保存、导出或清空当前规划内容</span>
+        <div id="workspaceNextAction" class="workspace-next-action" data-step="profile">
+          <div class="workspace-next-copy">
+            <p class="workspace-next-eyebrow">下一步</p>
+            <h3 id="workspaceNextActionTitle">先填写学生信息</h3>
+            <p id="workspaceNextActionText">你现在只需要做一件事：先填写学生信息。</p>
           </div>
-          <div class="workspace-action-buttons">
-            <button id="saveButton" type="button">保存当前内容</button>
-            <button id="exportSvgButton" class="secondary" type="button">导出 SVG</button>
-            <button id="resetButton" class="danger" type="button">清空当前方案</button>
+          <div class="workspace-next-actions">
+            <button id="workspacePrimaryActionButton" class="workspace-primary-action" type="button">先填写学生信息</button>
+            <div class="workspace-next-links" aria-label="继续优化入口">
+              <a id="workspaceAskDeepSeekLink" class="quiet-link is-hidden" href="./ask-deepseek.html" data-safe-nav>问DeepSeek优化</a>
+              <a id="workspacePortfolioLink" class="quiet-link is-hidden" href="./my-activities.html" data-safe-nav>查看我的申请档案</a>
+            </div>
+          </div>
+          <div id="workspaceGuide" class="workspace-progress-steps" role="list" aria-label="申请规划进度">
+            <div id="workspaceProgressProfile" class="workspace-progress-step is-active" role="listitem">
+              <span aria-hidden="true">1</span>
+              <strong>学生信息</strong>
+            </div>
+            <div id="workspaceProgressPlan" class="workspace-progress-step" role="listitem">
+              <span aria-hidden="true">2</span>
+              <strong>生成规划</strong>
+            </div>
+            <div id="workspaceProgressSave" class="workspace-progress-step" role="listitem">
+              <span aria-hidden="true">3</span>
+              <strong>保存版本</strong>
+            </div>
           </div>
         </div>
-        <ol id="workspaceGuide" class="workspace-guide" aria-label="使用说明">
-          <li>
-            <strong>第 1 步：填写学生信息</strong>
-            <span>在下方“用户背景输入”填写一次，所有方案共用。</span>
-          </li>
-          <li>
-            <strong>第 2 步：选择规划方案</strong>
-            <span>直接用默认方案；需要比较不同方向时再新建方案。</span>
-          </li>
-          <li>
-            <strong>第 3 步：保存重要版本</strong>
-            <span>内容满意时点“保存备份”，之后随时可以恢复。</span>
-          </li>
-        </ol>
-        <div class="workspace-grid">
-          <article class="workspace-card">
-            <p class="workspace-label">学生信息摘要</p>
-            <p id="studentProfileSummary" class="profile-summary">还没有填写学生信息。</p>
-            <p id="profileUpdatedAt" class="workspace-meta">尚未保存</p>
-          </article>
-          <article class="workspace-card plans-card">
-            <div class="workspace-card-heading">
-              <p class="workspace-label">当前方案</p>
-              <button id="newPlanButton" type="button" class="quiet neutral">新建方案</button>
+        <details id="workspaceAdvancedActions" class="workspace-advanced">
+          <summary>
+            <span>高级操作：方案、备份与导出</span>
+            <small>需要管理多个版本时再打开</small>
+          </summary>
+          <div class="workspace-action-bar" aria-label="当前方案操作">
+            <div>
+              <strong>当前方案</strong>
+              <span>保存、导出或清空当前规划内容</span>
             </div>
-            <div id="planList" class="plan-list" aria-label="规划方案列表"></div>
-            <p class="workspace-subtle-label">更多操作</p>
-            <div class="workspace-actions">
-              <button id="renamePlanButton" type="button" class="quiet neutral">重命名</button>
-              <button id="deletePlanButton" type="button" class="quiet">删除</button>
+            <div class="workspace-action-buttons">
+              <button id="saveButton" type="button">保存当前内容</button>
+              <button id="exportSvgButton" class="secondary" type="button">导出 SVG</button>
+              <button id="resetButton" class="danger" type="button">清空当前方案</button>
             </div>
-          </article>
-          <article class="workspace-card snapshots-card">
-            <p class="workspace-label">历史备份</p>
-            <p class="workspace-help">保存重要节点；需要时点“恢复”，回到当时的内容。</p>
-            <label class="snapshot-note">
-              <span>备份备注（可选）</span>
-              <input
-                id="snapshotNote"
-                type="text"
-                maxlength="120"
-                autocomplete="off"
-                data-lpignore="true"
-                data-1p-ignore="true"
-                placeholder="例如：提交顾问前"
-              />
-            </label>
-            <button id="createSnapshotButton" type="button">保存备份</button>
-            <div id="snapshotList" class="snapshot-list" aria-label="历史备份列表">
-              <p class="workspace-empty">还没有备份。</p>
-            </div>
-          </article>
-        </div>
+          </div>
+          <div class="workspace-grid">
+            <article class="workspace-card">
+              <p class="workspace-label">学生信息摘要</p>
+              <p id="studentProfileSummary" class="profile-summary">还没有填写学生信息。</p>
+              <p id="profileUpdatedAt" class="workspace-meta">尚未保存</p>
+            </article>
+            <article class="workspace-card plans-card">
+              <div class="workspace-card-heading">
+                <p class="workspace-label">当前方案</p>
+                <button id="newPlanButton" type="button" class="quiet neutral">新建方案</button>
+              </div>
+              <div id="planList" class="plan-list" aria-label="规划方案列表"></div>
+              <p class="workspace-subtle-label">更多操作</p>
+              <div class="workspace-actions">
+                <button id="renamePlanButton" type="button" class="quiet neutral">重命名</button>
+                <button id="deletePlanButton" type="button" class="quiet">删除</button>
+              </div>
+            </article>
+            <article class="workspace-card snapshots-card">
+              <p class="workspace-label">历史备份</p>
+              <p class="workspace-help">保存重要节点；需要时点“恢复”，回到当时的内容。</p>
+              <label class="snapshot-note">
+                <span>备份备注（可选）</span>
+                <input
+                  id="snapshotNote"
+                  type="text"
+                  maxlength="120"
+                  autocomplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  placeholder="例如：提交顾问前"
+                />
+              </label>
+              <button id="createSnapshotButton" type="button">保存备份</button>
+              <div id="snapshotList" class="snapshot-list" aria-label="历史备份列表">
+                <p class="workspace-empty">还没有备份。</p>
+              </div>
+            </article>
+          </div>
+        </details>
       </section>
 
       <section class="panel intake-panel" aria-labelledby="intake-title">
@@ -435,7 +455,7 @@
         <div class="section-heading table-heading">
           <div>
             <h2 id="activities-title">规划回答输出表格</h2>
-            <p>Agent 输出的 10 项课外活动最终填入这里。</p>
+            <p>Agent 输出的 15 项课外活动最终填入这里。</p>
           </div>
           <span id="saveStatus" class="status" role="status" aria-live="polite">未保存</span>
         </div>
@@ -521,6 +541,41 @@
                 <td><textarea name="name-10"></textarea></td>
                 <td><textarea name="description-10" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
                 <td><input name="grade-10" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">11</th>
+                <td><input name="type-11" type="text" /></td>
+                <td><textarea name="name-11"></textarea></td>
+                <td><textarea name="description-11" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-11" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">12</th>
+                <td><input name="type-12" type="text" /></td>
+                <td><textarea name="name-12"></textarea></td>
+                <td><textarea name="description-12" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-12" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">13</th>
+                <td><input name="type-13" type="text" /></td>
+                <td><textarea name="name-13"></textarea></td>
+                <td><textarea name="description-13" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-13" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">14</th>
+                <td><input name="type-14" type="text" /></td>
+                <td><textarea name="name-14"></textarea></td>
+                <td><textarea name="description-14" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-14" type="text" /></td>
+              </tr>
+              <tr>
+                <th scope="row">15</th>
+                <td><input name="type-15" type="text" /></td>
+                <td><textarea name="name-15"></textarea></td>
+                <td><textarea name="description-15" placeholder="问题：&#10;成果：&#10;影响："></textarea></td>
+                <td><input name="grade-15" type="text" /></td>
               </tr>
             </tbody>
           </table>

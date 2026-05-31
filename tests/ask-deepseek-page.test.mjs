@@ -122,7 +122,7 @@ assert.match(
   "Ask DeepSeek script should be cache-busted.",
 );
 assert.ok(
-  pageHtml.includes("styles.css?v=20260531-deepseek-guided-chat"),
+  pageHtml.includes("styles.css?v=20260531-planning-next-action-fix"),
   "Ask DeepSeek page should refresh the stylesheet cache after guided chat polish.",
 );
 assert.match(styles, /\.deepseek-chat-log\s*\{/, "Ask DeepSeek should style the chat log.");
