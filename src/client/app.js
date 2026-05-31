@@ -137,7 +137,9 @@ let plans = [];
 let currentPlan = null;
 let snapshots = [];
 let workspaceDirty = false;
-const initialResetToken = new URLSearchParams(window.location.search).get("resetToken");
+const initialSearchParams = new URLSearchParams(window.location.search);
+const initialResetToken = initialSearchParams.get("resetToken");
+const initialAuthMode = initialSearchParams.get("auth");
 const PROTECTED_NEXT_PATHS = new Set([
   "/course-helper.html",
   "/gpa-calculator.html",
@@ -180,6 +182,7 @@ function setAuthMode(mode) {
   }[authMode];
   authModeButton.textContent = isRegistering ? "已有账号？登录" : "返回登录";
   if (authMode === "login") authModeButton.textContent = "没有账号？注册";
+  authModeButton.setAttribute("href", authMode === "login" ? "/?auth=register" : "/?auth=login");
   authNameField.classList.toggle("is-hidden", !isRegistering);
   authEmailInput.closest("label").classList.toggle("is-hidden", isResetPassword);
   authPasswordInput.closest("label").classList.toggle("is-hidden", isForgotPassword);
@@ -1396,7 +1399,8 @@ heroStartButton?.addEventListener("click", () => {
   setAuthMode("register");
   authNameInput.focus();
 });
-authModeButton.addEventListener("click", () => {
+authModeButton.addEventListener("click", (event) => {
+  event.preventDefault();
   setAuthMode(authMode === "login" ? "register" : "login");
 });
 forgotPasswordButton.addEventListener("click", () => setAuthMode("forgot"));
@@ -1454,6 +1458,6 @@ if (initialResetToken) {
   setAuthMode("reset");
   showAuthView();
 } else {
-  setAuthMode(getSafeNextPath() ? "login" : "register");
+  setAuthMode(initialAuthMode === "login" || getSafeNextPath() ? "login" : "register");
   loadCurrentUser();
 }

@@ -43,6 +43,12 @@ for (const preservedId of [
   assert.match(html, new RegExp(`id=["']${preservedId}["']`), `Existing capability #${preservedId} must remain`);
 }
 
+assert.match(
+  html,
+  /<a id="authModeButton"[^>]*href="\/\?auth=login"[^>]*>已有账号？登录<\/a>/,
+  "The login toggle should keep an href fallback so clicking it visibly responds even before client JavaScript runs.",
+);
+
 for (const id of [
   "workspaceNextAction",
   "workspaceNextActionTitle",
@@ -206,7 +212,7 @@ assert.match(
 );
 assert.match(
   html,
-  /src="\.\/src\/client\/app\.js\?v=20260601-logout-form-fallback"/,
+  /src="\.\/src\/client\/app\.js\?v=20260601-auth-mode-fallback"/,
   "Main app script should be cache-busted when logout behavior changes.",
 );
 assert.match(html, /id="resetButton"[^>]*class="danger"/, "Reset should use a danger action style.");
@@ -309,7 +315,7 @@ for (const selector of [
 assert.match(styles, /@media \(max-width: 780px\)[\s\S]*\.landing-hero/, "Landing hero should stack on small screens.");
 assert.match(appJs, /const heroStartButton = document\.querySelector\("#heroStartButton"\)/);
 assert.match(appJs, /heroStartButton\?\.addEventListener\("click"/);
-assert.match(appJs, /setAuthMode\(getSafeNextPath\(\) \? "login" : "register"\)/);
+assert.match(appJs, /initialAuthMode === "login" \|\| getSafeNextPath\(\) \? "login" : "register"/);
 assert.match(appJs, /authNameInput\.focus\(\)/);
 assert.match(
   appJs,

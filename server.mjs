@@ -400,9 +400,29 @@ function redirectToLogin(response, requestPath = "/") {
   response.end();
 }
 
-function renderIndexForSession(html, user) {
-  if (!user) return html;
+function renderIndexForAuthMode(html, authMode) {
+  if (authMode !== "login") return html;
   return html
+    .replace('<h2 id="auth-title">领取你的申请行动地图</h2>', '<h2 id="auth-title">登录</h2>')
+    .replace('<label id="authNameField">', '<label id="authNameField" class="is-hidden">')
+    .replace(
+      '<button id="authSubmitButton" type="submit">免费注册并生成规划</button>',
+      '<button id="authSubmitButton" type="submit">登录</button>',
+    )
+    .replace(
+      '<button id="forgotPasswordButton" type="button" class="quiet auth-mode-button is-hidden">忘记密码？</button>',
+      '<button id="forgotPasswordButton" type="button" class="quiet auth-mode-button">忘记密码？</button>',
+    )
+    .replace(
+      '<a id="authModeButton" href="/?auth=login" class="quiet auth-mode-button">已有账号？登录</a>',
+      '<a id="authModeButton" href="/?auth=register" class="quiet auth-mode-button">没有账号？注册</a>',
+    );
+}
+
+function renderIndexForSession(html, user, authMode = "register") {
+  const renderedHtml = renderIndexForAuthMode(html, authMode);
+  if (!user) return renderedHtml;
+  return renderedHtml
     .replace(
       '<section id="authShell" class="landing-shell" aria-labelledby="landing-title">',
       '<section id="authShell" class="landing-shell is-hidden" aria-labelledby="landing-title">',
@@ -714,7 +734,7 @@ export function createAppServer({
       }
       if (requestPath === "/index.html") {
         const user = auth.getUserForSession(getSessionToken(request));
-        response.end(renderIndexForSession(await readFile(filePath, "utf8"), user));
+        response.end(renderIndexForSession(await readFile(filePath, "utf8"), user, url.searchParams.get("auth")));
         return;
       }
       createReadStream(filePath).pipe(response);

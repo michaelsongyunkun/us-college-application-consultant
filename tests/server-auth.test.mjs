@@ -50,6 +50,14 @@ try {
   assert.equal(faviconResponse.headers.get("content-type"), "image/svg+xml;charset=utf-8");
   assert.equal(faviconResponse.headers.get("x-content-type-options"), "nosniff");
 
+  const publicLoginModeResponse = await fetch(`${baseUrl}/?auth=login`);
+  assert.equal(publicLoginModeResponse.status, 200);
+  const publicLoginModeHtml = await publicLoginModeResponse.text();
+  assert.match(publicLoginModeHtml, /<h2 id="auth-title">登录<\/h2>/);
+  assert.match(publicLoginModeHtml, /<label id="authNameField" class="is-hidden">/);
+  assert.match(publicLoginModeHtml, /<button id="authSubmitButton" type="submit">登录<\/button>/);
+  assert.match(publicLoginModeHtml, /<a id="authModeButton"[^>]*href="\/\?auth=register"[^>]*>没有账号？注册<\/a>/);
+
   const registrationResponse = await fetch(`${baseUrl}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

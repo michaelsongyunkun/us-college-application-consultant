@@ -69,7 +69,7 @@
             <button id="authSubmitButton" type="submit">免费注册并生成规划</button>
           </form>
           <button id="forgotPasswordButton" type="button" class="quiet auth-mode-button is-hidden">忘记密码？</button>
-          <button id="authModeButton" type="button" class="quiet auth-mode-button">已有账号？登录</button>
+          <a id="authModeButton" href="/?auth=login" class="quiet auth-mode-button">已有账号？登录</a>
         </div>
       </div>
 
@@ -826,7 +826,7 @@
       </div>
     </main>
 
-    <script type="module" src="./src/client/app.js?v=20260601-logout-form-fallback"></script>
+    <script type="module" src="./src/client/app.js?v=20260601-auth-mode-fallback"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-case-refresh"></script>
   </body>
 </html>
