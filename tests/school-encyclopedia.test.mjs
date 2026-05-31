@@ -16,8 +16,8 @@ const liberalArtsColleges = schools.filter((school) => school.category === "libe
 const internationalSchools = internationalSchoolsData.filter((school) => school.category === "international");
 const otherRegionSchools = otherRegionSchoolsData.filter((school) => school.category === "other-region");
 
-assert.equal(schools.length, 118);
-assert.equal(universities.length, 65);
+assert.equal(schools.length, 120);
+assert.equal(universities.length, 67);
 assert.equal(liberalArtsColleges.length, 53);
 assert.equal(internationalSchools.length, 27);
 assert.equal(otherRegionSchools.length, 37);
@@ -31,6 +31,8 @@ assert.deepEqual(schools[0], {
     "CommonApp / Coalition / QuestBridge；主文书 650 词；必答 6 篇（约 900 词）：Why Major 250 / Community 250 / Service 250 / 3 道 50 词短问答",
   schoolFeatures:
     "Ivy 中本科教育最纯粹，必做 Senior Thesis；新泽西小镇 + Residential Colleges + Eating Clubs。",
+  location: "Princeton, New Jersey",
+  safetyScore: "9.0",
   admissionPreferences:
     "看学术潜力 + 思辨深度 + 服务精神（in service of humanity）；偏沉稳深入、利他的学生。",
   recommendationRequirements:
@@ -38,6 +40,23 @@ assert.deepEqual(schools[0], {
 });
 assert.equal(filterSchools(schools, { category: "university", query: "Maker" })[0].name, "麻省理工 MIT");
 assert.equal(filterSchools(schools, { category: "liberal-arts", query: "Williams" })[0].rank, "1");
+assert.deepEqual(
+  filterSchools(schools, { category: "university", query: "UC Irvine" }).map((school) => ({
+    rank: school.rank,
+    name: school.name,
+    location: school.location,
+    safetyScore: school.safetyScore,
+  })),
+  [
+    {
+      rank: "33",
+      name: "UC Irvine",
+      location: "Irvine, California",
+      safetyScore: "9.5",
+    },
+  ],
+);
+assert.equal(filterSchools(schools, { category: "liberal-arts", query: "9.5" })[0].name, "威廉斯 Williams");
 assert.deepEqual(
   {
     category: internationalSchools[0].category,

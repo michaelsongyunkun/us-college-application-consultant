@@ -1,4 +1,4 @@
-import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260531-school-location";
+import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260531-school-safety";
 import {
   DEFAULT_VISIBLE_RESULT_LIMIT,
   expandVisibleResultLimit,
@@ -86,7 +86,15 @@ function renderInternationalDetails(school) {
 }
 
 function renderDomesticDetails(school) {
+  const locationDetail = school.location
+    ? `<div><dt>地理位置</dt><dd>${escapeHtml(school.location)}</dd></div>`
+    : "";
+  const safetyScoreDetail = school.safetyScore
+    ? `<div><dt>安全评分</dt><dd>${escapeHtml(school.safetyScore)} / 10</dd></div>`
+    : "";
   return `
+    ${locationDetail}
+    ${safetyScoreDetail}
     <div><dt>申请与文书</dt><dd>${escapeHtml(displayValue(school.applicationAndEssays))}</dd></div>
     <div><dt>学校特色</dt><dd>${escapeHtml(displayValue(school.schoolFeatures))}</dd></div>
     <div><dt>录取偏好</dt><dd>${escapeHtml(displayValue(school.admissionPreferences))}</dd></div>

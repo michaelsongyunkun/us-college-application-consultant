@@ -8,6 +8,10 @@
 
 - **学校特色**：Ivy 中本科教育最纯粹，必做 Senior Thesis；新泽西小镇 + Residential Colleges + Eating Clubs。
 
+- **地理位置**：Princeton, New Jersey
+
+- **安全评分**：9.0
+
 - **录取偏好**：看学术潜力 + 思辨深度 + 服务精神（in service of humanity）；偏沉稳深入、利他的学生。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师（建议 1 STEM + 1 人文）；可再加 1 选交 Other Recommender。
@@ -17,6 +21,10 @@
 - **申请与文书**：自有系统（无 CommonApp 主文书）；必答 5 篇（约 1100 词）：Why Major / Community / Pleasure / Conflict / Contribution
 
 - **学校特色**：硬核 STEM + Maker / Hacker 文化；大一 P / NP 缓冲；跨学科融合（Media Lab、Sloan）。
+
+- **地理位置**：Cambridge, Massachusetts
+
+- **安全评分**：8.0
 
 - **录取偏好**：看 STEM 深度、协作、创造力、抗挫；强调“做了什么、为谁做”的具体细节。
 
@@ -28,6 +36,10 @@
 
 - **学校特色**：综合学术最强、House 制；全球资源与校友网络冠绝；强调领导力与公共影响力。
 
+- **地理位置**：Cambridge, Massachusetts
+
+- **安全评分**：8.0
+
 - **录取偏好**：看智识广度+深度+世界级潜力；文书重身份、价值观、未来格局。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender（教练、雇主、导师等）。
@@ -37,6 +49,10 @@
 - **申请与文书**：CommonApp / Coalition；必答 8 题（约 950 词）：3 长文（Intellectual / Roommate / Meaningful）+ 5 个 ≤50 词短答
 
 - **学校特色**：硅谷创业基因 + Design Thinking + 跨学科自由度高；阳光开放、低调实干。
+
+- **地理位置**：Stanford / Palo Alto, California
+
+- **安全评分**：8.5
 
 - **录取偏好**：核心词 intellectual vitality；爱好奇心、创造力与“改变世界”的真实细节。
 
@@ -48,6 +64,10 @@
 
 - **学校特色**：人文 / 艺术 / 戏剧 / 写作传统深厚；Residential Colleges 紧密；学生组织能量大。
 
+- **地理位置**：New Haven, Connecticut
+
+- **安全评分**：7.0
+
 - **录取偏好**：偏文艺 + 思辨型，重热爱与表达力；短答 + 长答考察多面性。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender，鼓励交 1 份 Peer Rec（耶鲁特色）。
@@ -57,6 +77,10 @@
 - **申请与文书**：自有系统 / QuestBridge（不接 CommonApp）；必答 6 题（约 900 词）：STEM×2 / Why / Creativity / Honor Code / 短答×3
 
 - **学校特色**：极致 STEM 小而精（约 1000 人）；Honor Code、研究密度全美第一。
+
+- **地理位置**：Pasadena, California
+
+- **安全评分**：8.5
 
 - **录取偏好**：纯理工导向，不看综合素质；要呈现 STEM 深耕过程与协作。
 
@@ -68,6 +92,10 @@
 
 - **学校特色**：南方精英 + 顶尖体育（篮球）；Trinity 文理 + Pratt 工程；医学 / 政策强。
 
+- **地理位置**：Durham, North Carolina
+
+- **安全评分**：7.5
+
 - **录取偏好**：看 enthusiasm、leadership、多面成长；强调知识 + 影响力双轮驱动。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -77,6 +105,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 350 词）：Collaboration / Community
 
 - **学校特色**：美国首所研究型大学；医学 / 生物 / SAIS 顶尖；本科生科研机会多。
+
+- **地理位置**：Baltimore, Maryland
+
+- **安全评分**：6.5
 
 - **录取偏好**：看学术深度 + 协作；爱听“协作研究 / 解决问题”的真实经历。
 
@@ -88,6 +120,10 @@
 
 - **学校特色**：Medill 新闻 / Kellogg 本科商、Big Ten 体育；学季制节奏快。
 
+- **地理位置**：Evanston, Illinois
+
+- **安全评分**：8.5
+
 - **录取偏好**：极看重 Why NW 的针对性（学院 / 项目 / 教授）；fit > 名校光环。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 位任课老师 + 1 Other Recommender 共 4 封封顶。
@@ -97,6 +133,10 @@
 - **申请与文书**：CommonApp；必答 3 题（约 600 词）：Community 信 / Why+Major / 学院专属（Wharton / CAS / SEAS / Nursing 不同）
 
 - **学校特色**：唯一 Ivy 商学院（Wharton）；One University Policy 跨院选课；城市校园。
+
+- **地理位置**：Philadelphia, Pennsylvania
+
+- **安全评分**：6.5
 
 - **录取偏好**：pre-professional 导向；Why Penn 须落到学院；看清晰目标 + 执行力。
 
@@ -110,6 +150,10 @@
 
 - **学校特色**：Open Curriculum；自由探索 + progressive 校风；PLME 七年医、Brown-RISD 双学位。
 
+- **地理位置**：Providence, Rhode Island
+
+- **安全评分**：7.5
+
 - **录取偏好**：看自驱、跨学科兴趣与 joy 表达；偏有想法、不被分数束缚的学生。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；PLME 建议 1 份来自生物 / 化学老师；Brown-RISD 双学位需加交艺术作品集。
@@ -119,6 +163,10 @@
 - **申请与文书**：CommonApp；必答 6 题（约 750 词）：3 道 List 短题 + Community 150 / Why 150 / Major 150
 
 - **学校特色**：曼哈顿城市校园 + Core Curriculum；新闻 / 政治 / 金融王道。
+
+- **地理位置**：New York, New York
+
+- **安全评分**：7.0
 
 - **录取偏好**：看城市资源利用、Core 适配度；List 题考真实阅读 / 兴趣广度。
 
@@ -130,6 +178,10 @@
 
 - **学校特色**：八大学院差异极大（CALS / ILR / Eng / A&S / Hotel / Hum Eco / AAP / Dyson）。
 
+- **地理位置**：Ithaca, New York
+
+- **安全评分**：9.0
+
 - **录取偏好**：学院专属文书极关键；fit > 通用，要选准学院与专业路径。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；Engineering / CALS / Dyson 建议 1 位与专业相关老师（如 STEM）。
@@ -139,6 +191,10 @@
 - **申请与文书**：CommonApp；必答 2 题（约 1000 词）：Why 250–500 + Extended Essay 650–1500（脑洞题）
 
 - **学校特色**：Core + 学术怪诞趣味；经济 / 数学 / 政治理论强；“Life of the Mind”。
+
+- **地理位置**：Chicago, Illinois
+
+- **安全评分**：6.5
 
 - **录取偏好**：爱 quirky、爱脑洞 + 学术热情；Extended Essay 是成败关键。
 
@@ -150,6 +206,10 @@
 
 - **学校特色**：常春藤里最 LAC 化、新罕布什尔小镇、D-Plan、户外文化重。
 
+- **地理位置**：Hanover, New Hampshire
+
+- **安全评分**：9.5
+
 - **录取偏好**：看 fit + intellectual curiosity；偏社群感强、爱探索的学生。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；强烈建议加 1 份 Peer Recommendation（同学 / 朋友撰写）。
@@ -159,6 +219,10 @@
 - **申请与文书**：UC Application；PIQ 8 选 4 × 350 词（约 1400 词），无校级题
 
 - **学校特色**：洛杉矶、UC 旗舰；电影 / 医学 / 工程强；公立藤校气质。
+
+- **地理位置**：Los Angeles, California
+
+- **安全评分**：7.5
 
 - **录取偏好**：PIQ 8 选 4 看综合发展 + 影响力；UC GPA 与课程难度是核心。
 
@@ -170,6 +234,10 @@
 
 - **学校特色**：硅谷北 + 公立顶尖；CS / 工程 / 商科 / 经济强势；学生密度大。
 
+- **地理位置**：Berkeley, California
+
+- **安全评分**：7.0
+
 - **录取偏好**：与 UCLA 同 PIQ；偏 academic excellence + social impact；UC GPA 核心。
 
 - **推荐信要求**：UC 系统不接收推荐信；仅部分遵循 Augmentation Review 的候选人会被要求补交 2 封。
@@ -179,6 +247,10 @@
 - **申请与文书**：CommonApp；必答 4 项（约 800 词 + 1 张图）：Why Major 150 / Why Rice 150 / Personal 500 / The Box 图片
 
 - **学校特色**：休斯顿、Residential Colleges 制；STEM / 建筑 / 音乐强；规模小社群紧密。
+
+- **地理位置**：Houston, Texas
+
+- **安全评分**：8.0
 
 - **录取偏好**：The Box 创意图考个性；看 fit + warmth + intellectual curiosity。
 
@@ -190,6 +262,10 @@
 
 - **学校特色**：纳什维尔、南方精英；Peabody 教育 / Blair 音乐强；社交校园文化。
 
+- **地理位置**：Nashville, Tennessee
+
+- **安全评分**：7.5
+
 - **录取偏好**：篇幅短但要 distinctive；偏 well-rounded、有领导力的学生。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -199,6 +275,10 @@
 - **申请与文书**：CommonApp；必答 3 题（约 550 词）：Why ND / Faith；Values；Community / Personal Reflection
 
 - **学校特色**：印第安那、天主教传统 + 强体育（橄榄球）；Mendoza 商学院。
+
+- **地理位置**：Notre Dame / South Bend, Indiana
+
+- **安全评分**：8.0
 
 - **录取偏好**：看 faith / values 契合 + community 贡献；偏服务精神 + 信仰反思。
 
@@ -212,6 +292,10 @@
 
 - **学校特色**：安娜堡大公立、Ross 商 / 工程 / 电影 / 医学强；Big House 体育。
 
+- **地理位置**：Ann Arbor, Michigan
+
+- **安全评分**：8.5
+
 - **录取偏好**：Why+Major 550 非常细，看院系 fit；Community 题考多元参与。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 任课老师 / Other；Ross 商学院建议 1 份来自数学老师。
@@ -221,6 +305,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 200 词）：Why + Major
 
 - **学校特色**：圣路易斯、Olin 商 + 医学 / 工程强；学生氛围合作友好。
+
+- **地理位置**：St. Louis / Clayton, Missouri
+
+- **安全评分**：7.5
 
 - **录取偏好**：Why+Major 短而精，强调 fit；偏低调、用心做事的学生。
 
@@ -232,6 +320,10 @@
 
 - **学校特色**：匹兹堡、计算机 / 戏剧 / 设计 / 工程全美顶尖；学院界限分明。
 
+- **地理位置**：Pittsburgh, Pennsylvania
+
+- **安全评分**：8.0
+
 - **录取偏好**：三题分别考 Why Major / Why CMU / 成长反思；学院专属导向。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；SCS / CIT 建议 1 数学 / 科学 + 1 人文；CFA 艺术学院需提交作品集 + 面试。
@@ -241,6 +333,10 @@
 - **申请与文书**：CommonApp；必答 2 题（约 300 词）：Academic 150 + 反思题 150（多选一）
 
 - **学校特色**：亚特兰大、医预 / 商（Goizueta） / QSS 强；学生多元国际化。
+
+- **地理位置**：Atlanta / Druid Hills, Georgia
+
+- **安全评分**：8.0
 
 - **录取偏好**：篇幅极短（150×2）要在小空间打动；选反思题展示自我。
 
@@ -252,6 +348,10 @@
 
 - **学校特色**：夏洛茨维尔、Honor Code、文理传统 + 公立藤气质。
 
+- **地理位置**：Charlottesville, Virginia
+
+- **安全评分**：8.0
+
 - **录取偏好**：看 academic curiosity + character；Personal Reflection 多选一灵活。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -261,6 +361,10 @@
 - **申请与文书**：自有系统（不接 CommonApp）；必答 3 题（约 1500 词）：Personal Statement + Why GT + 学院专属
 
 - **学校特色**：DC 中心、耶稣会大学；SFS 外交 / McDonough 商；自有系统。
+
+- **地理位置**：Washington, D.C.
+
+- **安全评分**：8.0
 
 - **录取偏好**：1500 字大文书 + 学院专属；看政治 / 社会议题思考与服务志向。
 
@@ -272,6 +376,10 @@
 
 - **学校特色**：教堂山、公立藤气质；公共健康 / 新闻 / 医学强；州内外比例严格。
 
+- **地理位置**：Chapel Hill, North Carolina
+
+- **安全评分**：8.5
+
 - **录取偏好**：信念题 + 服务题；偏价值观清晰、服务社区有承诺的学生。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -281,6 +389,10 @@
 - **申请与文书**：CommonApp；必答 4 项（约 600 词 + 10 道短答）：Why Major 250 + Personal 250（三选一）+ 三词描述自己 + Snapshot 10 答
 
 - **学校特色**：洛杉矶、电影 / 商 / 工程 / 传媒强；娱乐圈校友网络强。
+
+- **地理位置**：Los Angeles, California
+
+- **安全评分**：6.5
 
 - **录取偏好**：Snapshot 10 道短答看个性 + 文化契合；Why Major 250 看院系热情。
 
@@ -292,6 +404,10 @@
 
 - **学校特色**：曼哈顿、no campus；Stern 商 / Tisch 艺术 / Steinhardt 顶尖；国际化。
 
+- **地理位置**：New York, New York
+
+- **安全评分**：7.0
+
 - **录取偏好**：Why NYU 看城市利用 + identity；Tisch / Stern 学院专属题另写。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other；Tisch 表演 / 电影需面试 / 作品集。
@@ -301,6 +417,10 @@
 - **申请与文书**：UC Application；同 UCLA PIQ
 
 - **学校特色**：圣地亚哥、强生物 / CS / 海洋；college 制；理工偏 nerdy。
+
+- **地理位置**：La Jolla / San Diego, California
+
+- **安全评分**：9.0
 
 - **录取偏好**：UC PIQ 与 UCLA 同；偏 academic + research orientation。
 
@@ -314,6 +434,10 @@
 
 - **学校特色**：佛州、强工程 / 商 / 法律；佛州本州生学费极低；橄榄球文化。
 
+- **地理位置**：Gainesville, Florida
+
+- **安全评分**：8.0
+
 - **录取偏好**：仅 250 词主文书 + 无 supp；重 stat（GPA / SAT）+ 全面发展。
 
 - **推荐信要求**：不要求推荐信（自有系统 + SSAR 自报成绩单）；不阅读额外推荐信。
@@ -323,6 +447,10 @@
 - **申请与文书**：Apply Texas / CommonApp；必答 3 题（约 750 词）：Leadership / Why Major / 特殊情况（可选）
 
 - **学校特色**：奥斯汀、Cockrell 工程 / McCombs 商；州内 Top 6% 自动录取。
+
+- **地理位置**：Austin, Texas
+
+- **安全评分**：7.5
 
 - **录取偏好**：Apply Texas 题考 Leadership / Why Major；州外申请极卷。
 
@@ -334,15 +462,51 @@
 
 - **学校特色**：亚特兰大、纯理工公立；CS / 工程 / 设计强；co-op 文化深。
 
+- **地理位置**：Atlanta, Georgia
+
+- **安全评分**：7.0
+
 - **录取偏好**：300 词内说清 Why GT + Why Major，需具体引用项目 / 教授。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交，建议数学 / 科学老师）；可再加 1 选交 Other。
 
-#### #33 UC Santa Barbara / UC Davis / UC Irvine
+#### #33 UC Santa Barbara
 
 - **申请与文书**：UC Application；同 UCLA PIQ
 
 - **学校特色**：UC 系统；UCSB 海滨 + 工程、Davis 农 + 兽医、Irvine CS / 生物。
+
+- **地理位置**：Santa Barbara / Goleta, California
+
+- **安全评分**：7.5
+
+- **录取偏好**：与 UCLA 同 PIQ；州外申请重 PIQ + UC GPA；各校他看专业 fit。
+
+- **推荐信要求**：UC 系统不接收推荐信；请勿主动寄送。
+
+#### #33 UC Davis
+
+- **申请与文书**：UC Application；同 UCLA PIQ
+
+- **学校特色**：UC 系统；UCSB 海滨 + 工程、Davis 农 + 兽医、Irvine CS / 生物。
+
+- **地理位置**：Davis, California
+
+- **安全评分**：9.0
+
+- **录取偏好**：与 UCLA 同 PIQ；州外申请重 PIQ + UC GPA；各校他看专业 fit。
+
+- **推荐信要求**：UC 系统不接收推荐信；请勿主动寄送。
+
+#### #33 UC Irvine
+
+- **申请与文书**：UC Application；同 UCLA PIQ
+
+- **学校特色**：UC 系统；UCSB 海滨 + 工程、Davis 农 + 兽医、Irvine CS / 生物。
+
+- **地理位置**：Irvine, California
+
+- **安全评分**：9.5
 
 - **录取偏好**：与 UCLA 同 PIQ；州外申请重 PIQ + UC GPA；各校他看专业 fit。
 
@@ -354,6 +518,10 @@
 
 - **学校特色**：伊州 Champaign-Urbana、CS / 工程 / 会计 / 农业全美顶尖。
 
+- **地理位置**：Champaign-Urbana, Illinois
+
+- **安全评分**：8.0
+
 - **录取偏好**：主 + 备选专业题各 约 300 词；CS 极卷，需展示具体准备。
 
 - **推荐信要求**：不要求推荐信；重 Self-Reported Academic Record + 课程难度。
@@ -363,6 +531,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 400 词）：Why + Major
 
 - **学校特色**：威州、强商（Wisconsin School of Business） / 工程 / 计算机；活力大公立。
+
+- **地理位置**：Madison, Wisconsin
+
+- **安全评分**：8.0
 
 - **录取偏好**：Why + Major 400 词，看 fit 与社区参与。
 
@@ -374,6 +546,10 @@
 
 - **学校特色**：波士顿、耶稣会传统、强商科（Carroll） / 通识；Jesuit values。
 
+- **地理位置**：Chestnut Hill / Newton, Massachusetts
+
+- **安全评分**：9.0
+
 - **录取偏好**：4 选 1 看 reflection + values；偏服务 / 反思 + 信仰契合学生。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -383,6 +559,10 @@
 - **申请与文书**：CommonApp；仅可选 supp（无必答）；Honors 另有题
 
 - **学校特色**：新泽西州立、Pharmacy / 心理学 / 商；大公立多 campus。
+
+- **地理位置**：New Brunswick, New Jersey
+
+- **安全评分**：7.5
 
 - **录取偏好**：无必答 supp，重 stat + 申请表；Honors / SAS 等项目需另写。
 
@@ -394,6 +574,10 @@
 
 - **学校特色**：波士顿、强 IR / 工程 / 跨学科；与 MIT / Harvard 跨校选课。
 
+- **地理位置**：Medford / Somerville, Massachusetts
+
+- **安全评分**：8.5
+
 - **录取偏好**：Why Tufts 150 看精准 fit + intellectual fit；Personal 250 三选一。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Peer / Other Recommender。
@@ -403,6 +587,10 @@
 - **申请与文书**：自有系统（不接 CommonApp）；必答 2 题（约 950 词）：Personal Statement 650 + Short 300
 
 - **学校特色**：西雅图、强 CS / 医学 / 工程；公立旗舰；Husky 校园文化。
+
+- **地理位置**：Seattle, Washington
+
+- **安全评分**：7.5
 
 - **录取偏好**：自有系统大文书 650 看个人故事 + 写作能力；不接 CommonApp。
 
@@ -414,6 +602,10 @@
 
 - **学校特色**：波士顿、强商 / 传媒 / 工程；城市大学无传统校园；国际化。
 
+- **地理位置**：Boston, Massachusetts
+
+- **安全评分**：7.5
+
 - **录取偏好**：Why BU 250 看城市利用 + 学院 fit；偏 outgoing + 实干学生。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -423,6 +615,10 @@
 - **申请与文书**：CommonApp；仅可选 supp（无必答）；Scholars / Honors 另有题
 
 - **学校特色**：Big Ten 公立、商 / 工程 / 兽医强；橄榄球文化；学生 约 60k 大公立。
+
+- **地理位置**：Columbus, Ohio
+
+- **安全评分**：7.0
 
 - **录取偏好**：无必答 supp，重 stat + 申请表；Scholars / Honors 项目需另写。
 
@@ -434,6 +630,10 @@
 
 - **学校特色**：印第安那、CS / 航空航天 / 农业 / 工程王道；co-op 文化；性价比高。
 
+- **地理位置**：West Lafayette, Indiana
+
+- **安全评分**：8.5
+
 - **录取偏好**：三题各短，看 Why Major + Why Purdue 具体性 + Community 参与。
 
 - **推荐信要求**：不要求推荐信；重 School Report + 课程 / GPA；Honors College 可能另需 1 份。
@@ -443,6 +643,10 @@
 - **申请与文书**：CommonApp；必答 2 题（约 450 词）：Why+Major 150 + Community 300
 
 - **学校特色**：宾州、Top STEM + IBE 商工综合项目；规模中等社群紧密。
+
+- **地理位置**：Bethlehem, Pennsylvania
+
+- **安全评分**：7.5
 
 - **录取偏好**：Why+Major + Community；偏 fit + practical orientation。
 
@@ -454,6 +658,10 @@
 
 - **学校特色**：大学公园、计算机 / 工程 / 公共政策强；DC 资源近。
 
+- **地理位置**：College Park, Maryland
+
+- **安全评分**：7.5
+
 - **录取偏好**：句子填空看创意 + 表达；领导力题考具体故事。
 
 - **推荐信要求**：不要求推荐信；重 GPA + SAT + 课程难度；Honors College 可能另需。
@@ -463,6 +671,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 300 词）：Community / Become the person you are
 
 - **学校特色**：雅典、强 Terry 商 / 法预 / 新闻；Hope Scholarship 体系。
+
+- **地理位置**：Athens, Georgia
+
+- **安全评分**：8.0
 
 - **录取偏好**：Community / 成长题；偏服务 + 真实价值观。
 
@@ -474,6 +686,10 @@
 
 - **学校特色**：大学城、强工程 / 农业 / 兽医；Aggie 文化与传统极重。
 
+- **地理位置**：College Station, Texas
+
+- **安全评分**：8.5
+
 - **录取偏好**：Apply Texas 考 Leadership + 特殊情况；州内优先。
 
 - **推荐信要求**：不要求推荐信；会阅读选交的老师 / 顾问信，作为 holistic review 补充资料。
@@ -483,6 +699,10 @@
 - **申请与文书**：CommonApp；必答 7 项（约 1000 词，以多 supp 出名）：5 本书 List + Why Major + Pro Humanitate + Top 3 Concerns + Tell Us + 其他
 
 - **学校特色**：北卡、文理学院化大学、强商 + 通识；小班、师生比低。
+
+- **地理位置**：Winston-Salem, North Carolina
+
+- **安全评分**：8.0
 
 - **录取偏好**：以 supp 多著称，看真实兴趣 / 阅读 / 关切；最难写文书之一。
 
@@ -496,6 +716,10 @@
 
 - **学校特色**：波士顿郊外、强人文 / 社科 / 犹太研究；研究型小规模。
 
+- **地理位置**：Waltham, Massachusetts
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why Brandeis 看价值观契合 + 学术兴趣。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -505,6 +729,10 @@
 - **申请与文书**：CommonApp；仅可选 supp（无必答）
 
 - **学校特色**：弗吉尼亚、第二古老公立、文理传统 + 公立藤气质。
+
+- **地理位置**：Williamsburg, Virginia
+
+- **安全评分**：9.0
 
 - **录取偏好**：无必答 supp，重 stat + 申请表整体。
 
@@ -516,6 +744,10 @@
 
 - **学校特色**：克利夫兰、强工程 / 医学 / CS；Co-op 项目。
 
+- **地理位置**：Cleveland, Ohio
+
+- **安全评分**：7.5
+
 - **录取偏好**：无必答 supp，重 stat；可选题写得越细越好。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other；Pre-Professional Scholars 需另交。
@@ -525,6 +757,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why NEU（重点 co-op）
 
 - **学校特色**：波士顿、co-op 旗舰、强 CS / 商 / 工程；国际化。
+
+- **地理位置**：Boston, Massachusetts
+
+- **安全评分**：7.5
 
 - **录取偏好**：Why NEU 必写 co-op + 城市利用；fit 极重要。
 
@@ -536,6 +772,10 @@
 
 - **学校特色**：新奥尔良、强医预 / 商 / 公共健康；浓厚南方文化。
 
+- **地理位置**：New Orleans, Louisiana
+
+- **安全评分**：6.5
+
 - **录取偏好**：高度开放的 Why；要呈现独特视角 + 城市契合。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -545,6 +785,10 @@
 - **申请与文书**：CommonApp；必答 4 题（约 480 词）：Ut Prosim / Adversity / Community / Leadership
 
 - **学校特色**：黑堡、强工程 / CS / 农业；Ut Prosim（“That I May Serve”）校训。
+
+- **地理位置**：Blacksburg, Virginia
+
+- **安全评分**：9.0
 
 - **录取偏好**：4 题考服务 / 韧性 / 社区 / 领导力；偏 service-minded。
 
@@ -556,6 +800,10 @@
 
 - **学校特色**：塔拉哈西、强商 / 电影 / 犯罪学；强体育文化。
 
+- **地理位置**：Tallahassee, Florida
+
+- **安全评分**：7.5
+
 - **录取偏好**：4 选 1 看 diversity / hardship / goals / leadership。
 
 - **推荐信要求**：不要求推荐信；重 GPA + SAT + 4 选 1 文书。
@@ -565,6 +813,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Faith / Values 与 Pepperdine 的契合
 
 - **学校特色**：马里布海滨、基督教大学；强商 / 国际研究。
+
+- **地理位置**：Malibu, California
+
+- **安全评分**：9.5
 
 - **录取偏好**：Faith / Values 与学校 fit；要诚实信仰反思。
 
@@ -576,6 +828,10 @@
 
 - **学校特色**：麻州五校联盟、强商 / 工程 / 公共政策；大公立。
 
+- **地理位置**：Amherst, Massachusetts
+
+- **安全评分**：8.5
+
 - **录取偏好**：无必答 supp，重 stat + 申请表。
 
 - **推荐信要求**：不要求推荐信；Commonwealth Honors College 可能另需 1 份推荐信。
@@ -585,6 +841,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 500 词）：背景 / 活动如何让你在 PSU 成功
 
 - **学校特色**：大学城、强工程 / 商 / 农业；Big Ten 体育。
+
+- **地理位置**：University Park / State College, Pennsylvania
+
+- **安全评分**：8.5
 
 - **录取偏好**：500 词看你如何在 PSU 成功；要具体 + 行动导向。
 
@@ -596,6 +856,10 @@
 
 - **学校特色**：强医学 / 商 / 工程；与 CMU 同城；研究型大学。
 
+- **地理位置**：Pittsburgh, Pennsylvania
+
+- **安全评分**：7.5
+
 - **录取偏好**：无必答 supp，重 stat；Honors / 医预另写。
 
 - **推荐信要求**：不要求推荐信；Honors College / GAP 医预联合项目可能另需 1–2 份。
@@ -605,6 +869,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why RPI + Why Major
 
 - **学校特色**：纽约 Troy、纯理工；强 CS / 工程；研究型小规模。
+
+- **地理位置**：Troy, New York
+
+- **安全评分**：7.5
 
 - **录取偏好**：Why RPI + Why Major 250 看具体准备 + 兴趣。
 
@@ -616,6 +884,10 @@
 
 - **学校特色**：强 PT / 保险 / 教育；新英格兰公立旗舰。
 
+- **地理位置**：Storrs, Connecticut
+
+- **安全评分**：8.5
+
 - **录取偏好**：无必答 supp，重 stat + 申请表。
 
 - **推荐信要求**：不要求推荐信；Honors Program 可能另需 1–2 封。
@@ -625,6 +897,10 @@
 - **申请与文书**：CommonApp；必答 2 题（约 400 词）：奇题（设计课程 / motto / relationship 4 选 1）+ Augustine quote / Community
 
 - **学校特色**：费城近郊、奥古斯丁会、强商科（VSB）。
+
+- **地理位置**：Villanova, Pennsylvania
+
+- **安全评分**：9.0
 
 - **录取偏好**：奇题看创意 + 价值观；偏服务 + 信仰 fit。
 
@@ -636,6 +912,10 @@
 
 - **学校特色**：DC 中心、强 IR / 政治学 / 商；政府资源近。
 
+- **地理位置**：Washington, D.C.
+
+- **安全评分**：7.5
+
 - **录取偏好**：无必答 supp，重 stat；fit 体现在课外。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -646,6 +926,10 @@
 
 - **学校特色**：新泽西、纯理工；强 CS / 工程 / 金融工程；co-op 强。
 
+- **地理位置**：Hoboken, New Jersey
+
+- **安全评分**：8.0
+
 - **录取偏好**：Why Stevens + Why Major 250；偏 practical + technical。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交，建议 STEM）；可再加 1 选交 Other。
@@ -655,6 +939,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why AU + Why Major
 
 - **学校特色**：DC、强政治学 / IR / 传媒；与政府机构关系密切。
+
+- **地理位置**：Washington, D.C.
+
+- **安全评分**：8.0
 
 - **录取偏好**：Why AU + Why Major 250；偏政策 / 服务志向。
 
@@ -670,6 +958,10 @@
 
 - **学校特色**：麻州山区小镇、Tutorial 制（2人1师）、人文 + 政治 + 经济强。
 
+- **地理位置**：Williamstown, Massachusetts
+
+- **安全评分**：9.5
+
 - **录取偏好**：Tutorial / Mountain Day 题考 fit + intellectual curiosity。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender；可选交 Graded Writing Sample。
@@ -679,6 +971,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 300 词）：Amherst Quote / Intellectual Identity / Open Curriculum 三选一（可选 Graded Writing Sample）
 
 - **学校特色**：麻州、Open Curriculum、Five College Consortium；人文与社科强。
+
+- **地理位置**：Amherst, Massachusetts
+
+- **安全评分**：9.0
 
 - **录取偏好**：3 选 1 题 + 选交 Writing Sample；看思想深度。
 
@@ -690,6 +986,10 @@
 
 - **学校特色**：加州、Claremont 5C 联盟；学术研究型 LAC 顶尖；小班教学。
 
+- **地理位置**：Claremont, California
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why Pomona 250 + 短答；偏 academic + community-minded。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -699,6 +999,10 @@
 - **申请与文书**：CommonApp；必答 2 题（约 500 词）：Why Swarthmore + Identity / Perspective
 
 - **学校特色**：费城近郊、Quaker 传统、Honors 项目、政治 / 工程强。
+
+- **地理位置**：Swarthmore, Pennsylvania
+
+- **安全评分**：9.0
 
 - **录取偏好**：Why + Identity；偏 reflective、价值观清晰的学生。
 
@@ -710,6 +1014,10 @@
 
 - **学校特色**：麻州、女子学院、强人文 + 商 + STEM；姐妹院 MIT 选课。
 
+- **地理位置**：Wellesley, Massachusetts
+
+- **安全评分**：9.5
+
 - **录取偏好**：Why 二选一含校训反思；偏女权 / 领导力意识。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -719,6 +1027,10 @@
 - **申请与文书**：自有系统（需国会提名、免学费、不接 CommonApp）；必答 2 题（约 1000 词）：Why USNA / Leadership
 
 - **学校特色**：安纳波利斯、军校、需国会提名、免学费、Service 义务。
+
+- **地理位置**：Annapolis, Maryland
+
+- **安全评分**：8.5
 
 - **录取偏好**：Why USNA + Leadership；体检 + 体能测试 + 推荐严格。
 
@@ -730,6 +1042,10 @@
 
 - **学校特色**：缅因、Offer of the College 校训传统；强政治 / 环境。
 
+- **地理位置**：Brunswick, Maine
+
+- **安全评分**：9.0
+
 - **录取偏好**：Offer of College 反思题；偏服务 / 公民意识强学生。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other / Peer Recommender。
@@ -739,6 +1055,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 150 词）：Why Carleton
 
 - **学校特色**：明尼苏达、强 STEM + 写作 LAC；学季制；学术氛围浓。
+
+- **地理位置**：Northfield, Minnesota
+
+- **安全评分**：9.0
 
 - **录取偏好**：Why Carleton 150 极短；看精准 fit。
 
@@ -750,6 +1070,10 @@
 
 - **学校特色**：加州 5C、强经济 / 政府 / 国际关系；pre-prof LAC。
 
+- **地理位置**：Claremont, California
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why CMC + Cross-Perspective Conversation 看辩论与开放性。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -759,6 +1083,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Davidson + Honor Code
 
 - **学校特色**：北卡夏洛特、Honor Code 严格、强 pre-med / pre-law。
+
+- **地理位置**：Davidson, North Carolina
+
+- **安全评分**：9.0
 
 - **录取偏好**：Why + Honor Code 看 character + 学术诚信。
 
@@ -772,6 +1100,10 @@
 
 - **学校特色**：纽约 West Point、军校、需国会提名、免学费、Service 义务。
 
+- **地理位置**：West Point, New York
+
+- **安全评分**：9.5
+
 - **录取偏好**：Why + Leadership + Adversity；体测 + 推荐严格。
 
 - **推荐信要求**：不走 CommonApp；需 1 数学老师 + 1 英语老师 + 1 Gym 老师评估 + 体能测试 + 国会提名。
@@ -781,6 +1113,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 200 词）：Why Smith（女子学院）
 
 - **学校特色**：麻州、女子学院、Five College Consortium；强人文 + 工程。
+
+- **地理位置**：Northampton, Massachusetts
+
+- **安全评分**：8.5
 
 - **录取偏好**：Why Smith 200 短；看女子学院文化契合 + 学术热情。
 
@@ -792,6 +1128,10 @@
 
 - **学校特色**：弗吉尼亚、Honor Code、强商 / 法预 / 历史；南方传统。
 
+- **地理位置**：Lexington, Virginia
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why + Identity / Background；偏 character + 写作能力。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -801,6 +1141,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 300 词）：Why Vassar（+ 可选 "Your Space" 附件）
 
 - **学校特色**：纽约 Poughkeepsie、人文 + 艺术强；以创作 / 视觉艺术著称。
+
+- **地理位置**：Poughkeepsie, New York
+
+- **安全评分**：7.5
 
 - **录取偏好**：Why Vassar 300 + Your Space 附件；偏创意 / 独立思考。
 
@@ -812,6 +1156,10 @@
 
 - **学校特色**：纽约 Clinton、Open Curriculum、写作 + 公开演讲 LAC。
 
+- **地理位置**：Clinton, New York
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why + Open Curriculum；看自驱 + 写作能力。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -821,6 +1169,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Midd / Community（多选一）
 
 - **学校特色**：佛蒙特、强语言 / 国际研究 / 环境；冬季 J-term。
+
+- **地理位置**：Middlebury, Vermont
+
+- **安全评分**：9.5
 
 - **录取偏好**：Why Midd / Community 多选一；偏全球视野 + 探索精神。
 
@@ -832,6 +1184,10 @@
 
 - **学校特色**：哥大姐妹女子学院、曼哈顿、人文 + STEM + Pre-Med 强。
 
+- **地理位置**：New York, New York
+
+- **安全评分**：7.0
+
 - **录取偏好**：3 题各短；看女权意识 + NYC 利用 + 学术兴趣。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -841,6 +1197,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 200 词）：Why Colby（Jan Plan）
 
 - **学校特色**：缅因、Jan Plan 1 月独立学习、强环境 / 国际研究。
+
+- **地理位置**：Waterville, Maine
+
+- **安全评分**：8.5
 
 - **录取偏好**：Why Colby 200 短；看精准 fit。
 
@@ -852,6 +1212,10 @@
 
 - **学校特色**：纽约、Liberal Arts Core；强经济 / 政治 / 国际研究。
 
+- **地理位置**：Hamilton, New York
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why + Identity / Community 看 fit + 价值观。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -861,6 +1225,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Grinnell + Open Curriculum
 
 - **学校特色**：爱荷华、Open Curriculum、强 social justice；学生偏左化。
+
+- **地理位置**：Grinnell, Iowa
+
+- **安全评分**：9.0
 
 - **录取偏好**：Why + Open Curriculum；偏独立、有承诺的学生。
 
@@ -872,6 +1240,10 @@
 
 - **学校特色**：费城近郊、Quaker、Honor Code、强人文。
 
+- **地理位置**：Haverford, Pennsylvania
+
+- **安全评分**：9.0
+
 - **录取偏好**：Honor Code 反思 + Conversation；偏 reflective、合作型。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -881,6 +1253,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Wesleyan
 
 - **学校特色**：康州、强电影 / 音乐 / 写作；创意 + 进步主义。
+
+- **地理位置**：Middletown, Connecticut
+
+- **安全评分**：8.0
 
 - **录取偏好**：Why Wesleyan 250；偏创造力 + 进步思想。
 
@@ -892,6 +1268,10 @@
 
 - **学校特色**：科罗拉多、军校、需国会提名、免学费、Service 义务。
 
+- **地理位置**：Colorado Springs, Colorado
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why + Leadership + Adversity；体测严格 + 推荐。
 
 - **推荐信要求**：不走 CommonApp；需 1 数学老师 + 1 英语老师 + 1 Gym 老师评估 + 体能测试 + 国会提名。
@@ -901,6 +1281,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why + Global Citizenship
 
 - **学校特色**：明尼苏达、强国际研究、Global Citizenship 校训。
+
+- **地理位置**：St. Paul, Minnesota
+
+- **安全评分**：8.0
 
 - **录取偏好**：Why + 全球公民；偏多元 / 国际化思维。
 
@@ -912,6 +1296,10 @@
 
 - **学校特色**：费城近郊、女子学院、Quaker；强人文 / 数学。
 
+- **地理位置**：Bryn Mawr, Pennsylvania
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why Bryn Mawr 250；看女子学院 fit + 学术。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -922,6 +1310,10 @@
 
 - **学校特色**：缅因、强环境 / 政治 / 数学；test-optional 先驱。
 
+- **地理位置**：Lewiston, Maine
+
+- **安全评分**：8.0
+
 - **录取偏好**：Why Bates 200 短；看精准 fit。
 
 - **推荐信要求**：1 升学顾问 + 2 任课老师；可再加 1 选交 Other Recommender。
@@ -931,6 +1323,10 @@
 - **申请与文书**：CommonApp；必答 3 题（约 800 词）：STEM+Humanities 500 / 5C Community 300 / Optional Identity
 
 - **学校特色**：加州 5C、纯 STEM + Humanities Core 必修；理工 LAC。
+
+- **地理位置**：Claremont, California
+
+- **安全评分**：9.0
 
 - **录取偏好**：STEM+Humanities 500 看跨学科兴趣；5C Community 300。
 
@@ -944,6 +1340,10 @@
 
 - **学校特色**：弗吉尼亚、强商 / 法预 + Jepson 领导力学院。
 
+- **地理位置**：Richmond, Virginia
+
+- **安全评分**：8.0
+
 - **录取偏好**：Why / Community 多选一；偏服务 + 领导力。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender；Jepson 领导力项目另补充。
@@ -953,6 +1353,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 400 词）：Why Soka + Peace & Global Citizenship
 
 - **学校特色**：加州、佛教背景、强 Peace Studies / 国际研究；学生国际化。
+
+- **地理位置**：Aliso Viejo, California
+
+- **安全评分**：9.5
 
 - **录取偏好**：Why + Peace & Global Citizenship；偏和平意识 + 国际视野。
 
@@ -964,6 +1368,10 @@
 
 - **学校特色**：俄亥俄、强英语 / 创意写作；Kenyon Review 文学期刊。
 
+- **地理位置**：Gambier, Ohio
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why Kenyon 200 短；看写作热情 + fit。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交，建议英语 / 人文老师）；可再加 1 选交 Other。
@@ -973,6 +1381,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why CC + Block Plan
 
 - **学校特色**：Block Plan（一次一门课 3.5 周）；强环境 / 地质。
+
+- **地理位置**：Colorado Springs, Colorado
+
+- **安全评分**：8.0
 
 - **录取偏好**：Why + Block Plan；看专注力 + 户外文化适配。
 
@@ -984,6 +1396,10 @@
 
 - **学校特色**：麻州、Seven Sisters 女子学院之一；强 STEM + 国际。
 
+- **地理位置**：South Hadley, Massachusetts
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why Mount Holyoke 250；看女子学院 fit。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -993,6 +1409,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 150 词）：Why Lafayette
 
 - **学校特色**：宾州、罕见 LAC + 工程学院；强商 / 工程。
+
+- **地理位置**：Easton, Pennsylvania
+
+- **安全评分**：8.0
 
 - **录取偏好**：Why Lafayette 150 极短；看精准 fit。
 
@@ -1004,6 +1424,10 @@
 
 - **学校特色**：洛杉矶、强 IR / 教育 / DWA 项目；Obama 母校。
 
+- **地理位置**：Los Angeles, California
+
+- **安全评分**：7.5
+
 - **录取偏好**：Why + LA Location；偏城市利用 + 多元化。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -1013,6 +1437,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Trinity
 
 - **学校特色**：哈特福德、强 IR / 经济；都市 LAC。
+
+- **地理位置**：Hartford, Connecticut
+
+- **安全评分**：6.5
 
 - **录取偏好**：Why Trinity 250；看 fit + 城市 / urban engagement。
 
@@ -1024,6 +1452,10 @@
 
 - **学校特色**：纽约 Saratoga、强艺术 / 创意写作；“Creative Thought Matters”。
 
+- **地理位置**：Saratoga Springs, New York
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why + Creative Thought；偏创意思维 + 跨学科。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -1033,6 +1465,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Pitzer + Core Values（5C 联盟）
 
 - **学校特色**：加州 5C、强 social justice / 环境 / 心理学；进步主义。
+
+- **地理位置**：Claremont, California
+
+- **安全评分**：9.0
 
 - **录取偏好**：Why + Core Values；偏 social justice + 行动力。
 
@@ -1044,6 +1480,10 @@
 
 - **学校特色**：康州、强心理 / 政府 / 跨学科；CISLA 中心。
 
+- **地理位置**：New London, Connecticut
+
+- **安全评分**：8.0
+
 - **录取偏好**：Why Conn 250；看 fit + 跨学科兴趣。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -1053,6 +1493,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Bucknell
 
 - **学校特色**：宾州、LAC + 工程 + 商；中等规模社群紧密。
+
+- **地理位置**：Lewisburg, Pennsylvania
+
+- **安全评分**：9.0
 
 - **录取偏好**：Why Bucknell 250；看 fit + 多面发展。
 
@@ -1064,6 +1508,10 @@
 
 - **学校特色**：亚特兰大、HBCU 女子学院；强 STEM + 政治；强校友网络。
 
+- **地理位置**：Atlanta, Georgia
+
+- **安全评分**：7.0
+
 - **录取偏好**：Why Spelman 250；看 fit + Black women empowerment。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -1073,6 +1521,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Sewanee
 
 - **学校特色**：田纳西、South 圣公会、强英语 / 环境；学袍传统。
+
+- **地理位置**：Sewanee, Tennessee
+
+- **安全评分**：9.0
 
 - **录取偏好**：Why Sewanee 250；看价值观契合 + South 文化。
 
@@ -1084,6 +1536,10 @@
 
 - **学校特色**：华盛顿州、强 social science + 户外；学生关系紧密。
 
+- **地理位置**：Walla Walla, Washington
+
+- **安全评分**：8.5
+
 - **录取偏好**：Why Whitman 250；看 fit + 户外 / 西北文化。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -1093,6 +1549,10 @@
 - **申请与文书**：CommonApp / 自有；必答 1 题（约 300 词）：Why Berea + Labor Program（100% 免学费）
 
 - **学校特色**：肯塔基、100% 免学费、Labor Program 必须工作。
+
+- **地理位置**：Berea, Kentucky
+
+- **安全评分**：8.5
 
 - **录取偏好**：Why + Labor Program；偏 financial need + work ethic。
 
@@ -1104,6 +1564,10 @@
 
 - **学校特色**：宾州、强语言 / 国际研究 / 环境；Useful Education。
 
+- **地理位置**：Carlisle, Pennsylvania
+
+- **安全评分**：8.5
+
 - **录取偏好**：Why Dickinson 250；看 fit + 全球意识。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -1113,6 +1577,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why DePauw
 
 - **学校特色**：印第安那、强商 / 媒体；社团文化（兄弟会）。
+
+- **地理位置**：Greencastle, Indiana
+
+- **安全评分**：8.5
 
 - **录取偏好**：Why DePauw 250；看 fit + 课外参与。
 
@@ -1124,6 +1592,10 @@
 
 - **学校特色**：肯塔基、强海外项目、小而精；强校友网络。
 
+- **地理位置**：Danville, Kentucky
+
+- **安全评分**：8.5
+
 - **录取偏好**：Why Centre 200 短；看精准 fit。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -1133,6 +1605,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 300 词）：Why Holy Cross + Jesuit
 
 - **学校特色**：麻州、耶稣会 LAC；强人文 + 商。
+
+- **地理位置**：Worcester, Massachusetts
+
+- **安全评分**：7.5
 
 - **录取偏好**：Why + Jesuit；偏服务 / 信仰反思。
 
@@ -1144,6 +1620,10 @@
 
 - **学校特色**：南卡、Furman Advantage 项目 + 导师制；强政治 / 商。
 
+- **地理位置**：Greenville, South Carolina
+
+- **安全评分**：8.5
+
 - **录取偏好**：Why + The Furman Advantage；看导师制 fit。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other Recommender。
@@ -1153,6 +1633,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Earlham（Quaker）
 
 - **学校特色**：印第安那、Quaker、强国际研究 / 和平研究。
+
+- **地理位置**：Richmond, Indiana
+
+- **安全评分**：7.5
 
 - **录取偏好**：Why Earlham 250；看价值观 + Quaker fit。
 
@@ -1164,6 +1648,10 @@
 
 - **学校特色**：威州、LAC + Conservatory（音乐）；学生跨学科。
 
+- **地理位置**：Appleton, Wisconsin
+
+- **安全评分**：8.5
+
 - **录取偏好**：Why Lawrence 250；偏音乐 + 学术双修。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；音乐双修需加交 Conservatory 面试 / 试音 + 音乐老师推荐。
@@ -1173,6 +1661,10 @@
 - **申请与文书**：自有系统（不接 CommonApp）；必答 4 题（约 1750 词，文书极重）：Great Books / Book；Idea / Intellectual Question / Background
 
 - **学校特色**：安纳波利斯、Great Books 唯一课程；自有系统。
+
+- **地理位置**：Annapolis, Maryland
+
+- **安全评分**：8.5
 
 - **录取偏好**：4 题文书极重，看阅读 / 思想深度；不接 CommonApp。
 
@@ -1184,6 +1676,10 @@
 
 - **学校特色**：明尼苏达、Lutheran 路德教会、强音乐 / 数学。
 
+- **地理位置**：Northfield, Minnesota
+
+- **安全评分**：9.0
+
 - **录取偏好**：Why St. Olaf 250；看 fit + 信仰 / 价值观契合。
 
 - **推荐信要求**：1 升学顾问 + 1 任课老师（必交）；可再加 1 选交 Other / Pastor Reference。
@@ -1193,6 +1689,10 @@
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Union
 
 - **学校特色**：纽约 Schenectady、强工程 + LAC 综合；学季制。
+
+- **地理位置**：Schenectady, New York
+
+- **安全评分**：7.5
 
 - **录取偏好**：Why Union 250；看 fit + 工程 + 通识兴趣。
 

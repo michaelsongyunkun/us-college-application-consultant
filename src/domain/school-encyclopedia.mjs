@@ -1,6 +1,8 @@
 const FIELD_NAMES = {
   申请与文书: "applicationAndEssays",
   学校特色: "schoolFeatures",
+  地理位置: "location",
+  安全评分: "safetyScore",
   录取偏好: "admissionPreferences",
   推荐信要求: "recommendationRequirements",
 };
@@ -98,6 +100,8 @@ export function parseSchoolsMarkdown(markdown) {
         name: heading[2],
         applicationAndEssays: "",
         schoolFeatures: "",
+        location: "",
+        safetyScore: "",
         admissionPreferences: "",
         recommendationRequirements: "",
       };
@@ -139,7 +143,7 @@ export function parseSchoolsMarkdown(markdown) {
       continue;
     }
 
-    const field = line.match(/^-\s+\*\*(申请与文书|学校特色|录取偏好|推荐信要求)\*\*：\s*(.*)$/);
+    const field = line.match(/^-\s+\*\*(申请与文书|学校特色|地理位置|安全评分|录取偏好|推荐信要求)\*\*：\s*(.*)$/);
     if (field && current) {
       current[FIELD_NAMES[field[1]]] = field[2].trim();
       continue;
@@ -167,6 +171,7 @@ export function filterSchools(schools, { category, query = "" } = {}) {
         school.name,
         school.applicationAndEssays,
         school.schoolFeatures,
+        school.safetyScore,
         school.admissionPreferences,
         school.recommendationRequirements,
         school.region,
