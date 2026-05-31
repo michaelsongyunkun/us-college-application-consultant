@@ -122,8 +122,8 @@ assert.match(
   "Ask DeepSeek script should be cache-busted.",
 );
 assert.ok(
-  pageHtml.includes("styles.css?v=20260531-deepseek-layout"),
-  "Ask DeepSeek page should refresh the stylesheet cache after layout changes.",
+  pageHtml.includes("styles.css?v=20260531-deepseek-guided-chat"),
+  "Ask DeepSeek page should refresh the stylesheet cache after guided chat polish.",
 );
 assert.match(styles, /\.deepseek-chat-log\s*\{/, "Ask DeepSeek should style the chat log.");
 assert.match(styles, /\.chat-message\.user\s*\{/, "Ask DeepSeek should have right-side user messages.");
@@ -137,3 +137,25 @@ assert.match(
   "Ask DeepSeek should compact the RAG source metrics for the chat layout.",
 );
 assert.match(styles, /\.workflow-button::before\s*\{/, "Ask DeepSeek workflow buttons should have a compact visual accent.");
+assert.ok(script.includes("PROGRESS_STATUSES"), "Ask DeepSeek should rotate guided progress status copy.");
+assert.ok(script.includes("正在检索你的申请档案"), "Ask DeepSeek should tell users it is checking their portfolio.");
+assert.ok(script.includes("正在整理参考资料"), "Ask DeepSeek should tell users it is organizing references.");
+assert.ok(script.includes("DeepSeek 正在生成建议"), "Ask DeepSeek should tell users when generation is underway.");
+assert.ok(script.includes("startProgressStatus"), "Ask DeepSeek should start staged progress while waiting.");
+assert.ok(script.includes("stopProgressStatus"), "Ask DeepSeek should stop staged progress after the response.");
+assert.ok(script.includes("<details open class=\"chat-references\""), "Ask DeepSeek references should be collapsible.");
+assert.ok(script.includes("<summary>"), "Ask DeepSeek references should expose a summary row.");
+assert.ok(script.includes("chat-source-type-chip"), "Ask DeepSeek should show source type chips on reference cards.");
+assert.ok(script.includes("renderFollowUpActions"), "Ask DeepSeek should render follow-up actions after answers.");
+assert.ok(script.includes("data-deepseek-follow-up"), "Ask DeepSeek follow-up buttons should be actionable.");
+assert.ok(script.includes("生成行动清单"), "Ask DeepSeek should offer an action-list follow-up.");
+assert.ok(script.includes("按冲刺/匹配/保底重排"), "Ask DeepSeek should offer a school-list follow-up.");
+assert.ok(script.includes("转成推荐信素材"), "Ask DeepSeek should offer a recommendation-material follow-up.");
+assert.ok(script.includes("STANDARD_RESPONSE_SECTIONS"), "Ask DeepSeek workflows should share a standard report format.");
+for (const section of ["## 核心结论", "## 依据与证据", "## 主要风险", "## 下一步行动", "## 参考资料"]) {
+  assert.ok(script.includes(section), `Ask DeepSeek workflow prompts should include ${section}.`);
+}
+assert.match(styles, /\.chat-references summary\s*\{/, "Ask DeepSeek should style collapsible reference summaries.");
+assert.match(styles, /\.chat-followups\s*\{/, "Ask DeepSeek should style answer follow-up actions.");
+assert.match(styles, /\.chat-followup-button\s*\{/, "Ask DeepSeek should style follow-up buttons.");
+assert.match(styles, /\.chat-source-type-chip\s*\{/, "Ask DeepSeek should style source type chips.");

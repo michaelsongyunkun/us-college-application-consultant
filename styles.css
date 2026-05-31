@@ -2220,6 +2220,50 @@ button.danger:hover {
   font-weight: 900;
 }
 
+.chat-references summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  cursor: pointer;
+  list-style: none;
+  border: 1px solid #dce7e0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 6px 10px 6px 12px;
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.chat-references summary::-webkit-details-marker {
+  display: none;
+}
+
+.chat-references summary::after {
+  content: "收起";
+  border-radius: 999px;
+  background: #edf7f0;
+  padding: 3px 8px;
+  color: var(--brand-green);
+  font-size: 11px;
+}
+
+.chat-references:not([open]) summary::after {
+  content: "展开";
+}
+
+.chat-references summary small {
+  color: #617186;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.chat-references .chat-source-grid {
+  margin-top: 10px;
+}
+
 .chat-source-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -2256,6 +2300,16 @@ button.danger:hover {
   color: var(--brand-green);
 }
 
+.chat-source-type-chip {
+  border: 1px solid #cfe2d8;
+  border-radius: 999px;
+  background: #f6fbf8;
+  padding: 4px 8px;
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 900;
+}
+
 .chat-source-card h4 {
   margin: 0;
   color: var(--ink);
@@ -2269,6 +2323,32 @@ button.danger:hover {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.55;
+}
+
+.chat-followups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.chat-followup-button {
+  min-height: 32px;
+  border: 1px solid #cfe2d8;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--accent-strong);
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 6px 14px rgba(25, 35, 58, 0.055);
+}
+
+.chat-followup-button:hover:not(:disabled),
+.chat-followup-button:focus-visible {
+  border-color: #a8d2ba;
+  background: #edf7f0;
+  transform: translateY(-1px);
 }
 
 .ask-deepseek-form {
@@ -4596,6 +4676,10 @@ button.neutral:hover {
 
   .chat-source-grid {
     grid-template-columns: 1fr;
+  }
+
+  .chat-followup-button {
+    flex: 1 1 150px;
   }
 
   .ask-deepseek-form {

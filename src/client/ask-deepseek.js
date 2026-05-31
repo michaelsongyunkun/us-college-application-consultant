@@ -12,6 +12,34 @@ const workflowRegion = document.querySelector("#deepSeekWorkflows");
 const USER_AVATAR_SRC = "./assets/logo-mark.svg";
 const DEEPSEEK_AVATAR_SRC = "./assets/deepseek-avatar.svg";
 const THINKING_TEXT = "......";
+const PROGRESS_STATUSES = [
+  "正在检索你的申请档案...",
+  "正在整理参考资料...",
+  "DeepSeek 正在生成建议...",
+];
+const STANDARD_RESPONSE_SECTIONS = [
+  "最终输出请只使用以下报告结构：",
+  "## 核心结论",
+  "## 依据与证据",
+  "## 主要风险",
+  "## 下一步行动",
+  "## 参考资料",
+  "参考资料部分请标注来自个人申请档案、学生备份、资料库或院校百科的线索；如果资料不足，请明确写出需要补充的信息。",
+].join("\n");
+const FOLLOW_UP_ACTIONS = [
+  {
+    label: "生成行动清单",
+    prompt: "请基于我的个人申请档案和已保存资料，生成未来 30 天按优先级排序的行动清单，并标注每项行动需要的证据或材料。",
+  },
+  {
+    label: "按冲刺/匹配/保底重排",
+    prompt: "请基于我的个人申请档案、选校计划和院校百科，把目标院校按冲刺、匹配、保底重新梳理，并说明调整理由与需要核验的官方信息。",
+  },
+  {
+    label: "转成推荐信素材",
+    prompt: "请基于我的个人申请档案、活动证据和推荐信记录，把可用于推荐信沟通的素材整理成推荐人视角的要点清单。",
+  },
+];
 const WORKFLOW_PROMPTS = {
   "profile-audit": {
     label: "申请档案体检",
@@ -135,9 +163,31 @@ const WORKFLOW_PROMPTS = {
   },
 };
 
+let progressStatusTimer = null;
+
+for (const workflow of Object.values(WORKFLOW_PROMPTS)) {
+  workflow.prompt = `${workflow.prompt}\n\n${STANDARD_RESPONSE_SECTIONS}`;
+}
+
 function setStatus(message, isError = false) {
   status.textContent = message;
   status.classList.toggle("error", isError);
+}
+
+function startProgressStatus() {
+  stopProgressStatus();
+  let index = 0;
+  setStatus(PROGRESS_STATUSES[index]);
+  progressStatusTimer = window.setInterval(() => {
+    index = Math.min(index + 1, PROGRESS_STATUSES.length - 1);
+    setStatus(PROGRESS_STATUSES[index]);
+  }, 1500);
+}
+
+function stopProgressStatus() {
+  if (!progressStatusTimer) return;
+  window.clearInterval(progressStatusTimer);
+  progressStatusTimer = null;
 }
 
 function setWorking(isWorking) {
@@ -209,7 +259,60 @@ function renderSourceCards(sources = []) {
     </section>`;
 }
 
-function renderMessage({ id = "", role, content, sources = [], thinking = false, error = false }) {
+function renderGuidedSourceCards(sources = []) {
+  const summaryText = sources.length ? `${sources.length} 条线索` : "暂无高相关线索";
+  const sourceBody = sources.length
+    ? sources
+        .map(
+          (source, index) => `
+            <article class="chat-source-card">
+              <div class="chat-source-card-header">
+                <span>${index + 1}</span>
+                <strong class="chat-source-type-chip">${escapeHtml(source.typeLabel || source.type)}</strong>
+              </div>
+              <h4>${escapeHtml(source.title)}</h4>
+              <p>${escapeHtml(source.snippet)}</p>
+            </article>`,
+        )
+        .join("")
+    : '<p class="chat-source-empty">本次没有检索到高相关资料。</p>';
+
+  return `
+    <details open class="chat-references" aria-label="参考资料">
+      <summary>
+        <span>参考资料</span>
+        <small>${summaryText}</small>
+      </summary>
+      <div class="chat-source-grid">${sourceBody}</div>
+    </details>`;
+}
+
+function renderFollowUpActions() {
+  const actions = FOLLOW_UP_ACTIONS.map(
+    (action, index) => `
+      <button
+        class="chat-followup-button"
+        type="button"
+        data-deepseek-follow-up="${index}"
+      >${escapeHtml(action.label)}</button>`,
+  ).join("");
+
+  return `
+    <div class="chat-followups" aria-label="继续追问">
+      ${actions}
+    </div>`;
+}
+
+function renderMessage({
+  id = "",
+  role,
+  content,
+  sources = [],
+  thinking = false,
+  error = false,
+  showReferences = true,
+  showFollowUps = true,
+}) {
   const isUser = role === "user";
   const avatarSrc = isUser ? USER_AVATAR_SRC : DEEPSEEK_AVATAR_SRC;
   const avatarAlt = isUser ? "US College Compass" : "DeepSeek";
@@ -217,7 +320,8 @@ function renderMessage({ id = "", role, content, sources = [], thinking = false,
   const bubbleContent = thinking
     ? `<span class="thinking-dots" aria-label="DeepSeek 正在思考">${THINKING_TEXT}</span>`
     : renderBubbleContent(content, { isUser, error });
-  const referenceContent = !isUser && !thinking && !error ? renderSourceCards(sources) : "";
+  const referenceContent = !isUser && !thinking && !error && showReferences ? renderGuidedSourceCards(sources) : "";
+  const followUpContent = !isUser && !thinking && !error && showFollowUps ? renderFollowUpActions() : "";
   const idAttribute = id ? ` id="${escapeHtml(id)}"` : "";
 
   return `
@@ -227,6 +331,7 @@ function renderMessage({ id = "", role, content, sources = [], thinking = false,
         <p class="chat-speaker">${escapeHtml(speaker)}</p>
         <div class="chat-bubble">${bubbleContent}</div>
         ${referenceContent}
+        ${followUpContent}
       </div>
       ${isUser ? `<img class="chat-avatar" src="${avatarSrc}" width="42" height="42" alt="${avatarAlt}" />` : ""}
     </article>`;
@@ -263,6 +368,8 @@ function renderInitialChat() {
     role: "assistant",
     content:
       "你好，我是你的申请规划智能体。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍；我会结合你的个人申请档案和已保存资料回答，并在结尾列出参考资料。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。",
+    showReferences: false,
+    showFollowUps: false,
   });
   scrollChatToBottom();
 }
@@ -295,12 +402,13 @@ async function askDeepSeek({ question, displayQuestion = question }) {
 
   try {
     setWorking(true);
-    setStatus("DeepSeek 思考中......");
+    startProgressStatus();
     const data = await requestJson("/api/deepseek-rag", {
       method: "POST",
       body: JSON.stringify({ question }),
     });
     const sources = data.sources || [];
+    stopProgressStatus();
     replaceMessage(thinkingMessageId, {
       role: "assistant",
       content: data.answer || "DeepSeek 暂无回答。",
@@ -308,6 +416,7 @@ async function askDeepSeek({ question, displayQuestion = question }) {
     });
     setStatus(`已回复，附 ${sources.length} 条参考资料`);
   } catch (error) {
+    stopProgressStatus();
     replaceMessage(thinkingMessageId, {
       role: "assistant",
       content: error.message,
@@ -328,6 +437,17 @@ workflowRegion?.addEventListener("click", (event) => {
   askDeepSeek({
     question: workflow.prompt,
     displayQuestion: `启动 Workflow：${workflow.label}`,
+  });
+});
+
+chatLog.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-deepseek-follow-up]");
+  if (!button || askButton.disabled) return;
+  const followUp = FOLLOW_UP_ACTIONS[Number(button.dataset.deepseekFollowUp)];
+  if (!followUp) return;
+  askDeepSeek({
+    question: followUp.prompt,
+    displayQuestion: `追问：${followUp.label}`,
   });
 });
 
