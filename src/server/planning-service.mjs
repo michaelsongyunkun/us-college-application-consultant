@@ -220,6 +220,57 @@ export function createPlanningService({ authDb, now = () => new Date() }) {
     });
   }
 
+  function listRagBackups(user) {
+    const userId = requireUserId(user);
+    ensureDefaultPlan(userId);
+    const currentPlans = db
+      .prepare(`
+        SELECT id, name, current_draft_json, updated_at AS updatedAt
+        FROM planning_projects
+        WHERE user_id = ?
+        ORDER BY updated_at DESC, id DESC
+      `)
+      .all(userId)
+      .map((plan) => ({
+        sourceType: "current_plan",
+        planId: plan.id,
+        planName: plan.name,
+        savedAt: plan.updatedAt,
+        draft: parseDraft(plan.current_draft_json),
+      }));
+
+    const snapshots = db
+      .prepare(`
+        SELECT
+          snapshots.id,
+          snapshots.project_id AS planId,
+          snapshots.note,
+          snapshots.snapshot_json,
+          snapshots.created_at AS createdAt,
+          projects.name AS planName
+        FROM planning_snapshots snapshots
+        JOIN planning_projects projects ON projects.id = snapshots.project_id
+        WHERE snapshots.user_id = ?
+        ORDER BY snapshots.created_at DESC, snapshots.id DESC
+      `)
+      .all(userId)
+      .map((snapshot) => {
+        const snapshotData = parseObject(snapshot.snapshot_json);
+        return {
+          sourceType: "snapshot",
+          planId: snapshot.planId,
+          snapshotId: snapshot.id,
+          planName: snapshot.planName,
+          note: snapshot.note || "",
+          savedAt: snapshot.createdAt,
+          profile: snapshotData.profile || {},
+          draft: normalizeDraft(snapshotData.draft || {}),
+        };
+      });
+
+    return [...currentPlans, ...snapshots];
+  }
+
   function ensureDefaultPlan(userId) {
     const existing = db
       .prepare("SELECT id FROM planning_projects WHERE user_id = ? LIMIT 1")
@@ -255,6 +306,7 @@ export function createPlanningService({ authDb, now = () => new Date() }) {
     restoreSnapshot,
     deleteSnapshot,
     listActivityImportSources,
+    listRagBackups,
   };
 }
 

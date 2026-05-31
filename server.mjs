@@ -11,6 +11,10 @@ import {
   ActivityPortfolioError,
   createActivityPortfolioService,
 } from "./src/server/activity-portfolio-service.mjs";
+import {
+  DeepSeekRagError,
+  createDeepSeekRagService,
+} from "./src/server/deepseek-rag-service.mjs";
 import { createMailerFromEnv } from "./src/server/mailer.mjs";
 import { PlanningError, createPlanningService } from "./src/server/planning-service.mjs";
 
@@ -29,6 +33,7 @@ const DEFAULT_RATE_LIMITS = {
   "/api/auth/reset-password": { maxRequests: 5, windowMs: 60_000 },
   "/api/feedback": { maxRequests: 10, windowMs: 60_000 },
   "/api/deepseek-plan": { maxRequests: 10, windowMs: 60_000 },
+  "/api/deepseek-rag": { maxRequests: 20, windowMs: 60_000 },
   "/api/analytics/usage-event": { maxRequests: 120, windowMs: 60_000 },
 };
 const SECURITY_HEADERS = Object.freeze({
@@ -384,6 +389,7 @@ export function createAppServer({
   auth = createAuthService({ authDb }),
   planning = createPlanningService({ authDb }),
   activityPortfolio = createActivityPortfolioService({ authDb }),
+  deepSeekRag = createDeepSeekRagService({ root, planning, activityPortfolio }),
   mailer = createMailerFromEnv(env),
   appBaseUrl = env.APP_BASE_URL || "",
   deepSeekFetch = fetch,
@@ -429,6 +435,19 @@ export function createAppServer({
       if (request.method === "POST" && url.pathname === "/api/deepseek-plan") {
         if (!requireUser(request, response, auth)) return;
         await handleDeepSeekPlan(request, response, { readJson, env, deepSeekFetch });
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/deepseek-rag") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        const payload = await readJson(request);
+        sendJson(response, 200, await deepSeekRag.answerQuestion({
+          user,
+          question: payload.question,
+          env,
+          deepSeekFetch,
+        }));
         return;
       }
 
@@ -608,6 +627,7 @@ export function createAppServer({
         (requestPath === "/course-helper.html" ||
           requestPath === "/gpa-calculator.html" ||
           requestPath === "/my-activities.html" ||
+          requestPath === "/ask-deepseek.html" ||
           requestPath === "/resource-library.html" ||
           requestPath === "/school-encyclopedia.html") &&
         !requirePageUser(request, response, auth, requestPath)
@@ -634,6 +654,7 @@ export function createAppServer({
       if (
         error instanceof AuthError ||
         error instanceof ActivityPortfolioError ||
+        error instanceof DeepSeekRagError ||
         error instanceof PlanningError ||
         error instanceof RequestError
       ) {

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>问DeepSeek</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css?v=20260531-deepseek-rag" />
+  </head>
+  <body>
+    <main class="app-shell command-shell ask-deepseek-shell">
+      <aside class="command-sidebar" aria-label="Application Command Center">
+        <a class="command-sidebar-brand" href="./index.html" data-safe-nav>
+          <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+          <span><strong>US College Compass</strong><small>Application Command Center</small></span>
+        </a>
+        <nav class="command-sidebar-nav" aria-label="登录后功能导航">
+          <a href="./index.html" data-safe-nav>申请指挥中心</a>
+          <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
+          <a href="./ask-deepseek.html" data-safe-nav aria-current="page">问DeepSeek</a>
+          <a href="./resource-library.html" data-safe-nav>资料库</a>
+          <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+          <a href="./course-helper.html" data-safe-nav>选课辅助器</a>
+          <a href="./gpa-calculator.html" data-safe-nav>GPA / AP 工具</a>
+          <a href="./disclaimer.html" data-safe-nav>免责声明</a>
+          <a href="./feedback.html" data-safe-nav>反馈与支持</a>
+          <a href="./contact.html" data-safe-nav>联系我们</a>
+        </nav>
+        <div class="command-sidebar-note">
+          <strong>DeepSeek RAG</strong>
+          <span>回答会检索你的学生备份、资料库和院校百科，再把相关片段交给 DeepSeek 生成。</span>
+        </div>
+      </aside>
+
+      <div class="command-main">
+        <header class="topbar brand-page-header">
+          <div class="brand-page-identity">
+            <a class="brand-mark" href="./index.html" data-safe-nav>
+              <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+              <span class="brand-mark-text"><span class="brand-prefix">US</span> College Compass</span>
+            </a>
+            <p class="eyebrow">DeepSeek RAG Assistant</p>
+            <h1>问DeepSeek</h1>
+          </div>
+        </header>
+
+        <section class="command-page-summary" aria-label="DeepSeek RAG 数据范围">
+          <div>
+            <p class="eyebrow">RAG Workspace</p>
+            <h2>把学生备份、资料库和院校百科一起问</h2>
+            <p>围绕当前学生的背景、规划版本、申请档案、项目资源与院校信息提问，回答会保留参考资料线索，方便继续核验。</p>
+          </div>
+          <div class="command-summary-metrics">
+            <span><strong>学生备份</strong>档案与快照</span>
+            <span><strong>资源库</strong>项目资料</span>
+            <span><strong>院校百科</strong>学校信息</span>
+          </div>
+        </section>
+
+        <section class="panel ask-deepseek-panel" aria-labelledby="ask-deepseek-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="ask-deepseek-title">提问</h2>
+              <p>适合询问项目匹配、学校要求、活动补强、材料准备和不同资源之间的取舍。</p>
+            </div>
+            <span id="deepSeekAskStatus" class="status" role="status" aria-live="polite">等待问题</span>
+          </div>
+
+          <form id="deepSeekQuestionForm" class="ask-deepseek-form" autocomplete="off">
+            <label for="deepSeekQuestion">
+              <span>问题</span>
+              <textarea
+                id="deepSeekQuestion"
+                name="question"
+                maxlength="1200"
+                placeholder="例如：这个学生如果申请 MIT，科研项目和活动叙事应该怎么补强？"
+                required
+              ></textarea>
+            </label>
+            <div class="ask-deepseek-actions">
+              <button id="deepSeekAskButton" type="submit">询问 DeepSeek</button>
+              <button id="deepSeekClearButton" class="secondary" type="button">清空</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel deepseek-answer-panel" aria-labelledby="deepseek-answer-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="deepseek-answer-title">回答</h2>
+              <p>DeepSeek 会基于检索片段回答；涉及最新政策、费用、截止日期时仍需回到官方来源确认。</p>
+            </div>
+          </div>
+          <div id="deepSeekAnswer" class="deepseek-answer" aria-live="polite">
+            <p class="resource-empty">提交问题后，这里会显示 DeepSeek 的回答。</p>
+          </div>
+        </section>
+
+        <section class="panel deepseek-sources-panel" aria-labelledby="deepseek-sources-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="deepseek-sources-title">参考资料</h2>
+              <p>这里展示本次发送给 DeepSeek 的主要检索片段来源。</p>
+            </div>
+          </div>
+          <div id="deepSeekSources" class="rag-source-grid">
+            <p class="resource-empty">暂无参考资料。</p>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="./src/client/safe-navigation.mjs"></script>
+    <script type="module" src="./src/client/ask-deepseek.js?v=20260531-deepseek-rag"></script>
+  </body>
+</html>

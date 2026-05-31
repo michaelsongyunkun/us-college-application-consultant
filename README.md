@@ -7,6 +7,7 @@
 - 用户背景输入：年级、专业方向、核心能力 / 特长、可利用资源、性格 / 行为倾向、兴趣方向、现有课外活动。
 - 固定 Agent 提示词：位于 `prompts/us-college-admissions-strategist-agent.md`，请勿篡改。
 - DeepSeek 自动生成：由站点服务端统一配置 `DEEPSEEK_API_KEY`，用户无需提供自己的 API Key，一键生成规划回答并写入表格。
+- 问DeepSeek：基于学生备份、资源库和院校百科做 RAG 检索问答，帮助核验项目、院校和活动取舍。
 - AI 任务包模式：生成任务包给 DeepSeek、ChatGPT 或其他 AI，再粘贴回答并解析进表格。
 - 解析诊断：AI 回答未能填入表格时，会显示识别到的候选行、编号段落和可执行修正建议。
 - 活动质量检查：自动检查 10 项活动的完整度、数字证据、影响表达、领导力线索和专业连接。
@@ -17,6 +18,8 @@
 - `index.html`：页面结构。
 - `styles.css`：页面样式。
 - `src/client/app.js`：前端交互、生成任务包、解析回答、导出文件。
+- `ask-deepseek.html` / `src/client/ask-deepseek.js`：DeepSeek RAG 问答页面。
+- `src/server/deepseek-rag-service.mjs`：学生备份、资源库、院校百科的服务端检索与 DeepSeek 调用。
 - `src/client/planning-form-state.mjs`：主页面表单与活动表格的数据采集、回填。
 - `src/client/html-utils.mjs`：共享 HTML 转义工具。
 - `src/client/agent-answer-diagnostics-ui.mjs`：AI 回答解析诊断面板。
@@ -70,6 +73,14 @@ node server.mjs
 ```powershell
 $env:DEEPSEEK_MODEL="deepseek-v4-pro"
 ```
+
+### 问DeepSeek RAG
+
+1. 登录后进入 `问DeepSeek`。
+2. 输入关于当前学生、项目资源或院校要求的问题。
+3. 系统会先检索学生基础信息、规划版本/历史快照、我的申请档案、资源库和院校百科，再把相关片段发送给 DeepSeek。
+
+该功能同样只使用服务端配置的 `DEEPSEEK_API_KEY`。回答会返回本次使用的参考资料卡片；涉及政策、费用、资格、截止日期和院校要求时，仍需回到官方来源核验。
 
 ### AI 任务包模式
 
