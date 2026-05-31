@@ -126,6 +126,8 @@ try {
   const body = await response.json();
   assert.equal(body.answer, ragAnswer);
   assert.equal(JSON.stringify(body).includes("env-rag-secret"), false);
+  assert.ok(body.sources.some((source) => source.type === "application-portfolio"));
+  assert.ok(body.sources.some((source) => source.typeLabel === "个人申请档案"));
   assert.ok(body.sources.some((source) => source.type === "student-backup"));
   assert.ok(body.sources.some((source) => source.type === "resource-library"));
   assert.ok(body.sources.some((source) => source.type === "school-encyclopedia"));
@@ -139,9 +141,13 @@ try {
   assert.equal(sentPayload.messages[0].role, "system");
   assert.equal(sentPayload.messages[1].role, "user");
   assert.match(sentPayload.messages[1].content, /学生备份/);
+  assert.match(sentPayload.messages[1].content, /个人申请档案/);
   assert.match(sentPayload.messages[1].content, /资源库/);
   assert.match(sentPayload.messages[1].content, /院校百科/);
   assert.match(sentPayload.messages[1].content, /Robotics Portfolio/);
+  assert.match(sentPayload.messages[1].content, /Prototype assistive navigation robot/);
+  assert.match(sentPayload.messages[1].content, /Demo and technical writeup/);
+  assert.match(sentPayload.messages[1].content, /https:\/\/example\.com\/robotics/);
   assert.match(sentPayload.messages[1].content, /Polygence/);
   assert.match(sentPayload.messages[1].content, /MIT/);
 } finally {

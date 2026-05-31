@@ -22,8 +22,18 @@ const SCHOOL_ENCYCLOPEDIA_FILES = [
 
 const SOURCE_TYPE_LABELS = {
   "student-backup": "学生备份",
+  "application-portfolio": "个人申请档案",
   "resource-library": "资源库",
   "school-encyclopedia": "院校百科",
+};
+
+const APPLICATION_ROUND_LABELS = {
+  rea: "REA",
+  ed1: "ED1",
+  ed2: "ED2",
+  ea: "EA",
+  uc: "UC",
+  rd: "RD",
 };
 
 const SYSTEM_PROMPT = [
@@ -117,9 +127,9 @@ function buildStudentDocuments({ user, planning, activityPortfolio }) {
   });
 
   addJsonDocument(documents, {
-    type: "student-backup",
-    title: "学生备份：我的申请档案",
-    data: activityPortfolio.getPortfolio(user),
+    type: "application-portfolio",
+    title: "个人申请档案：选校、活动、竞赛、夏校、推荐信、成绩",
+    data: summarizeApplicationPortfolio(activityPortfolio.getPortfolio(user)),
   });
 
   for (const backup of planning.listRagBackups(user)) {
@@ -137,7 +147,7 @@ function buildStudentDocuments({ user, planning, activityPortfolio }) {
 }
 
 function addJsonDocument(documents, { type, title, data }) {
-  const text = stringifyForRag(data);
+  const text = typeof data === "string" ? data : stringifyForRag(data);
   if (!hasMeaningfulText(text)) return;
   documents.push({
     id: stableId(`${type}:${title}`),
@@ -145,6 +155,140 @@ function addJsonDocument(documents, { type, title, data }) {
     title,
     text,
   });
+}
+
+function summarizeApplicationPortfolio(portfolio = {}) {
+  const sections = [];
+  const applicationPlan = portfolio.applicationPlan || {};
+  const planLines = Object.entries(applicationPlan).flatMap(([round, entries]) =>
+    (Array.isArray(entries) ? entries : [])
+      .filter(hasFilledField)
+      .map((entry) => {
+        const label = APPLICATION_ROUND_LABELS[round] || round.toUpperCase();
+        return `- ${label}: ${joinParts([entry.school, entry.major], " / ")}`;
+      }),
+  );
+  addTextSection(sections, "选校计划", planLines);
+
+  addTextSection(
+    sections,
+    "课外活动",
+    (portfolio.activities || []).filter(hasFilledField).map((activity) =>
+      formatRecord(activity.activityName || "未命名活动", [
+        ["类型", activity.type],
+        ["时间", activity.timeStage],
+        ["角色", activity.role],
+        ["描述", activity.description],
+        ["成果", activity.outcome],
+        ["证明链接", activity.proofLink],
+        ["状态", activity.status],
+      ]),
+    ),
+  );
+
+  addTextSection(
+    sections,
+    "竞赛",
+    (portfolio.competitions || []).filter(hasFilledField).map((competition) =>
+      formatRecord(competition.competitionName || "未命名竞赛", [
+        ["学科", competition.subject],
+        ["年级/年份", competition.yearGrade],
+        ["奖项", competition.award],
+        ["贡献", competition.contribution],
+        ["证明链接", competition.proofLink],
+        ["状态", competition.status],
+      ]),
+    ),
+  );
+
+  addTextSection(
+    sections,
+    "夏校",
+    (portfolio.summerSchools || []).filter(hasFilledField).map((program) =>
+      formatRecord(program.programName || "未命名夏校", [
+        ["主办方", program.organizer],
+        ["方向", program.direction],
+        ["参与时间", program.participationTime],
+        ["状态", program.status],
+        ["产出", program.output],
+        ["证明链接", program.proofLink],
+      ]),
+    ),
+  );
+
+  const recommendationLetters = portfolio.recommendationLetters || {};
+  addTextSection(sections, "推荐信", [
+    recommendationLetters.counselorStatus ? `- Counselor: ${recommendationLetters.counselorStatus}` : "",
+    formatNestedRecord("Teacher 1", recommendationLetters.teacher1),
+    formatNestedRecord("Teacher 2", recommendationLetters.teacher2),
+    formatNestedRecord("校外推荐人", recommendationLetters.outsideRecommender),
+    recommendationLetters.preparedMaterials?.length
+      ? `- 已准备材料: ${recommendationLetters.preparedMaterials.join("、")}`
+      : "",
+    recommendationLetters.notes ? `- 备注: ${recommendationLetters.notes}` : "",
+  ]);
+
+  const academicRecords = portfolio.academicRecords || {};
+  addTextSection(sections, "成绩档案", [
+    academicRecords.gpaScale ? `- GPA 制度: ${academicRecords.gpaScale}` : "",
+    ...(academicRecords.gpaRecords || [])
+      .filter((record) => record.gpa)
+      .map((record) => `- GPA: ${joinParts([record.gradeLevel, record.term, record.gpa], " / ")}`),
+    ...(academicRecords.satTests || [])
+      .filter(hasFilledField)
+      .map((test) =>
+        formatRecord("SAT", [
+          ["总分", test.totalScore],
+          ["阅读写作", test.englishScore],
+          ["数学", test.mathScore],
+          ["考试日期", test.testDate],
+        ]),
+      ),
+    ...(academicRecords.apExams || [])
+      .filter(hasFilledField)
+      .map((exam) => `- AP: ${joinParts([exam.courseName, exam.score, exam.examYear], " / ")}`),
+  ]);
+
+  return sections.join("\n\n");
+}
+
+function addTextSection(sections, title, lines) {
+  const filtered = lines.filter(Boolean);
+  if (!filtered.length) return;
+  sections.push([`## ${title}`, ...filtered].join("\n"));
+}
+
+function formatRecord(title, fields) {
+  const detail = fields
+    .map(([label, value]) => (cleanText(value) ? `${label}: ${cleanText(value)}` : ""))
+    .filter(Boolean)
+    .join("；");
+  return detail ? `- ${title}：${detail}` : "";
+}
+
+function formatNestedRecord(title, value) {
+  if (!value || !hasFilledField(value)) return "";
+  return formatRecord(
+    title,
+    Object.entries(value).map(([key, entry]) => [key, Array.isArray(entry) ? entry.join("、") : entry]),
+  );
+}
+
+function joinParts(parts, separator) {
+  return parts.map(cleanText).filter(Boolean).join(separator);
+}
+
+function hasFilledField(value) {
+  if (!value || typeof value !== "object") return false;
+  return Object.values(value).some((entry) => {
+    if (Array.isArray(entry)) return entry.some((item) => cleanText(item));
+    if (entry && typeof entry === "object") return hasFilledField(entry);
+    return Boolean(cleanText(entry));
+  });
+}
+
+function cleanText(value) {
+  return String(value ?? "").trim();
 }
 
 async function buildMarkdownDocuments(root, files, type) {
@@ -207,32 +351,39 @@ function selectRelevantDocuments(documents, question) {
     .sort((left, right) => right.score - left.score || left.index - right.index);
 
   const selected = new Map();
-  for (const document of scored.slice(0, MAX_SELECTED_CHUNKS)) {
+  for (const document of ensureStudentContext(documents, scored)) {
     selected.set(document.id, document);
   }
-
-  for (const document of ensureStudentContext(documents, scored)) {
+  for (const document of scored) {
+    if (selected.size >= MAX_SELECTED_CHUNKS) break;
     selected.set(document.id, document);
   }
 
   return [...selected.values()]
-    .sort((left, right) => right.score - left.score || sourcePriority(left.type) - sourcePriority(right.type))
+    .sort((left, right) => sourcePriority(left.type) - sourcePriority(right.type) || right.score - left.score)
     .slice(0, MAX_SELECTED_CHUNKS);
 }
 
 function ensureStudentContext(documents, scored) {
+  const portfolio =
+    scored.find((document) => document.type === "application-portfolio")
+    || documents
+      .filter((document) => document.type === "application-portfolio")
+      .map((document) => ({ ...document, score: 0.3 }))[0];
   const studentScored = scored.filter((document) => document.type === "student-backup");
-  if (studentScored.length) return studentScored.slice(0, 3);
-  return documents
-    .filter((document) => document.type === "student-backup")
-    .slice(0, 2)
-    .map((document) => ({ ...document, score: 0.1 }));
+  const studentDocuments = studentScored.length
+    ? studentScored.slice(0, 3)
+    : documents
+        .filter((document) => document.type === "student-backup")
+        .slice(0, 2)
+        .map((document) => ({ ...document, score: 0.1 }));
+  return [portfolio, ...studentDocuments].filter(Boolean);
 }
 
 function scoreDocument(document, queryTokens, question) {
   const searchable = normalizeSearchText(`${document.title}\n${document.text}`);
   const title = normalizeSearchText(document.title);
-  let score = document.type === "student-backup" ? 0.2 : 0;
+  let score = ["student-backup", "application-portfolio"].includes(document.type) ? 0.2 : 0;
   for (const token of queryTokens) {
     if (!token) continue;
     if (searchable.includes(token)) score += token.length >= 4 ? 3 : 1;
@@ -280,7 +431,7 @@ function buildUserMessage(question, context) {
   return [
     `问题：${question}`,
     "",
-    "可用资料范围：学生备份、资源库、院校百科。",
+    "可用资料范围：学生备份、个人申请档案、资源库、院校百科。",
     "请先判断资料是否足以回答；回答末尾用“参考资料”列出你实际使用的资料编号。",
     "",
     "检索到的资料片段：",
@@ -330,7 +481,8 @@ function stableId(value) {
 function sourcePriority(type) {
   return {
     "student-backup": 0,
-    "resource-library": 1,
-    "school-encyclopedia": 2,
+    "application-portfolio": 1,
+    "resource-library": 2,
+    "school-encyclopedia": 3,
   }[type] ?? 9;
 }
