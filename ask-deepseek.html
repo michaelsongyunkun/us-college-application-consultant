@@ -65,6 +65,27 @@
             <span id="deepSeekAskStatus" class="status" role="status" aria-live="polite">等待问题</span>
           </div>
 
+          <div id="deepSeekWorkflows" class="deepseek-workflows" aria-label="Workflow 快捷任务">
+            <div class="deepseek-workflow-grid">
+              <button class="workflow-button" type="button" data-deepseek-workflow="profile-audit">
+                <strong>申请档案体检</strong>
+                <span>优势 / 短板 / 缺失项</span>
+              </button>
+              <button class="workflow-button" type="button" data-deepseek-workflow="school-strategy">
+                <strong>选校策略分析</strong>
+                <span>冲刺 / 匹配 / 保底</span>
+              </button>
+              <button class="workflow-button" type="button" data-deepseek-workflow="activity-boost">
+                <strong>活动补强方案</strong>
+                <span>深化方向 / 补强项目</span>
+              </button>
+              <button class="workflow-button" type="button" data-deepseek-workflow="recommendation-strategy">
+                <strong>推荐信策略</strong>
+                <span>推荐人 / 材料分工</span>
+              </button>
+            </div>
+          </div>
+
           <div id="deepSeekChatLog" class="deepseek-chat-log" aria-live="polite">
             <article class="chat-message assistant">
               <img class="chat-avatar" src="./assets/deepseek-avatar.svg" width="42" height="42" alt="DeepSeek" />
@@ -97,6 +118,6 @@
       </div>
     </main>
     <script type="module" src="./src/client/safe-navigation.mjs"></script>
-    <script type="module" src="./src/client/ask-deepseek.js?v=20260531-deepseek-greeting"></script>
+    <script type="module" src="./src/client/ask-deepseek.js?v=20260531-deepseek-workflows"></script>
   </body>
 </html>

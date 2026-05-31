@@ -1905,6 +1905,53 @@ button.danger:hover {
   overflow: hidden;
 }
 
+.deepseek-workflows {
+  border-top: 1px solid #e1e8e3;
+  background: #ffffff;
+  padding: 16px 22px;
+}
+
+.deepseek-workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workflow-button {
+  display: grid;
+  gap: 4px;
+  min-height: 76px;
+  min-width: 0;
+  align-content: center;
+  border: 1px solid #dce7e0;
+  border-radius: 8px;
+  background: #f8fbf7;
+  color: var(--ink);
+  padding: 12px;
+  text-align: left;
+  box-shadow: none;
+}
+
+.workflow-button:hover:not(:disabled),
+.workflow-button:focus-visible {
+  border-color: #8fc9a5;
+  background: #edf7f0;
+  transform: translateY(-1px);
+}
+
+.workflow-button strong {
+  color: var(--accent-strong);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.workflow-button span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .deepseek-chat-log {
   display: grid;
   max-height: min(62vh, 680px);
@@ -4438,6 +4485,19 @@ button.neutral:hover {
 
   .resource-grid {
     grid-template-columns: 1fr;
+  }
+
+  .deepseek-workflows {
+    padding: 14px 16px;
+  }
+
+  .deepseek-workflow-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .workflow-button {
+    min-height: 68px;
+    padding: 10px;
   }
 
   .deepseek-chat-log {

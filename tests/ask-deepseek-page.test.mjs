@@ -41,10 +41,24 @@ for (const expected of [
   'id="deepSeekQuestionForm"',
   'id="deepSeekQuestion"',
   'id="deepSeekAskStatus"',
+  'id="deepSeekWorkflows"',
   "./assets/logo-mark.svg",
   "./assets/deepseek-avatar.svg",
 ]) {
   assert.ok(pageHtml.includes(expected), `Ask DeepSeek page should include ${expected}.`);
+}
+
+for (const workflow of [
+  ["profile-audit", "申请档案体检"],
+  ["school-strategy", "选校策略分析"],
+  ["activity-boost", "活动补强方案"],
+  ["recommendation-strategy", "推荐信策略"],
+]) {
+  assert.ok(
+    pageHtml.includes(`data-deepseek-workflow="${workflow[0]}"`),
+    `Ask DeepSeek page should include the ${workflow[1]} workflow button.`,
+  );
+  assert.ok(pageHtml.includes(workflow[1]), `Ask DeepSeek page should show ${workflow[1]}.`);
 }
 
 assert.ok(
@@ -71,6 +85,13 @@ assert.ok(
   !script.includes("我会先检索学生备份、资源库和院校百科"),
   "Ask DeepSeek reset state should not show the old data-source-first greeting.",
 );
+assert.ok(script.includes("WORKFLOW_PROMPTS"), "Ask DeepSeek should keep workflow prompt templates.");
+assert.ok(script.includes("deepSeekWorkflows"), "Ask DeepSeek should bind the workflow launcher region.");
+assert.ok(script.includes("data-deepseek-workflow"), "Ask DeepSeek should handle workflow button clicks.");
+assert.ok(script.includes("请进行一次申请档案体检"), "Ask DeepSeek should prompt the profile audit workflow.");
+assert.ok(script.includes("请分析我的选校策略"), "Ask DeepSeek should prompt the school strategy workflow.");
+assert.ok(script.includes("请给出活动补强方案"), "Ask DeepSeek should prompt the activity boost workflow.");
+assert.ok(script.includes("请制定推荐信策略"), "Ask DeepSeek should prompt the recommendation strategy workflow.");
 
 assert.ok(script.includes('"/api/deepseek-rag"'), "Ask DeepSeek should call the RAG API.");
 assert.ok(
@@ -96,3 +117,5 @@ assert.match(styles, /\.deepseek-chat-log\s*\{/, "Ask DeepSeek should style the 
 assert.match(styles, /\.chat-message\.user\s*\{/, "Ask DeepSeek should have right-side user messages.");
 assert.match(styles, /\.chat-message\.assistant\s*\{/, "Ask DeepSeek should have left-side assistant messages.");
 assert.match(styles, /\.thinking-dots\s*\{/, "Ask DeepSeek should style the thinking dots.");
+assert.match(styles, /\.deepseek-workflow-grid\s*\{/, "Ask DeepSeek should style workflow quick actions.");
+assert.match(styles, /\.workflow-button\s*\{/, "Ask DeepSeek should style workflow buttons.");

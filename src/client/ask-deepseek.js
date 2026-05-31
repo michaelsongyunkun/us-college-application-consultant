@@ -7,10 +7,73 @@ const askButton = document.querySelector("#deepSeekAskButton");
 const clearButton = document.querySelector("#deepSeekClearButton");
 const status = document.querySelector("#deepSeekAskStatus");
 const chatLog = document.querySelector("#deepSeekChatLog");
+const workflowRegion = document.querySelector("#deepSeekWorkflows");
 
 const USER_AVATAR_SRC = "./assets/logo-mark.svg";
 const DEEPSEEK_AVATAR_SRC = "./assets/deepseek-avatar.svg";
 const THINKING_TEXT = "......";
+const WORKFLOW_PROMPTS = {
+  "profile-audit": {
+    label: "申请档案体检",
+    prompt: [
+      "请进行一次申请档案体检。",
+      "请读取我的个人申请档案、学生备份、成绩档案、课外活动、竞赛、夏校、推荐信与选校计划。",
+      "请按以下结构输出：",
+      "## 简短结论",
+      "## 当前优势",
+      "## 明显短板",
+      "## 缺失信息",
+      "## 未来 30 天优先补强项",
+      "## 参考资料",
+      "如果资料不足，请明确说明需要我补充什么。",
+    ].join("\n"),
+  },
+  "school-strategy": {
+    label: "选校策略分析",
+    prompt: [
+      "请分析我的选校策略。",
+      "请结合我的个人申请档案、目标专业、成绩、活动、已保存选校计划和院校百科，判断冲刺、匹配、保底结构是否合理。",
+      "请按以下结构输出：",
+      "## 简短结论",
+      "## 当前选校结构",
+      "## 每个轮次的主要风险",
+      "## 建议保留 / 调整 / 补充的方向",
+      "## 下一步核验清单",
+      "## 参考资料",
+      "不要给出录取概率承诺；涉及申请要求请提醒以申请年度官网为准。",
+    ].join("\n"),
+  },
+  "activity-boost": {
+    label: "活动补强方案",
+    prompt: [
+      "请给出活动补强方案。",
+      "请结合我的目标专业、个人申请档案、学生备份和资料库，判断现有活动是否形成清晰主线，并推荐可以深化或补强的方向。",
+      "请按以下结构输出：",
+      "## 简短结论",
+      "## 现有活动主线判断",
+      "## 最值得深化的活动",
+      "## 缺失的活动类型或证据",
+      "## 推荐补强项目或行动",
+      "## 参考资料",
+      "建议要具体到下一步行动，不要泛泛而谈。",
+    ].join("\n"),
+  },
+  "recommendation-strategy": {
+    label: "推荐信策略",
+    prompt: [
+      "请制定推荐信策略。",
+      "请结合我的个人申请档案、推荐信记录、课程/活动证据、目标专业和选校计划，判断推荐人组合是否合理，并给出材料准备建议。",
+      "请按以下结构输出：",
+      "## 简短结论",
+      "## 推荐人组合建议",
+      "## 每封推荐信应突出什么",
+      "## 需要准备给推荐人的材料",
+      "## 风险与补救建议",
+      "## 参考资料",
+      "如果推荐信资料不足，请列出需要补充的推荐人关系、课程表现和活动证据。",
+    ].join("\n"),
+  },
+};
 
 function setStatus(message, isError = false) {
   status.textContent = message;
@@ -20,6 +83,11 @@ function setStatus(message, isError = false) {
 function setWorking(isWorking) {
   askButton.disabled = isWorking;
   clearButton.disabled = isWorking;
+  workflowRegion
+    ?.querySelectorAll("[data-deepseek-workflow]")
+    .forEach((button) => {
+      button.disabled = isWorking;
+    });
 }
 
 async function requestJson(url, options = {}) {
@@ -156,7 +224,12 @@ form.addEventListener("submit", async (event) => {
     return;
   }
 
-  appendMessage({ role: "user", content: question });
+  questionInput.value = "";
+  await askDeepSeek({ question });
+});
+
+async function askDeepSeek({ question, displayQuestion = question }) {
+  appendMessage({ role: "user", content: displayQuestion });
   questionInput.value = "";
   const thinkingMessageId = renderThinkingMessage();
 
@@ -185,6 +258,17 @@ form.addEventListener("submit", async (event) => {
     setWorking(false);
     questionInput.focus();
   }
+}
+
+workflowRegion?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-deepseek-workflow]");
+  if (!button || button.disabled) return;
+  const workflow = WORKFLOW_PROMPTS[button.dataset.deepseekWorkflow];
+  if (!workflow) return;
+  askDeepSeek({
+    question: workflow.prompt,
+    displayQuestion: `启动 Workflow：${workflow.label}`,
+  });
 });
 
 questionInput.addEventListener("keydown", (event) => {
