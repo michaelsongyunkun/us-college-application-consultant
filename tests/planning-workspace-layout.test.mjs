@@ -32,7 +32,6 @@ for (const preservedId of [
   "authModeButton",
   "appShell",
   "saveButton",
-  "exportButton",
   "exportSvgButton",
 ]) {
   assert.match(html, new RegExp(`id=["']${preservedId}["']`), `Existing capability #${preservedId} must remain`);
@@ -125,11 +124,12 @@ assert.ok(!loggedInHeader.includes('id="exportButton"'), "JSON export should not
 assert.ok(!loggedInHeader.includes('id="exportSvgButton"'), "SVG export should not live in the global header.");
 assert.ok(!loggedInHeader.includes('id="resetButton"'), "Reset should not live in the global header.");
 assert.ok(workspaceActions.includes('id="saveButton"'), "Save should live in the workspace action bar.");
-assert.ok(workspaceActions.includes('id="exportButton"'), "JSON export should live in the workspace action bar.");
+assert.ok(!workspaceActions.includes('id="exportButton"'), "JSON export should be removed from the workspace action bar.");
 assert.ok(workspaceActions.includes('id="exportSvgButton"'), "SVG export should live in the workspace action bar.");
 assert.ok(workspaceActions.includes('id="resetButton"'), "Reset should remain available in the workspace action bar.");
 
-assert.match(html, /id="exportButton"[^>]*class="secondary"/, "JSON export should use a secondary action style.");
+assert.doesNotMatch(html, /id="exportButton"/, "Logged-in workspace should not render JSON export.");
+assert.doesNotMatch(html, /导出 JSON/, "Logged-in workspace should remove JSON export copy.");
 assert.match(html, /id="exportSvgButton"[^>]*class="secondary"/, "SVG export should use a secondary action style.");
 assert.doesNotMatch(html, /导出 Word/, "Logged-in workspace should replace Word export with SVG export.");
 assert.match(html, /id="logoutButton"[^>]*class="secondary"/, "Log out should use a secondary action style.");
@@ -156,6 +156,7 @@ assert.match(html, /DeepSeek/, "Help text should recommend DeepSeek.");
 assert.doesNotMatch(html, /生成任务包|复制任务包|任务包（复制给AI对话）|AI回答粘贴区|ChatGPT/, "Task package and manual external AI copy should be removed.");
 assert.doesNotMatch(appJs, /querySelector\("#generateButton"\)/, "Main app should not bind the removed direct generation button.");
 assert.doesNotMatch(appJs, /querySelector\("#apiKeyInput"\)/, "Main app should not bind the removed OpenAI API Key input.");
+assert.doesNotMatch(appJs, /querySelector\("#exportButton"\)|exportDraft|export_json|application\/json;charset=utf-8/, "Main app should not keep JSON export binding or download code.");
 assert.doesNotMatch(appJs, /querySelector\("#deepSeekApiKeyInput"\)/, "Main app should not bind a user DeepSeek Key input.");
 assert.doesNotMatch(appJs, /deepSeekApiKey:/, "Main app should not send a user-provided DeepSeek API Key.");
 assert.doesNotMatch(appJs, /fetch\("\/api\/plan"/, "Main app should not call the direct OpenAI planning endpoint.");

@@ -58,7 +58,6 @@ const adminDashboardLink = document.querySelector("#adminDashboardLink");
 const profileForm = document.querySelector("#profileForm");
 const activityTable = document.querySelector("#activityTable");
 const saveButton = document.querySelector("#saveButton");
-const exportButton = document.querySelector("#exportButton");
 const exportSvgButton = document.querySelector("#exportSvgButton");
 const resetButton = document.querySelector("#resetButton");
 const saveStatus = document.querySelector("#saveStatus");
@@ -1114,21 +1113,6 @@ async function saveDraft() {
   setWorkspaceStatus("当前内容已保存");
 }
 
-function exportDraft() {
-  trackUsageEvent("export_json", {
-    metrics: { filledActivityCount: countFilledActivities() },
-  });
-  const blob = new Blob([JSON.stringify(collectDraft(), null, 2)], {
-    type: "application/json;charset=utf-8",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "美本申请顾问-活动规划.json";
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 function exportSvgDocument() {
   trackUsageEvent("export_svg", {
     metrics: { filledActivityCount: countFilledActivities() },
@@ -1184,7 +1168,6 @@ function clearVisibleDraft() {
 }
 
 saveButton.addEventListener("click", () => runWorkspaceAction(saveDraft));
-exportButton.addEventListener("click", exportDraft);
 exportSvgButton.addEventListener("click", exportSvgDocument);
 resetButton.addEventListener("click", () => runWorkspaceAction(resetDraft));
 generateDeepSeekButton?.addEventListener("click", () => runWorkspaceAction(generateDeepSeekPlan));
