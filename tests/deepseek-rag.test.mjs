@@ -119,7 +119,7 @@ try {
 
   const response = await post(
     "/api/deepseek-rag",
-    { question: "How should this Robotics Portfolio student compare Polygence and MIT?" },
+    { question: "How should this Robotics Portfolio student use FRC/FTC 机器人队 as a Common App activity while comparing Polygence and MIT?" },
     cookie,
   );
   assert.equal(response.status, 200);
@@ -130,6 +130,7 @@ try {
   assert.ok(body.sources.some((source) => source.typeLabel === "个人申请档案"));
   assert.ok(body.sources.some((source) => source.type === "student-backup"));
   assert.ok(body.sources.some((source) => source.type === "resource-library"));
+  assert.ok(body.sources.some((source) => source.title.includes("课外活动库")));
   assert.ok(body.sources.some((source) => source.type === "school-encyclopedia"));
 
   assert.equal(calls.length, 1);
@@ -151,8 +152,10 @@ try {
   assert.match(sentPayload.messages[1].content, /学生备份/);
   assert.match(sentPayload.messages[1].content, /个人申请档案/);
   assert.match(sentPayload.messages[1].content, /资源库/);
+  assert.match(sentPayload.messages[1].content, /课外活动库/);
   assert.match(sentPayload.messages[1].content, /院校百科/);
   assert.match(sentPayload.messages[1].content, /Robotics Portfolio/);
+  assert.match(sentPayload.messages[1].content, /FRC\/FTC 机器人队/);
   assert.match(sentPayload.messages[1].content, /Prototype assistive navigation robot/);
   assert.match(sentPayload.messages[1].content, /Demo and technical writeup/);
   assert.match(sentPayload.messages[1].content, /https:\/\/example\.com\/robotics/);

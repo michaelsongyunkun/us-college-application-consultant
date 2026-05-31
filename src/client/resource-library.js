@@ -1,4 +1,5 @@
 import { parseCompetitionsMarkdown } from "../domain/competition-recommender.mjs";
+import { parseExtracurricularActivitiesMarkdown } from "../domain/extracurricular-activity-library.mjs";
 import {
   classifyResource,
   enrichResourceEligibility,
@@ -15,19 +16,29 @@ import {
 const status = document.querySelector("#resourceStatus");
 const searchInput = document.querySelector("#resourceSearch");
 const eligibilityForm = document.querySelector("#resourceEligibilityForm");
+const resourceFilterTitle = document.querySelector("#resourceFilterTitle");
+const resourceFilterDescription = document.querySelector("#resourceFilterDescription");
+const resourceEligibilityFields = document.querySelector("#resourceEligibilityFields");
+const activityFilterFields = document.querySelector("#activityFilterFields");
 const nationalityInput = document.querySelector("#resourceNationality");
 const identityInput = document.querySelector("#resourceIdentity");
 const schoolContextInput = document.querySelector("#resourceSchoolContext");
+const activityCommonAppTypeInput = document.querySelector("#activityCommonAppType");
+const activityMajorDirectionInput = document.querySelector("#activityMajorDirection");
+const activityMajorDirectionOptions = document.querySelector("#activityMajorDirectionOptions");
 const clearEligibilityButton = document.querySelector("#clearResourceEligibility");
 const competitionTab = document.querySelector("#competitionTab");
 const summerSchoolTab = document.querySelector("#summerSchoolTab");
 const researchProjectTab = document.querySelector("#researchProjectTab");
+const extracurricularActivityTab = document.querySelector("#extracurricularActivityTab");
 const competitionLibrary = document.querySelector("#competitionLibrary");
 const summerSchoolLibrary = document.querySelector("#summerSchoolLibrary");
 const researchProjectLibrary = document.querySelector("#researchProjectLibrary");
+const extracurricularActivityLibrary = document.querySelector("#extracurricularActivityLibrary");
 const competitionList = document.querySelector("#resourceCompetitionList");
 const summerSchoolList = document.querySelector("#resourceSummerSchoolList");
 const researchProjectList = document.querySelector("#resourceResearchProjectList");
+const extracurricularActivityList = document.querySelector("#resourceExtracurricularActivityList");
 const competitionExcludedList = document.querySelector("#resourceCompetitionExcludedList");
 const summerSchoolExcludedList = document.querySelector("#resourceSummerSchoolExcludedList");
 const researchProjectExcludedList = document.querySelector("#resourceResearchProjectExcludedList");
@@ -37,6 +48,7 @@ const researchProjectExcludedSection = document.querySelector("#researchProjectE
 const competitionCount = document.querySelector("#competitionCount");
 const summerSchoolCount = document.querySelector("#summerSchoolCount");
 const researchProjectCount = document.querySelector("#researchProjectCount");
+const extracurricularActivityCount = document.querySelector("#extracurricularActivityCount");
 const competitionExcludedCount = document.querySelector("#competitionExcludedCount");
 const summerSchoolExcludedCount = document.querySelector("#summerSchoolExcludedCount");
 const researchProjectExcludedCount = document.querySelector("#researchProjectExcludedCount");
@@ -48,11 +60,16 @@ let matchingResourceCount = 0;
 let competitions = [];
 let summerSchools = [];
 let researchProjects = [];
+let extracurricularActivities = [];
 let eligibilityFilters = {
   nationality: "",
   identityDescription: "",
   schoolContext: "",
   participationPreference: "",
+};
+let activityFilters = {
+  commonAppType: "",
+  majorDirection: "",
 };
 
 function escapeHtml(value) {
@@ -135,8 +152,52 @@ function filteredGroups(items, query) {
     );
 }
 
+function filteredActivities(items, query) {
+  return items
+    .filter((item) => !activityFilters.commonAppType || item.category === activityFilters.commonAppType)
+    .filter(
+      (item) =>
+        !activityFilters.majorDirection ||
+        includesQuery([item.majorDirections.join(" "), item.majorDirectionText], activityFilters.majorDirection),
+    )
+    .filter((item) =>
+      includesQuery(
+        [
+          item.name,
+          item.approach,
+          item.category,
+          item.commonAppType,
+          item.commonAppTypeCn,
+          item.categoryPositioning,
+          item.content,
+          item.highlights,
+          item.majorDirections.join(" "),
+        ],
+        query,
+      ),
+    );
+}
+
+function totalResourceCount() {
+  return competitions.length + summerSchools.length + researchProjects.length + extracurricularActivities.length;
+}
+
+function updateLoadedStatus() {
+  if (!hasEligibilityConditions(eligibilityFilters) && !hasActivityFilters()) {
+    status.textContent = `已载入 ${totalResourceCount()} 项资源`;
+  }
+}
+
+function hasActivityFilters() {
+  return Boolean(activityFilters.commonAppType || activityFilters.majorDirection);
+}
+
 function resultCountText(shownCount, matchingCount) {
-  return `${hasEligibilityConditions(eligibilityFilters) ? "可查看" : "显示"} ${shownCount} / ${matchingCount} 项`;
+  const hasFilters =
+    activeLibrary === "extracurricular-activities"
+      ? hasActivityFilters()
+      : hasEligibilityConditions(eligibilityFilters);
+  return `${hasFilters ? "可查看" : "显示"} ${shownCount} / ${matchingCount} 项`;
 }
 
 function resetVisibleResourceLimit() {
@@ -272,11 +333,76 @@ function renderResearchProjects(query = "") {
   updateLoadMoreResources(page, "research-projects");
 }
 
+function renderExtracurricularActivities(query = "") {
+  const filtered = filteredActivities(extracurricularActivities, query);
+  const page = getVisibleResultPage(filtered, visibleResourceLimit);
+  extracurricularActivityCount.textContent = resultCountText(page.shownCount, page.totalCount);
+  extracurricularActivityList.innerHTML = page.totalCount
+    ? page.visibleItems
+        .map(
+          (item) => `
+            <article class="resource-card">
+              <div class="resource-card-header">
+                <div>
+                  <p class="case-index">${escapeHtml(item.category)}</p>
+                  <h4>${escapeHtml(item.name)}</h4>
+                </div>
+                <span class="resource-rating">${escapeHtml(item.approach)}</span>
+              </div>
+              <dl>
+                <div><dt>Common App 类型</dt><dd>${escapeHtml(item.commonAppTypeCn || item.commonAppType)}</dd></div>
+                <div><dt>活动内容</dt><dd>${escapeHtml(item.content || "待补充真实经历后改写")}</dd></div>
+                <div><dt>活动亮点</dt><dd>${escapeHtml(item.highlights || "待结合学生成果提炼")}</dd></div>
+                <div><dt>专业方向</dt><dd>${escapeHtml(item.majorDirections.join("、") || "可按学生方向调整")}</dd></div>
+              </dl>
+            </article>`,
+        )
+        .join("")
+    : '<p class="resource-empty">没有匹配的课外活动素材。</p>';
+  updateLoadMoreResources(page, "extracurricular-activities");
+}
+
 function renderActiveLibrary() {
-  const query = searchInput.value.trim();
+  const query = activeLibrary === "extracurricular-activities" ? "" : searchInput.value.trim();
   if (activeLibrary === "competitions") renderCompetitions(query);
   else if (activeLibrary === "summer-schools") renderSummerSchools(query);
-  else renderResearchProjects(query);
+  else if (activeLibrary === "research-projects") renderResearchProjects(query);
+  else renderExtracurricularActivities(query);
+}
+
+function populateActivityFilterOptions() {
+  const selectedType = activityCommonAppTypeInput.value;
+  const categories = [];
+  for (const item of extracurricularActivities) {
+    if (!categories.includes(item.category)) categories.push(item.category);
+  }
+  activityCommonAppTypeInput.innerHTML = [
+    '<option value="">全部 Common App 类型</option>',
+    ...categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`),
+  ].join("");
+  if (categories.includes(selectedType)) activityCommonAppTypeInput.value = selectedType;
+
+  const majorDirections = [
+    ...new Set(extracurricularActivities.flatMap((item) => item.majorDirections).filter(Boolean)),
+  ].sort((left, right) => left.localeCompare(right, "zh-CN"));
+  activityMajorDirectionOptions.innerHTML = majorDirections
+    .map((direction) => `<option value="${escapeHtml(direction)}"></option>`)
+    .join("");
+}
+
+function updateFilterMode(isActivityMode) {
+  resourceEligibilityFields?.classList.toggle("is-hidden", isActivityMode);
+  activityFilterFields?.classList.toggle("is-hidden", !isActivityMode);
+  if (isActivityMode) {
+    searchInput.value = "";
+    resourceFilterTitle.textContent = "活动素材筛选";
+    resourceFilterDescription.textContent =
+      "按 29 种 Common App 类型和专业方向筛选课外活动素材；这些筛选不会保存到账号资料。";
+    return;
+  }
+  resourceFilterTitle.textContent = "我的可参与条件";
+  resourceFilterDescription.textContent =
+    "仅用于当前页面筛选，不会保存到账号资料。资格结论仍请以项目官网为准。";
 }
 
 function switchLibrary(library) {
@@ -285,20 +411,27 @@ function switchLibrary(library) {
   const showCompetitions = library === "competitions";
   const showSummerSchools = library === "summer-schools";
   const showResearchProjects = library === "research-projects";
+  const showExtracurricularActivities = library === "extracurricular-activities";
   competitionTab.classList.toggle("is-active", showCompetitions);
   competitionTab.setAttribute("aria-selected", String(showCompetitions));
   summerSchoolTab.classList.toggle("is-active", showSummerSchools);
   summerSchoolTab.setAttribute("aria-selected", String(showSummerSchools));
   researchProjectTab.classList.toggle("is-active", showResearchProjects);
   researchProjectTab.setAttribute("aria-selected", String(showResearchProjects));
+  extracurricularActivityTab.classList.toggle("is-active", showExtracurricularActivities);
+  extracurricularActivityTab.setAttribute("aria-selected", String(showExtracurricularActivities));
   competitionLibrary.classList.toggle("is-hidden", !showCompetitions);
   summerSchoolLibrary.classList.toggle("is-hidden", !showSummerSchools);
   researchProjectLibrary.classList.toggle("is-hidden", !showResearchProjects);
+  extracurricularActivityLibrary.classList.toggle("is-hidden", !showExtracurricularActivities);
+  updateFilterMode(showExtracurricularActivities);
   searchInput.placeholder = showCompetitions
     ? "输入竞赛名称或方向"
     : showSummerSchools
       ? "输入夏校名称或方向"
-      : "输入科研项目名称或方向";
+      : showResearchProjects
+        ? "输入科研项目名称或方向"
+        : "输入活动类型、主题或专业方向";
   renderActiveLibrary();
 }
 
@@ -311,7 +444,7 @@ async function loadResources() {
     if (!competitionResponse.ok || !summerSchoolResponse.ok) throw new Error("resources unavailable");
     competitions = parseCompetitionsMarkdown(await competitionResponse.text()).map(enrichResourceEligibility);
     summerSchools = parseSummerSchoolsMarkdown(await summerSchoolResponse.text()).map(enrichResourceEligibility);
-    status.textContent = `已载入 ${competitions.length + summerSchools.length} 项资源`;
+    updateLoadedStatus();
     renderCompetitions();
     renderSummerSchools();
   } catch {
@@ -325,25 +458,45 @@ async function loadResources() {
     const researchProjectResponse = await fetch("./data/research-projects.md");
     if (!researchProjectResponse.ok) throw new Error("research projects unavailable");
     researchProjects = parseResearchProjectsMarkdown(await researchProjectResponse.text()).map(enrichResourceEligibility);
-    if (!hasEligibilityConditions(eligibilityFilters)) {
-      status.textContent = `已载入 ${competitions.length + summerSchools.length + researchProjects.length} 项资源`;
-    }
+    updateLoadedStatus();
     renderResearchProjects();
   } catch {
     researchProjects = [];
     researchProjectList.innerHTML = '<p class="resource-empty">暂时无法读取实习/科研库。</p>';
+  }
+  try {
+    const extracurricularActivityResponse = await fetch("./data/extracurricular-activities.md");
+    if (!extracurricularActivityResponse.ok) throw new Error("extracurricular activities unavailable");
+    extracurricularActivities = parseExtracurricularActivitiesMarkdown(await extracurricularActivityResponse.text());
+    populateActivityFilterOptions();
+    updateLoadedStatus();
+    renderExtracurricularActivities();
+  } catch {
+    extracurricularActivities = [];
+    extracurricularActivityList.innerHTML = '<p class="resource-empty">暂时无法读取课外活动库。</p>';
   }
 }
 
 competitionTab?.addEventListener("click", () => switchLibrary("competitions"));
 summerSchoolTab?.addEventListener("click", () => switchLibrary("summer-schools"));
 researchProjectTab?.addEventListener("click", () => switchLibrary("research-projects"));
+extracurricularActivityTab?.addEventListener("click", () => switchLibrary("extracurricular-activities"));
 searchInput?.addEventListener("input", () => {
   resetVisibleResourceLimit();
   renderActiveLibrary();
 });
 eligibilityForm?.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (activeLibrary === "extracurricular-activities") {
+    activityFilters = {
+      commonAppType: activityCommonAppTypeInput.value,
+      majorDirection: activityMajorDirectionInput.value.trim(),
+    };
+    status.textContent = hasActivityFilters() ? "活动筛选已应用" : `已载入 ${totalResourceCount()} 项资源`;
+    resetVisibleResourceLimit();
+    renderActiveLibrary();
+    return;
+  }
   const selectedMode = eligibilityForm.querySelector('input[name="participationMode"]:checked');
   eligibilityFilters = {
     nationality: nationalityInput.value.trim(),
@@ -354,7 +507,7 @@ eligibilityForm?.addEventListener("submit", (event) => {
   const applied = hasEligibilityConditions(eligibilityFilters);
   status.textContent = applied
     ? "可参与条件已应用"
-    : `已载入 ${competitions.length + summerSchools.length + researchProjects.length} 项资源`;
+    : `已载入 ${totalResourceCount()} 项资源`;
   resetVisibleResourceLimit();
   renderActiveLibrary();
 });
@@ -366,7 +519,11 @@ clearEligibilityButton?.addEventListener("click", () => {
     schoolContext: "",
     participationPreference: "",
   };
-  status.textContent = `已载入 ${competitions.length + summerSchools.length + researchProjects.length} 项资源`;
+  activityFilters = {
+    commonAppType: "",
+    majorDirection: "",
+  };
+  status.textContent = `已载入 ${totalResourceCount()} 项资源`;
   resetVisibleResourceLimit();
   renderActiveLibrary();
 });

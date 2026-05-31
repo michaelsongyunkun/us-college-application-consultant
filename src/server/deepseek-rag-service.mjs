@@ -12,6 +12,7 @@ const RESOURCE_LIBRARY_FILES = [
   { file: "competitions.md", label: "竞赛库" },
   { file: "summer-schools.md", label: "夏校库" },
   { file: "research-projects.md", label: "实习/科研库" },
+  { file: "extracurricular-activities.md", label: "课外活动库" },
 ];
 
 const SCHOOL_ENCYCLOPEDIA_FILES = [
@@ -42,7 +43,7 @@ const SYSTEM_PROMPT = [
   "你可以使用的资料范围包括：",
   "1. 个人申请档案：选校计划、课外活动、竞赛、夏校、推荐信、GPA/SAT/AP 等成绩档案。",
   "2. 学生备份：学生基础背景、历史规划版本、活动方案和保存快照。",
-  "3. 资料库：竞赛、夏校、科研/实习、项目资源等内容。",
+  "3. 资料库：竞赛、夏校、科研/实习、课外活动素材、项目资源等内容。",
   "4. 院校百科：院校申请要求、热门专业、学校风格、录取偏好、文书与推荐信要求等信息。",
   "",
   "回答规则：",
@@ -372,7 +373,7 @@ function selectRelevantDocuments(documents, question) {
     .sort((left, right) => right.score - left.score || left.index - right.index);
 
   const selected = new Map();
-  for (const document of ensureStudentContext(documents, scored)) {
+  for (const document of ensureBaselineContext(documents, scored)) {
     selected.set(document.id, document);
   }
   for (const document of scored) {
@@ -385,7 +386,7 @@ function selectRelevantDocuments(documents, question) {
     .slice(0, MAX_SELECTED_CHUNKS);
 }
 
-function ensureStudentContext(documents, scored) {
+function ensureBaselineContext(documents, scored) {
   const portfolio =
     scored.find((document) => document.type === "application-portfolio")
     || documents
@@ -398,7 +399,12 @@ function ensureStudentContext(documents, scored) {
         .filter((document) => document.type === "student-backup")
         .slice(0, 2)
         .map((document) => ({ ...document, score: 0.1 }));
-  return [portfolio, ...studentDocuments].filter(Boolean);
+  const school =
+    scored.find((document) => document.type === "school-encyclopedia")
+    || documents
+      .filter((document) => document.type === "school-encyclopedia")
+      .map((document) => ({ ...document, score: 0.1 }))[0];
+  return [portfolio, ...studentDocuments, school].filter(Boolean);
 }
 
 function scoreDocument(document, queryTokens, question) {

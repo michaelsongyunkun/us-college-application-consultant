@@ -48,11 +48,11 @@
         <div>
           <p class="eyebrow">Resource Matching</p>
           <h2>从资源库筛出可行动项目</h2>
-          <p>根据国籍、身份、就读体系和参加方式筛选竞赛、夏校、科研项目，辅助 Agent 给出更可信的项目匹配。</p>
+          <p>根据国籍、身份、就读体系和参加方式筛选竞赛、夏校、科研项目，并参考课外活动素材，辅助 Agent 给出更可信的项目匹配与活动叙事。</p>
         </div>
         <div class="command-summary-metrics">
-          <span><strong>650+</strong>项目资源</span>
-          <span><strong>3</strong>资源类型</span>
+          <span><strong>3500+</strong>项目与活动素材</span>
+          <span><strong>4</strong>资源类型</span>
           <span><strong>资格</strong>筛选</span>
         </div>
       </section>
@@ -61,17 +61,17 @@
         <div class="section-heading table-heading">
           <div>
             <h2 id="resource-title">项目资料检索</h2>
-            <p>浏览竞赛库、夏校库与实习/科研库，查看项目类型、评级和基础申请信息。</p>
+            <p>浏览竞赛库、夏校库、实习/科研库与课外活动库，查看项目类型、评级、申请信息和 Common App 活动表达素材。</p>
           </div>
           <span id="resourceStatus" class="status" role="status" aria-live="polite">资源加载中</span>
         </div>
 
         <form id="resourceEligibilityForm" class="resource-filter" autocomplete="off">
           <div class="resource-filter-heading">
-            <h3>我的可参与条件</h3>
-            <p>仅用于当前页面筛选，不会保存到账号资料。资格结论仍请以项目官网为准。</p>
+            <h3 id="resourceFilterTitle">我的可参与条件</h3>
+            <p id="resourceFilterDescription">仅用于当前页面筛选，不会保存到账号资料。资格结论仍请以项目官网为准。</p>
           </div>
-          <div class="resource-filter-fields">
+          <div id="resourceEligibilityFields" class="resource-filter-fields">
             <label class="resource-filter-input">
               <span>国籍</span>
               <input id="resourceNationality" type="text" placeholder="例如：中国" />
@@ -100,6 +100,19 @@
               <label><input type="radio" name="participationMode" value="either" />线上线下都可</label>
             </fieldset>
           </div>
+          <div id="activityFilterFields" class="resource-filter-fields is-hidden">
+            <label class="resource-filter-input">
+              <span>Common App 类型</span>
+              <select id="activityCommonAppType">
+                <option value="">全部 Common App 类型</option>
+              </select>
+            </label>
+            <label class="resource-filter-input">
+              <span>专业方向</span>
+              <input id="activityMajorDirection" type="search" list="activityMajorDirectionOptions" placeholder="例如：CS、公共政策、传媒" />
+              <datalist id="activityMajorDirectionOptions"></datalist>
+            </label>
+          </div>
           <div class="resource-filter-actions">
             <button type="submit">应用筛选</button>
             <button id="clearResourceEligibility" class="secondary" type="button">清除条件</button>
@@ -111,6 +124,7 @@
             <button id="competitionTab" class="resource-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="competitionLibrary">竞赛库</button>
             <button id="summerSchoolTab" class="resource-tab" type="button" role="tab" aria-selected="false" aria-controls="summerSchoolLibrary">夏校库</button>
             <button id="researchProjectTab" class="resource-tab" type="button" role="tab" aria-selected="false" aria-controls="researchProjectLibrary">实习/科研库</button>
+            <button id="extracurricularActivityTab" class="resource-tab" type="button" role="tab" aria-selected="false" aria-controls="extracurricularActivityLibrary">课外活动库</button>
           </div>
         </div>
 
@@ -157,6 +171,14 @@
             </div>
             <div id="resourceResearchProjectExcludedList" class="resource-grid"></div>
           </section>
+        </section>
+
+        <section id="extracurricularActivityLibrary" class="resource-view is-hidden" role="tabpanel" aria-labelledby="extracurricularActivityTab">
+          <div class="resource-view-header">
+            <h3>课外活动库</h3>
+            <span id="extracurricularActivityCount" class="resource-count"></span>
+          </div>
+          <div id="resourceExtracurricularActivityList" class="resource-grid"></div>
         </section>
         <div class="load-more-row">
           <button id="loadMoreResources" class="secondary is-hidden" type="button">加载更多</button>
