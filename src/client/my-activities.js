@@ -5,6 +5,8 @@ import {
   parseApplicationRoundSchoolsMarkdown,
 } from "../domain/application-round-schools.mjs";
 import { markdownToPlainText } from "../domain/agent-output-parser.mjs?v=20260531-import-visual-text";
+import { buildSvgDocument } from "../domain/svg-export.mjs?v=20260531-svg-wrap";
+import { buildWordDocument } from "../domain/word-export.mjs?v=20260601-word-export";
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const ACTIVITY_IMPORT_SOURCES_ENDPOINT = "/api/my-activities/import-sources";
@@ -113,6 +115,12 @@ const apExamFields = ["courseName", "score", "examYear"];
 const portfolioForm = document.querySelector("#portfolioForm");
 const savePortfolioButton = document.querySelector("#savePortfolioButton");
 const savePortfolioButtons = document.querySelectorAll("[data-save-portfolio], #savePortfolioButton");
+const exportPortfolioSvgButton = document.querySelector("#exportPortfolioSvgButton");
+const exportPortfolioWordButton = document.querySelector("#exportPortfolioWordButton");
+const clearPortfolioButton = document.querySelector("#clearPortfolioButton");
+const portfolioActionButtons = document.querySelectorAll(
+  "[data-save-portfolio], #savePortfolioButton, #exportPortfolioSvgButton, #exportPortfolioWordButton, #clearPortfolioButton",
+);
 const portfolioStatus = document.querySelector("#portfolioStatus");
 const academicRecordsProgress = document.querySelector("#academicRecordsProgress");
 const academicRecordsPanel = document.querySelector("#academicRecordsPanel");
@@ -782,6 +790,350 @@ function countApplicationPlanSchools(plan = emptyApplicationPlan()) {
   return Object.values(plan).reduce((total, entries) => total + (entries?.length || 0), 0);
 }
 
+function filledText(value, fallback = "待补充") {
+  const text = String(value || "").trim();
+  return text || fallback;
+}
+
+function joinFilled(values, separator = "；", fallback = "暂无记录") {
+  const items = values.map((value) => String(value || "").trim()).filter(Boolean);
+  return items.length ? items.join(separator) : fallback;
+}
+
+function summarizeList(items, formatter, emptyText = "暂无记录") {
+  const rows = (items || []).map(formatter).map((value) => String(value || "").trim()).filter(Boolean);
+  return rows.length ? rows.join("\n") : emptyText;
+}
+
+function summarizeAcademicRecords(records = emptyAcademicRecords()) {
+  const normalized = normalizeAcademicRecordsForView(records);
+  const gpaSummary = summarizeList(
+    normalized.gpaRecords,
+    (record) => joinFilled([record.gradeLevel, record.term, record.gpa && `GPA ${record.gpa}`], " "),
+  );
+  const satSummary = summarizeList(
+    normalized.satTests,
+    (test) =>
+      joinFilled(
+        [
+          test.testDate,
+          test.totalScore && `总分 ${test.totalScore}`,
+          test.englishScore && `英文 ${test.englishScore}`,
+          test.mathScore && `数学 ${test.mathScore}`,
+        ],
+        " ",
+      ),
+  );
+  const apSummary = summarizeList(
+    normalized.apExams,
+    (exam) => joinFilled([exam.courseName, exam.score && `${exam.score} 分`, exam.examYear], " "),
+  );
+  return [`GPA：${gpaSummary}`, `SAT：${satSummary}`, `AP：${apSummary}`].join("\n");
+}
+
+function summarizeApplicationPlan(plan = emptyApplicationPlan()) {
+  const rows = APPLICATION_ROUND_CONFIG.flatMap((round) =>
+    (plan?.[round.key] || []).map((entry) =>
+      joinFilled([round.label, entry.school, entry.major && `专业方向：${entry.major}`], " "),
+    ),
+  );
+  return rows.length ? rows.join("\n") : "暂无选校计划";
+}
+
+function countPortfolioEntries(portfolio = collectPortfolio()) {
+  const academicRecords = portfolio.academicRecords || emptyAcademicRecords();
+  return {
+    completionFields: Object.values(academicRecords).filter((value) => {
+      if (Array.isArray(value)) return value.length > 0;
+      return Boolean(String(value || "").trim());
+    }).length,
+    filledActivityCount: (portfolio.activities || []).length,
+    competitionCount: (portfolio.competitions || []).length,
+    summerSchoolCount: (portfolio.summerSchools || []).length,
+    gpaRecordCount: (academicRecords.gpaRecords || []).length,
+    satTestCount: (academicRecords.satTests || []).length,
+    apExamCount: (academicRecords.apExams || []).length,
+    applicationSchoolCount: countApplicationPlanSchools(portfolio.applicationPlan),
+    recommendationReady: hasAnyRecommendation(portfolio.recommendationLetters) ? 1 : 0,
+  };
+}
+
+function buildPortfolioProfile(portfolio) {
+  const academicRecords = portfolio.academicRecords || emptyAcademicRecords();
+  return {
+    grade: joinFilled(
+      [
+        academicRecords.gpaRecords?.at(-1)?.gradeLevel,
+        academicRecords.gpaRecords?.at(-1)?.term,
+      ],
+      " ",
+      "未填写年级",
+    ),
+    majorDirection: summarizeApplicationPlan(portfolio.applicationPlan).split("\n").slice(0, 3).join("；"),
+    gpa: joinFilled(
+      [
+        academicRecords.gpaScale,
+        academicRecords.gpaRecords?.at(-1)?.gpa && `最新 GPA ${academicRecords.gpaRecords.at(-1).gpa}`,
+      ],
+      "；",
+      "未填写 GPA",
+    ),
+    testScores: joinFilled(
+      [
+        academicRecords.satTests?.at(-1)?.totalScore && `SAT ${academicRecords.satTests.at(-1).totalScore}`,
+        summarizeList(
+          academicRecords.apExams,
+          (exam) => joinFilled([exam.courseName, exam.score], " "),
+          "",
+        ),
+      ],
+      "；",
+      "未填写标化/AP",
+    ),
+    applicationPlan: summarizeApplicationPlan(portfolio.applicationPlan),
+  };
+}
+
+function mapPortfolioActivities(activities = []) {
+  return activities.map((activity, index) => ({
+    id: String(index + 1).padStart(2, "0"),
+    type: filledText(activity.type, "活动档案"),
+    activityName: filledText(activity.activityName, "未命名活动"),
+    executionDescription: joinFilled(
+      [
+        activity.role && `角色：${activity.role}`,
+        activity.timeStage && `时间：${activity.timeStage}`,
+        activity.description,
+        activity.outcome && `成果：${activity.outcome}`,
+        activity.proofLink && `证明链接：${activity.proofLink}`,
+        activity.status && `状态：${activity.status}`,
+      ],
+      "\n",
+      "暂无活动细节",
+    ),
+    suggestedGrade: filledText(activity.timeStage || activity.status, "待定"),
+  }));
+}
+
+function mapPortfolioCompetitions(competitions = []) {
+  return competitions.map((competition, index) => ({
+    id: `portfolio-competition-${index + 1}`,
+    name: filledText(competition.competitionName, "未命名竞赛"),
+    recommendationType: filledText(competition.subject || competition.status, "竞赛档案"),
+    rating: filledText(competition.award || competition.status, "待补充"),
+    recommendationReason: joinFilled(
+      [
+        competition.subject && `方向：${competition.subject}`,
+        competition.contribution && `贡献：${competition.contribution}`,
+        competition.award && `奖项：${competition.award}`,
+      ],
+      "；",
+      "暂无竞赛说明",
+    ),
+    applicationHelp: joinFilled(
+      [
+        competition.yearGrade && `参与年级：${competition.yearGrade}`,
+        competition.status && `当前状态：${competition.status}`,
+        competition.proofLink && `证明链接：${competition.proofLink}`,
+      ],
+      "；",
+      "待补充申请价值",
+    ),
+    prepTime: filledText(competition.yearGrade, "待定"),
+    url: filledText(competition.proofLink, "暂无链接"),
+  }));
+}
+
+function mapPortfolioSummerSchools(summerSchools = []) {
+  return summerSchools.map((school, index) => ({
+    id: `portfolio-summer-${index + 1}`,
+    tier: filledText(school.status, "夏校档案"),
+    name: filledText(school.programName, "未命名夏校"),
+    rating: filledText(school.organizer, "待补充"),
+    category: filledText(school.direction, "待定方向"),
+    reason: joinFilled(
+      [
+        school.participationTime && `参与时间：${school.participationTime}`,
+        school.output && `产出：${school.output}`,
+      ],
+      "；",
+      "暂无夏校说明",
+    ),
+    formatAndWebsite: filledText(school.proofLink, "暂无链接"),
+    admissionRate: "档案记录",
+    requirements: school.output ? [school.output] : [],
+    programTime: filledText(school.participationTime, "待定"),
+    applicationTime: filledText(school.status, "待定"),
+  }));
+}
+
+function buildTeacherRecommendation(role, teacher = {}) {
+  if (!hasAnyRecommendation(teacher)) return null;
+  return {
+    role,
+    recommenderType: joinFilled([teacher.subject, teacher.teacherName], " / ", "校内老师"),
+    priority: filledText(teacher.relationshipStrength, "待评估"),
+    recommendationFocus: filledText(teacher.subject, "待确认推荐重点"),
+    evidence: filledText(teacher.materials, "待补充材料"),
+    preparationAdvice: "整理档案中的活动、成绩和项目证据，并提前沟通推荐重点。",
+  };
+}
+
+function mapPortfolioRecommendationLetters(recommendationLetters = {}) {
+  const items = [
+    recommendationLetters.counselorStatus || recommendationLetters.notes || recommendationLetters.preparedMaterials?.length
+      ? {
+          role: "Counselor 推荐信",
+          recommenderType: "学校升学顾问",
+          priority: filledText(recommendationLetters.counselorStatus, "待确认"),
+          recommendationFocus: "整体学术表现、申请定位与选校策略",
+          evidence: joinFilled(
+            [
+              ...(recommendationLetters.preparedMaterials || []),
+              recommendationLetters.notes,
+            ],
+            "；",
+            "待补充材料清单",
+          ),
+          preparationAdvice: "同步成绩、活动、竞赛、夏校和选校计划，方便 Counselor 快速理解申请主线。",
+        }
+      : null,
+    buildTeacherRecommendation("校内老师推荐信 1", recommendationLetters.teacher1),
+    buildTeacherRecommendation("校内老师推荐信 2", recommendationLetters.teacher2),
+    hasAnyRecommendation(recommendationLetters.outsideRecommender)
+      ? {
+          role: "校外推荐信",
+          recommenderType: filledText(recommendationLetters.outsideRecommender.identity, "校外推荐人"),
+          priority: filledText(recommendationLetters.outsideRecommender.relationship, "待评估"),
+          recommendationFocus: filledText(recommendationLetters.outsideRecommender.scenario, "待确认合作场景"),
+          evidence: filledText(recommendationLetters.outsideRecommender.scenario, "待补充证据"),
+          preparationAdvice: "明确推荐人与学生的合作场景、成果证据和推荐边界。",
+        }
+      : null,
+  ].filter(Boolean);
+
+  return {
+    ready: items.length > 0,
+    notice: items.length
+      ? "以下内容来自我的申请档案，可作为推荐信沟通清单。"
+      : "我的申请档案中暂未填写推荐信信息。",
+    items,
+  };
+}
+
+function buildPortfolioNarrative(portfolio) {
+  const counts = countPortfolioEntries(portfolio);
+  return [
+    `当前档案已记录 ${counts.filledActivityCount} 项活动、${counts.competitionCount} 项竞赛、${counts.summerSchoolCount} 项夏校、${counts.applicationSchoolCount} 所目标院校。`,
+    `成绩与考试：\n${summarizeAcademicRecords(portfolio.academicRecords)}`,
+    `选校计划：\n${summarizeApplicationPlan(portfolio.applicationPlan)}`,
+    `活动主线：\n${summarizeList(
+      portfolio.activities,
+      (activity, index) =>
+        `${index + 1}. ${filledText(activity.activityName, "未命名活动")}：${joinFilled(
+          [activity.type, activity.role, activity.outcome || activity.status],
+          " / ",
+          "待补充细节",
+        )}`,
+    )}`,
+    "后续建议：优先补齐每项活动的成果证据、竞赛贡献、夏校产出和推荐信材料，让导出的方案更适合复盘和沟通。",
+  ].join("\n\n");
+}
+
+function buildPortfolioExportPayload() {
+  const portfolio = normalizePortfolioForView(collectPortfolio());
+  return {
+    profile: buildPortfolioProfile(portfolio),
+    activities: mapPortfolioActivities(portfolio.activities),
+    narrative: buildPortfolioNarrative(portfolio),
+    competitionRecommendations: mapPortfolioCompetitions(portfolio.competitions),
+    summerSchoolRecommendations: mapPortfolioSummerSchools(portfolio.summerSchools),
+    recommendationLetterStrategy: mapPortfolioRecommendationLetters(portfolio.recommendationLetters),
+    caseMatches: [],
+  };
+}
+
+function trackPortfolioUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
+  const portfolio = collectPortfolio();
+  fetch("/api/analytics/usage-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventType,
+      profile: {
+        grade: buildPortfolioProfile(portfolio).grade,
+        majorDirection: summarizeApplicationPlan(portfolio.applicationPlan).split("\n").slice(0, 1).join(""),
+      },
+      metrics: {
+        ...countPortfolioEntries(portfolio),
+        ...metrics,
+      },
+      details: {
+        source: "my_activities",
+        ...details,
+      },
+    }),
+  }).catch(() => {});
+}
+
+function downloadPortfolioDocument(content, type, filename) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportPortfolioSvgDocument() {
+  const payload = buildPortfolioExportPayload();
+  trackPortfolioUsageEvent("export_svg", {
+    metrics: { generatedActivityCount: payload.activities.length },
+    details: {
+      exportSurface: "portfolio",
+      format: "svg",
+    },
+  });
+  downloadPortfolioDocument(
+    buildSvgDocument(payload),
+    "image/svg+xml;charset=utf-8",
+    "我的申请档案.svg",
+  );
+}
+
+function exportPortfolioWordDocument() {
+  const payload = buildPortfolioExportPayload();
+  trackPortfolioUsageEvent("export_word", {
+    metrics: { generatedActivityCount: payload.activities.length },
+    details: {
+      exportSurface: "portfolio",
+      format: "word",
+    },
+  });
+  downloadPortfolioDocument(
+    buildWordDocument(payload),
+    "application/msword;charset=utf-8",
+    "我的申请档案.doc",
+  );
+}
+
+async function clearCurrentPortfolio() {
+  if (
+    !window.confirm(
+      "确认清空当前方案？此操作会清空我的申请档案页面中已填写的成绩、活动、竞赛、夏校、推荐信和选校计划。",
+    )
+  ) {
+    return;
+  }
+  trackPortfolioUsageEvent("clear_draft", { details: { exportSurface: "portfolio" } });
+  renderPortfolio(emptyPortfolio());
+  isDirty = true;
+  updateCompletion();
+  const saved = await savePortfolio();
+  if (saved) setStatus("已清空当前方案");
+}
+
 async function loadActivityImportSources() {
   if (!activityImportSources) return;
   try {
@@ -1015,7 +1367,7 @@ function setImportStatus(message, isError = false) {
 }
 
 function setButtonsDisabled(disabled) {
-  savePortfolioButtons.forEach((button) => {
+  portfolioActionButtons.forEach((button) => {
     button.disabled = disabled;
   });
 }
@@ -1044,6 +1396,9 @@ portfolioForm.addEventListener("change", (event) => {
 savePortfolioButtons.forEach((button) => {
   button.addEventListener("click", savePortfolio);
 });
+exportPortfolioSvgButton?.addEventListener("click", exportPortfolioSvgDocument);
+exportPortfolioWordButton?.addEventListener("click", exportPortfolioWordDocument);
+clearPortfolioButton?.addEventListener("click", clearCurrentPortfolio);
 academicRecordsPanel?.addEventListener("click", (event) => {
   const addButton = event.target.closest("[data-add-academic-record]");
   if (addButton) {

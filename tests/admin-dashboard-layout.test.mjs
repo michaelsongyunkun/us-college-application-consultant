@@ -35,7 +35,8 @@ assert.match(script, /dashboard\.overview/, "Summary cards should render server-
 assert.match(html, /解析 Codex 回答进表格/, "Overview metric should use the clearer Codex parsing label.");
 assert.match(html, /SVG 导出/, "Overview metric should show SVG export usage.");
 assert.match(script, /export_svg: "导出 SVG"/, "Usage event label should include SVG export.");
-assert.doesNotMatch(html, /Word 导出|导出 Word/, "Admin dashboard should replace Word export labels with SVG export labels.");
+assert.match(html, /导出 Word/, "Admin dashboard should expose active Word export usage filtering.");
+assert.match(script, /export_word: "导出 Word"/, "Usage event label should include active Word export.");
 assert.doesNotMatch(html, /规划生成/, "Admin dashboard should not show the old planning-generation label.");
 assert.match(script, /generate_plan_success: "解析 Codex 回答进表格成功"/, "Usage event label should match the updated dashboard wording.");
 assert.doesNotMatch(script, /规划生成/, "Dashboard script should not show the old planning-generation label.");

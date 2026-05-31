@@ -27,11 +27,11 @@ assert.ok(!indexHtml.includes("Automation Status"), "Logged-in home should not s
 assert.ok(!indexHtml.includes('class="command-center-hero"'), "Logged-in home should not render the removed automation status board.");
 assert.ok(!indexHtml.includes("Planning Readiness"), "Logged-in home should not show the removed readiness card.");
 assert.ok(
-  indexHtml.includes('./src/client/app.js?v=20260531-svg-only'),
+  indexHtml.includes('./src/client/app.js?v=20260601-word-export'),
   "Logged-in shell should cache-bust the main app module with the current command-center release.",
 );
 assert.ok(
-  !indexHtml.includes('./src/client/app.js?v=20260528-case-refresh'),
+  !indexHtml.includes('./src/client/app.js?v=20260531-svg-only'),
   "Logged-in shell should not keep serving the previous app module cache key.",
 );
 

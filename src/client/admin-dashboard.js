@@ -27,7 +27,7 @@ const usageEventLabels = {
   parse_codex_failure: "解析 Codex 失败",
   export_json: "导出 JSON",
   export_svg: "导出 SVG",
-  export_word: "导出 Word（历史）",
+  export_word: "导出 Word",
   save_draft: "保存草稿",
   clear_draft: "清空草稿",
   generate_plan_success: "解析 Codex 回答进表格成功",

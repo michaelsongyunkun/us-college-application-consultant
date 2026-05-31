@@ -19,6 +19,9 @@ for (const expected of [
   "整理 GPA、SAT、AP、选校计划、活动、竞赛、夏校和推荐信材料，作为后续申请复盘的基础。",
   'id="portfolioForm"',
   'id="savePortfolioButton"',
+  'id="exportPortfolioSvgButton"',
+  'id="exportPortfolioWordButton"',
+  'id="clearPortfolioButton"',
   'id="portfolioStatus"',
   'id="academicRecordsProgress"',
   'id="gpaRecordsList"',
@@ -142,7 +145,7 @@ assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
   pageHtml.includes("./styles.css?v=20260531-command-center-subnav")
-    && pageHtml.includes("./src/client/my-activities.js?v=20260531-import-visual-text"),
+    && pageHtml.includes("./src/client/my-activities.js?v=20260601-portfolio-export"),
   "我的申请页面应更新 CSS 版本号，避免用户继续加载缓存的平行布局。"
 );
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");
@@ -170,3 +173,18 @@ assert.match(
 );
 assert.match(styles, /\.academic-records-layout\s*\{/, "成绩与考试模块应有专用布局样式。");
 assert.match(styles, /\.academic-record-row\s*\{/, "GPA/SAT/AP 可增删记录应有稳定行布局。");
+assert.match(pageHtml, /id="exportPortfolioSvgButton"[^>]*>导出 SVG/, "我的申请档案应提供 SVG 导出入口。");
+assert.match(pageHtml, /id="exportPortfolioWordButton"[^>]*>导出 Word 文档/, "我的申请档案应提供 Word 导出入口。");
+assert.match(pageHtml, /id="clearPortfolioButton"[^>]*>清空当前方案/, "我的申请档案应提供清空当前方案入口。");
+assert.match(script, /buildSvgDocument/, "我的申请档案应复用 SVG 报告导出。");
+assert.match(script, /buildWordDocument/, "我的申请档案应复用 Word 报告导出。");
+assert.match(script, /querySelector\("#exportPortfolioSvgButton"\)/, "我的申请档案脚本应绑定 SVG 导出按钮。");
+assert.match(script, /querySelector\("#exportPortfolioWordButton"\)/, "我的申请档案脚本应绑定 Word 导出按钮。");
+assert.match(script, /querySelector\("#clearPortfolioButton"\)/, "我的申请档案脚本应绑定清空按钮。");
+assert.match(script, /application\/msword;charset=utf-8/, "Word 导出应使用 Word 兼容 MIME。");
+assert.match(script, /image\/svg\+xml;charset=utf-8/, "SVG 导出应使用 SVG MIME。");
+assert.match(script, /export_word/, "我的申请档案 Word 导出应记录 usage event。");
+assert.match(script, /export_svg/, "我的申请档案 SVG 导出应记录 usage event。");
+assert.match(script, /clear_draft/, "我的申请档案清空当前方案应记录 usage event。");
+assert.match(script, /function buildPortfolioExportPayload/, "导出应从当前档案收集报告数据。");
+assert.match(script, /function clearCurrentPortfolio/, "清空当前方案应重置当前档案。");

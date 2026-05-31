@@ -23,6 +23,7 @@ import { buildRecommendationLetterStrategy } from "../domain/recommendation-lett
 import { renderActivityQualityPanel } from "./activity-quality-ui.mjs";
 import { renderParseDiagnostics } from "./agent-answer-diagnostics-ui.mjs";
 import { buildSvgDocument } from "../domain/svg-export.mjs?v=20260531-svg-wrap";
+import { buildWordDocument } from "../domain/word-export.mjs?v=20260601-word-export";
 import { getRequestErrorMessage } from "./auth-client-errors.mjs";
 import { escapeHtml } from "./html-utils.mjs";
 import {
@@ -59,6 +60,7 @@ const profileForm = document.querySelector("#profileForm");
 const activityTable = document.querySelector("#activityTable");
 const saveButton = document.querySelector("#saveButton");
 const exportSvgButton = document.querySelector("#exportSvgButton");
+const exportWordButton = document.querySelector("#exportWordButton");
 const resetButton = document.querySelector("#resetButton");
 const saveStatus = document.querySelector("#saveStatus");
 const agentStatus = document.querySelector("#agentStatus");
@@ -1268,6 +1270,40 @@ function exportSvgDocument() {
   URL.revokeObjectURL(url);
 }
 
+function exportWordDocument() {
+  trackUsageEvent("export_word", {
+    metrics: { filledActivityCount: countFilledActivities() },
+    details: {
+      hasCompetitions: latestCompetitionRecommendations.length > 0,
+      hasSummerSchools: latestSummerSchoolRecommendations.length > 0,
+      hasRecommendationLetters: latestRecommendationLetterStrategy.items?.length > 0,
+      hasCaseMatches: latestCaseMatches.length > 0,
+    },
+  });
+  renderCompetitionRecommendations();
+  renderSummerSchoolRecommendations();
+  renderRecommendationLetterStrategy();
+  renderCaseMatches();
+  const documentHtml = buildWordDocument({
+    profile: collectProfile(),
+    activities: collectActivities(),
+    narrative: getNarrativeText(),
+    competitionRecommendations: latestCompetitionRecommendations,
+    summerSchoolRecommendations: latestSummerSchoolRecommendations,
+    recommendationLetterStrategy: latestRecommendationLetterStrategy,
+    caseMatches: latestCaseMatches,
+  });
+  const blob = new Blob([documentHtml], {
+    type: "application/msword;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "美本申请顾问-活动规划.doc";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 async function resetDraft() {
   trackUsageEvent("clear_draft");
   clearVisibleDraft();
@@ -1290,6 +1326,7 @@ function clearVisibleDraft() {
 
 saveButton.addEventListener("click", () => runWorkspaceAction(saveDraft));
 exportSvgButton.addEventListener("click", exportSvgDocument);
+exportWordButton.addEventListener("click", exportWordDocument);
 resetButton.addEventListener("click", () => runWorkspaceAction(resetDraft));
 generateDeepSeekButton?.addEventListener("click", () => runWorkspaceAction(generateDeepSeekPlan));
 workspacePrimaryActionButton?.addEventListener("click", () => runWorkspaceAction(runWorkspacePrimaryAction));
