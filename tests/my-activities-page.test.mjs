@@ -120,13 +120,29 @@ assert.ok(
 );
 assert.ok(script.includes("data-import-activity"), "单个规划活动应提供导入按钮。");
 assert.ok(script.includes("mapPlanningActivityToPortfolio"), "导入时应映射规划活动字段。");
+assert.match(
+  script,
+  /from "\.\.\/domain\/agent-output-parser\.mjs\?v=20260531-import-visual-text"/,
+  "申请规划导入区应复用 Markdown 转可视化文本清洗逻辑。",
+);
+assert.match(script, /cleanPlanningActivityText/, "申请规划导入区应清洗 Markdown 标记。");
+assert.doesNotMatch(
+  script,
+  /<h3>\$\{escapeHtml\(activity\.activityName/,
+  "导入卡片标题不应直接渲染 Markdown 原文。",
+);
+assert.doesNotMatch(
+  script,
+  /<p>\$\{escapeHtml\(activity\.description/,
+  "导入卡片描述不应直接渲染 Markdown 原文。",
+);
 assert.ok(script.includes("beforeunload"), "有未保存修改时应拦截离开页面。");
 assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案。");
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
   pageHtml.includes("./styles.css?v=20260530-light-sidebar")
-    && pageHtml.includes("./src/client/my-activities.js?v=20260529-academic-records-local-trial"),
+    && pageHtml.includes("./src/client/my-activities.js?v=20260531-import-visual-text"),
   "我的申请页面应更新 CSS 版本号，避免用户继续加载缓存的平行布局。"
 );
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");

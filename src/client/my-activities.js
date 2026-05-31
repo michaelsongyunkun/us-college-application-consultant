@@ -4,6 +4,7 @@ import {
   getEligibleSchools,
   parseApplicationRoundSchoolsMarkdown,
 } from "../domain/application-round-schools.mjs";
+import { markdownToPlainText } from "../domain/agent-output-parser.mjs?v=20260531-import-visual-text";
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const ACTIVITY_IMPORT_SOURCES_ENDPOINT = "/api/my-activities/import-sources";
@@ -137,6 +138,10 @@ let currentPortfolio = emptyPortfolio();
 let applicationRoundSchools = [];
 let applicationRoundRowCounts = { ea: 1, uc: 1, rd: 1 };
 let planningActivitySources = [];
+
+function cleanPlanningActivityText(value, fallback = "") {
+  return markdownToPlainText(value).replace(/\s+/g, " ").trim() || fallback;
+}
 
 function emptyApplicationPlan() {
   return {
@@ -409,18 +414,22 @@ function renderActivityImportSources(sources = []) {
   }
 
   activityImportSources.innerHTML = importItems
-    .map(
-      ({ source, activity, index }) => `
+    .map(({ source, activity, index }) => {
+      const activityName = cleanPlanningActivityText(activity.activityName, `活动 ${activity.id || index + 1}`);
+      const type = cleanPlanningActivityText(activity.type, "未填写");
+      const timeStage = cleanPlanningActivityText(activity.timeStage, "未填写");
+      const description = cleanPlanningActivityText(activity.description, "暂无执行说明");
+      return `
         <article class="activity-import-card">
           <div>
             <p class="activity-import-source">${escapeHtml(source.label || source.planName || "申请规划")}</p>
-            <h3>${escapeHtml(activity.activityName || `活动 ${activity.id || index + 1}`)}</h3>
+            <h3>${escapeHtml(activityName)}</h3>
           </div>
           <dl>
-            <div><dt>类型</dt><dd>${escapeHtml(activity.type || "未填写")}</dd></div>
-            <div><dt>时间</dt><dd>${escapeHtml(activity.timeStage || "未填写")}</dd></div>
+            <div><dt>类型</dt><dd>${escapeHtml(type)}</dd></div>
+            <div><dt>时间</dt><dd>${escapeHtml(timeStage)}</dd></div>
           </dl>
-          <p>${escapeHtml(activity.description || "暂无执行说明")}</p>
+          <p>${escapeHtml(description)}</p>
           <button
             type="button"
             class="secondary"
@@ -428,8 +437,8 @@ function renderActivityImportSources(sources = []) {
             data-source-id="${escapeHtml(source.id)}"
             data-activity-index="${index}"
           >导入</button>
-        </article>`,
-    )
+        </article>`;
+    })
     .join("");
 }
 
@@ -719,11 +728,11 @@ function collectNestedFields(prefix, fields) {
 
 function mapPlanningActivityToPortfolio(activity) {
   return {
-    activityName: activity.activityName || "",
-    type: activity.type || "",
-    timeStage: activity.timeStage || "",
+    activityName: cleanPlanningActivityText(activity.activityName),
+    type: cleanPlanningActivityText(activity.type),
+    timeStage: cleanPlanningActivityText(activity.timeStage),
     role: "",
-    description: activity.description || "",
+    description: cleanPlanningActivityText(activity.description),
     outcome: "",
     proofLink: "",
     status: activity.status || "计划中",
@@ -748,7 +757,7 @@ function importPlanningActivity(sourceId, activityIndex) {
   isDirty = true;
   updateCompletion();
   setStatus("已导入 1 项活动，请保存进度。");
-  setImportStatus(`已导入：${activity.activityName || "未命名活动"}`);
+  setImportStatus(`已导入：${cleanPlanningActivityText(activity.activityName, "未命名活动")}`);
   portfolioForm.elements.namedItem(controlName("activities", portfolio.activities.length - 1, "activityName"))?.focus();
 }
 

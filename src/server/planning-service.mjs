@@ -1,4 +1,5 @@
 import { normalizeSnapshotNote, stripSensitiveDraftFields } from "../shared/privacy-guards.mjs";
+import { markdownToPlainText } from "../domain/agent-output-parser.mjs";
 
 const DEFAULT_PLAN_NAME = "默认规划";
 const MAX_PLAN_NAME_LENGTH = 80;
@@ -322,7 +323,7 @@ function normalizeImportActivities(activities) {
 }
 
 function normalizeText(value) {
-  return String(value ?? "").trim();
+  return markdownToPlainText(value);
 }
 
 function normalizeObject(value, label) {
