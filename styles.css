@@ -1900,61 +1900,141 @@ button.danger:hover {
   margin-bottom: 18px;
 }
 
-.ask-deepseek-panel,
-.deepseek-answer-panel,
-.deepseek-sources-panel {
+.deepseek-chat-panel {
   margin-bottom: 18px;
   overflow: hidden;
 }
 
-.ask-deepseek-form {
+.deepseek-chat-log {
   display: grid;
-  gap: 14px;
-  padding: 18px 22px 22px;
+  max-height: min(62vh, 680px);
+  min-height: 430px;
+  overflow-y: auto;
+  gap: 16px;
+  border-top: 1px solid #e1e8e3;
+  border-bottom: 1px solid #e1e8e3;
+  background:
+    linear-gradient(180deg, rgba(237, 247, 240, 0.72), rgba(255, 250, 240, 0.56)),
+    #f8fbf7;
+  padding: 22px;
+  scroll-behavior: smooth;
 }
 
-.ask-deepseek-form textarea {
-  min-height: 150px;
-  resize: vertical;
-}
-
-.ask-deepseek-actions {
-  display: flex;
-  flex-wrap: wrap;
+.chat-message {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 0.78fr);
   gap: 10px;
+  align-items: start;
 }
 
-.deepseek-answer {
+.chat-message.assistant {
+  justify-content: start;
+}
+
+.chat-message.user {
+  grid-template-columns: minmax(0, 0.78fr) 42px;
+  justify-content: end;
+}
+
+.chat-avatar {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #dce7e0;
+  border-radius: 12px;
+  background: #ffffff;
+  object-fit: cover;
+  box-shadow: 0 8px 18px rgba(25, 35, 58, 0.09);
+}
+
+.chat-message-body {
   display: grid;
-  gap: 12px;
-  padding: 0 22px 22px;
-  color: #26364c;
-  font-size: 15px;
-  line-height: 1.75;
+  gap: 6px;
+  min-width: 0;
 }
 
-.deepseek-answer p {
+.chat-message.user .chat-message-body {
+  justify-items: end;
+}
+
+.chat-speaker {
+  margin: 0;
+  color: #617186;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chat-bubble {
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid #dce7e0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px 14px;
+  color: #1a2638;
+  font-size: 15px;
+  line-height: 1.72;
+  box-shadow: 0 12px 28px rgba(25, 35, 58, 0.08);
+}
+
+.chat-message.user .chat-bubble {
+  border-color: #c7e5d4;
+  background: #dff4e7;
+}
+
+.chat-message.is-error .chat-bubble {
+  border-color: #f0cbc7;
+  background: #fff6f4;
+  color: var(--danger);
+}
+
+.chat-bubble p {
   margin: 0;
 }
 
-.rag-source-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
-  padding: 0 22px 22px;
+.chat-bubble p + p {
+  margin-top: 10px;
 }
 
-.rag-source-card {
+.thinking-dots {
+  display: inline-block;
+  min-width: 44px;
+  color: var(--accent-strong);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  animation: thinkingPulse 1.25s ease-in-out infinite;
+}
+
+.chat-references {
   display: grid;
   gap: 10px;
+  max-width: 100%;
+}
+
+.chat-references h3 {
+  margin: 4px 0 0;
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.chat-source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.chat-source-card {
+  display: grid;
+  gap: 8px;
   min-width: 0;
   border: 1px solid #dce7e0;
   border-radius: 8px;
-  background: #fbfdf9;
-  padding: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 12px;
 }
 
-.rag-source-card-header {
+.chat-source-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1964,28 +2044,65 @@ button.danger:hover {
   font-weight: 900;
 }
 
-.rag-source-card-header span {
+.chat-source-card-header span {
   display: inline-grid;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   place-items: center;
   border-radius: 999px;
   background: #edf7f0;
   color: var(--brand-green);
 }
 
-.rag-source-card h3 {
+.chat-source-card h4 {
   margin: 0;
   color: var(--ink);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.35;
 }
 
-.rag-source-card p {
+.chat-source-card p,
+.chat-source-empty {
   margin: 0;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.55;
+}
+
+.ask-deepseek-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 16px 22px 20px;
+}
+
+.chat-input-label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.ask-deepseek-form textarea {
+  min-height: 54px;
+  max-height: 160px;
+  resize: vertical;
+}
+
+.ask-deepseek-actions {
+  display: inline-flex;
+  gap: 10px;
+}
+
+@keyframes thinkingPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 .portfolio-shell {
@@ -4224,14 +4341,42 @@ button.neutral:hover {
     grid-template-columns: 1fr;
   }
 
-  .ask-deepseek-form,
-  .deepseek-answer,
-  .rag-source-grid {
-    padding: 0 16px 16px;
+  .deepseek-chat-log {
+    max-height: 62vh;
+    min-height: 360px;
+    padding: 16px;
   }
 
-  .rag-source-grid {
+  .chat-message {
+    gap: 10px;
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .chat-message.user {
+    grid-template-columns: minmax(0, 1fr) 36px;
+  }
+
+  .chat-avatar {
+    border-radius: 10px;
+    height: 36px;
+    width: 36px;
+  }
+
+  .chat-bubble {
+    padding: 12px 14px;
+  }
+
+  .chat-source-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ask-deepseek-form {
+    grid-template-columns: 1fr;
+    padding: 14px 16px 16px;
+  }
+
+  .ask-deepseek-actions {
+    justify-content: flex-start;
   }
 
   .school-toolbar {

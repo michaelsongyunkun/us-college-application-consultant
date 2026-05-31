@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>问DeepSeek</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260531-deepseek-rag" />
+    <link rel="stylesheet" href="./styles.css?v=20260531-deepseek-chat" />
   </head>
   <body>
     <main class="app-shell command-shell ask-deepseek-shell">
@@ -57,17 +57,29 @@
           </div>
         </section>
 
-        <section class="panel ask-deepseek-panel" aria-labelledby="ask-deepseek-title">
+        <section class="panel deepseek-chat-panel" aria-labelledby="deepseek-chat-title">
           <div class="section-heading table-heading">
             <div>
-              <h2 id="ask-deepseek-title">提问</h2>
-              <p>适合询问项目匹配、学校要求、活动补强、材料准备和不同资源之间的取舍。</p>
+              <h2 id="deepseek-chat-title">对话</h2>
+              <p>像聊天一样追问当前学生的项目匹配、学校要求、活动补强、材料准备和资源取舍。</p>
             </div>
             <span id="deepSeekAskStatus" class="status" role="status" aria-live="polite">等待问题</span>
           </div>
 
-          <form id="deepSeekQuestionForm" class="ask-deepseek-form" autocomplete="off">
-            <label for="deepSeekQuestion">
+          <div id="deepSeekChatLog" class="deepseek-chat-log" aria-live="polite">
+            <article class="chat-message assistant">
+              <img class="chat-avatar" src="./assets/deepseek-avatar.svg" width="42" height="42" alt="DeepSeek" />
+              <div class="chat-message-body">
+                <p class="chat-speaker">DeepSeek</p>
+                <div class="chat-bubble">
+                  <p>你好，我会先检索学生备份、资源库和院校百科，再基于资料回答。涉及政策、费用、资格和截止日期时，请继续回到官方来源核验。</p>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <form id="deepSeekQuestionForm" class="ask-deepseek-form chat-composer" autocomplete="off">
+            <label class="chat-input-label" for="deepSeekQuestion">
               <span>问题</span>
               <textarea
                 id="deepSeekQuestion"
@@ -78,38 +90,14 @@
               ></textarea>
             </label>
             <div class="ask-deepseek-actions">
-              <button id="deepSeekAskButton" type="submit">询问 DeepSeek</button>
+              <button id="deepSeekAskButton" type="submit">发送</button>
               <button id="deepSeekClearButton" class="secondary" type="button">清空</button>
             </div>
           </form>
         </section>
-
-        <section class="panel deepseek-answer-panel" aria-labelledby="deepseek-answer-title">
-          <div class="section-heading table-heading">
-            <div>
-              <h2 id="deepseek-answer-title">回答</h2>
-              <p>DeepSeek 会基于检索片段回答；涉及最新政策、费用、截止日期时仍需回到官方来源确认。</p>
-            </div>
-          </div>
-          <div id="deepSeekAnswer" class="deepseek-answer" aria-live="polite">
-            <p class="resource-empty">提交问题后，这里会显示 DeepSeek 的回答。</p>
-          </div>
-        </section>
-
-        <section class="panel deepseek-sources-panel" aria-labelledby="deepseek-sources-title">
-          <div class="section-heading table-heading">
-            <div>
-              <h2 id="deepseek-sources-title">参考资料</h2>
-              <p>这里展示本次发送给 DeepSeek 的主要检索片段来源。</p>
-            </div>
-          </div>
-          <div id="deepSeekSources" class="rag-source-grid">
-            <p class="resource-empty">暂无参考资料。</p>
-          </div>
-        </section>
       </div>
     </main>
     <script type="module" src="./src/client/safe-navigation.mjs"></script>
-    <script type="module" src="./src/client/ask-deepseek.js?v=20260531-deepseek-rag"></script>
+    <script type="module" src="./src/client/ask-deepseek.js?v=20260531-deepseek-chat"></script>
   </body>
 </html>
