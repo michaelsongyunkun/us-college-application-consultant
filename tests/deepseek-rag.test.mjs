@@ -140,6 +140,14 @@ try {
   assert.equal(sentPayload.stream, false);
   assert.equal(sentPayload.messages[0].role, "system");
   assert.equal(sentPayload.messages[1].role, "user");
+  const systemPrompt = sentPayload.messages[0].content;
+  assert.match(systemPrompt, /问DeepSeek”申请规划智能体/);
+  assert.match(systemPrompt, /个人申请档案：选校计划、课外活动、竞赛、夏校、推荐信、GPA\/SAT\/AP/);
+  assert.match(systemPrompt, /当前资料不足以判断/);
+  assert.match(systemPrompt, /不要做绝对化承诺/);
+  assert.match(systemPrompt, /保证录取/);
+  assert.match(systemPrompt, /Markdown 的标题、列表、表格、加粗/);
+  assert.match(systemPrompt, /每次回答结尾必须给出“参考资料”/);
   assert.match(sentPayload.messages[1].content, /学生备份/);
   assert.match(sentPayload.messages[1].content, /个人申请档案/);
   assert.match(sentPayload.messages[1].content, /资源库/);
