@@ -246,7 +246,7 @@ function renderSourceCards(sources = []) {
                 <strong>${escapeHtml(source.typeLabel || source.type)}</strong>
               </div>
               <h4>${escapeHtml(source.title)}</h4>
-              <p>${escapeHtml(source.snippet)}</p>
+              <div class="chat-source-snippet">${renderSourceSnippet(source.snippet)}</div>
             </article>`,
         )
         .join("")
@@ -257,6 +257,10 @@ function renderSourceCards(sources = []) {
       <h3>参考资料</h3>
       <div class="chat-source-grid">${sourceBody}</div>
     </section>`;
+}
+
+function renderSourceSnippet(snippet) {
+  return renderMarkdown(snippet) || renderPlainText(snippet);
 }
 
 function renderGuidedSourceCards(sources = []) {
@@ -271,7 +275,7 @@ function renderGuidedSourceCards(sources = []) {
                 <strong class="chat-source-type-chip">${escapeHtml(source.typeLabel || source.type)}</strong>
               </div>
               <h4>${escapeHtml(source.title)}</h4>
-              <p>${escapeHtml(source.snippet)}</p>
+              <div class="chat-source-snippet">${renderSourceSnippet(source.snippet)}</div>
             </article>`,
         )
         .join("")

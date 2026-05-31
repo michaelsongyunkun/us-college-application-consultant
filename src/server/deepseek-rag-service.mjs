@@ -472,8 +472,18 @@ function serializeSource(source) {
     type: source.type,
     typeLabel: SOURCE_TYPE_LABELS[source.type] || source.type,
     title: source.title,
-    snippet: source.text.replace(/\s+/g, " ").trim().slice(0, SOURCE_SNIPPET_CHARS),
+    snippet: formatSourceSnippet(source.text),
   };
+}
+
+function formatSourceSnippet(text) {
+  return String(text || "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, SOURCE_SNIPPET_CHARS);
 }
 
 function normalizeQuestion(value) {

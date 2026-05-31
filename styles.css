@@ -2596,12 +2596,45 @@ button.danger:hover {
   line-height: 1.35;
 }
 
-.chat-source-card p,
 .chat-source-empty {
   margin: 0;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.55;
+}
+
+.chat-source-snippet {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.chat-source-snippet :is(h3, h4, h5, h6, p, ul, ol, blockquote) {
+  margin: 0;
+}
+
+.chat-source-snippet :is(h3, h4, h5, h6) {
+  color: #2c3645;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.chat-source-snippet ul,
+.chat-source-snippet ol {
+  display: grid;
+  gap: 4px;
+  padding-left: 18px;
+}
+
+.chat-source-snippet strong {
+  color: #2c3645;
+}
+
+.chat-source-snippet blockquote {
+  border-left: 3px solid #9ab8aa;
+  padding-left: 8px;
 }
 
 .chat-followups {

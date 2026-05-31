@@ -132,6 +132,9 @@ try {
   assert.ok(body.sources.some((source) => source.type === "resource-library"));
   assert.ok(body.sources.some((source) => source.title.includes("课外活动库")));
   assert.ok(body.sources.some((source) => source.type === "school-encyclopedia"));
+  const activitySource = body.sources.find((source) => source.title.includes("课外活动库"));
+  assert.match(activitySource.snippet, /^###/m);
+  assert.match(activitySource.snippet, /\n-\s+\*\*活动内容\*\*/);
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, "https://api.deepseek.com/chat/completions");

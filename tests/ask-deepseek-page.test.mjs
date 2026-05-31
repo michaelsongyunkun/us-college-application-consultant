@@ -114,6 +114,12 @@ assert.doesNotMatch(
 assert.ok(script.includes("renderThinkingMessage"), "Ask DeepSeek should render a thinking message.");
 assert.ok(script.includes("......"), "DeepSeek thinking state should show six dots.");
 assert.ok(script.includes("renderSourceCards"), "Ask DeepSeek should show retrieved source cards inside the answer.");
+assert.ok(script.includes("renderSourceSnippet"), "Ask DeepSeek should render retrieved source snippets as visual markdown.");
+assert.ok(script.includes("chat-source-snippet"), "Ask DeepSeek source snippets should use a styled visual container.");
+assert.ok(
+  !script.includes("<p>${escapeHtml(source.snippet)}</p>"),
+  "Ask DeepSeek should not expose retrieved markdown snippets as escaped paragraph text.",
+);
 assert.ok(script.includes("参考资料"), "Ask DeepSeek answers should include a reference section.");
 assert.ok(script.includes("question.length"), "Ask DeepSeek should validate empty questions before sending.");
 assert.match(
@@ -122,8 +128,8 @@ assert.match(
   "Ask DeepSeek script should be cache-busted.",
 );
 assert.ok(
-  pageHtml.includes("styles.css?v=20260601-profile-choice-dropdown"),
-  "Ask DeepSeek page should refresh the stylesheet cache after guided chat polish.",
+  pageHtml.includes("styles.css?v=20260601-deepseek-source-markdown"),
+  "Ask DeepSeek page should refresh the stylesheet cache after source markdown rendering.",
 );
 assert.match(styles, /\.deepseek-chat-log\s*\{/, "Ask DeepSeek should style the chat log.");
 assert.match(styles, /\.chat-message\.user\s*\{/, "Ask DeepSeek should have right-side user messages.");
@@ -159,3 +165,4 @@ assert.match(styles, /\.chat-references summary\s*\{/, "Ask DeepSeek should styl
 assert.match(styles, /\.chat-followups\s*\{/, "Ask DeepSeek should style answer follow-up actions.");
 assert.match(styles, /\.chat-followup-button\s*\{/, "Ask DeepSeek should style follow-up buttons.");
 assert.match(styles, /\.chat-source-type-chip\s*\{/, "Ask DeepSeek should style source type chips.");
+assert.match(styles, /\.chat-source-snippet\s*\{/, "Ask DeepSeek should style visual source snippets.");
