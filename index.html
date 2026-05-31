@@ -15,7 +15,7 @@
     <meta name="twitter:description" content="面向学生与家长的 AI 美本规划工作台：背景整理、活动规划、资源匹配和报告导出。" />
     <title>AI 美本规划工作台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260531-command-center-subnav" />
+    <link rel="stylesheet" href="./styles.css?v=20260601-profile-choice-dropdown" />
   </head>
   <body>
     <section id="authShell" class="landing-shell" aria-labelledby="landing-title">
@@ -402,20 +402,101 @@
             </select>
           </label>
 
-          <label>
-            <span>核心能力 / 特长</span>
-            <textarea name="coreStrengths" placeholder="例如：自学Python、科研、写作、竞赛、语言能力"></textarea>
-          </label>
+          <fieldset class="profile-choice-field" data-profile-composite="coreStrengths">
+            <legend>核心能力 / 特长</legend>
+            <details class="profile-multiselect" data-profile-multiselect>
+              <summary class="profile-multiselect-summary">
+                <span class="profile-choice-summary" data-profile-choice-summary>请选择（可多选）</span>
+              </summary>
+              <div class="profile-choice-options" role="group" aria-label="核心能力 / 特长多选">
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="科研探索 / 实验设计" data-profile-choice-input />科研探索 / 实验设计</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="写作表达 / 公开演讲" data-profile-choice-input />写作表达 / 公开演讲</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="编程 / 数据分析" data-profile-choice-input />编程 / 数据分析</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="数学建模 / 逻辑推理" data-profile-choice-input />数学建模 / 逻辑推理</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="组织领导 / 项目管理" data-profile-choice-input />组织领导 / 项目管理</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="公益行动 / 社区影响" data-profile-choice-input />公益行动 / 社区影响</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="商业分析 / 创业实践" data-profile-choice-input />商业分析 / 创业实践</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="艺术创作 / 作品集" data-profile-choice-input />艺术创作 / 作品集</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="竞赛冲刺 / 高压备赛" data-profile-choice-input />竞赛冲刺 / 高压备赛</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="跨文化沟通 / 多语言" data-profile-choice-input />跨文化沟通 / 多语言</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="视觉设计 / 视频剪辑" data-profile-choice-input />视觉设计 / 视频剪辑</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="辩论 / 模拟联合国" data-profile-choice-input />辩论 / 模拟联合国</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="工程制作 / 硬件动手" data-profile-choice-input />工程制作 / 硬件动手</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="调研访谈 / 用户洞察" data-profile-choice-input />调研访谈 / 用户洞察</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="体育竞技 / 团队协作" data-profile-choice-input />体育竞技 / 团队协作</label>
+              <label class="profile-choice-option"><input type="checkbox" name="coreStrengthsChoice" value="音乐表演 / 舞台呈现" data-profile-choice-input />音乐表演 / 舞台呈现</label>
+              </div>
+            </details>
+            <label>
+              <span>补充说明</span>
+              <textarea name="coreStrengthsCustom" data-profile-custom-input placeholder="没有合适选项时，写具体能力或例子"></textarea>
+            </label>
+            <input name="coreStrengths" type="hidden" data-profile-composite-output="coreStrengths" />
+          </fieldset>
 
-          <label>
-            <span>可利用资源</span>
-            <textarea name="availableResources" placeholder="例如：高校实验室、社区组织、校内社团资源、导师、预算、时间"></textarea>
-          </label>
+          <fieldset class="profile-choice-field" data-profile-composite="availableResources">
+            <legend>可利用资源</legend>
+            <details class="profile-multiselect" data-profile-multiselect>
+              <summary class="profile-multiselect-summary">
+                <span class="profile-choice-summary" data-profile-choice-summary>请选择（可多选）</span>
+              </summary>
+              <div class="profile-choice-options" role="group" aria-label="可利用资源多选">
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="校内实验室 / 社团平台" data-profile-choice-input />校内实验室 / 社团平台</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="老师 / 导师 / 推荐人资源" data-profile-choice-input />老师 / 导师 / 推荐人资源</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="家庭行业资源 / 公司参访" data-profile-choice-input />家庭行业资源 / 公司参访</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="社区组织 / 公益机构" data-profile-choice-input />社区组织 / 公益机构</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="预算支持 / 付费项目" data-profile-choice-input />预算支持 / 付费项目</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="时间充足 / 可长期投入" data-profile-choice-input />时间充足 / 可长期投入</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="海外夏校 / 线下项目条件" data-profile-choice-input />海外夏校 / 线下项目条件</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="线上课程 / 远程导师" data-profile-choice-input />线上课程 / 远程导师</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="学校竞赛队 / 学术社群" data-profile-choice-input />学校竞赛队 / 学术社群</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="大学教授 / 研究员连接" data-profile-choice-input />大学教授 / 研究员连接</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="家长同事 / 行业访谈对象" data-profile-choice-input />家长同事 / 行业访谈对象</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="媒体账号 / 内容发布渠道" data-profile-choice-input />媒体账号 / 内容发布渠道</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="本地博物馆 / 医院 / 法院等机构" data-profile-choice-input />本地博物馆 / 医院 / 法院等机构</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="开源社区 / GitHub 项目" data-profile-choice-input />开源社区 / GitHub 项目</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="同伴团队 / 跨校朋友" data-profile-choice-input />同伴团队 / 跨校朋友</label>
+              <label class="profile-choice-option"><input type="checkbox" name="availableResourcesChoice" value="现成数据集 / 调研样本" data-profile-choice-input />现成数据集 / 调研样本</label>
+              </div>
+            </details>
+            <label>
+              <span>补充说明</span>
+              <textarea name="availableResourcesCustom" data-profile-custom-input placeholder="没有合适选项时，写可调用的人脉、场地、预算或时间"></textarea>
+            </label>
+            <input name="availableResources" type="hidden" data-profile-composite-output="availableResources" />
+          </fieldset>
 
-          <label>
-            <span>性格 / 行为倾向</span>
-            <textarea name="personality" placeholder="例如：内向深度调研型 / 外向组织协调型 / 细节控 / 长期执行力强"></textarea>
-          </label>
+          <fieldset class="profile-choice-field" data-profile-composite="personality">
+            <legend>性格 / 行为倾向</legend>
+            <details class="profile-multiselect" data-profile-multiselect>
+              <summary class="profile-multiselect-summary">
+                <span class="profile-choice-summary" data-profile-choice-summary>请选择（可多选）</span>
+              </summary>
+              <div class="profile-choice-options" role="group" aria-label="性格 / 行为倾向多选">
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="内向深度研究型" data-profile-choice-input />内向深度研究型</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="外向组织协调型" data-profile-choice-input />外向组织协调型</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="长期执行力强" data-profile-choice-input />长期执行力强</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="创意表达型" data-profile-choice-input />创意表达型</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="细节控 / 高标准" data-profile-choice-input />细节控 / 高标准</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="快速行动 / 试错型" data-profile-choice-input />快速行动 / 试错型</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="共情沟通型" data-profile-choice-input />共情沟通型</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="抗压竞赛型" data-profile-choice-input />抗压竞赛型</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="好奇心强 / 喜欢追问" data-profile-choice-input />好奇心强 / 喜欢追问</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="自驱型 / 少量提醒即可推进" data-profile-choice-input />自驱型 / 少量提醒即可推进</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="慢热但稳定投入" data-profile-choice-input />慢热但稳定投入</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="喜欢结构化计划" data-profile-choice-input />喜欢结构化计划</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="适合独立完成任务" data-profile-choice-input />适合独立完成任务</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="适合团队协作" data-profile-choice-input />适合团队协作</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="对真实问题敏感" data-profile-choice-input />对真实问题敏感</label>
+              <label class="profile-choice-option"><input type="checkbox" name="personalityChoice" value="愿意公开展示成果" data-profile-choice-input />愿意公开展示成果</label>
+              </div>
+            </details>
+            <label>
+              <span>补充说明</span>
+              <textarea name="personalityCustom" data-profile-custom-input placeholder="没有合适选项时，写行为习惯、沟通方式或执行特点"></textarea>
+            </label>
+            <input name="personality" type="hidden" data-profile-composite-output="personality" />
+          </fieldset>
 
           <label>
             <span>兴趣方向</span>
@@ -707,7 +788,7 @@
       </div>
     </main>
 
-    <script type="module" src="./src/client/app.js?v=20260601-word-export"></script>
+    <script type="module" src="./src/client/app.js?v=20260601-profile-choice-fields"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-case-refresh"></script>
   </body>
 </html>

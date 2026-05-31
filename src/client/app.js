@@ -32,7 +32,8 @@ import {
   collectPlanningProfileFromForm,
   collectProfileFromForm,
   fillActivityTable,
-} from "./planning-form-state.mjs?v=20260531-narrative-cleanup";
+  syncProfileCompositeFields,
+} from "./planning-form-state.mjs?v=20260601-profile-choice-fields";
 import {
   readUserDraft,
   removeLegacySharedDraft,
@@ -1356,11 +1357,22 @@ function isWorkspaceDataInput(event) {
 
 document.addEventListener("input", (event) => {
   if (!isWorkspaceDataInput(event)) return;
+  if (profileForm?.contains(event.target)) syncProfileCompositeFields(profileForm);
   renderStudentDependentRecommendations();
 });
 
 document.addEventListener("input", (event) => {
   if (!isWorkspaceDataInput(event)) return;
+  if (profileForm?.contains(event.target)) syncProfileCompositeFields(profileForm);
+  workspaceDirty = true;
+  saveStatus.textContent = "有未保存修改";
+  renderProfileSummary();
+});
+
+document.addEventListener("change", (event) => {
+  if (!isWorkspaceDataInput(event)) return;
+  if (profileForm?.contains(event.target)) syncProfileCompositeFields(profileForm);
+  renderStudentDependentRecommendations();
   workspaceDirty = true;
   saveStatus.textContent = "有未保存修改";
   renderProfileSummary();

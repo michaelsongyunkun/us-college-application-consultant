@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
-import { collectActivitiesFromTable, fillActivityTable } from "../src/client/planning-form-state.mjs";
+import {
+  collectActivitiesFromTable,
+  combineProfileChoiceValues,
+  fillActivityTable,
+  formatProfileChoiceSummary,
+  splitProfileChoiceValue,
+} from "../src/client/planning-form-state.mjs";
 
 function createField(value = "") {
   return { value };
@@ -69,3 +75,43 @@ fillActivityTable(
 
 assert.equal(fifteenRowTable.fields.get("name-15").value, "Activity 15");
 assert.equal(collected[0].executionDescription, "问题：旧草稿仍有Markdown。行动：保存时也要清理。");
+assert.equal(
+  combineProfileChoiceValues("科研探索 / 实验设计", "做过一个心理学问卷小项目"),
+  "科研探索 / 实验设计；做过一个心理学问卷小项目",
+);
+assert.equal(combineProfileChoiceValues("", "播客主持 / 纪录片剪辑"), "播客主持 / 纪录片剪辑");
+assert.deepEqual(
+  splitProfileChoiceValue("科研探索 / 实验设计；做过一个心理学问卷小项目", [
+    "科研探索 / 实验设计",
+    "写作表达 / 公开演讲",
+  ]),
+  {
+    choice: "科研探索 / 实验设计",
+    custom: "做过一个心理学问卷小项目",
+  },
+);
+assert.deepEqual(splitProfileChoiceValue("家庭有社区公益资源", ["校内实验室 / 社团平台"]), {
+  choice: "",
+  custom: "家庭有社区公益资源",
+});
+assert.equal(
+  combineProfileChoiceValues(["科研探索 / 实验设计", "编程 / 数据分析"], "做过一个心理学问卷小项目"),
+  "科研探索 / 实验设计；编程 / 数据分析；做过一个心理学问卷小项目",
+);
+assert.deepEqual(
+  splitProfileChoiceValue("科研探索 / 实验设计；编程 / 数据分析；做过一个心理学问卷小项目", [
+    "科研探索 / 实验设计",
+    "编程 / 数据分析",
+    "写作表达 / 公开演讲",
+  ]),
+  {
+    choice: "科研探索 / 实验设计",
+    choices: ["科研探索 / 实验设计", "编程 / 数据分析"],
+    custom: "做过一个心理学问卷小项目",
+  },
+);
+assert.equal(formatProfileChoiceSummary([]), "请选择（可多选）");
+assert.equal(
+  formatProfileChoiceSummary(["科研探索 / 实验设计", "编程 / 数据分析"], "做过一个心理学问卷小项目"),
+  "科研探索 / 实验设计；编程 / 数据分析；做过一个心理学问卷小项目",
+);

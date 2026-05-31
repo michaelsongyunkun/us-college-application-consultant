@@ -139,7 +139,7 @@ const workspacePanelTop = html.match(/<section class="panel workspace-panel"[\s\
 const planningActivityTableBody = html.match(/<table id="activityTable"[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/)?.[1] || "";
 const commandSubnav = html.match(/<div class="command-subnav"[\s\S]*?<\/div>/)?.[0] || "";
 
-assert.ok(html.includes("./styles.css?v=20260531-command-center-subnav"), "Planning workspace should bust the stylesheet cache for command center sub navigation fixes.");
+assert.ok(html.includes("./styles.css?v=20260601-profile-choice-dropdown"), "Planning workspace should bust the stylesheet cache for profile choice dropdown fixes.");
 assert.ok(loggedInHeader.includes('class="brand-mark"'), "Logged-in header should use the shared product brand link.");
 assert.ok(loggedInHeader.includes("College Compass"), "Logged-in header should use the shared product brand name.");
 assert.ok(!loggedInHeader.includes("primary-nav"), "Logged-in header should not repeat the left-sidebar primary navigation.");
@@ -308,7 +308,7 @@ assert.match(
 );
 assert.match(
   appJs,
-  /from "\.\/planning-form-state\.mjs\?v=20260531-narrative-cleanup"/,
+  /from "\.\/planning-form-state\.mjs\?v=20260601-profile-choice-fields"/,
   "Planning form state import should be cache-busted when table fill behavior changes.",
 );
 assert.match(appJs, /markdownToPlainText/, "Narrative output should share the Markdown-to-readable-text normalizer.");
@@ -337,3 +337,116 @@ assert.match(html, /非美高（中国大陆高中）/, "Student background shou
 assert.match(html, /name="identityDescription"/, "Student background should capture US identity eligibility conditions.");
 assert.doesNotMatch(html, /未来学习方向/, "Future learning direction section should not be shown.");
 assert.doesNotMatch(html, /id=["']futureLearningOutput["']/, "Future learning direction textarea should be removed.");
+for (const fieldName of ["coreStrengths", "availableResources", "personality"]) {
+  assert.match(
+    html,
+    new RegExp(`data-profile-composite=["']${fieldName}["']`),
+    `${fieldName} should be rendered as a choice plus custom profile field.`,
+  );
+  assert.match(
+    html,
+    new RegExp(`name=["']${fieldName}Choice["']`),
+    `${fieldName} should provide a select control for common options.`,
+  );
+  assert.match(
+    html,
+    new RegExp(`name=["']${fieldName}Custom["']`),
+    `${fieldName} should provide a freeform custom input.`,
+  );
+  assert.match(
+    html,
+    new RegExp(`name=["']${fieldName}["'][^>]*data-profile-composite-output=["']${fieldName}["']`),
+    `${fieldName} should keep a canonical hidden field for saving and Agent input.`,
+  );
+}
+assert.match(html, /科研探索 \/ 实验设计/, "Core strength choices should give users concrete examples.");
+assert.match(html, /校内实验室 \/ 社团平台/, "Resource choices should give users concrete examples.");
+assert.match(html, /内向深度研究型/, "Personality choices should give users concrete examples.");
+assert.match(appJs, /syncProfileCompositeFields/, "Main app should keep choice-plus-custom profile fields synchronized.");
+assert.match(styles, /\.profile-choice-field\s*\{/, "Choice-plus-custom profile fields should have a dedicated layout style.");
+assert.match(
+  styles,
+  /\.profile-choice-field\s*\{[\s\S]*?border:\s*0;/,
+  "Choice-plus-custom profile fields should not draw an outer border around the whole question.",
+);
+assert.match(
+  styles,
+  /\.profile-choice-field\s*\{[\s\S]*?min-inline-size:\s*0;/,
+  "Choice-plus-custom profile fieldsets should reset browser default fieldset width behavior.",
+);
+assert.match(
+  styles,
+  /\.profile-choice-field\s*\{[\s\S]*?background:\s*transparent;/,
+  "Choice-plus-custom profile fields should sit directly on the form surface without a boxed wrapper.",
+);
+for (const fieldName of ["coreStrengths", "availableResources", "personality"]) {
+  const fieldHtml = html.match(
+    new RegExp(`<fieldset[^>]+data-profile-composite=["']${fieldName}["'][\\s\\S]*?<\\/fieldset>`),
+  )?.[0] || "";
+  assert.doesNotMatch(fieldHtml, new RegExp(`<select[^>]+name=["']${fieldName}Choice["']`));
+  assert.match(
+    fieldHtml,
+    new RegExp(`type=["']checkbox["'][^>]*name=["']${fieldName}Choice["']`),
+    `${fieldName} should use checkbox choices so users can select more than one.`,
+  );
+  assert.ok(
+    (fieldHtml.match(/data-profile-choice-input/g) || []).length >= 14,
+    `${fieldName} should provide a richer set of at least 14 choices.`,
+  );
+}
+assert.match(html, /数学建模 \/ 逻辑推理/, "Core strength options should include more academic skill choices.");
+assert.match(html, /大学教授 \/ 研究员连接/, "Resource options should include more mentor/research network choices.");
+assert.match(html, /好奇心强 \/ 喜欢追问/, "Personality options should include more behavior tendency choices.");
+assert.match(styles, /\.profile-choice-options\s*\{/, "Multi-choice profile fields should have a dropdown menu style.");
+assert.match(
+  styles,
+  /\.profile-choice-options\s*\{[\s\S]*?box-shadow:\s*0 16px 32px/,
+  "Expanded multi-choice option lists should float like a select dropdown.",
+);
+assert.match(styles, /\.profile-choice-option\s*\{/, "Each profile checkbox option should have a stable touch target style.");
+for (const fieldName of ["coreStrengths", "availableResources", "personality"]) {
+  const fieldHtml = html.match(
+    new RegExp(`<fieldset[^>]+data-profile-composite=["']${fieldName}["'][\\s\\S]*?<\\/fieldset>`),
+  )?.[0] || "";
+  assert.match(fieldHtml, /<details class="profile-multiselect"/, `${fieldName} should collapse choices into a dropdown-like control.`);
+  assert.match(fieldHtml, /<summary class="profile-multiselect-summary"/, `${fieldName} should have a compact summary row.`);
+  assert.match(fieldHtml, /data-profile-choice-summary/, `${fieldName} should show selected choices in one-line summary text.`);
+}
+assert.match(styles, /\.profile-multiselect-summary\s*\{[\s\S]*?white-space:\s*nowrap;/, "Dropdown summary should stay on one line.");
+assert.match(styles, /\.profile-choice-summary\s*\{[\s\S]*?text-overflow:\s*ellipsis;/, "Selected choices should truncate cleanly in one line.");
+assert.match(html, /data-profile-choice-summary>请选择（可多选）<\/span>/, "Dropdown multi-select should look like a select placeholder before choices are picked.");
+assert.match(
+  styles,
+  /\.profile-multiselect-summary\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*auto;/,
+  "Dropdown multi-select summary should look like a compact select control, not a two-label row.",
+);
+assert.match(
+  styles,
+  /\.profile-multiselect-summary\s*\{[\s\S]*?list-style:\s*none;/,
+  "Dropdown multi-select summary should suppress the browser default disclosure marker.",
+);
+assert.match(
+  styles,
+  /\.profile-multiselect-summary::marker\s*\{[\s\S]*?content:\s*"";/,
+  "Dropdown multi-select summary should suppress default markers in browsers that use ::marker.",
+);
+assert.match(
+  styles,
+  /\.profile-choice-options\s*\{[\s\S]*?position:\s*absolute;/,
+  "Dropdown multi-select options should open as a floating menu instead of pushing the form taller.",
+);
+assert.match(
+  styles,
+  /\.profile-choice-options\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\);/,
+  "Dropdown multi-select options should render as select-like list rows, not card grids.",
+);
+assert.match(
+  styles,
+  /\.profile-choice-options\s*\{[\s\S]*?max-height:\s*260px;/,
+  "Dropdown multi-select menu should be scrollable when options are long.",
+);
+assert.match(
+  styles,
+  /\.profile-choice-option\s*\{[\s\S]*?border:\s*0;/,
+  "Dropdown multi-select choices should look like option rows instead of bordered cards.",
+);
