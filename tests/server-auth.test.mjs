@@ -10,6 +10,10 @@ const databasePath = join(tempDir, "auth.sqlite");
 const sentMessages = [];
 const authDb = createAuthDatabase({ databasePath });
 
+function getSessionTokenFromSetCookie(setCookie) {
+  return setCookie.match(/consultant_session=([^;]+)/)?.[1] || "";
+}
+
 const server = createAppServer({
   authDb,
   appBaseUrl: "http://127.0.0.1:4177",
@@ -194,6 +198,50 @@ try {
     assert.equal(repeatedLoginResponse.status, 200);
     assert.match(repeatedLoginResponse.headers.get("set-cookie"), /consultant_session=/);
   }
+
+  const duplicateFirstLoginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "student@example.com",
+      password: "password123",
+    }),
+  });
+  assert.equal(duplicateFirstLoginResponse.status, 200);
+  const duplicateFirstToken = getSessionTokenFromSetCookie(duplicateFirstLoginResponse.headers.get("set-cookie"));
+  assert.ok(duplicateFirstToken);
+
+  const duplicateSecondLoginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "student@example.com",
+      password: "password123",
+    }),
+  });
+  assert.equal(duplicateSecondLoginResponse.status, 200);
+  const duplicateSecondToken = getSessionTokenFromSetCookie(duplicateSecondLoginResponse.headers.get("set-cookie"));
+  assert.ok(duplicateSecondToken);
+
+  const duplicateLogoutResponse = await fetch(`${baseUrl}/api/auth/logout`, {
+    method: "POST",
+    headers: {
+      Cookie: `consultant_session=${duplicateFirstToken}; consultant_session=${duplicateSecondToken}`,
+    },
+  });
+  assert.equal(duplicateLogoutResponse.status, 200);
+  assert.match(duplicateLogoutResponse.headers.get("set-cookie"), /Max-Age=0/);
+  assert.match(duplicateLogoutResponse.headers.get("set-cookie"), /Expires=Thu, 01 Jan 1970 00:00:00 GMT/);
+
+  const duplicateFirstMeResponse = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: { Cookie: `consultant_session=${duplicateFirstToken}` },
+  });
+  assert.equal(duplicateFirstMeResponse.status, 401);
+
+  const duplicateSecondMeResponse = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: { Cookie: `consultant_session=${duplicateSecondToken}` },
+  });
+  assert.equal(duplicateSecondMeResponse.status, 401);
 
   const logoutResponse = await fetch(`${baseUrl}/api/auth/logout`, {
     method: "POST",

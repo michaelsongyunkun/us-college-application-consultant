@@ -201,7 +201,7 @@ assert.match(
 );
 assert.match(
   html,
-  /src="\.\/src\/client\/app\.js\?v=20260601-logout-redirect"/,
+  /src="\.\/src\/client\/app\.js\?v=20260601-logout-cookie-clear"/,
   "Main app script should be cache-busted when logout behavior changes.",
 );
 assert.match(html, /id="resetButton"[^>]*class="danger"/, "Reset should use a danger action style.");

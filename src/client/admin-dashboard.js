@@ -442,8 +442,16 @@ feedbackEntriesBody?.addEventListener("click", (event) => {
   saveFeedbackStatus(button.dataset.saveFeedbackStatus, row);
 });
 adminLogoutButton.addEventListener("click", async () => {
-  await requestJson("/api/auth/logout", { method: "POST", body: "{}" }).catch(() => ({}));
-  window.location.href = "/";
+  adminLogoutButton.disabled = true;
+  try {
+    await requestJson("/api/auth/logout", { method: "POST", body: "{}" });
+    window.location.href = "/";
+  } catch (error) {
+    dashboardStatus.textContent = error.message;
+    dashboardStatus.classList.add("error");
+  } finally {
+    adminLogoutButton.disabled = false;
+  }
 });
 downloadExcelButton.addEventListener("click", downloadDashboardExcel);
 

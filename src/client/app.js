@@ -301,7 +301,7 @@ async function logout() {
   logoutButton.disabled = true;
   logoutButton.textContent = "退出中...";
   try {
-    await requestJson("/api/auth/logout", { method: "POST", body: "{}" }).catch(() => ({}));
+    await requestJson("/api/auth/logout", { method: "POST", body: "{}" });
     clearVisibleDraft();
     currentUser = null;
     currentPlan = null;
@@ -311,6 +311,8 @@ async function logout() {
     setAuthMode("login");
     showAuthView("已退出登录");
     window.location.assign("/");
+  } catch (error) {
+    window.alert(error.message || "退出失败，请重试。");
   } finally {
     logoutButton.disabled = false;
     logoutButton.textContent = originalText;

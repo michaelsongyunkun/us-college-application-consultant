@@ -110,15 +110,15 @@ async function readRequestJson(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_BYTE
   }
 }
 
-function parseCookies(request) {
-  const cookies = {};
+function getCookieValues(request, cookieName) {
+  const values = [];
   const cookieHeader = request.headers.cookie || "";
   for (const item of cookieHeader.split(";")) {
     const [rawName, ...rawValue] = item.trim().split("=");
-    if (!rawName) continue;
-    cookies[rawName] = decodeURIComponent(rawValue.join("="));
+    if (rawName !== cookieName) continue;
+    values.push(decodeURIComponent(rawValue.join("=")));
   }
-  return cookies;
+  return values;
 }
 
 function buildSessionCookie(sessionToken, { expiresAt } = {}) {
@@ -133,10 +133,27 @@ function buildSessionCookie(sessionToken, { expiresAt } = {}) {
   return parts.join("; ");
 }
 
-function buildClearSessionCookie() {
-  const parts = [`${sessionCookieName}=`, "Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=0"];
+function buildClearSessionCookie({ domain } = {}) {
+  const parts = [
+    `${sessionCookieName}=`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    "Max-Age=0",
+    "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+  ];
+  if (domain) parts.push(`Domain=${domain}`);
   if (shouldUseSecureCookies(process.env)) parts.push("Secure");
   return parts.join("; ");
+}
+
+function buildClearSessionCookies(request) {
+  const host = (request.headers.host || "").split(":")[0].toLowerCase();
+  const cookies = [buildClearSessionCookie()];
+  if (host && host !== "localhost" && host.includes(".")) {
+    cookies.push(buildClearSessionCookie({ domain: host }));
+  }
+  return cookies;
 }
 
 export function shouldUseSecureCookies(env = process.env) {
@@ -146,7 +163,11 @@ export function shouldUseSecureCookies(env = process.env) {
 }
 
 function getSessionToken(request) {
-  return parseCookies(request)[sessionCookieName] || "";
+  return getSessionTokens(request).at(-1) || "";
+}
+
+function getSessionTokens(request) {
+  return getCookieValues(request, sessionCookieName).filter(Boolean);
 }
 
 function getRequestMetadata(request) {
@@ -279,10 +300,12 @@ function createAuthHandler(auth, { mailer, appBaseUrl, readJson = readRequestJso
     }
 
     if (request.method === "POST" && pathname === "/api/auth/logout") {
-      auth.logout(getSessionToken(request));
+      for (const sessionToken of getSessionTokens(request)) {
+        auth.logout(sessionToken);
+      }
       response.writeHead(200, withSecurityHeaders({
         "Content-Type": "application/json;charset=utf-8",
-        "Set-Cookie": buildClearSessionCookie(),
+        "Set-Cookie": buildClearSessionCookies(request),
       }));
       response.end(JSON.stringify({ ok: true }));
       return true;
