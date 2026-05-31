@@ -51,6 +51,26 @@ assert.ok(
   !pageHtml.includes("把学生备份、资料库和院校百科一起问"),
   "Ask DeepSeek page should not show the removed RAG summary heading.",
 );
+assert.ok(
+  pageHtml.includes("我是你的申请规划智能体"),
+  "Ask DeepSeek page should open with the new agent greeting.",
+);
+assert.ok(
+  script.includes("我是你的申请规划智能体"),
+  "Ask DeepSeek reset state should reuse the new agent greeting.",
+);
+assert.ok(
+  pageHtml.includes("选校策略、活动补强、推荐信、成绩档案或项目取舍"),
+  "Ask DeepSeek greeting should tell users what they can ask.",
+);
+assert.ok(
+  !pageHtml.includes("我会先检索学生备份、资源库和院校百科"),
+  "Ask DeepSeek page should not show the old data-source-first greeting.",
+);
+assert.ok(
+  !script.includes("我会先检索学生备份、资源库和院校百科"),
+  "Ask DeepSeek reset state should not show the old data-source-first greeting.",
+);
 
 assert.ok(script.includes('"/api/deepseek-rag"'), "Ask DeepSeek should call the RAG API.");
 assert.ok(

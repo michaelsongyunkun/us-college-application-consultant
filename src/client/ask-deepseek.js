@@ -134,7 +134,7 @@ function renderInitialChat() {
   chatLog.innerHTML = renderMessage({
     role: "assistant",
     content:
-      "你好，我会先检索学生备份、资源库和院校百科，再基于资料回答。涉及政策、费用、资格和截止日期时，请继续回到官方来源核验。",
+      "你好，我是你的申请规划智能体。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍；我会结合你的个人申请档案和已保存资料回答，并在结尾列出参考资料。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。",
   });
   scrollChatToBottom();
 }
