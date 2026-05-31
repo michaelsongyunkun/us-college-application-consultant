@@ -15,6 +15,7 @@ const CATEGORY_LABELS = {
 const INTERNATIONAL_FIELD_NAMES = {
   官网: "website",
   地区: "region",
+  地理位置: "location",
   "QS 2026": "qsRanking",
   "THE 2026": "theRanking",
   "ARWU 2025": "arwuRanking",
@@ -113,6 +114,7 @@ export function parseSchoolsMarkdown(markdown) {
         rank: String(internationalRank),
         name: internationalHeading[1],
         region: internationalRegion,
+        location: "",
         website: "",
         qsRanking: "",
         theRanking: "",
@@ -168,6 +170,7 @@ export function filterSchools(schools, { category, query = "" } = {}) {
         school.admissionPreferences,
         school.recommendationRequirements,
         school.region,
+        school.location,
         school.website,
         school.qsRanking,
         school.theRanking,

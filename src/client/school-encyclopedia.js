@@ -1,4 +1,4 @@
-import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260528-other-region-schools";
+import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260531-school-location";
 import {
   DEFAULT_VISIBLE_RESULT_LIMIT,
   expandVisibleResultLimit,
@@ -67,9 +67,13 @@ function renderInternationalDetails(school) {
   const website = school.website
     ? `<a href="${escapeHtml(school.website)}" target="_blank" rel="noreferrer">${escapeHtml(school.website)}</a>`
     : displayValue(school.website);
+  const locationDetail = school.location
+    ? `<div><dt>地理位置</dt><dd>${escapeHtml(school.location)}</dd></div>`
+    : "";
 
   return `
     <div><dt>地区与官网</dt><dd>${escapeHtml(displayValue(school.region))} · ${website}</dd></div>
+    ${locationDetail}
     <div><dt>排名</dt><dd>${escapeHtml(displayValue(rankingText))}</dd></div>
     <div><dt>预算</dt><dd>${escapeHtml(displayValue(budgetText))}</dd></div>
     <div><dt>本科申请要求</dt><dd>${escapeHtml(displayValue(school.applicationRequirement))}</dd></div>

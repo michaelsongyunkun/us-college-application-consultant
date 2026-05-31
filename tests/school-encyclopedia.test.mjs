@@ -87,6 +87,10 @@ assert.equal(
   filterSchools(internationalSchoolsData, { category: "international", query: "Nanyang Technological University" })[0].categoryLabel,
   "英港澳加新院校",
 );
+assert.equal(
+  filterSchools(internationalSchoolsData, { category: "international", query: "Jurong West" })[0].location,
+  "新加坡西部 Jurong West，主校区为大型封闭式校园。",
+);
 assert.deepEqual(
   {
     category: otherRegionSchools[0].category,
@@ -117,4 +121,8 @@ assert.equal(
 assert.equal(
   filterSchools(otherRegionSchoolsData, { category: "other-region", query: "Tsinghua" })[0].region,
   "中国大陆",
+);
+assert.equal(
+  filterSchools(otherRegionSchoolsData, { category: "other-region", query: "中关村" })[0].location,
+  "中国北京海淀区，中关村高校与科研机构密集区。",
 );
