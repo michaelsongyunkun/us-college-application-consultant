@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 const pages = [
   ["index.html", "申请指挥中心"],
   ["my-activities.html", "我的申请档案"],
+  ["ask-deepseek.html", "问DeepSeek"],
   ["resource-library.html", "资源库"],
   ["school-encyclopedia.html", "院校百科"],
   ["gpa-calculator.html", "GPA / AP 工具"],
@@ -41,7 +42,7 @@ for (const [file, activeLabel] of pages) {
   assert.ok(html.includes('class="command-sidebar"'), `${file} should include the command sidebar.`);
   assert.ok(html.includes('class="command-main"'), `${file} should wrap page content in command-main.`);
   assert.ok(html.includes("./assets/logo-mark.svg"), `${file} should preserve the current logo mark.`);
-  assert.ok(html.includes("./styles.css?v=20260601-auth-form-fallback"), `${file} should load the cache-busted command center stylesheet.`);
+  assert.ok(html.includes("./styles.css?v=20260601-scrollable-sidebar"), `${file} should load the cache-busted command center stylesheet.`);
   assert.ok(html.includes("US College Compass"), `${file} should preserve the current brand name.`);
   assert.ok(html.includes("Application Command Center"), `${file} should position the logged-in product as a command center.`);
   assert.ok(html.includes(`aria-current="page">${activeLabel}`), `${file} should mark ${activeLabel} as the active command nav item.`);
@@ -49,6 +50,16 @@ for (const [file, activeLabel] of pages) {
     assert.ok(html.includes(navLabel), `${file} should include command nav label ${navLabel}.`);
   }
   const commandNav = html.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";
+  if (file !== "admin.html") {
+    assert.ok(
+      commandNav.includes('data-admin-dashboard-link') && commandNav.includes('href="./admin.html"'),
+      `${file} should keep a hidden admin dashboard nav entry that can be revealed for admin users.`,
+    );
+    assert.ok(
+      html.includes('./src/client/admin-nav.js?v=20260601-admin-nav'),
+      `${file} should load the shared admin nav visibility script.`,
+    );
+  }
   assert.ok(
     commandNav.indexOf("院校百科") < commandNav.indexOf("选课辅助器")
       && commandNav.indexOf("选课辅助器") < commandNav.indexOf("GPA / AP 工具")
@@ -63,6 +74,11 @@ const loggedInHeader = indexHtml.match(/<header class="topbar brand-page-header 
 assert.ok(!loggedInHeader.includes("title-link-group"), "Logged-in home header should not repeat navigation buttons.");
 assert.ok(!loggedInHeader.includes("GPA计算器"), "Logged-in home header should not show utility navigation buttons.");
 
+const adminNavScript = readFileSync("src/client/admin-nav.js", "utf8");
+assert.match(adminNavScript, /\/api\/auth\/me/, "Admin nav script should check the authenticated user.");
+assert.match(adminNavScript, /role === "admin"/, "Admin nav script should reveal dashboard links only for admins.");
+assert.match(adminNavScript, /data-admin-dashboard-link/, "Admin nav script should target shared admin dashboard links.");
+
 for (const selector of [
   ".command-shell",
   ".command-sidebar",
@@ -72,6 +88,22 @@ for (const selector of [
 ]) {
   assert.ok(styles.includes(selector), `Stylesheet should define ${selector}.`);
 }
+
+assert.match(
+  styles,
+  /\.command-sidebar\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0,\s*1fr\) auto;/,
+  "Command sidebar should reserve a scrollable middle navigation track.",
+);
+assert.match(
+  styles,
+  /\.command-sidebar-nav\s*\{[\s\S]*?overflow-y:\s*auto;/,
+  "Command sidebar navigation should scroll vertically when entries exceed the viewport.",
+);
+assert.match(
+  styles,
+  /\.command-sidebar-nav::-webkit-scrollbar-thumb\s*\{/,
+  "Command sidebar navigation should expose a visible scrollbar handle.",
+);
 
 assert.match(styles, /--brand-green:\s*#287250;/, "Brand green should be preserved.");
 assert.match(styles, /--brand-orange:\s*#a86400;/, "Brand orange should be preserved.");

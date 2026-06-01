@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>资源库</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260601-auth-form-fallback" />
+    <link rel="stylesheet" href="./styles.css?v=20260601-scrollable-sidebar" />
   </head>
   <body>
     <main class="app-shell command-shell">
@@ -25,6 +25,7 @@
           <a href="./disclaimer.html" data-safe-nav>免责声明</a>
           <a href="./feedback.html" data-safe-nav>反馈与支持</a>
           <a href="./contact.html" data-safe-nav>联系我们</a>
+          <a class="is-hidden" href="./admin.html" data-safe-nav data-admin-dashboard-link aria-hidden="true">数据看板</a>
         </nav>
         <div class="command-sidebar-note">
           <strong>资源核验提醒</strong>
@@ -186,6 +187,7 @@
       </section>
       </div>
     </main>
+    <script type="module" src="./src/client/admin-nav.js?v=20260601-admin-nav"></script>
     <script type="module" src="./src/client/safe-navigation.mjs"></script>
     <script type="module" src="./src/client/resource-library.js"></script>
   </body>
