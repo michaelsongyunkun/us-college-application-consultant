@@ -69,6 +69,21 @@ assert.throws(
   /UC 需要 6 所/,
 );
 
+assert.throws(
+  () =>
+    validateSchoolSelectionResult({
+      ...validSelection,
+      rounds: {
+        ...validSelection.rounds,
+        rd: [
+          school("New York University", "Business Analytics", "medium"),
+          ...validSelection.rounds.rd.slice(1),
+        ],
+      },
+    }),
+  /同一所学校不能重复/,
+);
+
 const calls = [];
 const service = createSchoolSelectionService({
   activityPortfolio: {
@@ -130,10 +145,18 @@ assert.deepEqual(sentPayload.thinking, { type: "disabled" });
 assert.match(sentPayload.messages[0].content, /美本选校系统/);
 assert.match(sentPayload.messages[0].content, /REA \/ ED1/);
 assert.match(sentPayload.messages[0].content, /UC.*6/);
+assert.match(sentPayload.messages[0].content, /学术匹配/);
+assert.match(sentPayload.messages[0].content, /专业匹配/);
+assert.match(sentPayload.messages[0].content, /地区与身份因素/);
+assert.match(sentPayload.messages[0].content, /不允许把同一所学校重复放入多个轮次/);
+assert.match(sentPayload.messages[0].content, /风险等级定义/);
+assert.match(sentPayload.messages[0].content, /输出 JSON 前/);
 assert.match(sentPayload.messages[1].content, /中国/);
 assert.match(sentPayload.messages[1].content, /中国大陆高中/);
 assert.match(sentPayload.messages[1].content, /Robotics Portfolio Lab/);
 assert.match(sentPayload.messages[1].content, /1510/);
+assert.match(sentPayload.messages[1].content, /先判断学生整体竞争力/);
+assert.match(sentPayload.messages[1].content, /如果信息不足，明确写入 gaps/);
 
 function school(name, major, riskLevel) {
   return {
