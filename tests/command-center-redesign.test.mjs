@@ -43,7 +43,7 @@ for (const [file, activeLabel] of pages) {
   assert.ok(html.includes('class="command-sidebar"'), `${file} should include the command sidebar.`);
   assert.ok(html.includes('class="command-main"'), `${file} should wrap page content in command-main.`);
   assert.ok(html.includes("./assets/logo-mark.svg"), `${file} should preserve the current logo mark.`);
-  assert.ok(html.includes("./styles.css?v=20260601-school-selection-layout"), `${file} should load the cache-busted command center stylesheet.`);
+  assert.ok(html.includes("./styles.css?v=20260601-workflow-quality-v2"), `${file} should load the cache-busted command center stylesheet.`);
   assert.ok(html.includes("US College Compass"), `${file} should preserve the current brand name.`);
   assert.ok(html.includes("Application Planning Center"), `${file} should position the logged-in product as a planning center.`);
   assert.ok(html.includes(`aria-current="page">${activeLabel}`), `${file} should mark ${activeLabel} as the active command nav item.`);

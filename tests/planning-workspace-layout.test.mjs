@@ -150,7 +150,7 @@ const workspacePanelTop = html.match(/<section class="panel workspace-panel"[\s\
 const planningActivityTableBody = html.match(/<table id="activityTable"[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/)?.[1] || "";
 const commandSubnav = html.match(/<div class="command-subnav"[\s\S]*?<\/div>/)?.[0] || "";
 
-assert.ok(html.includes("./styles.css?v=20260601-school-selection-layout"), "Planning workspace should bust the stylesheet cache for school selection layout fixes.");
+assert.ok(html.includes("./styles.css?v=20260601-workflow-quality-v2"), "Planning workspace should bust the stylesheet cache for workflow quality fixes.");
 assert.ok(loggedInHeader.includes('class="brand-mark"'), "Logged-in header should use the shared product brand link.");
 assert.ok(loggedInHeader.includes("College Compass"), "Logged-in header should use the shared product brand name.");
 assert.ok(!loggedInHeader.includes("primary-nav"), "Logged-in header should not repeat the left-sidebar primary navigation.");

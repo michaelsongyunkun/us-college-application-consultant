@@ -61,8 +61,8 @@ for (const expected of [
   'id="schoolSelectionStatus"',
   'id="schoolSelectionResults"',
   "./assets/logo-mark.svg",
-  "./styles.css?v=20260601-school-selection-layout",
-  "./src/client/school-selection.js?v=20260601-school-selection",
+  "./styles.css?v=20260601-workflow-quality-v2",
+  "./src/client/school-selection.js?v=20260601-school-selection-quality-v2",
 ]) {
   assert.ok(pageHtml.includes(expected), `School selection page should include ${expected}.`);
 }

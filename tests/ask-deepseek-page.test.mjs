@@ -146,8 +146,8 @@ assert.match(
   "Ask DeepSeek script should be cache-busted.",
 );
 assert.ok(
-  pageHtml.includes("styles.css?v=20260601-school-selection-layout"),
-  "Ask DeepSeek page should refresh the stylesheet cache after sidebar scrolling fixes.",
+  pageHtml.includes("styles.css?v=20260601-workflow-quality-v2"),
+  "Ask DeepSeek page should refresh the stylesheet cache after workflow quality fixes.",
 );
 assert.match(styles, /\.deepseek-chat-log\s*\{/, "Ask DeepSeek should style the chat log.");
 assert.match(styles, /\.chat-message\.user\s*\{/, "Ask DeepSeek should have right-side user messages.");
