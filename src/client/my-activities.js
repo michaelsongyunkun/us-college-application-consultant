@@ -7,6 +7,7 @@ import {
 import { markdownToPlainText } from "../domain/agent-output-parser.mjs?v=20260531-import-visual-text";
 import { buildSvgDocument } from "../domain/svg-export.mjs?v=20260531-svg-wrap";
 import { buildWordDocument } from "../domain/word-export.mjs?v=20260601-word-export";
+import { insertEntryIntoFirstEmptySlot } from "./portfolio-entry-slots.mjs?v=20260601-activity-import-slot";
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const ACTIVITY_IMPORT_SOURCES_ENDPOINT = "/api/my-activities/import-sources";
@@ -671,12 +672,13 @@ function collectAcademicRows(section, group, fields) {
 }
 
 function collectEntries(group, count, fields) {
-  return Array.from({ length: count }, (_, index) => {
-    const entry = Object.fromEntries(
-      fields.map((field) => [field, fieldValue(controlName(group, index, field))]),
-    );
-    return entry;
-  }).filter(hasAnyValue);
+  return collectEntrySlots(group, count, fields).filter(hasAnyValue);
+}
+
+function collectEntrySlots(group, count, fields) {
+  return Array.from({ length: count }, (_, index) =>
+    Object.fromEntries(fields.map((field) => [field, fieldValue(controlName(group, index, field))])),
+  );
 }
 
 function collectApplicationPlan() {
@@ -755,18 +757,24 @@ function importPlanningActivity(sourceId, activityIndex) {
     return;
   }
   const portfolio = collectPortfolio();
-  if (portfolio.activities.length >= ACTIVITY_SLOT_COUNT) {
+  const activitySlots = collectEntrySlots("activities", ACTIVITY_SLOT_COUNT, activityFields);
+  const imported = insertEntryIntoFirstEmptySlot(
+    activitySlots,
+    mapPlanningActivityToPortfolio(activity),
+    ACTIVITY_SLOT_COUNT,
+  );
+  if (!imported.inserted) {
     setImportStatus("课外活动已满 10 项，请先清空一个活动槽位。", true);
     return;
   }
 
-  portfolio.activities.push(mapPlanningActivityToPortfolio(activity));
+  portfolio.activities = imported.entries;
   renderPortfolio(portfolio);
   isDirty = true;
   updateCompletion();
   setStatus("已导入 1 项活动，请保存进度。");
   setImportStatus(`已导入：${cleanPlanningActivityText(activity.activityName, "未命名活动")}`);
-  portfolioForm.elements.namedItem(controlName("activities", portfolio.activities.length - 1, "activityName"))?.focus();
+  portfolioForm.elements.namedItem(controlName("activities", imported.index, "activityName"))?.focus();
 }
 
 function updateCompletion() {

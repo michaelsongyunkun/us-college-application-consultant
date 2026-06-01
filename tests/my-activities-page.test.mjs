@@ -123,6 +123,8 @@ assert.ok(
 );
 assert.ok(script.includes("data-import-activity"), "单个规划活动应提供导入按钮。");
 assert.ok(script.includes("mapPlanningActivityToPortfolio"), "导入时应映射规划活动字段。");
+assert.ok(script.includes("insertEntryIntoFirstEmptySlot"), "导入时应优先填入当前页面第一个空活动槽位。");
+assert.ok(script.includes("collectEntrySlots"), "导入前应保留当前 10 个可见活动槽位，避免删除后索引压缩。");
 assert.match(
   script,
   /from "\.\.\/domain\/agent-output-parser\.mjs\?v=20260531-import-visual-text"/,
@@ -145,7 +147,7 @@ assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
   pageHtml.includes("./styles.css?v=20260601-scrollbar-rail")
-    && pageHtml.includes("./src/client/my-activities.js?v=20260601-portfolio-export"),
+    && pageHtml.includes("./src/client/my-activities.js?v=20260601-activity-import-slot"),
   "我的申请页面应更新 CSS 版本号，避免用户继续加载缓存的平行布局。"
 );
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");
