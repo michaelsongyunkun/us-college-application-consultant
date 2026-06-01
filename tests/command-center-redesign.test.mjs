@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const pages = [
-  ["index.html", "申请指挥中心"],
+  ["index.html", "申请规划中心"],
   ["my-activities.html", "我的申请档案"],
   ["ask-deepseek.html", "问DeepSeek"],
   ["resource-library.html", "资源库"],
@@ -22,7 +22,7 @@ const authShell = indexHtml.match(/<section id="authShell"[\s\S]*?<\/section>\s*
 assert.ok(authShell.includes("landing-shell"), "Public landing shell should remain the public landing design.");
 assert.ok(!authShell.includes("command-sidebar"), "Public landing shell should not receive the logged-in command sidebar.");
 assert.ok(indexHtml.includes('<main id="appShell" class="app-shell command-shell is-hidden">'));
-assert.ok(indexHtml.includes("<h1>申请指挥中心</h1>"), "Logged-in home title should be 申请指挥中心.");
+assert.ok(indexHtml.includes("<h1>申请规划中心</h1>"), "Logged-in home title should be 申请规划中心.");
 assert.ok(!indexHtml.includes("美本申请规划 Agent"), "Logged-in home should not use the old Agent title.");
 assert.ok(!indexHtml.includes("Automation Status"), "Logged-in home should not show the removed automation status board.");
 assert.ok(!indexHtml.includes('class="command-center-hero"'), "Logged-in home should not render the removed automation status board.");
@@ -44,9 +44,9 @@ for (const [file, activeLabel] of pages) {
   assert.ok(html.includes("./assets/logo-mark.svg"), `${file} should preserve the current logo mark.`);
   assert.ok(html.includes("./styles.css?v=20260601-scrollable-sidebar"), `${file} should load the cache-busted command center stylesheet.`);
   assert.ok(html.includes("US College Compass"), `${file} should preserve the current brand name.`);
-  assert.ok(html.includes("Application Command Center"), `${file} should position the logged-in product as a command center.`);
+  assert.ok(html.includes("Application Planning Center"), `${file} should position the logged-in product as a planning center.`);
   assert.ok(html.includes(`aria-current="page">${activeLabel}`), `${file} should mark ${activeLabel} as the active command nav item.`);
-  for (const navLabel of ["申请指挥中心", "我的申请档案", "资源库", "院校百科", "选课辅助器", "GPA / AP 工具", "免责声明", "反馈与支持", "联系我们"]) {
+  for (const navLabel of ["申请规划中心", "我的申请档案", "资源库", "院校百科", "选课辅助器", "GPA / AP 工具", "免责声明", "反馈与支持", "联系我们"]) {
     assert.ok(html.includes(navLabel), `${file} should include command nav label ${navLabel}.`);
   }
   const commandNav = html.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";

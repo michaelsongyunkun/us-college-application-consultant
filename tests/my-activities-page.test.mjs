@@ -9,9 +9,9 @@ const navigation = indexHtml.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/n
 
 assert.ok(navigation.includes('href="./my-activities.html"'), "左侧导航应包含我的申请入口。");
 assert.ok(
-  navigation.indexOf("申请指挥中心") < navigation.indexOf("my-activities.html")
+  navigation.indexOf("申请规划中心") < navigation.indexOf("my-activities.html")
     && navigation.indexOf("my-activities.html") < navigation.indexOf("resource-library.html"),
-  "我的申请应与申请指挥中心 / 资源库 / 院校百科同级，并位于资源库前。"
+  "我的申请应与申请规划中心 / 资源库 / 院校百科同级，并位于资源库前。"
 );
 
 for (const expected of [

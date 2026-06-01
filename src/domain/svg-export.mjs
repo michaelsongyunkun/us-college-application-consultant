@@ -298,7 +298,7 @@ export function buildSvgDocument({
   caseMatches = [],
 }) {
   const layout = createSvgLayout();
-  layout.addTitle("美本申请规划报告", "US College Compass · Application Command Center");
+  layout.addTitle("美本申请规划报告", "US College Compass · Application Planning Center");
   layout.addProfile(profile);
   layout.addActivities(activities);
   layout.addNarrative(narrative);

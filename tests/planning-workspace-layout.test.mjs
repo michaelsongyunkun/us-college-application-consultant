@@ -157,8 +157,8 @@ assert.ok(!loggedInHeader.includes("primary-nav"), "Logged-in header should not 
 assert.ok(!loggedInHeader.includes("utility-nav"), "Logged-in header should not repeat the left-sidebar utility navigation.");
 assert.ok(commandNavigation.includes("我的申请档案"), "Left command sidebar should expose the primary navigation group.");
 assert.ok(commandNavigation.includes("免责声明"), "Left command sidebar should expose the tools and support entries.");
-assert.ok(commandNavigation.includes('class="command-nav-group"'), "Application command center nav item should support a sub navigation group.");
-assert.ok(commandNavigation.includes('aria-label="申请指挥中心快捷导航"'), "Application command center should expose a labeled sub navigation.");
+assert.ok(commandNavigation.includes('class="command-nav-group"'), "Application planning center nav item should support a sub navigation group.");
+assert.ok(commandNavigation.includes('aria-label="申请规划中心快捷导航"'), "Application planning center should expose a labeled sub navigation.");
 for (const [label, targetId] of [
   ["活动规划表", "planningOutputTable"],
   ["国际竞赛推荐", "competitionRecommendations"],
