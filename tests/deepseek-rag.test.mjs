@@ -151,7 +151,12 @@ try {
   assert.match(systemPrompt, /不要做绝对化承诺/);
   assert.match(systemPrompt, /保证录取/);
   assert.match(systemPrompt, /Markdown 的标题、列表、表格、加粗/);
-  assert.match(systemPrompt, /每次回答结尾必须给出“参考资料”/);
+  assert.match(systemPrompt, /不要在回答正文中单独输出“参考资料”章节/);
+  assert.match(systemPrompt, /前端会在折叠的“参考资料”区域展示/);
+  assert.doesNotMatch(systemPrompt, /每次回答结尾必须给出“参考资料”/);
+  const userPrompt = sentPayload.messages[1].content;
+  assert.match(userPrompt, /不要在正文末尾列出参考资料/);
+  assert.doesNotMatch(userPrompt, /回答末尾用“参考资料”列出/);
   assert.match(sentPayload.messages[1].content, /学生备份/);
   assert.match(sentPayload.messages[1].content, /个人申请档案/);
   assert.match(sentPayload.messages[1].content, /资源库/);

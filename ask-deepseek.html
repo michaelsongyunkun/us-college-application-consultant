@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>问DeepSeek</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260601-deepseek-source-markdown" />
+    <link rel="stylesheet" href="./styles.css?v=20260601-scrollable-sidebar" />
   </head>
   <body>
     <main class="app-shell command-shell ask-deepseek-shell">
@@ -47,7 +47,7 @@
         <section class="command-page-summary" aria-label="DeepSeek RAG 数据范围">
           <div>
             <p class="eyebrow">RAG Workspace</p>
-            <p>围绕当前学生的背景、规划版本、申请档案、项目资源与院校信息提问，回答会保留参考资料线索，方便继续核验。</p>
+            <p>围绕当前学生的背景、规划版本、申请档案、项目资源与院校信息提问，参考资料会收起在回答下方，方便需要时展开核验。</p>
           </div>
           <div class="command-summary-metrics">
             <span><strong>学生备份</strong>档案与快照</span>
@@ -108,7 +108,7 @@
               <div class="chat-message-body">
                 <p class="chat-speaker">DeepSeek</p>
                 <div class="chat-bubble">
-                  <p>你好，我是你的申请规划智能体。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍；我会结合你的个人申请档案和已保存资料回答，并在结尾列出参考资料。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。</p>
+                  <p>你好，我是你的申请规划智能体。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍；我会结合你的个人申请档案和已保存资料回答，参考资料会收起在回答下方，需要核验时再展开。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。</p>
                 </div>
               </div>
             </article>
@@ -134,6 +134,6 @@
       </div>
     </main>
     <script type="module" src="./src/client/safe-navigation.mjs"></script>
-    <script type="module" src="./src/client/ask-deepseek.js?v=20260601-deepseek-source-markdown"></script>
+    <script type="module" src="./src/client/ask-deepseek.js?v=20260601-deepseek-collapsed-references"></script>
   </body>
 </html>

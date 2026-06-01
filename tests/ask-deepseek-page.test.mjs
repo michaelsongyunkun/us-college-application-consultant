@@ -78,6 +78,22 @@ assert.ok(
   "Ask DeepSeek reset state should reuse the new agent greeting.",
 );
 assert.ok(
+  pageHtml.includes("参考资料会收起在回答下方"),
+  "Ask DeepSeek greeting should tell users references stay collapsed below the answer.",
+);
+assert.ok(
+  script.includes("参考资料会收起在回答下方"),
+  "Ask DeepSeek reset state should keep reference disclosure copy aligned.",
+);
+assert.ok(
+  !pageHtml.includes("并在结尾列出参考资料"),
+  "Ask DeepSeek greeting should not tell users references are shown at the end of the answer.",
+);
+assert.ok(
+  !script.includes("并在结尾列出参考资料"),
+  "Ask DeepSeek reset state should not say references are shown at the end of the answer.",
+);
+assert.ok(
   pageHtml.includes("选校策略、活动补强、推荐信、成绩档案或项目取舍"),
   "Ask DeepSeek greeting should tell users what they can ask.",
 );
@@ -128,8 +144,8 @@ assert.match(
   "Ask DeepSeek script should be cache-busted.",
 );
 assert.ok(
-  pageHtml.includes("styles.css?v=20260601-deepseek-source-markdown"),
-  "Ask DeepSeek page should refresh the stylesheet cache after source markdown rendering.",
+  pageHtml.includes("styles.css?v=20260601-scrollable-sidebar"),
+  "Ask DeepSeek page should refresh the stylesheet cache after sidebar scrolling fixes.",
 );
 assert.match(styles, /\.deepseek-chat-log\s*\{/, "Ask DeepSeek should style the chat log.");
 assert.match(styles, /\.chat-message\.user\s*\{/, "Ask DeepSeek should have right-side user messages.");
@@ -149,7 +165,11 @@ assert.ok(script.includes("正在整理参考资料"), "Ask DeepSeek should tell
 assert.ok(script.includes("DeepSeek 正在生成建议"), "Ask DeepSeek should tell users when generation is underway.");
 assert.ok(script.includes("startProgressStatus"), "Ask DeepSeek should start staged progress while waiting.");
 assert.ok(script.includes("stopProgressStatus"), "Ask DeepSeek should stop staged progress after the response.");
-assert.ok(script.includes("<details open class=\"chat-references\""), "Ask DeepSeek references should be collapsible.");
+assert.ok(script.includes("<details class=\"chat-references\""), "Ask DeepSeek references should be collapsible.");
+assert.ok(
+  !script.includes("<details open class=\"chat-references\""),
+  "Ask DeepSeek references should stay collapsed until the user expands them.",
+);
 assert.ok(script.includes("<summary>"), "Ask DeepSeek references should expose a summary row.");
 assert.ok(script.includes("chat-source-type-chip"), "Ask DeepSeek should show source type chips on reference cards.");
 assert.ok(script.includes("renderFollowUpActions"), "Ask DeepSeek should render follow-up actions after answers.");
@@ -158,9 +178,13 @@ assert.ok(script.includes("生成行动清单"), "Ask DeepSeek should offer an a
 assert.ok(script.includes("按冲刺/匹配/保底重排"), "Ask DeepSeek should offer a school-list follow-up.");
 assert.ok(script.includes("转成推荐信素材"), "Ask DeepSeek should offer a recommendation-material follow-up.");
 assert.ok(script.includes("STANDARD_RESPONSE_SECTIONS"), "Ask DeepSeek workflows should share a standard report format.");
-for (const section of ["## 核心结论", "## 依据与证据", "## 主要风险", "## 下一步行动", "## 参考资料"]) {
+for (const section of ["## 核心结论", "## 依据与证据", "## 主要风险", "## 下一步行动"]) {
   assert.ok(script.includes(section), `Ask DeepSeek workflow prompts should include ${section}.`);
 }
+assert.ok(
+  !script.includes('"## 参考资料"'),
+  "Ask DeepSeek workflows should not ask DeepSeek to render a visible reference section in the answer body.",
+);
 assert.match(styles, /\.chat-references summary\s*\{/, "Ask DeepSeek should style collapsible reference summaries.");
 assert.match(styles, /\.chat-followups\s*\{/, "Ask DeepSeek should style answer follow-up actions.");
 assert.match(styles, /\.chat-followup-button\s*\{/, "Ask DeepSeek should style follow-up buttons.");
