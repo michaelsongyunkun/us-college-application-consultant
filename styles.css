@@ -102,33 +102,35 @@ html {
   display: grid;
   min-height: 0;
   gap: 6px;
-  margin-right: -6px;
+  margin-right: -10px;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-right: 6px;
-  scrollbar-color: rgba(40, 114, 80, 0.42) transparent;
+  padding-right: 10px;
+  scrollbar-color: rgba(32, 98, 72, 0.7) rgba(216, 229, 223, 0.95);
   scrollbar-gutter: stable;
-  scrollbar-width: thin;
+  scrollbar-width: auto;
 }
 
 .command-sidebar-nav::-webkit-scrollbar {
-  width: 8px;
+  width: 12px;
 }
 
 .command-sidebar-nav::-webkit-scrollbar-track {
-  background: transparent;
+  border-radius: 999px;
+  background: rgba(216, 229, 223, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(40, 114, 80, 0.12);
 }
 
 .command-sidebar-nav::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
+  border: 2px solid rgba(216, 229, 223, 0.95);
   border-radius: 999px;
-  background: rgba(40, 114, 80, 0.38);
+  background: rgba(32, 98, 72, 0.7);
   background-clip: padding-box;
 }
 
 .command-sidebar-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(32, 98, 72, 0.56);
+  background: rgba(24, 80, 60, 0.86);
   background-clip: padding-box;
 }
 

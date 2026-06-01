@@ -42,7 +42,7 @@ for (const [file, activeLabel] of pages) {
   assert.ok(html.includes('class="command-sidebar"'), `${file} should include the command sidebar.`);
   assert.ok(html.includes('class="command-main"'), `${file} should wrap page content in command-main.`);
   assert.ok(html.includes("./assets/logo-mark.svg"), `${file} should preserve the current logo mark.`);
-  assert.ok(html.includes("./styles.css?v=20260601-scrollable-sidebar"), `${file} should load the cache-busted command center stylesheet.`);
+  assert.ok(html.includes("./styles.css?v=20260601-scrollbar-rail"), `${file} should load the cache-busted command center stylesheet.`);
   assert.ok(html.includes("US College Compass"), `${file} should preserve the current brand name.`);
   assert.ok(html.includes("Application Planning Center"), `${file} should position the logged-in product as a planning center.`);
   assert.ok(html.includes(`aria-current="page">${activeLabel}`), `${file} should mark ${activeLabel} as the active command nav item.`);
@@ -101,8 +101,28 @@ assert.match(
 );
 assert.match(
   styles,
+  /\.command-sidebar-nav\s*\{[\s\S]*?scrollbar-width:\s*auto;/,
+  "Command sidebar navigation should use a full-size draggable scrollbar instead of a thin hidden-feeling rail.",
+);
+assert.match(
+  styles,
+  /\.command-sidebar-nav\s*\{[\s\S]*?scrollbar-color:\s*rgba\(32,\s*98,\s*72,\s*0\.7\)\s*rgba\(216,\s*229,\s*223,\s*0\.95\);/,
+  "Command sidebar navigation should expose a visible scrollbar thumb and track.",
+);
+assert.match(
+  styles,
   /\.command-sidebar-nav::-webkit-scrollbar-thumb\s*\{/,
   "Command sidebar navigation should expose a visible scrollbar handle.",
+);
+assert.match(
+  styles,
+  /\.command-sidebar-nav::-webkit-scrollbar\s*\{[\s\S]*?width:\s*12px;/,
+  "Command sidebar navigation should make the scrollbar wide enough to drag comfortably.",
+);
+assert.match(
+  styles,
+  /\.command-sidebar-nav::-webkit-scrollbar-track\s*\{[\s\S]*?background:\s*rgba\(216,\s*229,\s*223,\s*0\.95\);/,
+  "Command sidebar navigation should draw a persistent scrollbar track line.",
 );
 
 assert.match(styles, /--brand-green:\s*#287250;/, "Brand green should be preserved.");
