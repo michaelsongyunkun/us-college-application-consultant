@@ -8,6 +8,11 @@ const tempDir = await mkdtemp(join(tmpdir(), "consultant-school-selection-"));
 const calls = [];
 const selection = {
   summary: "选校组合以 ED1 稳定主线，EA 与 RD 分层覆盖。",
+  strategy: {
+    earlyStrategy: "ED1 用高意愿匹配校控制风险。",
+    ucStrategy: "UC 选择 6 个校区覆盖数据科学与工程方向。",
+    rdStrategy: "RD 用冲刺、匹配、稳妥三层覆盖。",
+  },
   rounds: {
     rea: [],
     ed1: [school("University of Chicago")],
@@ -103,6 +108,9 @@ try {
       nationality: "中国",
       highSchoolRegion: "中国大陆高中",
       preferences: "希望申请数据科学。",
+      targetMajor: "Data Science",
+      edRiskTolerance: "均衡",
+      budgetSensitivity: "中等",
       deepSeekApiKey: "request-key-should-be-ignored",
     },
     cookie,
@@ -110,12 +118,16 @@ try {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.selection.rounds.ed1[0].school, "University of Chicago");
+  assert.match(body.selection.strategy.earlyStrategy, /ED1/);
   assert.equal(body.selection.rounds.uc.length, 6);
   assert.equal(JSON.stringify(body).includes("server-school-selection-secret"), false);
   assert.equal(JSON.stringify(body).includes("request-key-should-be-ignored"), false);
 
   const sentPayload = JSON.parse(calls[0].options.body);
   assert.match(sentPayload.messages[1].content, /中国大陆高中/);
+  assert.match(sentPayload.messages[1].content, /Data Science/);
+  assert.match(sentPayload.messages[1].content, /预算敏感度/);
+  assert.match(sentPayload.messages[1].content, /均衡/);
   assert.match(sentPayload.messages[1].content, /Robotics Portfolio Lab/);
   assert.match(sentPayload.messages[1].content, /1510/);
 } finally {

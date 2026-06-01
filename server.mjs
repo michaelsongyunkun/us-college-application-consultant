@@ -511,7 +511,7 @@ export function createAppServer({
   planning = createPlanningService({ authDb }),
   activityPortfolio = createActivityPortfolioService({ authDb }),
   deepSeekRag = createDeepSeekRagService({ root, planning, activityPortfolio }),
-  schoolSelection = createSchoolSelectionService({ activityPortfolio }),
+  schoolSelection = createSchoolSelectionService({ activityPortfolio, root }),
   mailer = createMailerFromEnv(env),
   appBaseUrl = env.APP_BASE_URL || "",
   deepSeekFetch = fetch,
@@ -567,6 +567,7 @@ export function createAppServer({
         sendJson(response, 200, await deepSeekRag.answerQuestion({
           user,
           question: payload.question,
+          historySummary: payload.historySummary,
           env,
           deepSeekFetch,
         }));

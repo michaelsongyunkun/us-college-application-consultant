@@ -88,6 +88,69 @@
                 <option value="其他国家或地区高中">其他国家或地区高中</option>
               </select>
             </label>
+            <label>
+              <span>目标专业/方向</span>
+              <input id="selectionTargetMajor" name="targetMajor" type="text" placeholder="例如：Data Science / Computer Science" />
+            </label>
+            <label>
+              <span>预算敏感度</span>
+              <select id="selectionBudgetSensitivity" name="budgetSensitivity">
+                <option value="">请选择</option>
+                <option value="低">低：预算弹性较高</option>
+                <option value="中等">中等：希望兼顾成本</option>
+                <option value="高">高：优先控制学费与生活成本</option>
+              </select>
+            </label>
+            <label>
+              <span>地区偏好</span>
+              <input id="selectionRegionPreference" name="regionPreference" type="text" placeholder="例如：东海岸 / 加州 / 不考虑过冷地区" />
+            </label>
+            <label>
+              <span>校园环境</span>
+              <select id="selectionCampusSetting" name="campusSetting">
+                <option value="">请选择</option>
+                <option value="城市型">城市型</option>
+                <option value="郊区型">郊区型</option>
+                <option value="大学城">大学城</option>
+                <option value="都可以">都可以</option>
+              </select>
+            </label>
+            <label>
+              <span>学校规模</span>
+              <select id="selectionSchoolSize" name="schoolSize">
+                <option value="">请选择</option>
+                <option value="小型文理学院">小型文理学院</option>
+                <option value="中型大学">中型大学</option>
+                <option value="大型研究型大学">大型研究型大学</option>
+                <option value="都可以">都可以</option>
+              </select>
+            </label>
+            <label>
+              <span>ED 风险承受度</span>
+              <select id="selectionEdRiskTolerance" name="edRiskTolerance">
+                <option value="">请选择</option>
+                <option value="保守">保守：优先高匹配</option>
+                <option value="均衡">均衡：兼顾意愿与风险</option>
+                <option value="进取">进取：可接受冲刺</option>
+              </select>
+            </label>
+            <label>
+              <span>奖学金需求</span>
+              <select id="selectionScholarshipNeed" name="scholarshipNeed">
+                <option value="">请选择</option>
+                <option value="不强制">不强制</option>
+                <option value="希望争取">希望争取</option>
+                <option value="强需求">强需求</option>
+              </select>
+            </label>
+            <label>
+              <span>策略版本</span>
+              <select id="selectionStrategyMode" name="strategyMode">
+                <option value="均衡版">均衡版</option>
+                <option value="保守版">保守版</option>
+                <option value="冲刺版">冲刺版</option>
+              </select>
+            </label>
             <label class="full-span">
               <span>补充偏好（可选）</span>
               <textarea
@@ -107,11 +170,27 @@
           <div class="section-heading table-heading">
             <div>
               <h2 id="school-selection-results-title">选校结果</h2>
-              <p>按 REA / ED1、ED2、EA、RD、UC 展示。</p>
+              <p>按 REA / ED1、ED2、EA、RD、UC 展示，保存前可直接编辑学校、专业和行动项。</p>
+            </div>
+            <div class="school-selection-heading-actions">
+              <button id="exportSchoolSelectionButton" class="secondary" type="button" disabled>导出结果</button>
+              <button id="saveSchoolSelectionButton" class="secondary" type="button" disabled>保存到我的申请档案</button>
             </div>
           </div>
           <div id="schoolSelectionResults" class="school-selection-results">
             <p class="portfolio-empty">生成后会在这里显示分轮次选校方案。</p>
+          </div>
+        </section>
+
+        <section class="panel school-selection-results-panel" aria-labelledby="school-selection-versions-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="school-selection-versions-title">版本复盘</h2>
+              <p>保守版、均衡版、冲刺版保存后会沉淀在这里，方便对比不同申请策略。</p>
+            </div>
+          </div>
+          <div id="schoolSelectionVersionList" class="school-selection-results">
+            <p class="portfolio-empty">保存选校版本后会显示在这里。</p>
           </div>
         </section>
       </div>

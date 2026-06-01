@@ -134,6 +134,9 @@ export function createAuthDatabase({ databasePath }) {
       competitions_json TEXT NOT NULL,
       summer_schools_json TEXT NOT NULL,
       recommendation_letters_json TEXT NOT NULL,
+      planning_actions_json TEXT NOT NULL DEFAULT '[]',
+      deepseek_notes_json TEXT NOT NULL DEFAULT '[]',
+      school_selection_versions_json TEXT NOT NULL DEFAULT '[]',
       academic_records_json TEXT NOT NULL DEFAULT '{}',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
@@ -204,6 +207,24 @@ export function createAuthDatabase({ databasePath }) {
     "student_activity_portfolios",
     "academic_records_json",
     "TEXT NOT NULL DEFAULT '{}'",
+  );
+  ensureColumn(
+    db,
+    "student_activity_portfolios",
+    "planning_actions_json",
+    "TEXT NOT NULL DEFAULT '[]'",
+  );
+  ensureColumn(
+    db,
+    "student_activity_portfolios",
+    "deepseek_notes_json",
+    "TEXT NOT NULL DEFAULT '[]'",
+  );
+  ensureColumn(
+    db,
+    "student_activity_portfolios",
+    "school_selection_versions_json",
+    "TEXT NOT NULL DEFAULT '[]'",
   );
   migrateUsageEventsConstraint(db);
   return {

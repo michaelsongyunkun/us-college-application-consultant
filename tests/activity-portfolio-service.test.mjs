@@ -44,6 +44,9 @@ try {
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
+    planningActions: [],
+    deepSeekNotes: [],
+    schoolSelectionVersions: [],
     academicRecords: {
       gpaScale: "",
       gpaRecords: [
@@ -112,6 +115,33 @@ try {
       preparedMaterials: ["简历", "活动清单"],
       notes: "6 月更新材料",
     },
+    planningActions: Array.from({ length: 22 }, (_, index) => ({
+      text: `DeepSeek 行动 ${index + 1}`,
+      source: index === 0 ? "问DeepSeek" : "",
+    })),
+    deepSeekNotes: [
+      {
+        title: "活动补强建议",
+        content: "把 Robotics Portfolio 的成果转化成推荐信素材。",
+        source: "问DeepSeek",
+      },
+    ],
+    schoolSelectionVersions: [
+      {
+        versionName: "均衡版",
+        summary: "ED1 控制风险，EA/RD 分层覆盖。",
+        selectionJson: JSON.stringify({
+          rounds: {
+            ed1: [{ school: "University of Chicago", major: "Economics" }],
+          },
+        }),
+      },
+      {
+        versionName: "冲刺版",
+        summary: "增加冲刺学校占比。",
+        selectionJson: "{}",
+      },
+    ],
     academicRecords: {
       gpaScale: "4.0分制",
       gpaRecords: [
@@ -149,6 +179,13 @@ try {
   assert.equal(saved.summerSchools[0].programName, "Summer Research");
   assert.equal(saved.recommendationLetters.teacher1.teacherName, "Ms. Lin");
   assert.deepEqual(saved.recommendationLetters.preparedMaterials, ["简历", "活动清单"]);
+  assert.equal(saved.planningActions.length, 20, "DeepSeek 行动清单最多保存 20 项。");
+  assert.equal(saved.planningActions[0].text, "DeepSeek 行动 1");
+  assert.equal(saved.planningActions[0].source, "问DeepSeek");
+  assert.equal(saved.deepSeekNotes[0].title, "活动补强建议");
+  assert.match(saved.deepSeekNotes[0].content, /推荐信素材/);
+  assert.equal(saved.schoolSelectionVersions[0].versionName, "均衡版");
+  assert.match(saved.schoolSelectionVersions[0].summary, /分层覆盖/);
   assert.equal(saved.academicRecords.gpaRecords.length, 2);
   assert.equal(saved.academicRecords.gpaScale, "4.0分制");
   assert.equal(saved.academicRecords.gpaRecords[0].gradeLevel, "9年级");
@@ -164,6 +201,9 @@ try {
   assert.deepEqual(reloaded.applicationPlan, saved.applicationPlan);
   assert.deepEqual(reloaded.activities, saved.activities);
   assert.deepEqual(reloaded.academicRecords, saved.academicRecords);
+  assert.deepEqual(reloaded.planningActions, saved.planningActions);
+  assert.deepEqual(reloaded.deepSeekNotes, saved.deepSeekNotes);
+  assert.deepEqual(reloaded.schoolSelectionVersions, saved.schoolSelectionVersions);
   assert.equal(reloaded.recommendationLetters.notes, "6 月更新材料");
   assert.deepEqual(portfolios.getPortfolio(secondStudent), {
     applicationPlan: {
@@ -178,6 +218,9 @@ try {
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
+    planningActions: [],
+    deepSeekNotes: [],
+    schoolSelectionVersions: [],
     academicRecords: {
       gpaScale: "",
       gpaRecords: [

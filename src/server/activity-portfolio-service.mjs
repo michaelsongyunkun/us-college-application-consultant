@@ -1,6 +1,9 @@
 const ACTIVITY_LIMIT = 10;
 const COMPETITION_LIMIT = 5;
 const SUMMER_SCHOOL_LIMIT = 3;
+const PLANNING_ACTION_LIMIT = 20;
+const DEEPSEEK_NOTE_LIMIT = 20;
+const SCHOOL_SELECTION_VERSION_LIMIT = 12;
 const GPA_RECORD_LIMIT = 16;
 const SAT_TEST_LIMIT = 10;
 const AP_EXAM_LIMIT = 40;
@@ -42,6 +45,9 @@ const SUMMER_SCHOOL_FIELDS = [
   "output",
   "proofLink",
 ];
+const PLANNING_ACTION_FIELDS = ["text", "source"];
+const DEEPSEEK_NOTE_FIELDS = ["title", "content", "source"];
+const SCHOOL_SELECTION_VERSION_FIELDS = ["versionName", "summary", "selectionJson", "source"];
 const APPLICATION_PLAN_FIELDS = ["school", "major"];
 const GPA_RECORD_FIELDS = ["gradeLevel", "term", "gpa"];
 const SAT_TEST_FIELDS = ["totalScore", "englishScore", "mathScore", "testDate"];
@@ -74,6 +80,9 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
           competitions_json,
           summer_schools_json,
           recommendation_letters_json,
+          planning_actions_json,
+          deepseek_notes_json,
+          school_selection_versions_json,
           academic_records_json,
           updated_at
         FROM student_activity_portfolios
@@ -98,6 +107,24 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
         "Summer schools",
       ),
       recommendationLetters: parseRecommendationLetters(row.recommendation_letters_json),
+      planningActions: parseCollection(
+        row.planning_actions_json,
+        PLANNING_ACTION_LIMIT,
+        PLANNING_ACTION_FIELDS,
+        "Planning actions",
+      ),
+      deepSeekNotes: parseCollection(
+        row.deepseek_notes_json,
+        DEEPSEEK_NOTE_LIMIT,
+        DEEPSEEK_NOTE_FIELDS,
+        "DeepSeek notes",
+      ),
+      schoolSelectionVersions: parseCollection(
+        row.school_selection_versions_json,
+        SCHOOL_SELECTION_VERSION_LIMIT,
+        SCHOOL_SELECTION_VERSION_FIELDS,
+        "School selection versions",
+      ),
       academicRecords: parseAcademicRecords(row.academic_records_json),
       updatedAt: row.updated_at,
     };
@@ -115,16 +142,22 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
         competitions_json,
         summer_schools_json,
         recommendation_letters_json,
+        planning_actions_json,
+        deepseek_notes_json,
+        school_selection_versions_json,
         academic_records_json,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
         application_plan_json = excluded.application_plan_json,
         activities_json = excluded.activities_json,
         competitions_json = excluded.competitions_json,
         summer_schools_json = excluded.summer_schools_json,
         recommendation_letters_json = excluded.recommendation_letters_json,
+        planning_actions_json = excluded.planning_actions_json,
+        deepseek_notes_json = excluded.deepseek_notes_json,
+        school_selection_versions_json = excluded.school_selection_versions_json,
         academic_records_json = excluded.academic_records_json,
         updated_at = excluded.updated_at`,
     ).run(
@@ -134,6 +167,9 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
       JSON.stringify(portfolio.competitions),
       JSON.stringify(portfolio.summerSchools),
       JSON.stringify(portfolio.recommendationLetters),
+      JSON.stringify(portfolio.planningActions),
+      JSON.stringify(portfolio.deepSeekNotes),
+      JSON.stringify(portfolio.schoolSelectionVersions),
       JSON.stringify(portfolio.academicRecords),
       timestamp,
       timestamp,
@@ -154,6 +190,9 @@ function emptyPortfolio() {
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
+    planningActions: [],
+    deepSeekNotes: [],
+    schoolSelectionVersions: [],
     academicRecords: defaultAcademicRecords(),
     updatedAt: null,
   };
@@ -177,6 +216,24 @@ function normalizePortfolio(payload) {
       "Summer schools",
     ),
     recommendationLetters: normalizeRecommendationLetters(value.recommendationLetters),
+    planningActions: normalizeCollection(
+      value.planningActions,
+      PLANNING_ACTION_LIMIT,
+      PLANNING_ACTION_FIELDS,
+      "Planning actions",
+    ),
+    deepSeekNotes: normalizeCollection(
+      value.deepSeekNotes,
+      DEEPSEEK_NOTE_LIMIT,
+      DEEPSEEK_NOTE_FIELDS,
+      "DeepSeek notes",
+    ),
+    schoolSelectionVersions: normalizeCollection(
+      value.schoolSelectionVersions,
+      SCHOOL_SELECTION_VERSION_LIMIT,
+      SCHOOL_SELECTION_VERSION_FIELDS,
+      "School selection versions",
+    ),
     academicRecords: normalizeAcademicRecords(value.academicRecords),
   };
 }

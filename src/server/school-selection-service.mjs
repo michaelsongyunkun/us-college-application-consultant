@@ -1,12 +1,23 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { resolveApiKey } from "./api-key.mjs";
 
 const ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "rd", "uc"];
+const MAX_SELECTION_ATTEMPTS = 2;
+const MAX_RAG_SOURCES = 8;
+const MAX_RAG_CONTEXT_CHARS = 12_000;
 const ROUND_LIMITS = Object.freeze({
   ed2: [1, 1],
   ea: [3, 5],
   rd: [8, 12],
   uc: [6, 6],
 });
+
+const SCHOOL_ENCYCLOPEDIA_FILES = [
+  { file: "schools.md", label: "综合大学与文理学院" },
+  { file: "international-schools.md", label: "英港澳加新院校" },
+  { file: "other-region-schools.md", label: "其他地区院校" },
+];
 
 const SYSTEM_PROMPT = [
   "你是 US College Compass 的美本选校系统，服务对象是准备申请美国本科的学生和家长。",
@@ -56,6 +67,11 @@ const SYSTEM_PROMPT = [
   JSON.stringify(
     {
       summary: "一句话概括选校策略",
+      strategy: {
+        earlyStrategy: "REA/ED1/ED2 的早申策略摘要",
+        ucStrategy: "UC 体系申请策略摘要",
+        rdStrategy: "RD 轮次分层申请策略摘要",
+      },
       rounds: {
         rea: [],
         ed1: [
@@ -88,7 +104,7 @@ export class SchoolSelectionError extends Error {
   }
 }
 
-export function createSchoolSelectionService({ activityPortfolio }) {
+export function createSchoolSelectionService({ activityPortfolio, root = process.cwd() }) {
   async function generateSelection({
     user,
     payload = {},
@@ -105,36 +121,63 @@ export function createSchoolSelectionService({ activityPortfolio }) {
     }
 
     const portfolio = activityPortfolio.getPortfolio(user);
+    const ragSources = await buildSchoolSelectionRagSources({ root, input, portfolio });
+    const ragContext = buildRagContext(ragSources);
     const model = env.DEEPSEEK_SCHOOL_SELECTION_MODEL || env.DEEPSEEK_MODEL || "deepseek-v4-pro";
-    const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: buildUserMessage({ input, portfolio }) },
-        ],
-        thinking: { type: "disabled" },
-        stream: false,
-        temperature: 0.2,
-      }),
-    });
+    let lastValidationError = null;
+    for (let attempt = 1; attempt <= MAX_SELECTION_ATTEMPTS; attempt += 1) {
+      const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            {
+              role: "user",
+              content: buildUserMessage({
+                input,
+                portfolio,
+                ragContext,
+                repairMessage: lastValidationError?.message || "",
+              }),
+            },
+          ],
+          thinking: { type: "disabled" },
+          stream: false,
+          temperature: attempt === 1 ? 0.2 : 0.1,
+        }),
+      });
 
-    const data = await apiResponse.json().catch(() => ({}));
-    if (!apiResponse.ok) {
-      throw new SchoolSelectionError(data.error?.message || "DeepSeek 选校调用失败。", apiResponse.status);
+      const data = await apiResponse.json().catch(() => ({}));
+      if (!apiResponse.ok) {
+        throw new SchoolSelectionError(data.error?.message || "DeepSeek 选校调用失败。", apiResponse.status);
+      }
+
+      const answer = extractDeepSeekResponseText(data);
+      if (!answer) {
+        lastValidationError = new SchoolSelectionError("DeepSeek 未返回可解析的选校内容。", 502);
+        continue;
+      }
+
+      try {
+        return {
+          selection: validateSchoolSelectionResult(parseSelectionJson(answer)),
+          selectionVersion: input.strategyMode,
+          ragSources: ragSources.map(serializeRagSource),
+          attempts: attempt,
+        };
+      } catch (error) {
+        if (!(error instanceof SchoolSelectionError) || attempt === MAX_SELECTION_ATTEMPTS) {
+          throw error;
+        }
+        lastValidationError = error;
+      }
     }
-
-    const answer = extractDeepSeekResponseText(data);
-    if (!answer) throw new SchoolSelectionError("DeepSeek 未返回可解析的选校内容。", 502);
-
-    return {
-      selection: validateSchoolSelectionResult(parseSelectionJson(answer)),
-    };
+    throw lastValidationError || new SchoolSelectionError("DeepSeek 选校结果未通过二次校验。", 502);
   }
 
   return { generateSelection };
@@ -161,8 +204,25 @@ export function validateSchoolSelectionResult(value) {
 
   return {
     summary: cleanString(item.summary),
+    strategy: normalizeStrategy(item.strategy),
     rounds: normalizedRounds,
     nextActions: normalizeStringList(item.nextActions).slice(0, 8),
+  };
+}
+
+function normalizeStrategy(value) {
+  if (value === undefined || value === null) {
+    return {
+      earlyStrategy: "",
+      ucStrategy: "",
+      rdStrategy: "",
+    };
+  }
+  const item = normalizeObject(value, "School selection strategy");
+  return {
+    earlyStrategy: cleanString(item.earlyStrategy),
+    ucStrategy: cleanString(item.ucStrategy),
+    rdStrategy: cleanString(item.rdStrategy),
   };
 }
 
@@ -175,17 +235,29 @@ function normalizeInput(payload) {
   return {
     nationality,
     highSchoolRegion,
+    targetMajor: cleanString(item.targetMajor),
+    budgetSensitivity: cleanString(item.budgetSensitivity),
+    regionPreference: cleanString(item.regionPreference),
+    campusSetting: cleanString(item.campusSetting),
+    schoolSize: cleanString(item.schoolSize),
+    edRiskTolerance: cleanString(item.edRiskTolerance),
+    scholarshipNeed: cleanString(item.scholarshipNeed),
+    strategyMode: normalizeStrategyMode(item.strategyMode),
     preferences: cleanString(item.preferences),
   };
 }
 
-function buildUserMessage({ input, portfolio }) {
+function buildUserMessage({ input, portfolio, ragContext = "", repairMessage = "" }) {
   return [
     "请基于以下信息生成美本选校系统结果，并严格遵守系统提示中的 JSON schema 与轮次数量规则。",
     "请先判断学生整体竞争力，再分配 REA/ED1、ED2、EA、RD、UC。",
+    `本次策略版本：${input.strategyMode}。保守版降低早申和冲刺比例；均衡版兼顾意愿与风险；冲刺版可以提高高风险学校比例但仍要保留稳妥覆盖。`,
     "REA/ED1 只能选择其中一个方向，合计只能 1 所。",
     "每所学校都要说明推荐专业/方向、匹配理由、风险等级、短板和下一步动作。",
     "如果信息不足，明确写入 gaps，不要自行补全。",
+    repairMessage
+      ? `上一次输出未通过二次校验：${repairMessage}。请只修正 JSON，不要解释。`
+      : "",
     "",
     "用户国籍：",
     input.nationality,
@@ -193,8 +265,20 @@ function buildUserMessage({ input, portfolio }) {
     "用户高中地区：",
     input.highSchoolRegion,
     "",
+    "结构化偏好：",
+    `- 目标专业/方向：${input.targetMajor || "无"}`,
+    `- 预算敏感度：${input.budgetSensitivity || "无"}`,
+    `- 地区偏好：${input.regionPreference || "无"}`,
+    `- 校园环境：${input.campusSetting || "无"}`,
+    `- 学校规模：${input.schoolSize || "无"}`,
+    `- ED 风险承受度：${input.edRiskTolerance || "无"}`,
+    `- 奖学金需求：${input.scholarshipNeed || "无"}`,
+    "",
     "补充偏好：",
     input.preferences || "无",
+    "",
+    "院校百科 RAG 参考：",
+    ragContext || "未匹配到高相关院校百科片段；仍需提醒用户核验申请年度官网。",
     "",
     "我的申请档案：",
     JSON.stringify(portfolio, null, 2),
@@ -248,19 +332,126 @@ function normalizeSchool(value) {
   const item = normalizeObject(value, "School item");
   const school = cleanString(item.school);
   if (!school) throw new SchoolSelectionError("每所学校必须包含 school。", 502);
+  const major = cleanString(item.major);
+  if (!major) throw new SchoolSelectionError(`每所学校必须包含专业方向：${school}。`, 502);
+  const riskLevel = normalizeRiskLevel(item.riskLevel, school);
+  const matchReason = cleanString(item.matchReason);
+  if (!matchReason) throw new SchoolSelectionError(`每所学校必须包含匹配理由：${school}。`, 502);
+  const nextAction = cleanString(item.nextAction);
+  if (!nextAction) throw new SchoolSelectionError(`每所学校必须包含下一步行动：${school}。`, 502);
   return {
     school,
-    major: cleanString(item.major),
-    riskLevel: normalizeRiskLevel(item.riskLevel),
-    matchReason: cleanString(item.matchReason),
+    major,
+    riskLevel,
+    matchReason,
     gaps: normalizeStringList(item.gaps).slice(0, 6),
-    nextAction: cleanString(item.nextAction),
+    nextAction,
   };
 }
 
-function normalizeRiskLevel(value) {
+function normalizeRiskLevel(value, school) {
   const normalized = cleanString(value).toLowerCase();
-  return ["high", "medium", "low"].includes(normalized) ? normalized : "medium";
+  if (!["high", "medium", "low"].includes(normalized)) {
+    throw new SchoolSelectionError(`riskLevel 只能使用 high、medium、low：${school}。`, 502);
+  }
+  return normalized;
+}
+
+async function buildSchoolSelectionRagSources({ root, input, portfolio }) {
+  const documents = await buildSchoolEncyclopediaDocuments(root);
+  const query = [
+    input.targetMajor,
+    input.preferences,
+    input.regionPreference,
+    input.campusSetting,
+    input.schoolSize,
+    ...Object.values(portfolio.applicationPlan || {}).flatMap((entries) =>
+      Array.isArray(entries) ? entries.flatMap((entry) => [entry.school, entry.major]) : [],
+    ),
+  ].filter(Boolean).join(" ");
+  const tokens = tokenize(query || "美本 选校 UC ED EA RD");
+  return documents
+    .map((document, index) => ({ ...document, index, score: scoreRagDocument(document, tokens) }))
+    .filter((document) => document.score > 0)
+    .sort((left, right) => right.score - left.score || left.index - right.index)
+    .slice(0, MAX_RAG_SOURCES);
+}
+
+async function buildSchoolEncyclopediaDocuments(root) {
+  const documents = [];
+  for (const entry of SCHOOL_ENCYCLOPEDIA_FILES) {
+    const text = await readFile(join(root, "data", entry.file), "utf8");
+    splitMarkdownIntoChunks(text).forEach((chunk, index) => {
+      const heading = chunk.match(/^#{1,6}\s+(.+)$/m)?.[1]?.replace(/\*+/g, "").trim() || "";
+      documents.push({
+        id: `school-rag-${entry.file}-${index}`,
+        type: "school-encyclopedia",
+        title: `院校百科：${entry.label}${heading ? ` / ${heading}` : ""}`,
+        text: chunk.trim(),
+      });
+    });
+  }
+  return documents;
+}
+
+function splitMarkdownIntoChunks(text) {
+  return text
+    .replace(/\r\n/g, "\n")
+    .split(/\n(?=#{2,4}\s+)/)
+    .map((section) => section.trim())
+    .filter(Boolean);
+}
+
+function scoreRagDocument(document, tokens) {
+  const searchable = normalizeSearchText(`${document.title}\n${document.text}`);
+  return tokens.reduce((score, token) => {
+    if (!searchable.includes(token)) return score;
+    return score + (token.length >= 4 ? 3 : 1);
+  }, 0);
+}
+
+function buildRagContext(sources) {
+  const sections = [];
+  let totalChars = 0;
+  for (const [index, source] of sources.entries()) {
+    const block = [`[${index + 1}] ${source.title}`, source.text].join("\n");
+    if (totalChars + block.length > MAX_RAG_CONTEXT_CHARS) break;
+    sections.push(block);
+    totalChars += block.length;
+  }
+  return sections.join("\n\n---\n\n");
+}
+
+function serializeRagSource(source) {
+  return {
+    id: source.id,
+    type: source.type,
+    title: source.title,
+    snippet: source.text.slice(0, 260),
+  };
+}
+
+function normalizeStrategyMode(value) {
+  const normalized = cleanString(value);
+  return ["保守版", "均衡版", "冲刺版"].includes(normalized) ? normalized : "均衡版";
+}
+
+function tokenize(value) {
+  const text = String(value || "").toLowerCase();
+  const asciiTokens = text.match(/[a-z0-9][a-z0-9.+#-]*/g) || [];
+  const cjkChars = Array.from(text).filter((char) => /\p{Script=Han}/u.test(char));
+  const cjkBigrams = [];
+  for (let index = 0; index < cjkChars.length - 1; index += 1) {
+    cjkBigrams.push(`${cjkChars[index]}${cjkChars[index + 1]}`);
+  }
+  return [...new Set([...asciiTokens, ...cjkBigrams])].filter((token) => token.length >= 2);
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}.+#-]+/gu, " ")
+    .trim();
 }
 
 function normalizeStringList(value) {

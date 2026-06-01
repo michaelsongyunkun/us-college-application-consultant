@@ -157,6 +157,27 @@
           <div id="recommendationLettersPanel" class="recommendation-portfolio"></div>
         </section>
 
+        <section class="panel portfolio-panel" aria-labelledby="planning-actions-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="planning-actions-title">DeepSeek 行动清单</h2>
+              <p>从问DeepSeek和选校系统保存下来的下一步动作，会集中在这里复盘。</p>
+            </div>
+            <span id="planningActionsProgress" class="status" role="status" aria-live="polite">DeepSeek 行动：0 项</span>
+          </div>
+          <div id="planningActionsPanel" class="deepseek-portfolio-list"></div>
+        </section>
+
+        <section class="panel portfolio-panel" aria-labelledby="deepseek-notes-title">
+          <div class="section-heading table-heading">
+            <div>
+              <h2 id="deepseek-notes-title">DeepSeek 保存摘录</h2>
+              <p>保存关键回答、策略摘要和材料建议，便于后续整理成申请任务。</p>
+            </div>
+          </div>
+          <div id="deepSeekNotesPanel" class="deepseek-portfolio-list"></div>
+        </section>
+
         <section class="panel portfolio-panel application-plan-panel" aria-labelledby="application-plan-title">
           <div class="section-heading table-heading">
             <div>
@@ -177,6 +198,6 @@
     </main>
     <script type="module" src="./src/client/admin-nav.js?v=20260601-admin-nav"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-application-plan"></script>
-    <script type="module" src="./src/client/my-activities.js?v=20260601-activity-import-slot"></script>
+    <script type="module" src="./src/client/my-activities.js?v=20260601-activity-import-slot&workflow=deepseek-portfolio"></script>
   </body>
 </html>

@@ -42,6 +42,8 @@ for (const expected of [
   'id="deepSeekQuestion"',
   'id="deepSeekAskStatus"',
   'id="deepSeekWorkflows"',
+  'id="deepSeekExportButton"',
+  'id="deepSeekSaveReviewButton"',
   "./assets/logo-mark.svg",
   "./assets/deepseek-avatar.svg",
 ]) {
@@ -174,6 +176,14 @@ assert.ok(script.includes("<summary>"), "Ask DeepSeek references should expose a
 assert.ok(script.includes("chat-source-type-chip"), "Ask DeepSeek should show source type chips on reference cards.");
 assert.ok(script.includes("renderFollowUpActions"), "Ask DeepSeek should render follow-up actions after answers.");
 assert.ok(script.includes("data-deepseek-follow-up"), "Ask DeepSeek follow-up buttons should be actionable.");
+assert.ok(script.includes("conversationSummary"), "Ask DeepSeek should keep a compact conversation summary.");
+assert.ok(script.includes("historySummary"), "Ask DeepSeek should send conversation memory to the RAG API.");
+assert.ok(script.includes("exportDeepSeekConversation"), "Ask DeepSeek should export the current conversation for review.");
+assert.ok(script.includes("saveDeepSeekReviewVersion"), "Ask DeepSeek should save a review version into the portfolio.");
+assert.ok(script.includes("renderMissingFieldChecklist"), "Ask DeepSeek should render missing-field guidance.");
+assert.ok(script.includes("data-deepseek-save-actions"), "Ask DeepSeek should save answers as action checklists.");
+assert.ok(script.includes("data-deepseek-save-note"), "Ask DeepSeek should save answers into the application portfolio notes.");
+assert.ok(script.includes('"/api/my-activities"'), "Ask DeepSeek should save useful answers into my application portfolio.");
 assert.ok(script.includes("生成行动清单"), "Ask DeepSeek should offer an action-list follow-up.");
 assert.ok(script.includes("按冲刺/匹配/保底重排"), "Ask DeepSeek should offer a school-list follow-up.");
 assert.ok(script.includes("转成推荐信素材"), "Ask DeepSeek should offer a recommendation-material follow-up.");

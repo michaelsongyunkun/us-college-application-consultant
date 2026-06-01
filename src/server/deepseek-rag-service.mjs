@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { resolveApiKey } from "./api-key.mjs";
 
 const MAX_QUESTION_LENGTH = 1200;
+const MAX_HISTORY_SUMMARY_LENGTH = 1800;
 const MAX_SELECTED_CHUNKS = 14;
 const MAX_CONTEXT_CHARS = 18_000;
 const MAX_CHUNK_CHARS = 2_200;
@@ -75,8 +76,15 @@ export class DeepSeekRagError extends Error {
 }
 
 export function createDeepSeekRagService({ root, planning, activityPortfolio }) {
-  async function answerQuestion({ user, question, env = process.env, deepSeekFetch = fetch }) {
+  async function answerQuestion({
+    user,
+    question,
+    historySummary = "",
+    env = process.env,
+    deepSeekFetch = fetch,
+  }) {
     const normalizedQuestion = normalizeQuestion(question);
+    const normalizedHistorySummary = normalizeHistorySummary(historySummary);
     const apiKey = resolveApiKey({
       environmentApiKey: env.DEEPSEEK_API_KEY,
       requestApiKey: "",
@@ -85,9 +93,20 @@ export function createDeepSeekRagService({ root, planning, activityPortfolio }) 
       throw new DeepSeekRagError("DeepSeek API 尚未配置。请在服务端配置 DEEPSEEK_API_KEY。", 400);
     }
 
-    const documents = await buildRagDocuments({ root, user, planning, activityPortfolio });
-    const selected = selectRelevantDocuments(documents, normalizedQuestion);
-    const context = buildContext(selected);
+    const profile = planning.getProfile(user);
+    const portfolio = activityPortfolio.getPortfolio(user);
+    const missingFields = buildMissingFieldChecklist({ profile, portfolio });
+    const documents = await buildRagDocuments({
+      root,
+      user,
+      planning,
+      activityPortfolio,
+      profile,
+      portfolio,
+    });
+    const intentProfile = analyzeQuestionIntent(normalizedQuestion);
+    const weightedSelected = selectRelevantDocuments(documents, normalizedQuestion, intentProfile);
+    const context = buildContext(weightedSelected);
     const model = env.DEEPSEEK_RAG_MODEL || env.DEEPSEEK_MODEL || "deepseek-v4-pro";
 
     const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
@@ -100,7 +119,16 @@ export function createDeepSeekRagService({ root, planning, activityPortfolio }) 
         model,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: buildUserMessage(normalizedQuestion, context) },
+          {
+            role: "user",
+            content: buildUserMessage(
+              normalizedQuestion,
+              context,
+              normalizedHistorySummary,
+              missingFields,
+              intentProfile,
+            ),
+          },
         ],
         thinking: { type: "disabled" },
         stream: false,
@@ -118,10 +146,14 @@ export function createDeepSeekRagService({ root, planning, activityPortfolio }) 
 
     return {
       answer,
-      sources: selected.map(serializeSource),
+      sources: weightedSelected.map(serializeSource),
+      missingFields,
       retrieval: {
         totalDocuments: documents.length,
-        selectedDocuments: selected.length,
+        selectedDocuments: weightedSelected.length,
+        intent: intentProfile.intent,
+        intentReason: intentProfile.reason,
+        sourceWeights: intentProfile.sourceWeights,
       },
     };
   }
@@ -131,17 +163,23 @@ export function createDeepSeekRagService({ root, planning, activityPortfolio }) 
   };
 }
 
-async function buildRagDocuments({ root, user, planning, activityPortfolio }) {
+async function buildRagDocuments({
+  root,
+  user,
+  planning,
+  activityPortfolio,
+  profile = planning.getProfile(user),
+  portfolio = activityPortfolio.getPortfolio(user),
+}) {
   return [
-    ...buildStudentDocuments({ user, planning, activityPortfolio }),
+    ...buildStudentDocuments({ user, planning, profile, portfolio }),
     ...(await buildMarkdownDocuments(root, RESOURCE_LIBRARY_FILES, "resource-library")),
     ...(await buildMarkdownDocuments(root, SCHOOL_ENCYCLOPEDIA_FILES, "school-encyclopedia")),
   ].filter((document) => document.text.trim());
 }
 
-function buildStudentDocuments({ user, planning, activityPortfolio }) {
+function buildStudentDocuments({ user, planning, profile, portfolio }) {
   const documents = [];
-  const profile = planning.getProfile(user);
   addJsonDocument(documents, {
     type: "student-backup",
     title: "学生备份：基础信息",
@@ -151,7 +189,7 @@ function buildStudentDocuments({ user, planning, activityPortfolio }) {
   addJsonDocument(documents, {
     type: "application-portfolio",
     title: "个人申请档案：选校、活动、竞赛、夏校、推荐信、成绩",
-    data: summarizeApplicationPortfolio(activityPortfolio.getPortfolio(user)),
+    data: summarizeApplicationPortfolio(portfolio),
   });
 
   for (const backup of planning.listRagBackups(user)) {
@@ -271,7 +309,53 @@ function summarizeApplicationPortfolio(portfolio = {}) {
       .map((exam) => `- AP: ${joinParts([exam.courseName, exam.score, exam.examYear], " / ")}`),
   ]);
 
+  addTextSection(
+    sections,
+    "DeepSeek 行动清单",
+    (portfolio.planningActions || []).filter(hasFilledField).map((action) =>
+      formatRecord(action.text || "未命名行动", [["来源", action.source]]),
+    ),
+  );
+
+  addTextSection(
+    sections,
+    "DeepSeek 保存摘录",
+    (portfolio.deepSeekNotes || []).filter(hasFilledField).map((note) =>
+      formatRecord(note.title || "DeepSeek 摘录", [
+        ["内容", note.content],
+        ["来源", note.source],
+      ]),
+    ),
+  );
+
   return sections.join("\n\n");
+}
+
+function buildMissingFieldChecklist({ profile = {}, portfolio = {} }) {
+  const missing = [];
+  if (!hasFilledField(profile)) missing.push("学生基础信息");
+  if (!hasFilledApplicationPlan(portfolio.applicationPlan)) missing.push("选校计划");
+  if (!(portfolio.activities || []).some(hasFilledField)) missing.push("课外活动记录");
+  if (!(portfolio.competitions || []).some(hasFilledField)) missing.push("竞赛/奖项记录");
+  if (!(portfolio.summerSchools || []).some(hasFilledField)) missing.push("夏校/项目经历");
+  if (!hasFilledField(portfolio.recommendationLetters || {})) missing.push("推荐信准备");
+  if (!hasFilledAcademicRecords(portfolio.academicRecords || {})) missing.push("GPA/SAT/AP 成绩档案");
+  return missing;
+}
+
+function hasFilledApplicationPlan(applicationPlan = {}) {
+  return Object.values(applicationPlan).some((entries) =>
+    Array.isArray(entries) && entries.some(hasFilledField),
+  );
+}
+
+function hasFilledAcademicRecords(academicRecords = {}) {
+  return Boolean(
+    cleanText(academicRecords.gpaScale)
+      || (academicRecords.gpaRecords || []).some((record) => cleanText(record.gpa))
+      || (academicRecords.satTests || []).some(hasFilledField)
+      || (academicRecords.apExams || []).some(hasFilledField),
+  );
 }
 
 function addTextSection(sections, title, lines) {
@@ -361,19 +445,66 @@ function getChunkHeading(chunk) {
   return heading.replace(/\*+/g, "").trim().slice(0, 90);
 }
 
-function selectRelevantDocuments(documents, question) {
+function analyzeQuestionIntent(question) {
+  const normalized = normalizeSearchText(question);
+  const hasAny = (patterns) => patterns.some((pattern) => normalized.includes(pattern));
+  if (hasAny(["选校", "院校", "学校", "ed", "ea", "rd", "uc", "rea", "match", "mit", "college", "university"])) {
+    return intentProfile("school", "问题包含院校、轮次或具体学校信号。", {
+      "student-backup": 1.3,
+      "application-portfolio": 1.6,
+      "resource-library": 0.9,
+      "school-encyclopedia": 3.4,
+    });
+  }
+  if (hasAny(["竞赛", "夏校", "科研", "项目", "polygence", "活动", "resource", "competition", "summer"])) {
+    return intentProfile("resource", "问题包含项目、竞赛、夏校或活动资源信号。", {
+      "student-backup": 1.3,
+      "application-portfolio": 1.7,
+      "resource-library": 3.3,
+      "school-encyclopedia": 1.2,
+    });
+  }
+  if (hasAny(["推荐信", "推荐人", "素材", "counselor", "teacher", "recommendation"])) {
+    return intentProfile("recommendation", "问题包含推荐信或推荐人材料信号。", {
+      "student-backup": 2.2,
+      "application-portfolio": 3.1,
+      "resource-library": 1.0,
+      "school-encyclopedia": 1.5,
+    });
+  }
+  if (hasAny(["gpa", "sat", "ap", "课程", "成绩", "标化", "academic"])) {
+    return intentProfile("academic", "问题包含成绩、课程或标化信号。", {
+      "student-backup": 2.1,
+      "application-portfolio": 3.0,
+      "resource-library": 1.1,
+      "school-encyclopedia": 1.7,
+    });
+  }
+  return intentProfile("general", "未识别到强意图，采用均衡检索。", {
+    "student-backup": 1.6,
+    "application-portfolio": 1.8,
+    "resource-library": 1.4,
+    "school-encyclopedia": 1.4,
+  });
+}
+
+function intentProfile(intent, reason, sourceWeights) {
+  return { intent, reason, sourceWeights };
+}
+
+function selectRelevantDocuments(documents, question, intentProfile = analyzeQuestionIntent(question)) {
   const queryTokens = tokenize(question);
   const scored = documents
     .map((document, index) => ({
       ...document,
       index,
-      score: scoreDocument(document, queryTokens, question),
+      score: scoreDocument(document, queryTokens, question, intentProfile),
     }))
     .filter((document) => document.score > 0)
     .sort((left, right) => right.score - left.score || left.index - right.index);
 
   const selected = new Map();
-  for (const document of ensureBaselineContext(documents, scored)) {
+  for (const document of ensureBaselineContext(documents, scored, intentProfile)) {
     selected.set(document.id, document);
   }
   for (const document of scored) {
@@ -382,11 +513,11 @@ function selectRelevantDocuments(documents, question) {
   }
 
   return [...selected.values()]
-    .sort((left, right) => sourcePriority(left.type) - sourcePriority(right.type) || right.score - left.score)
+    .sort((left, right) => right.score - left.score || sourcePriority(left.type, intentProfile) - sourcePriority(right.type, intentProfile))
     .slice(0, MAX_SELECTED_CHUNKS);
 }
 
-function ensureBaselineContext(documents, scored) {
+function ensureBaselineContext(documents, scored, intentProfile) {
   const portfolio =
     scored.find((document) => document.type === "application-portfolio")
     || documents
@@ -404,17 +535,24 @@ function ensureBaselineContext(documents, scored) {
     || documents
       .filter((document) => document.type === "school-encyclopedia")
       .map((document) => ({ ...document, score: 0.1 }))[0];
-  return [portfolio, ...studentDocuments, school].filter(Boolean);
+  const resource =
+    scored.find((document) => document.type === "resource-library")
+    || documents
+      .filter((document) => document.type === "resource-library")
+      .map((document) => ({ ...document, score: intentProfile.sourceWeights["resource-library"] || 0.1 }))[0];
+  const baselines = [portfolio, ...studentDocuments, school, resource].filter(Boolean);
+  return baselines.sort((left, right) => sourcePriority(left.type, intentProfile) - sourcePriority(right.type, intentProfile));
 }
 
-function scoreDocument(document, queryTokens, question) {
+function scoreDocument(document, queryTokens, question, intentProfile) {
   const searchable = normalizeSearchText(`${document.title}\n${document.text}`);
   const title = normalizeSearchText(document.title);
-  let score = ["student-backup", "application-portfolio"].includes(document.type) ? 0.2 : 0;
+  const sourceWeight = intentProfile.sourceWeights[document.type] || 1;
+  let score = sourceWeight;
   for (const token of queryTokens) {
     if (!token) continue;
-    if (searchable.includes(token)) score += token.length >= 4 ? 3 : 1;
-    if (title.includes(token)) score += 2;
+    if (searchable.includes(token)) score += (token.length >= 4 ? 3 : 1) * sourceWeight;
+    if (title.includes(token)) score += 2 * sourceWeight;
   }
   const normalizedQuestion = normalizeSearchText(question);
   if (normalizedQuestion && searchable.includes(normalizedQuestion)) score += 8;
@@ -454,12 +592,22 @@ function buildContext(selected) {
   return sections.join("\n\n---\n\n");
 }
 
-function buildUserMessage(question, context) {
+function buildUserMessage(question, context, historySummary, missingFields = [], intentProfile = analyzeQuestionIntent(question)) {
   return [
     `问题：${question}`,
     "",
+    `问题意图：${intentProfile.intent}`,
+    `意图判断依据：${intentProfile.reason}`,
+    `检索权重：${JSON.stringify(intentProfile.sourceWeights)}`,
+    "",
+    "对话记忆摘要：",
+    historySummary || "暂无上一轮对话记忆。",
+    "",
     "可用资料范围：学生备份、个人申请档案、资源库、院校百科。",
     "请先判断资料是否足以回答；不要在正文末尾列出参考资料，检索来源会由页面的“参考资料”下拉区展示。",
+    missingFields.length
+      ? `当前资料缺失字段清单：${missingFields.join("、")}。如果这些字段会影响判断，请在回答中明确提示需要补充。`
+      : "当前资料缺失字段清单：未发现明显缺失项。",
     "",
     "检索到的资料片段：",
     context || "未检索到高相关资料。请说明当前资料不足，并建议用户补充信息。",
@@ -495,6 +643,10 @@ function normalizeQuestion(value) {
   return question;
 }
 
+function normalizeHistorySummary(value) {
+  return String(value ?? "").trim().slice(0, MAX_HISTORY_SUMMARY_LENGTH);
+}
+
 function extractDeepSeekResponseText(data) {
   return data?.choices?.[0]?.message?.content?.trim() || "";
 }
@@ -515,11 +667,13 @@ function stableId(value) {
   return `rag-${hash.toString(36)}`;
 }
 
-function sourcePriority(type) {
-  return {
+function sourcePriority(type, intentProfile = analyzeQuestionIntent("")) {
+  const priority = {
     "student-backup": 0,
     "application-portfolio": 1,
     "resource-library": 2,
     "school-encyclopedia": 3,
   }[type] ?? 9;
+  const weight = intentProfile.sourceWeights[type] || 1;
+  return priority - weight;
 }

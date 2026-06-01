@@ -2413,6 +2413,22 @@ button.danger:hover {
   padding-inline: 22px;
 }
 
+.school-selection-heading-actions,
+.deepseek-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.school-selection-heading-actions button,
+.deepseek-review-actions button {
+  min-height: 40px;
+  padding-inline: 14px;
+  white-space: nowrap;
+}
+
 .school-selection-results {
   display: grid;
   gap: 18px;
@@ -2435,6 +2451,59 @@ button.danger:hover {
   background: var(--surface-green);
   color: var(--ink-strong);
   font-weight: 700;
+}
+
+.school-selection-strategy {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #d6e2db;
+  border-radius: var(--radius-card);
+  background: #fbfdfb;
+  padding: 16px;
+}
+
+.school-selection-strategy h3 {
+  margin: 0;
+  color: var(--accent-strong);
+  font-size: 1rem;
+}
+
+.school-selection-strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.school-selection-strategy label,
+.school-selection-card label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.school-selection-strategy textarea,
+.school-selection-card input,
+.school-selection-card select,
+.school-selection-card textarea,
+.school-selection-next-actions textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d6e2db;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 11px;
+  color: var(--ink);
+  font: inherit;
+}
+
+.school-selection-strategy textarea,
+.school-selection-card textarea,
+.school-selection-next-actions textarea {
+  min-height: 82px;
+  resize: vertical;
 }
 
 .school-selection-round {
@@ -2478,7 +2547,7 @@ button.danger:hover {
 
 .school-selection-card-heading {
   display: grid;
-  gap: 4px;
+  gap: 8px;
 }
 
 .school-selection-card-heading span {
@@ -2494,6 +2563,12 @@ button.danger:hover {
 .school-selection-card-heading strong {
   color: var(--ink-strong);
   font-size: 1rem;
+}
+
+.school-selection-card-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.5fr);
+  gap: 10px;
 }
 
 .school-selection-card dl {
@@ -2550,6 +2625,26 @@ button.danger:hover {
 .school-selection-next-actions h3 {
   margin: 0;
   font-size: 1rem;
+}
+
+.school-selection-version-card {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: #ffffff;
+  padding: 14px 16px;
+}
+
+.school-selection-version-card strong {
+  color: var(--ink-strong);
+}
+
+.school-selection-version-card p,
+.school-selection-version-card small {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .deepseek-chat-log {
@@ -2909,6 +3004,46 @@ button.danger:hover {
   max-width: 100%;
 }
 
+.chat-save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-missing-fields {
+  display: grid;
+  gap: 8px;
+  max-width: 100%;
+  border: 1px solid #f0dcc0;
+  border-radius: 8px;
+  background: #fffaf1;
+  padding: 12px 14px;
+}
+
+.chat-missing-fields h3 {
+  margin: 0;
+  color: #7a4d12;
+  font-size: 13px;
+}
+
+.chat-missing-fields ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-missing-fields li {
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 5px 9px;
+  color: #684111;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .chat-followup-button {
   min-height: 32px;
   border: 1px solid #cfe2d8;
@@ -3142,6 +3277,59 @@ button.danger:hover {
 
 .portfolio-grid.compact {
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+}
+
+.deepseek-portfolio-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px 18px 18px;
+}
+
+.deepseek-portfolio-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 12px 14px;
+}
+
+.deepseek-portfolio-item > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--surface-green);
+  color: var(--brand-green);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.deepseek-portfolio-item strong,
+.deepseek-portfolio-item small,
+.deepseek-portfolio-item p {
+  overflow-wrap: anywhere;
+}
+
+.deepseek-portfolio-item small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.deepseek-portfolio-item.note {
+  grid-template-columns: 1fr;
+}
+
+.deepseek-portfolio-item p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .application-plan-grid {
@@ -5478,6 +5666,11 @@ button.neutral:hover {
 
   .school-selection-form {
     padding-block: 18px 20px;
+  }
+
+  .school-selection-strategy-grid,
+  .school-selection-card-fields {
+    grid-template-columns: 1fr;
   }
 
   .school-selection-card dl div {

@@ -132,6 +132,7 @@ const activitiesProgress = document.querySelector("#activitiesProgress");
 const competitionsProgress = document.querySelector("#competitionsProgress");
 const summerSchoolsProgress = document.querySelector("#summerSchoolsProgress");
 const recommendationProgress = document.querySelector("#recommendationProgress");
+const planningActionsProgress = document.querySelector("#planningActionsProgress");
 const applicationPlanProgress = document.querySelector("#applicationPlanProgress");
 const applicationPlanList = document.querySelector("#applicationPlanList");
 const activityImportSources = document.querySelector("#activityImportSources");
@@ -140,6 +141,8 @@ const activitiesList = document.querySelector("#activitiesList");
 const competitionsList = document.querySelector("#competitionsList");
 const summerSchoolsList = document.querySelector("#summerSchoolsList");
 const recommendationLettersPanel = document.querySelector("#recommendationLettersPanel");
+const planningActionsPanel = document.querySelector("#planningActionsPanel");
+const deepSeekNotesPanel = document.querySelector("#deepSeekNotesPanel");
 
 let isDirty = false;
 let isRendering = false;
@@ -171,6 +174,9 @@ function emptyPortfolio() {
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
+    planningActions: [],
+    deepSeekNotes: [],
+    schoolSelectionVersions: [],
     updatedAt: null,
   };
 }
@@ -196,6 +202,8 @@ function renderPortfolio(portfolio = emptyPortfolio()) {
   recommendationLettersPanel.innerHTML = renderRecommendationLetters(
     currentPortfolio.recommendationLetters || {},
   );
+  planningActionsPanel.innerHTML = renderPlanningActions(currentPortfolio.planningActions || []);
+  deepSeekNotesPanel.innerHTML = renderDeepSeekNotes(currentPortfolio.deepSeekNotes || []);
   isRendering = false;
   updateCompletion();
 }
@@ -211,6 +219,11 @@ function normalizePortfolioForView(portfolio = emptyPortfolio()) {
     competitions: portfolio.competitions || [],
     summerSchools: portfolio.summerSchools || [],
     recommendationLetters: portfolio.recommendationLetters || {},
+    planningActions: Array.isArray(portfolio.planningActions) ? portfolio.planningActions : [],
+    deepSeekNotes: Array.isArray(portfolio.deepSeekNotes) ? portfolio.deepSeekNotes : [],
+    schoolSelectionVersions: Array.isArray(portfolio.schoolSelectionVersions)
+      ? portfolio.schoolSelectionVersions
+      : [],
   };
 }
 
@@ -560,6 +573,42 @@ function renderRecommendationLetters(recommendationLetters) {
     </div>`;
 }
 
+function renderPlanningActions(actions = []) {
+  if (!actions.length) {
+    return '<p class="portfolio-empty">从问DeepSeek或美本选校系统保存行动后，会显示在这里。</p>';
+  }
+  return actions
+    .map(
+      (action, index) => `
+        <article class="deepseek-portfolio-item">
+          <span>${index + 1}</span>
+          <div>
+            <strong>${escapeHtml(action.text || "未命名行动")}</strong>
+            <small>${escapeHtml(action.source || "DeepSeek")}</small>
+          </div>
+        </article>`,
+    )
+    .join("");
+}
+
+function renderDeepSeekNotes(notes = []) {
+  if (!notes.length) {
+    return '<p class="portfolio-empty">保存关键回答后，会显示在这里。</p>';
+  }
+  return notes
+    .map(
+      (note) => `
+        <article class="deepseek-portfolio-item note">
+          <div>
+            <strong>${escapeHtml(note.title || "DeepSeek 摘录")}</strong>
+            <p>${escapeHtml(note.content || "").replaceAll("\n", "<br />")}</p>
+            <small>${escapeHtml(note.source || "DeepSeek")}</small>
+          </div>
+        </article>`,
+    )
+    .join("");
+}
+
 function renderTeacherFields(prefix, title, teacher) {
   return `
     <fieldset class="portfolio-fieldset full-span">
@@ -645,6 +694,9 @@ function collectPortfolio() {
     competitions: collectEntries("competitions", COMPETITION_SLOT_COUNT, competitionFields),
     summerSchools: collectEntries("summerSchools", SUMMER_SCHOOL_SLOT_COUNT, summerSchoolFields),
     recommendationLetters: collectRecommendationLetters(),
+    planningActions: currentPortfolio.planningActions || [],
+    deepSeekNotes: currentPortfolio.deepSeekNotes || [],
+    schoolSelectionVersions: currentPortfolio.schoolSelectionVersions || [],
   };
 }
 
@@ -792,6 +844,9 @@ function updateCompletion() {
   recommendationProgress.textContent = hasAnyRecommendation(portfolio.recommendationLetters)
     ? "推荐信：已填写"
     : "推荐信：待补充";
+  if (planningActionsProgress) {
+    planningActionsProgress.textContent = `DeepSeek 行动：${portfolio.planningActions.length} 项`;
+  }
 }
 
 function countApplicationPlanSchools(plan = emptyApplicationPlan()) {

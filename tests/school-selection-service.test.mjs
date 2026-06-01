@@ -6,6 +6,11 @@ import {
 
 const validSelection = {
   summary: "该学生适合以工程与应用数学为主线，早申选择控制风险。",
+  strategy: {
+    earlyStrategy: "ED1 控制在高匹配高意愿学校。",
+    ucStrategy: "UC 选择强 CS 与数据科学校区分层覆盖。",
+    rdStrategy: "RD 保留冲刺，同时加入城市型匹配校。",
+  },
   rounds: {
     rea: [],
     ed1: [school("University of Chicago", "Economics", "high")],
@@ -38,6 +43,7 @@ const validSelection = {
 };
 
 assert.equal(validateSchoolSelectionResult(validSelection).rounds.ed1[0].school, "University of Chicago");
+assert.equal(validateSchoolSelectionResult(validSelection).strategy.earlyStrategy, "ED1 控制在高匹配高意愿学校。");
 
 assert.throws(
   () =>
@@ -84,6 +90,18 @@ assert.throws(
   /同一所学校不能重复/,
 );
 
+assert.throws(
+  () =>
+    validateSchoolSelectionResult({
+      ...validSelection,
+      rounds: {
+        ...validSelection.rounds,
+        ed2: [school("New York University", "", "medium")],
+      },
+    }),
+  /每所学校必须包含专业方向/,
+);
+
 const calls = [];
 const service = createSchoolSelectionService({
   activityPortfolio: {
@@ -117,6 +135,13 @@ const generated = await service.generateSelection({
     nationality: "中国",
     highSchoolRegion: "中国大陆高中",
     preferences: "希望申请数据科学和计算机方向。",
+    targetMajor: "Data Science",
+    budgetSensitivity: "中等",
+    regionPreference: "东海岸或加州",
+    campusSetting: "城市型",
+    schoolSize: "中大型",
+    edRiskTolerance: "均衡",
+    scholarshipNeed: "不强制",
   },
   env: {
     DEEPSEEK_API_KEY: "school-selection-secret",
@@ -124,7 +149,12 @@ const generated = await service.generateSelection({
   },
   deepSeekFetch: async (url, options) => {
     calls.push({ url, options });
-    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(validSelection) } }] }), {
+    const brokenSelection = {
+      ...validSelection,
+      rounds: { ...validSelection.rounds, ea: validSelection.rounds.ea.slice(0, 2) },
+    };
+    const content = calls.length === 1 ? JSON.stringify(brokenSelection) : JSON.stringify(validSelection);
+    return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
@@ -133,9 +163,11 @@ const generated = await service.generateSelection({
 
 assert.equal(generated.selection.rounds.uc.length, 6);
 assert.equal(generated.selection.rounds.ea.length, 3);
+assert.equal(generated.selectionVersion, "均衡版");
+assert.ok(generated.ragSources.some((source) => source.type === "school-encyclopedia"));
 assert.equal(JSON.stringify(generated).includes("school-selection-secret"), false);
 
-assert.equal(calls.length, 1);
+assert.equal(calls.length, 2, "School selection should retry once when the first JSON fails strict validation.");
 assert.equal(calls[0].url, "https://api.deepseek.com/chat/completions");
 assert.equal(calls[0].options.headers.Authorization, "Bearer school-selection-secret");
 const sentPayload = JSON.parse(calls[0].options.body);
@@ -153,10 +185,19 @@ assert.match(sentPayload.messages[0].content, /风险等级定义/);
 assert.match(sentPayload.messages[0].content, /输出 JSON 前/);
 assert.match(sentPayload.messages[1].content, /中国/);
 assert.match(sentPayload.messages[1].content, /中国大陆高中/);
+assert.match(sentPayload.messages[1].content, /目标专业\/方向/);
+assert.match(sentPayload.messages[1].content, /Data Science/);
+assert.match(sentPayload.messages[1].content, /ED 风险承受度/);
+assert.match(sentPayload.messages[1].content, /均衡/);
 assert.match(sentPayload.messages[1].content, /Robotics Portfolio Lab/);
 assert.match(sentPayload.messages[1].content, /1510/);
+assert.match(sentPayload.messages[1].content, /院校百科 RAG 参考/);
+assert.match(sentPayload.messages[1].content, /University of California|UC/);
 assert.match(sentPayload.messages[1].content, /先判断学生整体竞争力/);
 assert.match(sentPayload.messages[1].content, /如果信息不足，明确写入 gaps/);
+const retryPayload = JSON.parse(calls[1].options.body);
+assert.match(retryPayload.messages[1].content, /上一次输出未通过二次校验/);
+assert.match(retryPayload.messages[1].content, /EA 需要 3-5 所/);
 
 function school(name, major, riskLevel) {
   return {

@@ -64,7 +64,11 @@
               <h2 id="deepseek-chat-title">对话</h2>
               <p>像聊天一样追问当前学生的项目匹配、学校要求、活动补强、材料准备和资源取舍。</p>
             </div>
-            <span id="deepSeekAskStatus" class="status" role="status" aria-live="polite">等待问题</span>
+            <div class="deepseek-review-actions">
+              <button id="deepSeekExportButton" class="secondary" type="button">导出对话</button>
+              <button id="deepSeekSaveReviewButton" class="secondary" type="button">保存复盘版本</button>
+              <span id="deepSeekAskStatus" class="status" role="status" aria-live="polite">等待问题</span>
+            </div>
           </div>
 
           <div id="deepSeekWorkflows" class="deepseek-workflows" aria-label="Workflow 快捷任务">
@@ -137,6 +141,6 @@
     </main>
     <script type="module" src="./src/client/admin-nav.js?v=20260601-admin-nav"></script>
     <script type="module" src="./src/client/safe-navigation.mjs"></script>
-    <script type="module" src="./src/client/ask-deepseek.js?v=20260601-deepseek-collapsed-references"></script>
+    <script type="module" src="./src/client/ask-deepseek.js?v=20260601-deepseek-workflow-loop"></script>
   </body>
 </html>

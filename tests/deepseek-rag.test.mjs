@@ -119,7 +119,10 @@ try {
 
   const response = await post(
     "/api/deepseek-rag",
-    { question: "How should this Robotics Portfolio student use FRC/FTC 机器人队 as a Common App activity while comparing Polygence and MIT?" },
+    {
+      question: "How should this Robotics Portfolio student use FRC/FTC 机器人队 as a Common App activity while comparing Polygence and MIT?",
+      historySummary: "上一轮已经确认学生主线是 Robotics Portfolio 与 CS。",
+    },
     cookie,
   );
   assert.equal(response.status, 200);
@@ -132,6 +135,14 @@ try {
   assert.ok(body.sources.some((source) => source.type === "resource-library"));
   assert.ok(body.sources.some((source) => source.title.includes("课外活动库")));
   assert.ok(body.sources.some((source) => source.type === "school-encyclopedia"));
+  assert.equal(body.retrieval.intent, "school");
+  assert.ok(
+    body.retrieval.sourceWeights["school-encyclopedia"] > body.retrieval.sourceWeights["resource-library"],
+    "School questions should weight school encyclopedia above general resources.",
+  );
+  assert.match(body.retrieval.intentReason, /MIT|院校|school/i);
+  assert.ok(Array.isArray(body.missingFields), "Ask DeepSeek should return missing-field guidance.");
+  assert.ok(body.missingFields.includes("推荐信准备"), "Missing fields should flag empty recommendation letter data.");
   const activitySource = body.sources.find((source) => source.title.includes("课外活动库"));
   assert.match(activitySource.snippet, /^###/m);
   assert.match(activitySource.snippet, /\n-\s+\*\*活动内容\*\*/);
@@ -158,10 +169,14 @@ try {
   assert.match(userPrompt, /不要在正文末尾列出参考资料/);
   assert.doesNotMatch(userPrompt, /回答末尾用“参考资料”列出/);
   assert.match(sentPayload.messages[1].content, /学生备份/);
+  assert.match(sentPayload.messages[1].content, /对话记忆摘要/);
+  assert.match(sentPayload.messages[1].content, /Robotics Portfolio 与 CS/);
   assert.match(sentPayload.messages[1].content, /个人申请档案/);
   assert.match(sentPayload.messages[1].content, /资源库/);
   assert.match(sentPayload.messages[1].content, /课外活动库/);
   assert.match(sentPayload.messages[1].content, /院校百科/);
+  assert.match(sentPayload.messages[1].content, /问题意图：school/);
+  assert.match(sentPayload.messages[1].content, /检索权重/);
   assert.match(sentPayload.messages[1].content, /Robotics Portfolio/);
   assert.match(sentPayload.messages[1].content, /FRC\/FTC 机器人队/);
   assert.match(sentPayload.messages[1].content, /Prototype assistive navigation robot/);

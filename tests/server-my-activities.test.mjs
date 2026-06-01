@@ -42,6 +42,9 @@ try {
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
+    planningActions: [],
+    deepSeekNotes: [],
+    schoolSelectionVersions: [],
     academicRecords: {
       gpaScale: "",
       gpaRecords: [
@@ -161,6 +164,24 @@ try {
         preparedMaterials: ["简历", "活动清单", "项目说明"],
         notes: "申请季前再更新成绩单",
       },
+      planningActions: [
+        { text: "核验 ED 截止日期", source: "问DeepSeek" },
+        { text: "补充 Robotics Portfolio 成果证明", source: "美本选校系统" },
+      ],
+      deepSeekNotes: [
+        {
+          title: "选校策略摘要",
+          content: "ED1 保持稳定主线，EA 与 RD 分层覆盖。",
+          source: "美本选校系统",
+        },
+      ],
+      schoolSelectionVersions: [
+        {
+          versionName: "均衡版",
+          summary: "ED1 保持稳定主线，EA 与 RD 分层覆盖。",
+          selectionJson: JSON.stringify({ summary: "ED1 保持稳定主线" }),
+        },
+      ],
       academicRecords: {
         gpaScale: "100分制",
         gpaRecords: [
@@ -192,6 +213,9 @@ try {
   assert.equal(saved.competitions[0].competitionName, "Physics Bowl");
   assert.equal(saved.summerSchools[0].programName, "YYGS");
   assert.equal(saved.recommendationLetters.teacher1.teacherName, "Ms. Carter");
+  assert.equal(saved.planningActions[0].text, "核验 ED 截止日期");
+  assert.equal(saved.deepSeekNotes[0].title, "选校策略摘要");
+  assert.equal(saved.schoolSelectionVersions[0].versionName, "均衡版");
   assert.equal(saved.academicRecords.gpaScale, "100分制");
   assert.equal(saved.academicRecords.gpaRecords[0].gpa, "92");
   assert.equal(saved.academicRecords.satTests[0].totalScore, "1480");
@@ -202,6 +226,9 @@ try {
   const reloadedPortfolio = await reloaded.json();
   assert.equal(reloadedPortfolio.activities[0].outcome, "覆盖 80 名学生");
   assert.deepEqual(reloadedPortfolio.applicationPlan, saved.applicationPlan);
+  assert.deepEqual(reloadedPortfolio.planningActions, saved.planningActions);
+  assert.deepEqual(reloadedPortfolio.deepSeekNotes, saved.deepSeekNotes);
+  assert.deepEqual(reloadedPortfolio.schoolSelectionVersions, saved.schoolSelectionVersions);
   assert.deepEqual(reloadedPortfolio.academicRecords, saved.academicRecords);
 
   const secondRegistration = await post("/api/auth/register", {
@@ -224,6 +251,9 @@ try {
     competitions: [],
     summerSchools: [],
     recommendationLetters: {},
+    planningActions: [],
+    deepSeekNotes: [],
+    schoolSelectionVersions: [],
     academicRecords: {
       gpaScale: "",
       gpaRecords: [

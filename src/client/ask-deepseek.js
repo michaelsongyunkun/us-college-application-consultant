@@ -5,13 +5,18 @@ const form = document.querySelector("#deepSeekQuestionForm");
 const questionInput = document.querySelector("#deepSeekQuestion");
 const askButton = document.querySelector("#deepSeekAskButton");
 const clearButton = document.querySelector("#deepSeekClearButton");
+const exportButton = document.querySelector("#deepSeekExportButton");
+const saveReviewButton = document.querySelector("#deepSeekSaveReviewButton");
 const status = document.querySelector("#deepSeekAskStatus");
 const chatLog = document.querySelector("#deepSeekChatLog");
 const workflowRegion = document.querySelector("#deepSeekWorkflows");
 
+const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const USER_AVATAR_SRC = "./assets/logo-mark.svg";
 const DEEPSEEK_AVATAR_SRC = "./assets/deepseek-avatar.svg";
 const THINKING_TEXT = "......";
+const MAX_MEMORY_TURNS = 4;
+const MAX_MEMORY_CHARS = 900;
 const PROGRESS_STATUSES = [
   "正在检索你的申请档案...",
   "正在整理参考资料...",
@@ -155,6 +160,10 @@ const WORKFLOW_PROMPTS = {
 };
 
 let progressStatusTimer = null;
+let conversationSummary = "";
+const conversationTurns = [];
+const conversationArchive = [];
+const assistantMessages = new Map();
 
 for (const workflow of Object.values(WORKFLOW_PROMPTS)) {
   workflow.prompt = `${workflow.prompt}\n\n${STANDARD_RESPONSE_SECTIONS}`;
@@ -282,6 +291,15 @@ function renderGuidedSourceCards(sources = []) {
     </details>`;
 }
 
+function renderMissingFieldChecklist(missingFields = []) {
+  if (!missingFields.length) return "";
+  return `
+    <section class="chat-missing-fields" aria-label="资料缺失字段">
+      <h3>资料不足时建议先补充</h3>
+      <ul>${missingFields.map((field) => `<li>${escapeHtml(field)}</li>`).join("")}</ul>
+    </section>`;
+}
+
 function renderFollowUpActions() {
   const actions = FOLLOW_UP_ACTIONS.map(
     (action, index) => `
@@ -298,15 +316,33 @@ function renderFollowUpActions() {
     </div>`;
 }
 
+function renderPortfolioSaveActions(messageId) {
+  return `
+    <div class="chat-save-actions" aria-label="保存回答">
+      <button
+        class="chat-followup-button"
+        type="button"
+        data-deepseek-save-actions="${escapeHtml(messageId)}"
+      >保存为行动清单</button>
+      <button
+        class="chat-followup-button"
+        type="button"
+        data-deepseek-save-note="${escapeHtml(messageId)}"
+      >保存到我的申请档案</button>
+    </div>`;
+}
+
 function renderMessage({
   id = "",
   role,
   content,
   sources = [],
+  missingFields = [],
   thinking = false,
   error = false,
   showReferences = true,
   showFollowUps = true,
+  showPortfolioActions = true,
 }) {
   const isUser = role === "user";
   const avatarSrc = isUser ? USER_AVATAR_SRC : DEEPSEEK_AVATAR_SRC;
@@ -317,6 +353,12 @@ function renderMessage({
     : renderBubbleContent(content, { isUser, error });
   const referenceContent = !isUser && !thinking && !error && showReferences ? renderGuidedSourceCards(sources) : "";
   const followUpContent = !isUser && !thinking && !error && showFollowUps ? renderFollowUpActions() : "";
+  const missingFieldContent = !isUser && !thinking && !error
+    ? renderMissingFieldChecklist(missingFields)
+    : "";
+  const portfolioActionContent = !isUser && !thinking && !error && showPortfolioActions
+    ? renderPortfolioSaveActions(id)
+    : "";
   const idAttribute = id ? ` id="${escapeHtml(id)}"` : "";
 
   return `
@@ -325,8 +367,10 @@ function renderMessage({
       <div class="chat-message-body">
         <p class="chat-speaker">${escapeHtml(speaker)}</p>
         <div class="chat-bubble">${bubbleContent}</div>
+        ${missingFieldContent}
         ${referenceContent}
         ${followUpContent}
+        ${portfolioActionContent}
       </div>
       ${isUser ? `<img class="chat-avatar" src="${avatarSrc}" width="42" height="42" alt="${avatarAlt}" />` : ""}
     </article>`;
@@ -335,6 +379,7 @@ function renderMessage({
 function appendMessage(message) {
   const messageId = message.id || createMessageId(message.role);
   chatLog.insertAdjacentHTML("beforeend", renderMessage({ ...message, id: messageId }));
+  rememberAssistantMessage(messageId, message);
   scrollChatToBottom();
   return messageId;
 }
@@ -346,7 +391,17 @@ function replaceMessage(messageId, message) {
     return;
   }
   existing.outerHTML = renderMessage({ ...message, id: messageId });
+  rememberAssistantMessage(messageId, message);
   scrollChatToBottom();
+}
+
+function rememberAssistantMessage(messageId, message) {
+  if (message.role !== "assistant" || message.thinking || message.error) return;
+  assistantMessages.set(messageId, {
+    content: String(message.content || ""),
+    sources: message.sources || [],
+    missingFields: message.missingFields || [],
+  });
 }
 
 function renderThinkingMessage() {
@@ -365,6 +420,7 @@ function renderInitialChat() {
       "你好，我是你的申请规划智能体。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍；我会结合你的个人申请档案和已保存资料回答，参考资料会收起在回答下方，需要核验时再展开。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。",
     showReferences: false,
     showFollowUps: false,
+    showPortfolioActions: false,
   });
   scrollChatToBottom();
 }
@@ -400,14 +456,24 @@ async function askDeepSeek({ question, displayQuestion = question }) {
     startProgressStatus();
     const data = await requestJson("/api/deepseek-rag", {
       method: "POST",
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, historySummary: conversationSummary }),
     });
     const sources = data.sources || [];
+    const answer = data.answer || "DeepSeek 暂无回答。";
     stopProgressStatus();
     replaceMessage(thinkingMessageId, {
       role: "assistant",
-      content: data.answer || "DeepSeek 暂无回答。",
+      content: answer,
       sources,
+      missingFields: data.missingFields || [],
+    });
+    updateConversationSummary({ question: displayQuestion, answer });
+    conversationArchive.push({
+      question: displayQuestion,
+      answer,
+      sources: sources.map((source) => source.title),
+      missingFields: data.missingFields || [],
+      createdAt: new Date().toISOString(),
     });
     setStatus(`已回复，附 ${sources.length} 条参考资料`);
   } catch (error) {
@@ -424,6 +490,186 @@ async function askDeepSeek({ question, displayQuestion = question }) {
   }
 }
 
+function updateConversationSummary({ question, answer }) {
+  conversationTurns.push(
+    [
+      `问：${compactText(question, 180)}`,
+      `答：${compactText(answer, 320)}`,
+    ].join("\n"),
+  );
+  const summary = conversationTurns.slice(-MAX_MEMORY_TURNS).join("\n\n");
+  conversationSummary = summary.length > MAX_MEMORY_CHARS
+    ? summary.slice(summary.length - MAX_MEMORY_CHARS)
+    : summary;
+}
+
+function compactText(value, limit) {
+  return String(value || "")
+    .replace(/[#*_`>\-[\]]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, limit);
+}
+
+async function saveAnswerAsActions(messageId, button) {
+  const message = assistantMessages.get(messageId);
+  if (!message) return;
+  const actions = extractActionChecklist(message.content);
+  if (!actions.length) {
+    setStatus("这条回答里没有识别到可保存的行动项。", true);
+    return;
+  }
+  await savePortfolioUpdate((portfolio) => ({
+    ...portfolio,
+    planningActions: mergePortfolioItems(
+      portfolio.planningActions || [],
+      actions.map((text) => ({ text, source: "问DeepSeek" })),
+      "text",
+    ),
+  }), "行动清单已保存到我的申请档案", button);
+}
+
+function exportDeepSeekConversation() {
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    conversationSummary,
+    turns: conversationArchive,
+  };
+  downloadTextFile(
+    `deepseek-review-${new Date().toISOString().slice(0, 10)}.json`,
+    JSON.stringify(payload, null, 2),
+    "application/json;charset=utf-8",
+  );
+  setStatus("对话复盘已导出");
+}
+
+async function saveDeepSeekReviewVersion() {
+  if (!conversationArchive.length) {
+    setStatus("暂无可保存的对话复盘。", true);
+    return;
+  }
+  await savePortfolioUpdate((portfolio) => ({
+    ...portfolio,
+    deepSeekNotes: mergePortfolioItems(
+      portfolio.deepSeekNotes || [],
+      [{
+        title: `DeepSeek 对话复盘 ${new Date().toLocaleString("zh-CN")}`,
+        content: conversationArchive
+          .map((turn, index) => [
+            `第 ${index + 1} 轮：${turn.question}`,
+            turn.answer,
+          ].join("\n"))
+          .join("\n\n---\n\n")
+          .slice(0, 2400),
+        source: "问DeepSeek",
+      }],
+      "content",
+    ),
+  }), "DeepSeek 对话复盘已保存到我的申请档案", saveReviewButton);
+}
+
+async function saveAnswerAsNote(messageId, button) {
+  const message = assistantMessages.get(messageId);
+  if (!message) return;
+  const note = {
+    title: extractNoteTitle(message.content),
+    content: String(message.content || "").trim().slice(0, 2400),
+    source: "问DeepSeek",
+  };
+  await savePortfolioUpdate((portfolio) => ({
+    ...portfolio,
+    deepSeekNotes: mergePortfolioItems(portfolio.deepSeekNotes || [], [note], "content"),
+  }), "回答摘录已保存到我的申请档案", button);
+}
+
+async function savePortfolioUpdate(updater, successMessage, button) {
+  const previousLabel = button?.textContent;
+  if (button) {
+    button.disabled = true;
+    button.textContent = "保存中...";
+  }
+  try {
+    const portfolio = await requestJson(MY_ACTIVITIES_ENDPOINT, { method: "GET" });
+    await requestJson(MY_ACTIVITIES_ENDPOINT, {
+      method: "PUT",
+      body: JSON.stringify(updater(portfolio)),
+    });
+    setStatus(successMessage);
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = previousLabel;
+    }
+  }
+}
+
+function extractActionChecklist(content) {
+  const section = extractMarkdownSection(content, [
+    "下一步行动",
+    "未来 30 天优先补强项",
+    "下一步核验清单",
+    "推荐补强项目或行动",
+    "申请材料清单",
+  ]) || content;
+  return section
+    .split("\n")
+    .map((line) =>
+      line
+        .replace(/^\s*(?:[-*+]|\d+[.)]|[（(]?\d+[）)])\s*/, "")
+        .replace(/^\s*\[[ xX]\]\s*/, "")
+        .trim(),
+    )
+    .filter((line) => line && !line.startsWith("#") && line.length >= 4)
+    .slice(0, 8);
+}
+
+function extractMarkdownSection(content, headings) {
+  const lines = String(content || "").replace(/\r\n/g, "\n").split("\n");
+  let isCollecting = false;
+  const collected = [];
+  for (const line of lines) {
+    const heading = line.match(/^#{1,4}\s*(.+?)\s*$/u)?.[1]?.trim();
+    if (heading) {
+      if (isCollecting) break;
+      isCollecting = headings.some((item) => heading.includes(item));
+      continue;
+    }
+    if (isCollecting) collected.push(line);
+  }
+  return collected.join("\n").trim();
+}
+
+function extractNoteTitle(content) {
+  const heading = String(content || "").match(/^#{1,4}\s*(.+)$/m)?.[1]?.trim();
+  return heading ? heading.slice(0, 60) : "DeepSeek 回答摘录";
+}
+
+function mergePortfolioItems(existingItems, newItems, key) {
+  const seen = new Set();
+  return [...existingItems, ...newItems]
+    .filter((item) => {
+      const value = compactText(item?.[key], 160).toLowerCase();
+      if (!value || seen.has(value)) return false;
+      seen.add(value);
+      return true;
+    })
+    .slice(-20);
+}
+
+function downloadTextFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 workflowRegion?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-deepseek-workflow]");
   if (!button || button.disabled) return;
@@ -436,6 +682,16 @@ workflowRegion?.addEventListener("click", (event) => {
 });
 
 chatLog.addEventListener("click", (event) => {
+  const saveActionsButton = event.target.closest("[data-deepseek-save-actions]");
+  if (saveActionsButton) {
+    saveAnswerAsActions(saveActionsButton.dataset.deepseekSaveActions, saveActionsButton);
+    return;
+  }
+  const saveNoteButton = event.target.closest("[data-deepseek-save-note]");
+  if (saveNoteButton) {
+    saveAnswerAsNote(saveNoteButton.dataset.deepseekSaveNote, saveNoteButton);
+    return;
+  }
   const button = event.target.closest("[data-deepseek-follow-up]");
   if (!button || askButton.disabled) return;
   const followUp = FOLLOW_UP_ACTIONS[Number(button.dataset.deepseekFollowUp)];
@@ -454,7 +710,14 @@ questionInput.addEventListener("keydown", (event) => {
 
 clearButton.addEventListener("click", () => {
   questionInput.value = "";
+  conversationSummary = "";
+  conversationTurns.length = 0;
+  conversationArchive.length = 0;
+  assistantMessages.clear();
   renderInitialChat();
   setStatus("等待问题");
   questionInput.focus();
 });
+
+exportButton?.addEventListener("click", exportDeepSeekConversation);
+saveReviewButton?.addEventListener("click", saveDeepSeekReviewVersion);

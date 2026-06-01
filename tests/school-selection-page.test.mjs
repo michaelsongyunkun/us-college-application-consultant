@@ -45,8 +45,19 @@ for (const expected of [
   'id="schoolSelectionForm"',
   'id="selectionNationality"',
   'id="selectionHighSchoolRegion"',
+  'id="selectionTargetMajor"',
+  'id="selectionBudgetSensitivity"',
+  'id="selectionRegionPreference"',
+  'id="selectionCampusSetting"',
+  'id="selectionSchoolSize"',
+  'id="selectionEdRiskTolerance"',
+  'id="selectionScholarshipNeed"',
+  'id="selectionStrategyMode"',
   'id="selectionPreferences"',
   'id="generateSchoolSelectionButton"',
+  'id="saveSchoolSelectionButton"',
+  'id="exportSchoolSelectionButton"',
+  'id="schoolSelectionVersionList"',
   'id="schoolSelectionStatus"',
   'id="schoolSelectionResults"',
   "./assets/logo-mark.svg",
@@ -60,6 +71,15 @@ assert.ok(script.includes('"/api/school-selection"'), "School selection page sho
 assert.ok(script.includes("renderSchoolSelectionResults"), "School selection page should render grouped results.");
 assert.ok(script.includes("selectionNationality"), "School selection page should read nationality.");
 assert.ok(script.includes("selectionHighSchoolRegion"), "School selection page should read high school region.");
+assert.ok(script.includes("selectionTargetMajor"), "School selection page should read structured target major preference.");
+assert.ok(script.includes("selectionStrategyMode"), "School selection page should read conservative/balanced/aggressive version mode.");
+assert.ok(script.includes("saveSchoolSelectionToPortfolio"), "School selection should save edited results into my application portfolio.");
+assert.ok(script.includes("saveSchoolSelectionVersion"), "School selection should save versioned school selection plans.");
+assert.ok(script.includes("exportSchoolSelection"), "School selection should export the edited school selection result.");
+assert.ok(script.includes("renderSchoolSelectionVersions"), "School selection should show saved versions for review.");
+assert.ok(script.includes("collectEditedSelection"), "School selection should collect edited school results before saving.");
+assert.ok(script.includes('"/api/my-activities"'), "School selection should load and save the application portfolio.");
+assert.ok(script.includes("renderStrategySummary"), "School selection should show an application strategy summary.");
 assert.ok(script.includes("REA / ED1"), "School selection page should label the mutually exclusive early bucket.");
 assert.ok(script.includes("3-5所"), "School selection page should explain the EA count range.");
 assert.ok(script.includes("8-12所"), "School selection page should explain the RD count range.");

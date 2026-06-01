@@ -35,6 +35,9 @@ for (const expected of [
   'id="competitionsList"',
   'id="summerSchoolsList"',
   'id="recommendationLettersPanel"',
+  'id="planningActionsPanel"',
+  'id="deepSeekNotesPanel"',
+  'id="planningActionsProgress"',
   'id="activitiesProgress"',
   'id="competitionsProgress"',
   'id="summerSchoolsProgress"',
@@ -50,9 +53,11 @@ assert.ok(
 );
 
 assert.ok(
-  pageHtml.indexOf('id="recommendationLettersPanel"') < pageHtml.indexOf('id="applicationPlanList"')
+  pageHtml.indexOf('id="recommendationLettersPanel"') < pageHtml.indexOf('id="planningActionsPanel"')
+    && pageHtml.indexOf('id="planningActionsPanel"') < pageHtml.indexOf('id="deepSeekNotesPanel"')
+    && pageHtml.indexOf('id="deepSeekNotesPanel"') < pageHtml.indexOf('id="applicationPlanList"')
     && pageHtml.indexOf('id="applicationPlanList"') < pageHtml.indexOf('class="portfolio-save-bar"'),
-  "选校计划应位于页面内容区最下面，放在推荐信之后、保存栏之前。"
+  "DeepSeek 产出应位于推荐信与选校计划之间，选校计划仍靠近保存栏。"
 );
 
 for (const copy of [
@@ -62,6 +67,7 @@ for (const copy of [
   "竞赛：已填写 0/5",
   "夏校：已填写 0/3",
   "推荐信：待补充",
+  "DeepSeek 行动：0 项",
 ]) {
   assert.ok(pageHtml.includes(copy) || script.includes(copy), `完成度文案应覆盖空状态：${copy}`);
 }
@@ -79,6 +85,10 @@ for (const field of [
   "counselorStatus",
   "preparedMaterials",
   "applicationPlan",
+  "planningActions",
+  "deepSeekNotes",
+  "renderPlanningActions",
+  "renderDeepSeekNotes",
   "academicRecords",
   "GPA分制",
   "4.0分制",
