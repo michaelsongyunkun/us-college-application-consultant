@@ -17,6 +17,10 @@ import {
 } from "./src/server/deepseek-rag-service.mjs";
 import { createMailerFromEnv } from "./src/server/mailer.mjs";
 import { PlanningError, createPlanningService } from "./src/server/planning-service.mjs";
+import {
+  SchoolSelectionError,
+  createSchoolSelectionService,
+} from "./src/server/school-selection-service.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const promptPath = join(root, "prompts", "us-college-admissions-strategist-agent.md");
@@ -34,6 +38,7 @@ const DEFAULT_RATE_LIMITS = {
   "/api/feedback": { maxRequests: 10, windowMs: 60_000 },
   "/api/deepseek-plan": { maxRequests: 10, windowMs: 60_000 },
   "/api/deepseek-rag": { maxRequests: 20, windowMs: 60_000 },
+  "/api/school-selection": { maxRequests: 10, windowMs: 60_000 },
   "/api/analytics/usage-event": { maxRequests: 120, windowMs: 60_000 },
 };
 const SECURITY_HEADERS = Object.freeze({
@@ -506,6 +511,7 @@ export function createAppServer({
   planning = createPlanningService({ authDb }),
   activityPortfolio = createActivityPortfolioService({ authDb }),
   deepSeekRag = createDeepSeekRagService({ root, planning, activityPortfolio }),
+  schoolSelection = createSchoolSelectionService({ activityPortfolio }),
   mailer = createMailerFromEnv(env),
   appBaseUrl = env.APP_BASE_URL || "",
   deepSeekFetch = fetch,
@@ -561,6 +567,18 @@ export function createAppServer({
         sendJson(response, 200, await deepSeekRag.answerQuestion({
           user,
           question: payload.question,
+          env,
+          deepSeekFetch,
+        }));
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/school-selection") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        sendJson(response, 200, await schoolSelection.generateSelection({
+          user,
+          payload: await readJson(request),
           env,
           deepSeekFetch,
         }));
@@ -743,6 +761,7 @@ export function createAppServer({
         (requestPath === "/course-helper.html" ||
           requestPath === "/gpa-calculator.html" ||
           requestPath === "/my-activities.html" ||
+          requestPath === "/school-selection.html" ||
           requestPath === "/ask-deepseek.html" ||
           requestPath === "/resource-library.html" ||
           requestPath === "/school-encyclopedia.html") &&
@@ -781,6 +800,7 @@ export function createAppServer({
         error instanceof AuthError ||
         error instanceof ActivityPortfolioError ||
         error instanceof DeepSeekRagError ||
+        error instanceof SchoolSelectionError ||
         error instanceof PlanningError ||
         error instanceof RequestError
       ) {

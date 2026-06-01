@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 const pages = [
   ["index.html", "申请规划中心"],
   ["my-activities.html", "我的申请档案"],
+  ["school-selection.html", "美本选校系统"],
   ["ask-deepseek.html", "问DeepSeek"],
   ["resource-library.html", "资源库"],
   ["school-encyclopedia.html", "院校百科"],
@@ -28,8 +29,8 @@ assert.ok(!indexHtml.includes("Automation Status"), "Logged-in home should not s
 assert.ok(!indexHtml.includes('class="command-center-hero"'), "Logged-in home should not render the removed automation status board.");
 assert.ok(!indexHtml.includes("Planning Readiness"), "Logged-in home should not show the removed readiness card.");
 assert.ok(
-  indexHtml.includes('./src/client/app.js?v=20260601-auth-form-fallback'),
-  "Logged-in shell should cache-bust the main app module with the current logout release.",
+  indexHtml.includes('./src/client/app.js?v=20260601-school-selection'),
+  "Logged-in shell should cache-bust the main app module with the current school selection release.",
 );
 assert.ok(
   !indexHtml.includes('./src/client/app.js?v=20260531-svg-only'),
@@ -42,11 +43,11 @@ for (const [file, activeLabel] of pages) {
   assert.ok(html.includes('class="command-sidebar"'), `${file} should include the command sidebar.`);
   assert.ok(html.includes('class="command-main"'), `${file} should wrap page content in command-main.`);
   assert.ok(html.includes("./assets/logo-mark.svg"), `${file} should preserve the current logo mark.`);
-  assert.ok(html.includes("./styles.css?v=20260601-scrollbar-rail"), `${file} should load the cache-busted command center stylesheet.`);
+  assert.ok(html.includes("./styles.css?v=20260601-school-selection-layout"), `${file} should load the cache-busted command center stylesheet.`);
   assert.ok(html.includes("US College Compass"), `${file} should preserve the current brand name.`);
   assert.ok(html.includes("Application Planning Center"), `${file} should position the logged-in product as a planning center.`);
   assert.ok(html.includes(`aria-current="page">${activeLabel}`), `${file} should mark ${activeLabel} as the active command nav item.`);
-  for (const navLabel of ["申请规划中心", "我的申请档案", "资源库", "院校百科", "选课辅助器", "GPA / AP 工具", "免责声明", "反馈与支持", "联系我们"]) {
+  for (const navLabel of ["申请规划中心", "我的申请档案", "美本选校系统", "资源库", "院校百科", "选课辅助器", "GPA / AP 工具", "免责声明", "反馈与支持", "联系我们"]) {
     assert.ok(html.includes(navLabel), `${file} should include command nav label ${navLabel}.`);
   }
   const commandNav = html.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";

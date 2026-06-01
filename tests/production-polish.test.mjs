@@ -116,6 +116,7 @@ try {
     "/course-helper.html",
     "/gpa-calculator.html",
     "/my-activities.html",
+    "/school-selection.html",
     "/resource-library.html",
     "/school-encyclopedia.html",
   ]) {
