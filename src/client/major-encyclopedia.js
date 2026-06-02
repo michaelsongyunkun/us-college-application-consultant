@@ -11,7 +11,6 @@ import {
 } from "./visible-results.mjs";
 
 const status = document.querySelector("#majorStatus");
-const searchInput = document.querySelector("#majorSearch");
 const categoryTabs = document.querySelector("#majorCategoryTabs");
 const categoryTitle = document.querySelector("#majorCategoryTitle");
 const majorCount = document.querySelector("#majorCount");
@@ -81,7 +80,6 @@ function renderMajorDetails(major) {
     <div><dt>就业方向</dt><dd>${escapeHtml(displayValue(major.careerPaths))}</dd></div>
     <div><dt>专业强校</dt><dd>${escapeHtml(displayValue(major.strongSchools))}</dd></div>
     <div><dt>录取难度</dt><dd>${escapeHtml(displayValue(major.admissionDifficulty))}</dd></div>
-    <div><dt>申请检索口径</dt><dd>${escapeHtml(displayValue(major.searchName))}</dd></div>
     <div><dt>复查说明</dt><dd>${escapeHtml(displayValue(major.reviewNote))}</dd></div>`;
 }
 
@@ -129,8 +127,7 @@ function renderCategoryTabs() {
 }
 
 function renderMajors() {
-  const query = searchInput.value.trim();
-  const matchingMajors = filterMajors(majors, { category: activeCategory, query });
+  const matchingMajors = filterMajors(majors, { category: activeCategory });
   const page = getVisibleResultPage(matchingMajors, visibleMajorLimit);
   matchingMajorCount = page.totalCount;
 
@@ -156,15 +153,111 @@ function switchCategory(category) {
   renderMajors();
 }
 
+function splitMarkdownTableRow(line) {
+  const trimmed = String(line || "").trim();
+  if (!trimmed.includes("|")) return [];
+  return trimmed
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim());
+}
+
+function isMarkdownDividerRow(line) {
+  const cells = splitMarkdownTableRow(line);
+  return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/u.test(cell));
+}
+
+function formatMarkdownTableRow(cells) {
+  return `| ${cells.join(" | ")} |`;
+}
+
+function removeHiddenTableColumns(markdown) {
+  const hiddenColumnLabels = [
+    ["适合检索", "的英文口径"].join(""),
+    "英文检索口径",
+    "检索英文口径",
+    "英文搜索口径",
+    "English search wording",
+  ];
+  const lines = String(markdown || "").split(/\r?\n/u);
+  const output = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const headerCells = splitMarkdownTableRow(lines[index]);
+    if (!headerCells.length || !isMarkdownDividerRow(lines[index + 1])) {
+      output.push(lines[index]);
+      continue;
+    }
+
+    const hiddenIndexes = headerCells
+      .map((cell, cellIndex) => {
+        const normalizedCell = cell.replace(/\s+/g, "");
+        const isHidden = hiddenColumnLabels.some((label) => normalizedCell.includes(label.replace(/\s+/g, "")))
+          || (/英文/u.test(normalizedCell) && /[检搜]索/u.test(normalizedCell) && /口径/u.test(normalizedCell));
+        return isHidden ? cellIndex : -1;
+      })
+      .filter((cellIndex) => cellIndex >= 0);
+
+    if (!hiddenIndexes.length) {
+      output.push(lines[index]);
+      continue;
+    }
+
+    const keepCell = (_cell, cellIndex) => !hiddenIndexes.includes(cellIndex);
+    output.push(formatMarkdownTableRow(headerCells.filter(keepCell)));
+    output.push(formatMarkdownTableRow(splitMarkdownTableRow(lines[index + 1]).filter(keepCell)));
+    index += 2;
+
+    while (index < lines.length && splitMarkdownTableRow(lines[index]).length) {
+      output.push(formatMarkdownTableRow(splitMarkdownTableRow(lines[index]).filter(keepCell)));
+      index += 1;
+    }
+    index -= 1;
+  }
+
+  return output.join("\n");
+}
+
+function removeHiddenSourceSections(markdown) {
+  const hiddenHeadings = [
+    ["参考", "资料"].join(""),
+    "Sources",
+    "References",
+    "来源",
+  ];
+  const lines = String(markdown || "").split(/\r?\n/u);
+  const output = [];
+  let skipping = false;
+
+  for (const line of lines) {
+    const heading = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*$/u);
+    if (heading) {
+      const normalizedHeading = heading[1].replace(/[①②③④⑤⑥⑦⑧⑨⑩:：\s]/gu, "");
+      skipping = hiddenHeadings.some((label) => normalizedHeading.includes(label));
+      if (skipping) continue;
+    }
+    if (!skipping) output.push(line);
+  }
+
+  return output.join("\n");
+}
+
+function sanitizeDeepSeekMajorAnswer(answer) {
+  return removeHiddenTableColumns(removeHiddenSourceSections(answer)).trim()
+    || "DeepSeek 暂无匹配建议。";
+}
+
 async function runDeepSeekMajorMatch() {
   const prompt = [
     "请根据我的申请档案自动匹配适合探索的美国本科专业。",
-    "必须优先使用专业百科 RAG 中的专业介绍、常见学习内容、就业方向、专业强校、录取难度和建议申请检索口径。",
+    "必须优先使用专业百科 RAG 中的专业介绍、常见学习内容、就业方向、专业强校和录取难度。",
     "也请结合我的申请档案、资源库和院校百科，判断当前活动、成绩、课程和职业/岗位兴趣能支撑哪些专业。",
+    "只输出匹配建议正文；不要输出来源清单，也不要展示英文检索口径列。",
     "请输出：",
     "## 核心结论",
     "## 推荐专业优先级表",
-    "表格列包括：专业、匹配理由、需要补强的证据、适合检索的英文口径。",
+    "表格列包括：专业、匹配理由、需要补强的证据。",
     "## 不建议优先选择的方向",
     "## 下一步行动",
     "如果我的申请档案信息不足，请明确列出需要补充的字段。",
@@ -178,23 +271,10 @@ async function runDeepSeekMajorMatch() {
       method: "POST",
       body: JSON.stringify({ question: prompt }),
     });
+    const answer = sanitizeDeepSeekMajorAnswer(data.answer || "");
     deepSeekMajorResult.innerHTML = `
-      <div class="major-ai-answer">${renderMarkdown(data.answer || "")}</div>
-      <details class="chat-references">
-        <summary><span>参考资料</span><small>${(data.sources || []).length} 条线索</small></summary>
-        <div class="chat-source-grid">
-          ${(data.sources || []).map((source, index) => `
-            <article class="chat-source-card">
-              <div class="chat-source-card-header">
-                <span>${index + 1}</span>
-                <strong>${escapeHtml(source.typeLabel || source.type)}</strong>
-              </div>
-              <h4>${escapeHtml(source.title)}</h4>
-              <div class="chat-source-snippet">${renderMarkdown(source.snippet || "")}</div>
-            </article>`).join("")}
-        </div>
-      </details>`;
-    setDeepSeekStatus(`已生成匹配，附 ${(data.sources || []).length} 条参考资料`);
+      <div class="major-ai-answer">${renderMarkdown(answer)}</div>`;
+    setDeepSeekStatus("已生成匹配");
   } catch (error) {
     deepSeekMajorResult.innerHTML = `<p class="resource-empty">${escapeHtml(error.message)}</p>`;
     setDeepSeekStatus(error.message, true);
@@ -218,11 +298,6 @@ categoryTabs.addEventListener("click", (event) => {
   const tab = event.target.closest("[data-major-category]");
   if (!tab) return;
   switchCategory(tab.dataset.majorCategory);
-});
-
-searchInput.addEventListener("input", () => {
-  visibleMajorLimit = DEFAULT_VISIBLE_RESULT_LIMIT;
-  renderMajors();
 });
 
 loadMoreMajorsButton.addEventListener("click", () => {

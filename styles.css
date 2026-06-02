@@ -5235,6 +5235,11 @@ button.neutral:hover {
   padding: 18px 22px;
 }
 
+.major-category-toolbar {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
 .school-search {
   display: grid;
   flex: 1;
@@ -5346,7 +5351,7 @@ button.neutral:hover {
 }
 
 .major-match-panel {
-  --major-match-body-inset: 32px;
+  --major-match-body-inset: 20px;
   display: grid;
   align-content: start;
   gap: 16px;

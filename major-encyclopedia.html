@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>专业百科</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260602-major-profile-inset" />
+    <link rel="stylesheet" href="./styles.css?v=20260602-major-profile-clean" />
   </head>
   <body>
     <main class="app-shell command-shell">
@@ -43,7 +43,7 @@
         </nav>
         <div class="command-sidebar-note">
           <strong>专业核验提醒</strong>
-          <span>专业百科用于初筛方向与检索口径；目标学校是否开设、是否直录、容量限制和跨学院规则请以申请年度官网为准。</span>
+          <span>专业百科用于初筛方向；目标学校是否开设、是否直录、容量限制和跨学院规则请以申请年度官网为准。</span>
         </div>
       </aside>
 
@@ -63,7 +63,7 @@
         <div>
           <p class="eyebrow">Major Intelligence</p>
           <h2>把专业方向纳入申请档案决策</h2>
-          <p>基于本地专业 RAG 文档浏览 200+ 美国本科专业，结合我的申请档案做 DeepSeek 自动匹配，并保留可检索的专业介绍与申请口径。</p>
+          <p>基于本地专业 RAG 文档浏览 200+ 美国本科专业，结合我的申请档案做 DeepSeek 自动匹配，并保留专业介绍、学习内容、就业方向与强校参考。</p>
         </div>
         <div class="command-summary-metrics">
           <span><strong>240</strong>专业条目</span>
@@ -78,7 +78,7 @@
             <div>
               <p class="eyebrow">Profile Match</p>
               <h2 id="deepseek-major-title">DeepSeek 匹配专业</h2>
-              <p>点击后根据我的申请档案自动匹配专业，并引用专业百科 RAG、资源库和院校百科作为参考。</p>
+              <p>点击后根据我的申请档案自动匹配专业，综合专业百科 RAG、资源库和院校百科信息生成方向建议。</p>
             </div>
           </div>
           <button id="deepSeekMajorMatchButton" type="button">根据我的申请档案自动匹配专业</button>
@@ -92,17 +92,13 @@
       <section class="panel school-panel" aria-labelledby="major-title">
         <div class="section-heading table-heading">
           <div>
-            <h2 id="major-title">专业介绍与检索口径</h2>
-            <p>浏览本科专业的开设核验、学习内容、就业方向、强校参考、录取难度和申请检索口径。</p>
+            <h2 id="major-title">专业介绍与方向浏览</h2>
+            <p>浏览本科专业的开设核验、学习内容、就业方向、强校参考和录取难度。</p>
           </div>
           <span id="majorStatus" class="status" role="status" aria-live="polite">专业资料加载中</span>
         </div>
 
-        <div class="school-toolbar">
-          <label class="school-search">
-            <span>搜索专业资料</span>
-            <input id="majorSearch" type="search" placeholder="搜索专业名称、学习内容、就业方向、强校或检索口径" />
-          </label>
+        <div class="school-toolbar major-category-toolbar">
           <div id="majorCategoryTabs" class="resource-tabs" role="tablist" aria-label="专业类别"></div>
         </div>
 
@@ -121,6 +117,6 @@
     </main>
     <script type="module" src="./src/client/admin-nav.js?v=20260601-admin-nav"></script>
     <script type="module" src="./src/client/safe-navigation.mjs"></script>
-    <script type="module" src="./src/client/major-encyclopedia.js?v=20260602-major-profile-only"></script>
+    <script type="module" src="./src/client/major-encyclopedia.js?v=20260602-major-profile-clean"></script>
   </body>
 </html>

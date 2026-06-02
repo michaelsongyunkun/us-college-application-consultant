@@ -21,7 +21,6 @@ for (const expected of [
   "专业百科",
   "DeepSeek 匹配专业",
   "根据我的申请档案自动匹配专业",
-  'id="majorSearch"',
   'id="majorList"',
   'id="majorStatus"',
   'id="deepSeekMajorMatchButton"',
@@ -32,10 +31,13 @@ for (const expected of [
 for (const removed of [
   "手动匹配专业",
   "双模式",
+  "搜索专业资料",
+  "适合检索的英文口径",
   'id="manualMajorMatchForm"',
   'id="manualMajorResults"',
   'id="manualCareerKeywords"',
   'id="manualMajorFitNotes"',
+  'id="majorSearch"',
   'details class="major-multiselect"',
   "data-major-choice-summary",
 ]) {
@@ -45,6 +47,10 @@ for (const removed of [
 assert.ok(script.includes('fetch("./data/majors.md")'), "Major page should load the local DOCX-derived RAG markdown.");
 assert.ok(script.includes('"/api/deepseek-rag"'), "DeepSeek major matching should use the existing RAG API.");
 assert.ok(script.includes("专业百科 RAG"), "DeepSeek prompt should explicitly ask for 专业百科 RAG.");
+assert.ok(script.includes("sanitizeDeepSeekMajorAnswer"), "DeepSeek major matching should sanitize hidden columns from model output.");
+assert.ok(!script.includes('document.querySelector("#majorSearch")'), "Major page script should not bind the removed search input.");
+assert.ok(!script.includes("适合检索的英文口径"), "DeepSeek major matching should not ask for English search wording.");
+assert.ok(!script.includes("参考资料"), "DeepSeek major matching should not render a visible references block.");
 assert.ok(script.includes('document.querySelector("#deepSeekMajorMatchButton")'));
 assert.ok(!script.includes('document.querySelector("#manualMajorMatchForm")'), "Major page script should not bind the removed manual form.");
 assert.ok(!script.includes("matchMajorsFromQuestionnaire"), "Major page script should not import the removed manual scorer.");
@@ -55,8 +61,8 @@ assert.match(
 );
 assert.match(
   styles,
-  /\.major-match-panel\s*\{[\s\S]*?--major-match-body-inset:\s*32px;/,
-  "DeepSeek match panel should define a shared body inset.",
+  /\.major-match-panel\s*\{[\s\S]*?--major-match-body-inset:\s*20px;/,
+  "DeepSeek match panel should keep generated match content aligned with the panel body.",
 );
 assert.match(
   styles,
