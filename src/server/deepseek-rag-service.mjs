@@ -512,8 +512,20 @@ function selectRelevantDocuments(documents, question, intentProfile = analyzeQue
     selected.set(document.id, document);
   }
 
-  return [...selected.values()]
-    .sort((left, right) => right.score - left.score || sourcePriority(left.type, intentProfile) - sourcePriority(right.type, intentProfile))
+  const selectedDocuments = [...selected.values()];
+  if (isPortfolioLedQuestion(question)) {
+    return selectedDocuments
+      .sort((left, right) =>
+        portfolioLedSourcePriority(left.type) - portfolioLedSourcePriority(right.type)
+        || right.score - left.score
+        || left.index - right.index)
+      .slice(0, MAX_SELECTED_CHUNKS);
+  }
+
+  return selectedDocuments
+    .sort((left, right) =>
+      right.score - left.score
+      || sourcePriority(left.type, intentProfile) - sourcePriority(right.type, intentProfile))
     .slice(0, MAX_SELECTED_CHUNKS);
 }
 
@@ -575,6 +587,27 @@ function normalizeSearchText(value) {
     .toLowerCase()
     .replace(/[^\p{Letter}\p{Number}.+#-]+/gu, " ")
     .trim();
+}
+
+function isPortfolioLedQuestion(question) {
+  const normalized = normalizeSearchText(question);
+  return [
+    "application portfolio",
+    "my portfolio",
+    "saved portfolio",
+    "个人申请档案",
+    "我的申请档案",
+    "申请档案",
+  ].some((pattern) => normalized.includes(pattern));
+}
+
+function portfolioLedSourcePriority(type) {
+  return {
+    "application-portfolio": 0,
+    "student-backup": 1,
+    "resource-library": 2,
+    "school-encyclopedia": 3,
+  }[type] ?? 9;
 }
 
 function buildContext(selected) {
