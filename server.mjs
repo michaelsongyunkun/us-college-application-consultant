@@ -185,12 +185,17 @@ export function shouldUseSecureCookies(env = process.env) {
   return env.NODE_ENV === "production";
 }
 
-function getSessionToken(request) {
-  return getSessionTokens(request).at(-1) || "";
-}
-
 function getSessionTokens(request) {
   return getCookieValues(request, sessionCookieName).filter(Boolean);
+}
+
+function getUserForRequest(request, auth) {
+  const sessionTokens = getSessionTokens(request);
+  for (let index = sessionTokens.length - 1; index >= 0; index -= 1) {
+    const user = auth.getUserForSession(sessionTokens[index]);
+    if (user) return user;
+  }
+  return null;
 }
 
 function getRequestMetadata(request) {
@@ -293,7 +298,7 @@ function getAppBaseUrl(request, configuredBaseUrl) {
 function createAuthHandler(auth, { mailer, appBaseUrl, readJson = readRequestJson } = {}) {
   return async function handleAuth(request, response, pathname) {
     if (request.method === "GET" && pathname === "/api/auth/me") {
-      const user = auth.getUserForSession(getSessionToken(request));
+      const user = getUserForRequest(request, auth);
       if (!user) {
         sendAuthJson(response, 401, { error: "Not authenticated" });
         return true;
@@ -405,21 +410,21 @@ function createAuthHandler(auth, { mailer, appBaseUrl, readJson = readRequestJso
 }
 
 function requireUser(request, response, auth) {
-  const user = auth.getUserForSession(getSessionToken(request));
+  const user = getUserForRequest(request, auth);
   if (user) return user;
   sendAuthJson(response, 401, { error: "Not authenticated" });
   return null;
 }
 
 function requirePageUser(request, response, auth, requestPath) {
-  const user = auth.getUserForSession(getSessionToken(request));
+  const user = getUserForRequest(request, auth);
   if (user) return user;
   redirectToLogin(response, requestPath);
   return null;
 }
 
 function requireAdmin(request, response, auth, { redirect = false } = {}) {
-  const user = auth.getUserForSession(getSessionToken(request));
+  const user = getUserForRequest(request, auth);
   if (user?.role === "admin") return user;
   if (redirect) {
     response.writeHead(302, withSecurityHeaders({ Location: "/" }));
@@ -539,7 +544,7 @@ export function createAppServer({
 
       if (request.method === "POST" && url.pathname === "/api/feedback") {
         const feedback = auth.recordFeedback({
-          user: auth.getUserForSession(getSessionToken(request)),
+          user: getUserForRequest(request, auth),
           payload: await readJson(request),
           metadata: getRequestMetadata(request),
         });
@@ -791,7 +796,7 @@ export function createAppServer({
         return;
       }
       if (requestPath === "/index.html") {
-        const user = auth.getUserForSession(getSessionToken(request));
+        const user = getUserForRequest(request, auth);
         response.end(renderIndexForSession(await readFile(filePath, "utf8"), user, url.searchParams.get("auth")));
         return;
       }

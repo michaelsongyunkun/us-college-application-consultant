@@ -232,6 +232,25 @@ try {
   const duplicateSecondToken = getSessionTokenFromSetCookie(duplicateSecondLoginResponse.headers.get("set-cookie"));
   assert.ok(duplicateSecondToken);
 
+  const staleFirstLogoutResponse = await fetch(`${baseUrl}/api/auth/logout`, {
+    method: "POST",
+    headers: {
+      Cookie: `consultant_session=${duplicateFirstToken}`,
+    },
+  });
+  assert.equal(staleFirstLogoutResponse.status, 200);
+
+  const mixedCookieMeResponse = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: {
+      Cookie: `consultant_session=${duplicateSecondToken}; consultant_session=${duplicateFirstToken}`,
+    },
+  });
+  assert.equal(
+    mixedCookieMeResponse.status,
+    200,
+    "A stale duplicate session cookie should not block a valid current session.",
+  );
+
   const duplicateLogoutResponse = await fetch(`${baseUrl}/api/auth/logout`, {
     method: "POST",
     headers: {
