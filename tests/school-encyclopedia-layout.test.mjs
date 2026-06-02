@@ -10,7 +10,8 @@ assert.match(pageHtml, /class="[^"]*brand-page-header[^"]*"/, "School page shoul
 assert.ok(pageHtml.includes('href="./index.html"'), "School page must retain access to the planning workspace.");
 assert.ok(
   commandNavigation.indexOf("resource-library.html") < commandNavigation.indexOf("school-encyclopedia.html")
-    && commandNavigation.indexOf("school-encyclopedia.html") < commandNavigation.indexOf("course-helper.html")
+    && commandNavigation.indexOf("school-encyclopedia.html") < commandNavigation.indexOf("major-encyclopedia.html")
+    && commandNavigation.indexOf("major-encyclopedia.html") < commandNavigation.indexOf("course-helper.html")
     && commandNavigation.indexOf("course-helper.html") < commandNavigation.indexOf("gpa-calculator.html")
     && commandNavigation.indexOf("gpa-calculator.html") < commandNavigation.indexOf("disclaimer.html"),
   "Expanded command navigation should keep schools, course helper, GPA, and disclaimer in the requested left-sidebar order.",

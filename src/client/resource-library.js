@@ -1,6 +1,12 @@
 import { parseCompetitionsMarkdown } from "../domain/competition-recommender.mjs";
 import { parseExtracurricularActivitiesMarkdown } from "../domain/extracurricular-activity-library.mjs";
 import {
+  filterInternationalJournals,
+  getInternationalJournalDirections,
+  getInternationalJournalIndexDatabases,
+  parseInternationalJournalsMarkdown,
+} from "../domain/international-journal-library.mjs";
+import {
   classifyResource,
   enrichResourceEligibility,
   hasEligibilityConditions,
@@ -20,25 +26,36 @@ const resourceFilterTitle = document.querySelector("#resourceFilterTitle");
 const resourceFilterDescription = document.querySelector("#resourceFilterDescription");
 const resourceEligibilityFields = document.querySelector("#resourceEligibilityFields");
 const activityFilterFields = document.querySelector("#activityFilterFields");
+const journalFilterFields = document.querySelector("#journalFilterFields");
+const resourceSearchField = document.querySelector("#resourceSearchField");
 const nationalityInput = document.querySelector("#resourceNationality");
 const identityInput = document.querySelector("#resourceIdentity");
 const schoolContextInput = document.querySelector("#resourceSchoolContext");
 const activityCommonAppTypeInput = document.querySelector("#activityCommonAppType");
 const activityMajorDirectionInput = document.querySelector("#activityMajorDirection");
 const activityMajorDirectionOptions = document.querySelector("#activityMajorDirectionOptions");
+const journalDirectionInput = document.querySelector("#journalDirection");
+const journalDirectionToggle = document.querySelector("#journalDirectionToggle");
+const journalDirectionSelected = document.querySelector("#journalDirectionSelected");
+const journalDirectionMenu = document.querySelector("#journalDirectionMenu");
+const journalDirectionCombobox = document.querySelector("[data-journal-direction-combobox]");
+const journalIndexDatabaseInput = document.querySelector("#journalIndexDatabase");
 const clearEligibilityButton = document.querySelector("#clearResourceEligibility");
 const competitionTab = document.querySelector("#competitionTab");
 const summerSchoolTab = document.querySelector("#summerSchoolTab");
 const researchProjectTab = document.querySelector("#researchProjectTab");
 const extracurricularActivityTab = document.querySelector("#extracurricularActivityTab");
+const internationalJournalTab = document.querySelector("#internationalJournalTab");
 const competitionLibrary = document.querySelector("#competitionLibrary");
 const summerSchoolLibrary = document.querySelector("#summerSchoolLibrary");
 const researchProjectLibrary = document.querySelector("#researchProjectLibrary");
 const extracurricularActivityLibrary = document.querySelector("#extracurricularActivityLibrary");
+const internationalJournalLibrary = document.querySelector("#internationalJournalLibrary");
 const competitionList = document.querySelector("#resourceCompetitionList");
 const summerSchoolList = document.querySelector("#resourceSummerSchoolList");
 const researchProjectList = document.querySelector("#resourceResearchProjectList");
 const extracurricularActivityList = document.querySelector("#resourceExtracurricularActivityList");
+const internationalJournalList = document.querySelector("#resourceInternationalJournalList");
 const competitionExcludedList = document.querySelector("#resourceCompetitionExcludedList");
 const summerSchoolExcludedList = document.querySelector("#resourceSummerSchoolExcludedList");
 const researchProjectExcludedList = document.querySelector("#resourceResearchProjectExcludedList");
@@ -49,6 +66,7 @@ const competitionCount = document.querySelector("#competitionCount");
 const summerSchoolCount = document.querySelector("#summerSchoolCount");
 const researchProjectCount = document.querySelector("#researchProjectCount");
 const extracurricularActivityCount = document.querySelector("#extracurricularActivityCount");
+const internationalJournalCount = document.querySelector("#internationalJournalCount");
 const competitionExcludedCount = document.querySelector("#competitionExcludedCount");
 const summerSchoolExcludedCount = document.querySelector("#summerSchoolExcludedCount");
 const researchProjectExcludedCount = document.querySelector("#researchProjectExcludedCount");
@@ -61,6 +79,7 @@ let competitions = [];
 let summerSchools = [];
 let researchProjects = [];
 let extracurricularActivities = [];
+let internationalJournals = [];
 let eligibilityFilters = {
   nationality: "",
   identityDescription: "",
@@ -70,6 +89,10 @@ let eligibilityFilters = {
 let activityFilters = {
   commonAppType: "",
   majorDirection: "",
+};
+let journalFilters = {
+  direction: "",
+  indexDatabase: "",
 };
 
 function escapeHtml(value) {
@@ -178,8 +201,22 @@ function filteredActivities(items, query) {
     );
 }
 
+function filteredJournals(query) {
+  return filterInternationalJournals(internationalJournals, {
+    query,
+    direction: journalFilters.direction,
+    indexDatabase: journalFilters.indexDatabase,
+  });
+}
+
 function totalResourceCount() {
-  return competitions.length + summerSchools.length + researchProjects.length + extracurricularActivities.length;
+  return (
+    competitions.length +
+    summerSchools.length +
+    researchProjects.length +
+    extracurricularActivities.length +
+    internationalJournals.length
+  );
 }
 
 function updateLoadedStatus() {
@@ -192,10 +229,16 @@ function hasActivityFilters() {
   return Boolean(activityFilters.commonAppType || activityFilters.majorDirection);
 }
 
+function hasJournalFilters() {
+  return Boolean(journalFilters.direction || journalFilters.indexDatabase);
+}
+
 function resultCountText(shownCount, matchingCount) {
   const hasFilters =
     activeLibrary === "extracurricular-activities"
       ? hasActivityFilters()
+      : activeLibrary === "international-journals"
+        ? hasJournalFilters()
       : hasEligibilityConditions(eligibilityFilters);
   return `${hasFilters ? "可查看" : "显示"} ${shownCount} / ${matchingCount} 项`;
 }
@@ -362,11 +405,45 @@ function renderExtracurricularActivities(query = "") {
   updateLoadMoreResources(page, "extracurricular-activities");
 }
 
+function renderInternationalJournals(query = "") {
+  const filtered = filteredJournals(query);
+  const page = getVisibleResultPage(filtered, visibleResourceLimit);
+  internationalJournalCount.textContent = resultCountText(page.shownCount, page.totalCount);
+  internationalJournalList.innerHTML = page.totalCount
+    ? page.visibleItems
+        .map(
+          (item) => `
+            <article class="resource-card">
+              <div class="resource-card-header">
+                <div>
+                  <p class="case-index">${escapeHtml(item.direction)}</p>
+                  <h4>${escapeHtml(item.name)}</h4>
+                </div>
+                <span class="resource-rating">${escapeHtml(item.indexDatabase)}</span>
+              </div>
+              <div class="resource-tags">
+                <span class="resource-tag">${escapeHtml(item.type)}</span>
+              </div>
+              <dl>
+                <div><dt>论文方向</dt><dd>${escapeHtml(item.direction || "待复核")}</dd></div>
+                <div><dt>期刊领域</dt><dd>${escapeHtml(item.field || "待复核")}</dd></div>
+                <div><dt>领域关键词</dt><dd>${escapeHtml(item.fieldKeywords.slice(0, 8).join("、") || item.direction || "待复核")}</dd></div>
+                <div><dt>期刊介绍</dt><dd>${escapeHtml(item.description || "请以期刊官网作者指南为准")}</dd></div>
+                <div><dt>期刊地址</dt><dd>${renderUrl(item.url)}</dd></div>
+              </dl>
+            </article>`,
+        )
+        .join("")
+    : '<p class="resource-empty">没有匹配的国际期刊。</p>';
+  updateLoadMoreResources(page, "international-journals");
+}
+
 function renderActiveLibrary() {
   const query = activeLibrary === "extracurricular-activities" ? "" : searchInput.value.trim();
   if (activeLibrary === "competitions") renderCompetitions(query);
   else if (activeLibrary === "summer-schools") renderSummerSchools(query);
   else if (activeLibrary === "research-projects") renderResearchProjects(query);
+  else if (activeLibrary === "international-journals") renderInternationalJournals(query);
   else renderExtracurricularActivities(query);
 }
 
@@ -390,14 +467,85 @@ function populateActivityFilterOptions() {
     .join("");
 }
 
-function updateFilterMode(isActivityMode) {
-  resourceEligibilityFields?.classList.toggle("is-hidden", isActivityMode);
+function updateJournalDirectionOptions() {
+  const selectedValue = journalDirectionInput.value;
+  journalDirectionMenu.innerHTML = [
+    { value: "", label: "全部论文方向" },
+    ...getInternationalJournalDirections(internationalJournals).map((direction) => ({ value: direction, label: direction })),
+  ]
+    .map(
+      (option) => `
+        <button
+          class="resource-combobox-option${option.value === selectedValue ? " is-selected" : ""}"
+          type="button"
+          role="option"
+          data-value="${escapeHtml(option.value)}"
+          aria-selected="${option.value === selectedValue}"
+        >${escapeHtml(option.label)}</button>`,
+    )
+    .join("");
+}
+
+function setJournalDirection(value = "") {
+  journalDirectionInput.value = value;
+  journalDirectionSelected.textContent = value || "全部论文方向";
+  if (!journalDirectionMenu) return;
+  for (const option of journalDirectionMenu.querySelectorAll(".resource-combobox-option")) {
+    const selected = option.dataset.value === value;
+    option.classList.toggle("is-selected", selected);
+    option.setAttribute("aria-selected", String(selected));
+  }
+}
+
+function openJournalDirectionMenu() {
+  journalDirectionMenu?.classList.remove("is-hidden");
+  journalDirectionToggle?.setAttribute("aria-expanded", "true");
+}
+
+function closeJournalDirectionMenu() {
+  journalDirectionMenu?.classList.add("is-hidden");
+  journalDirectionToggle?.setAttribute("aria-expanded", "false");
+}
+
+function toggleJournalDirectionMenu() {
+  if (journalDirectionMenu?.classList.contains("is-hidden")) openJournalDirectionMenu();
+  else closeJournalDirectionMenu();
+}
+
+function populateJournalFilterOptions() {
+  const selectedDirection = journalDirectionInput.value;
+  const selectedIndexDatabase = journalIndexDatabaseInput.value;
+  const directions = getInternationalJournalDirections(internationalJournals);
+  setJournalDirection(directions.includes(selectedDirection) ? selectedDirection : "");
+  updateJournalDirectionOptions();
+
+  const indexDatabases = getInternationalJournalIndexDatabases(internationalJournals);
+  journalIndexDatabaseInput.innerHTML = [
+    '<option value="">不限检索库</option>',
+    ...indexDatabases.map((indexDatabase) => `<option value="${escapeHtml(indexDatabase)}">${escapeHtml(indexDatabase)}</option>`),
+  ].join("");
+  if (indexDatabases.includes(selectedIndexDatabase)) journalIndexDatabaseInput.value = selectedIndexDatabase;
+}
+
+function updateFilterMode(mode) {
+  const isActivityMode = mode === "activity";
+  const isJournalMode = mode === "journal";
+  resourceEligibilityFields?.classList.toggle("is-hidden", isActivityMode || isJournalMode);
   activityFilterFields?.classList.toggle("is-hidden", !isActivityMode);
+  journalFilterFields?.classList.toggle("is-hidden", !isJournalMode);
+  resourceSearchField?.classList.toggle("is-hidden", isActivityMode);
+  if (!isJournalMode) closeJournalDirectionMenu();
   if (isActivityMode) {
     searchInput.value = "";
     resourceFilterTitle.textContent = "活动素材筛选";
     resourceFilterDescription.textContent =
       "按 29 种 Common App 类型和专业方向筛选课外活动素材；这些筛选不会保存到账号资料。";
+    return;
+  }
+  if (isJournalMode) {
+    resourceFilterTitle.textContent = "国际期刊筛选";
+    resourceFilterDescription.textContent =
+      "按论文方向和检索库要求检索匹配期刊；索引状态、费用、伦理与作者资格仍需投稿前逐刊复核。";
     return;
   }
   resourceFilterTitle.textContent = "我的可参与条件";
@@ -412,6 +560,7 @@ function switchLibrary(library) {
   const showSummerSchools = library === "summer-schools";
   const showResearchProjects = library === "research-projects";
   const showExtracurricularActivities = library === "extracurricular-activities";
+  const showInternationalJournals = library === "international-journals";
   competitionTab.classList.toggle("is-active", showCompetitions);
   competitionTab.setAttribute("aria-selected", String(showCompetitions));
   summerSchoolTab.classList.toggle("is-active", showSummerSchools);
@@ -420,18 +569,23 @@ function switchLibrary(library) {
   researchProjectTab.setAttribute("aria-selected", String(showResearchProjects));
   extracurricularActivityTab.classList.toggle("is-active", showExtracurricularActivities);
   extracurricularActivityTab.setAttribute("aria-selected", String(showExtracurricularActivities));
+  internationalJournalTab.classList.toggle("is-active", showInternationalJournals);
+  internationalJournalTab.setAttribute("aria-selected", String(showInternationalJournals));
   competitionLibrary.classList.toggle("is-hidden", !showCompetitions);
   summerSchoolLibrary.classList.toggle("is-hidden", !showSummerSchools);
   researchProjectLibrary.classList.toggle("is-hidden", !showResearchProjects);
   extracurricularActivityLibrary.classList.toggle("is-hidden", !showExtracurricularActivities);
-  updateFilterMode(showExtracurricularActivities);
+  internationalJournalLibrary.classList.toggle("is-hidden", !showInternationalJournals);
+  updateFilterMode(showExtracurricularActivities ? "activity" : showInternationalJournals ? "journal" : "resource");
   searchInput.placeholder = showCompetitions
     ? "输入竞赛名称或方向"
     : showSummerSchools
       ? "输入夏校名称或方向"
       : showResearchProjects
         ? "输入科研项目名称或方向"
-        : "输入活动类型、主题或专业方向";
+        : showInternationalJournals
+          ? "输入期刊名称、领域或关键词"
+          : "输入活动类型、主题或专业方向";
   renderActiveLibrary();
 }
 
@@ -475,12 +629,49 @@ async function loadResources() {
     extracurricularActivities = [];
     extracurricularActivityList.innerHTML = '<p class="resource-empty">暂时无法读取课外活动库。</p>';
   }
+  try {
+    const internationalJournalResponse = await fetch("./data/international-journals.md");
+    if (!internationalJournalResponse.ok) throw new Error("international journals unavailable");
+    internationalJournals = parseInternationalJournalsMarkdown(await internationalJournalResponse.text());
+    populateJournalFilterOptions();
+    updateLoadedStatus();
+    renderInternationalJournals();
+  } catch {
+    internationalJournals = [];
+    internationalJournalList.innerHTML = '<p class="resource-empty">暂时无法读取国际期刊汇总。</p>';
+  }
 }
 
 competitionTab?.addEventListener("click", () => switchLibrary("competitions"));
 summerSchoolTab?.addEventListener("click", () => switchLibrary("summer-schools"));
 researchProjectTab?.addEventListener("click", () => switchLibrary("research-projects"));
 extracurricularActivityTab?.addEventListener("click", () => switchLibrary("extracurricular-activities"));
+internationalJournalTab?.addEventListener("click", () => switchLibrary("international-journals"));
+journalDirectionToggle?.addEventListener("click", toggleJournalDirectionMenu);
+journalDirectionToggle?.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    openJournalDirectionMenu();
+  }
+  if (event.key === "Escape") closeJournalDirectionMenu();
+});
+journalDirectionMenu?.addEventListener("click", (event) => {
+  const option = event.target instanceof Element ? event.target.closest(".resource-combobox-option") : null;
+  if (!option) return;
+  setJournalDirection(option.dataset.value || "");
+  closeJournalDirectionMenu();
+  journalDirectionToggle?.focus();
+});
+journalDirectionMenu?.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeJournalDirectionMenu();
+    journalDirectionToggle?.focus();
+  }
+});
+document.addEventListener("click", (event) => {
+  if (!journalDirectionCombobox || !(event.target instanceof Element)) return;
+  if (!journalDirectionCombobox.contains(event.target)) closeJournalDirectionMenu();
+});
 searchInput?.addEventListener("input", () => {
   resetVisibleResourceLimit();
   renderActiveLibrary();
@@ -493,6 +684,16 @@ eligibilityForm?.addEventListener("submit", (event) => {
       majorDirection: activityMajorDirectionInput.value.trim(),
     };
     status.textContent = hasActivityFilters() ? "活动筛选已应用" : `已载入 ${totalResourceCount()} 项资源`;
+    resetVisibleResourceLimit();
+    renderActiveLibrary();
+    return;
+  }
+  if (activeLibrary === "international-journals") {
+    journalFilters = {
+      direction: journalDirectionInput.value,
+      indexDatabase: journalIndexDatabaseInput.value,
+    };
+    status.textContent = hasJournalFilters() ? "期刊筛选已应用" : `已载入 ${totalResourceCount()} 项资源`;
     resetVisibleResourceLimit();
     renderActiveLibrary();
     return;
@@ -523,6 +724,11 @@ clearEligibilityButton?.addEventListener("click", () => {
     commonAppType: "",
     majorDirection: "",
   };
+  journalFilters = {
+    direction: "",
+    indexDatabase: "",
+  };
+  setJournalDirection("");
   status.textContent = `已载入 ${totalResourceCount()} 项资源`;
   resetVisibleResourceLimit();
   renderActiveLibrary();

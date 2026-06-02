@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>资源库</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260602-action-card-refresh" />
+    <link rel="stylesheet" href="./styles.css?v=20260602-journal-direction-dropdown" />
   </head>
   <body>
     <main class="app-shell command-shell">
@@ -26,6 +26,7 @@
               <p class="command-nav-section-label">资料检索</p>
               <a href="./resource-library.html" data-safe-nav aria-current="page">资源库</a>
               <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+              <a href="./major-encyclopedia.html" data-safe-nav>专业百科</a>
             </div>
             <div class="command-nav-section" data-nav-section="academic">
               <p class="command-nav-section-label">学术工具</p>
@@ -66,7 +67,7 @@
         </div>
         <div class="command-summary-metrics">
           <span><strong>3500+</strong>项目与活动素材</span>
-          <span><strong>4</strong>资源类型</span>
+          <span><strong>5</strong>资源类型</span>
           <span><strong>资格</strong>筛选</span>
         </div>
       </section>
@@ -103,10 +104,6 @@
                 <option value="us_high_school">美国高中在读</option>
               </select>
             </label>
-            <label class="resource-search">
-              <span>搜索当前资源库</span>
-              <input id="resourceSearch" type="search" placeholder="输入名称或方向" />
-            </label>
             <fieldset>
               <legend>参加方式</legend>
               <label><input type="radio" name="participationMode" value="online_only" />仅线上</label>
@@ -127,6 +124,34 @@
               <datalist id="activityMajorDirectionOptions"></datalist>
             </label>
           </div>
+          <div id="journalFilterFields" class="resource-filter-fields is-hidden">
+            <div class="resource-filter-input resource-combobox" data-journal-direction-combobox>
+              <span id="journalDirectionLabel">论文方向</span>
+              <input id="journalDirection" type="hidden" value="" />
+              <button
+                id="journalDirectionToggle"
+                class="resource-combobox-toggle"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-labelledby="journalDirectionLabel journalDirectionSelected"
+              >
+                <span id="journalDirectionSelected" class="resource-combobox-selected">全部论文方向</span>
+                <span class="resource-combobox-caret" aria-hidden="true">▾</span>
+              </button>
+              <div id="journalDirectionMenu" class="resource-combobox-menu is-hidden" role="listbox" aria-labelledby="journalDirectionLabel"></div>
+            </div>
+            <label class="resource-filter-input">
+              <span>检索库要求</span>
+              <select id="journalIndexDatabase">
+                <option value="">不限检索库</option>
+              </select>
+            </label>
+          </div>
+          <label id="resourceSearchField" class="resource-search">
+            <span>搜索当前资源库</span>
+            <input id="resourceSearch" type="search" placeholder="输入名称或方向" />
+          </label>
           <div class="resource-filter-actions">
             <button type="submit">应用筛选</button>
             <button id="clearResourceEligibility" class="secondary" type="button">清除条件</button>
@@ -139,6 +164,7 @@
             <button id="summerSchoolTab" class="resource-tab" type="button" role="tab" aria-selected="false" aria-controls="summerSchoolLibrary">夏校库</button>
             <button id="researchProjectTab" class="resource-tab" type="button" role="tab" aria-selected="false" aria-controls="researchProjectLibrary">实习/科研库</button>
             <button id="extracurricularActivityTab" class="resource-tab" type="button" role="tab" aria-selected="false" aria-controls="extracurricularActivityLibrary">课外活动库</button>
+            <button id="internationalJournalTab" class="resource-tab" type="button" role="tab" aria-selected="false" aria-controls="internationalJournalLibrary">国际期刊汇总</button>
           </div>
         </div>
 
@@ -193,6 +219,13 @@
             <span id="extracurricularActivityCount" class="resource-count"></span>
           </div>
           <div id="resourceExtracurricularActivityList" class="resource-grid"></div>
+        </section>
+        <section id="internationalJournalLibrary" class="resource-view is-hidden" role="tabpanel" aria-labelledby="internationalJournalTab">
+          <div class="resource-view-header">
+            <h3>国际期刊汇总</h3>
+            <span id="internationalJournalCount" class="resource-count"></span>
+          </div>
+          <div id="resourceInternationalJournalList" class="resource-grid"></div>
         </section>
         <div class="load-more-row">
           <button id="loadMoreResources" class="secondary is-hidden" type="button">加载更多</button>

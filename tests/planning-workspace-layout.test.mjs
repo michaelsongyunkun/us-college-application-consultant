@@ -151,7 +151,7 @@ const planningActivityTableBody = html.match(/<table id="activityTable"[\s\S]*?<
 const commandSubnav = html.match(/<div class="command-subnav"[\s\S]*?<\/div>/)?.[0] || "";
 const dashboardOverview = html.match(/<section id="dashboardOverview"[\s\S]*?<\/section>/)?.[0] || "";
 
-assert.ok(html.includes("./styles.css?v=20260602-action-card-refresh"), "Planning workspace should bust the stylesheet cache for action-card fixes.");
+assert.ok(html.includes("./styles.css?v=20260602-major-dropdown"), "Planning workspace should bust the stylesheet cache for action-card fixes.");
 assert.ok(dashboardOverview.includes('id="dashboardTaskGrid"'), "Logged-in home should expose a task dashboard grid above the planning form.");
 for (const target of ["my-activities.html", "ask-deepseek.html", "school-selection.html", "#profilePanel"]) {
   assert.ok(dashboardOverview.includes(target), `Logged-in dashboard should link users to ${target}.`);

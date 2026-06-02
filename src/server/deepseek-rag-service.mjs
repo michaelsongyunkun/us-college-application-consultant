@@ -14,6 +14,7 @@ const RESOURCE_LIBRARY_FILES = [
   { file: "summer-schools.md", label: "夏校库" },
   { file: "research-projects.md", label: "实习/科研库" },
   { file: "extracurricular-activities.md", label: "课外活动库" },
+  { file: "international-journals.md", label: "国际期刊汇总" },
 ];
 
 const SCHOOL_ENCYCLOPEDIA_FILES = [
@@ -22,11 +23,16 @@ const SCHOOL_ENCYCLOPEDIA_FILES = [
   { file: "other-region-schools.md", label: "其他地区院校" },
 ];
 
+const MAJOR_ENCYCLOPEDIA_FILES = [
+  { file: "majors.md", label: "美国本科可申请专业汇总" },
+];
+
 const SOURCE_TYPE_LABELS = {
   "student-backup": "学生备份",
   "application-portfolio": "个人申请档案",
   "resource-library": "资源库",
   "school-encyclopedia": "院校百科",
+  "major-encyclopedia": "专业百科",
 };
 
 const APPLICATION_ROUND_LABELS = {
@@ -44,13 +50,14 @@ const SYSTEM_PROMPT = [
   "你可以使用的资料范围包括：",
   "1. 个人申请档案：选校计划、课外活动、竞赛、夏校、推荐信、GPA/SAT/AP 等成绩档案。",
   "2. 学生备份：学生基础背景、历史规划版本、活动方案和保存快照。",
-  "3. 资料库：竞赛、夏校、科研/实习、课外活动素材、项目资源等内容。",
+  "3. 资料库：竞赛、夏校、科研/实习、课外活动素材、国际期刊汇总、项目资源等内容。",
   "4. 院校百科：院校申请要求、热门专业、学校风格、录取偏好、文书与推荐信要求等信息。",
+  "5. 专业百科：美国本科专业开设核验、专业介绍、常见学习内容、就业方向、专业强校、录取难度和申请检索口径。",
   "",
   "回答规则：",
   "- 必须优先基于提供的 RAG 资料回答，不要凭空编造学生经历、项目细节、院校政策、录取概率或申请要求。",
   "- 如果资料不足，要明确说明“当前资料不足以判断”，并告诉用户需要补充哪些信息。",
-  "- 如果用户询问选校、活动、竞赛、夏校、推荐信或申请策略，必须结合“个人申请档案”和“学生备份”判断学生当前状态，再参考资料库和院校百科给建议。",
+  "- 如果用户询问选校、专业、活动、竞赛、夏校、推荐信或申请策略，必须结合“个人申请档案”和“学生备份”判断学生当前状态，再参考资料库、院校百科和专业百科给建议。",
   "- 如果涉及截止日期、费用、资格、官方政策、申请要求或录取规则，必须提醒用户以申请年度官网信息为准。",
   "- 不要做绝对化承诺，例如“保证录取”“一定有优势”“必然适合”。应使用审慎表达，例如“更适合”“可以优先考虑”“需要进一步核验”。",
   "- 输出应面向学生和家长，中文为主，语气专业、清晰、低销售感、可执行。",
@@ -175,6 +182,7 @@ async function buildRagDocuments({
     ...buildStudentDocuments({ user, planning, profile, portfolio }),
     ...(await buildMarkdownDocuments(root, RESOURCE_LIBRARY_FILES, "resource-library")),
     ...(await buildMarkdownDocuments(root, SCHOOL_ENCYCLOPEDIA_FILES, "school-encyclopedia")),
+    ...(await buildMarkdownDocuments(root, MAJOR_ENCYCLOPEDIA_FILES, "major-encyclopedia")),
   ].filter((document) => document.text.trim());
 }
 
@@ -448,12 +456,22 @@ function getChunkHeading(chunk) {
 function analyzeQuestionIntent(question) {
   const normalized = normalizeSearchText(question);
   const hasAny = (patterns) => patterns.some((pattern) => normalized.includes(pattern));
+  if (hasAny(["专业", "本科专业", "major", "concentration", "track", "职业", "岗位", "就业", "career"])) {
+    return intentProfile("major", "问题包含专业、职业/岗位或 major 匹配信号。", {
+      "student-backup": 1.6,
+      "application-portfolio": 2.2,
+      "resource-library": 1.5,
+      "school-encyclopedia": 1.5,
+      "major-encyclopedia": 3.7,
+    });
+  }
   if (hasAny(["选校", "院校", "学校", "ed", "ea", "rd", "uc", "rea", "match", "mit", "college", "university"])) {
     return intentProfile("school", "问题包含院校、轮次或具体学校信号。", {
       "student-backup": 1.3,
       "application-portfolio": 1.6,
       "resource-library": 0.9,
       "school-encyclopedia": 3.4,
+      "major-encyclopedia": 1.5,
     });
   }
   if (hasAny(["竞赛", "夏校", "科研", "项目", "polygence", "活动", "resource", "competition", "summer"])) {
@@ -462,6 +480,7 @@ function analyzeQuestionIntent(question) {
       "application-portfolio": 1.7,
       "resource-library": 3.3,
       "school-encyclopedia": 1.2,
+      "major-encyclopedia": 1.4,
     });
   }
   if (hasAny(["推荐信", "推荐人", "素材", "counselor", "teacher", "recommendation"])) {
@@ -470,6 +489,7 @@ function analyzeQuestionIntent(question) {
       "application-portfolio": 3.1,
       "resource-library": 1.0,
       "school-encyclopedia": 1.5,
+      "major-encyclopedia": 1.0,
     });
   }
   if (hasAny(["gpa", "sat", "ap", "课程", "成绩", "标化", "academic"])) {
@@ -478,6 +498,7 @@ function analyzeQuestionIntent(question) {
       "application-portfolio": 3.0,
       "resource-library": 1.1,
       "school-encyclopedia": 1.7,
+      "major-encyclopedia": 1.5,
     });
   }
   return intentProfile("general", "未识别到强意图，采用均衡检索。", {
@@ -485,6 +506,7 @@ function analyzeQuestionIntent(question) {
     "application-portfolio": 1.8,
     "resource-library": 1.4,
     "school-encyclopedia": 1.4,
+    "major-encyclopedia": 1.4,
   });
 }
 
@@ -552,7 +574,12 @@ function ensureBaselineContext(documents, scored, intentProfile) {
     || documents
       .filter((document) => document.type === "resource-library")
       .map((document) => ({ ...document, score: intentProfile.sourceWeights["resource-library"] || 0.1 }))[0];
-  const baselines = [portfolio, ...studentDocuments, school, resource].filter(Boolean);
+  const major =
+    scored.find((document) => document.type === "major-encyclopedia")
+    || documents
+      .filter((document) => document.type === "major-encyclopedia")
+      .map((document) => ({ ...document, score: intentProfile.sourceWeights["major-encyclopedia"] || 0.1 }))[0];
+  const baselines = [portfolio, ...studentDocuments, school, resource, major].filter(Boolean);
   return baselines.sort((left, right) => sourcePriority(left.type, intentProfile) - sourcePriority(right.type, intentProfile));
 }
 
@@ -607,6 +634,7 @@ function portfolioLedSourcePriority(type) {
     "student-backup": 1,
     "resource-library": 2,
     "school-encyclopedia": 3,
+    "major-encyclopedia": 4,
   }[type] ?? 9;
 }
 
@@ -636,7 +664,7 @@ function buildUserMessage(question, context, historySummary, missingFields = [],
     "对话记忆摘要：",
     historySummary || "暂无上一轮对话记忆。",
     "",
-    "可用资料范围：学生备份、个人申请档案、资源库、院校百科。",
+    "可用资料范围：学生备份、个人申请档案、资源库、院校百科、专业百科。",
     "请先判断资料是否足以回答；不要在正文末尾列出参考资料，检索来源会由页面的“参考资料”下拉区展示。",
     missingFields.length
       ? `当前资料缺失字段清单：${missingFields.join("、")}。如果这些字段会影响判断，请在回答中明确提示需要补充。`
@@ -706,6 +734,7 @@ function sourcePriority(type, intentProfile = analyzeQuestionIntent("")) {
     "application-portfolio": 1,
     "resource-library": 2,
     "school-encyclopedia": 3,
+    "major-encyclopedia": 4,
   }[type] ?? 9;
   const weight = intentProfile.sourceWeights[type] || 1;
   return priority - weight;

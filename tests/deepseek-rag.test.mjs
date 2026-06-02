@@ -135,6 +135,8 @@ try {
   assert.ok(body.sources.some((source) => source.type === "resource-library"));
   assert.ok(body.sources.some((source) => source.title.includes("课外活动库")));
   assert.ok(body.sources.some((source) => source.type === "school-encyclopedia"));
+  assert.ok(body.sources.some((source) => source.type === "major-encyclopedia"));
+  assert.ok(body.sources.some((source) => source.typeLabel === "专业百科"));
   assert.equal(body.retrieval.intent, "school");
   assert.ok(
     body.retrieval.sourceWeights["school-encyclopedia"] > body.retrieval.sourceWeights["resource-library"],
@@ -175,6 +177,7 @@ try {
   assert.match(sentPayload.messages[1].content, /资源库/);
   assert.match(sentPayload.messages[1].content, /课外活动库/);
   assert.match(sentPayload.messages[1].content, /院校百科/);
+  assert.match(sentPayload.messages[1].content, /专业百科/);
   assert.match(sentPayload.messages[1].content, /问题意图：school/);
   assert.match(sentPayload.messages[1].content, /检索权重/);
   assert.match(sentPayload.messages[1].content, /Robotics Portfolio/);

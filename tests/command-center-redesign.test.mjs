@@ -8,6 +8,7 @@ const pages = [
   ["ask-deepseek.html", "问DeepSeek"],
   ["resource-library.html", "资源库"],
   ["school-encyclopedia.html", "院校百科"],
+  ["major-encyclopedia.html", "专业百科"],
   ["gpa-calculator.html", "GPA / AP 工具"],
   ["course-helper.html", "选课辅助器"],
   ["feedback.html", "反馈与支持"],
@@ -55,11 +56,15 @@ for (const [file, activeLabel] of pages) {
   assert.ok(html.includes('class="command-sidebar"'), `${file} should include the command sidebar.`);
   assert.ok(html.includes('class="command-main"'), `${file} should wrap page content in command-main.`);
   assert.ok(html.includes("./assets/logo-mark.svg"), `${file} should preserve the current logo mark.`);
-  assert.ok(html.includes("./styles.css?v=20260602-action-card-refresh"), `${file} should load the cache-busted command center stylesheet.`);
+  assert.match(
+    html,
+    /\.\/styles\.css\?v=20260602-[a-z0-9-]+/,
+    `${file} should load the cache-busted command center stylesheet.`,
+  );
   assert.ok(html.includes("US College Compass"), `${file} should preserve the current brand name.`);
   assert.ok(html.includes("Application Planning Center"), `${file} should position the logged-in product as a planning center.`);
   assert.ok(html.includes(`aria-current="page">${activeLabel}`), `${file} should mark ${activeLabel} as the active command nav item.`);
-  for (const navLabel of ["申请规划中心", "我的申请档案", "美本选校系统", "资源库", "院校百科", "选课辅助器", "GPA / AP 工具", "免责声明", "反馈与支持", "联系我们"]) {
+  for (const navLabel of ["申请规划中心", "我的申请档案", "美本选校系统", "资源库", "院校百科", "专业百科", "选课辅助器", "GPA / AP 工具", "免责声明", "反馈与支持", "联系我们"]) {
     assert.ok(html.includes(navLabel), `${file} should include command nav label ${navLabel}.`);
   }
   const commandNav = html.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";
@@ -86,7 +91,8 @@ for (const [file, activeLabel] of pages) {
     );
   }
   assert.ok(
-    commandNav.indexOf("院校百科") < commandNav.indexOf("选课辅助器")
+    commandNav.indexOf("院校百科") < commandNav.indexOf("专业百科")
+      && commandNav.indexOf("专业百科") < commandNav.indexOf("选课辅助器")
       && commandNav.indexOf("选课辅助器") < commandNav.indexOf("GPA / AP 工具")
       && commandNav.indexOf("GPA / AP 工具") < commandNav.indexOf("免责声明")
       && commandNav.indexOf("免责声明") < commandNav.indexOf("反馈与支持")

@@ -7,6 +7,7 @@ const appPages = [
   "ask-deepseek.html",
   "resource-library.html",
   "school-encyclopedia.html",
+  "major-encyclopedia.html",
   "course-helper.html",
   "gpa-calculator.html",
   "disclaimer.html",
@@ -37,6 +38,7 @@ for (const expected of [
   "学生备份",
   "资源库",
   "院校百科",
+  "专业百科",
   'id="deepSeekChatLog"',
   'id="deepSeekQuestionForm"',
   'id="deepSeekQuestion"',
@@ -146,7 +148,7 @@ assert.match(
   "Ask DeepSeek script should be cache-busted.",
 );
 assert.ok(
-  pageHtml.includes("styles.css?v=20260602-action-card-refresh"),
+  pageHtml.includes("styles.css?v=20260602-major-dropdown"),
   "Ask DeepSeek page should refresh the stylesheet cache after workflow quality fixes.",
 );
 assert.match(styles, /\.deepseek-chat-log\s*\{/, "Ask DeepSeek should style the chat log.");

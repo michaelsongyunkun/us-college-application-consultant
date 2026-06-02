@@ -770,7 +770,8 @@ export function createAppServer({
           requestPath === "/school-selection.html" ||
           requestPath === "/ask-deepseek.html" ||
           requestPath === "/resource-library.html" ||
-          requestPath === "/school-encyclopedia.html") &&
+          requestPath === "/school-encyclopedia.html" ||
+          requestPath === "/major-encyclopedia.html") &&
         !requirePageUser(request, response, auth, requestPath)
       ) {
         return;

@@ -4902,6 +4902,96 @@ button.neutral:hover {
   align-items: end;
 }
 
+.resource-filter-input {
+  display: grid;
+  gap: 7px;
+}
+
+.resource-filter-input > span {
+  color: #2c3645;
+  font-weight: 700;
+}
+
+.resource-combobox {
+  position: relative;
+  z-index: 6;
+}
+
+.resource-combobox-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 43px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #d7ded9;
+  border-radius: 12px;
+  background: #fbfcfb;
+  color: #2c3645;
+  padding: 10px 11px;
+  text-align: left;
+}
+
+.resource-combobox-toggle:hover {
+  border-color: #d7ded9;
+  background: #fbfcfb;
+  color: #2c3645;
+}
+
+.resource-combobox-toggle[aria-expanded="true"] {
+  border-color: var(--brand-green);
+  background: #fff;
+  outline: 3px solid rgba(40, 114, 80, 0.14);
+}
+
+.resource-combobox-selected {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-combobox-caret {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.resource-combobox-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 80;
+  display: block;
+  max-height: min(320px, 50vh);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 18px 45px rgba(25, 35, 58, 0.16);
+}
+
+.resource-combobox-menu .resource-combobox-option {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: #2c3645;
+  padding: 10px 12px;
+  box-shadow: none;
+  text-align: left;
+  white-space: normal;
+}
+
+.resource-combobox-menu .resource-combobox-option:hover,
+.resource-combobox-menu .resource-combobox-option.is-selected {
+  background: var(--surface-green);
+  color: var(--accent-strong);
+}
+
 .resource-filter fieldset {
   display: flex;
   flex-wrap: wrap;
@@ -5246,6 +5336,48 @@ button.neutral:hover {
   color: var(--muted);
   line-height: 1.6;
   word-break: break-word;
+}
+
+.major-action-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.major-match-panel {
+  --major-match-body-inset: 32px;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.major-match-panel > button {
+  justify-self: start;
+  margin-left: var(--major-match-body-inset);
+}
+
+.major-match-panel > .status {
+  margin: 0 var(--major-match-body-inset);
+  padding: 9px 20px;
+}
+
+.major-ai-result {
+  display: grid;
+  gap: 12px;
+  padding: 0 var(--major-match-body-inset) 24px;
+}
+
+.major-ai-result .resource-empty {
+  padding: 18px 24px;
+}
+
+.major-ai-answer {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: #2c3645;
+  padding: 16px;
 }
 
 .case-list {
@@ -5869,6 +6001,7 @@ button.neutral:hover {
   }
 
   .school-selection-shell .command-page-summary,
+  .major-action-grid,
   .school-selection-form {
     grid-template-columns: 1fr;
   }

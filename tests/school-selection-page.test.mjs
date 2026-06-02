@@ -8,6 +8,7 @@ const appPages = [
   "ask-deepseek.html",
   "resource-library.html",
   "school-encyclopedia.html",
+  "major-encyclopedia.html",
   "course-helper.html",
   "gpa-calculator.html",
   "disclaimer.html",
@@ -66,7 +67,7 @@ for (const expected of [
   "\u5bfc\u51faSVG",
   "\u5bfc\u51faWord\u6587\u6863",
   "./assets/logo-mark.svg",
-  "./styles.css?v=20260602-action-card-refresh",
+  "./styles.css?v=20260602-major-dropdown",
   "./src/client/school-selection.js?v=20260602-selection-svg-word",
 ]) {
   assert.ok(pageHtml.includes(expected), `School selection page should include ${expected}.`);

@@ -119,6 +119,7 @@ try {
     "/school-selection.html",
     "/resource-library.html",
     "/school-encyclopedia.html",
+    "/major-encyclopedia.html",
   ]) {
     const response = await fetch(`${baseUrl}${protectedPath}`, { redirect: "manual" });
     assert.equal(response.status, 302, `${protectedPath} should redirect to login`);
@@ -134,6 +135,7 @@ try {
     "/data/schools.md",
     "/data/international-schools.md",
     "/data/other-region-schools.md",
+    "/data/majors.md",
   ]) {
     const response = await fetch(`${baseUrl}${protectedPath}`);
     assert.equal(response.status, 401, `${protectedPath} should require login`);

@@ -45,6 +45,13 @@ try {
     "/?next=%2Fschool-encyclopedia.html",
   );
 
+  const blockedMajorEncyclopedia = await fetch(`${baseUrl}/major-encyclopedia.html`, { redirect: "manual" });
+  assert.equal(blockedMajorEncyclopedia.status, 302);
+  assert.equal(
+    blockedMajorEncyclopedia.headers.get("location"),
+    "/?next=%2Fmajor-encyclopedia.html",
+  );
+
   const faviconResponse = await fetch(`${baseUrl}/favicon.ico`);
   assert.equal(faviconResponse.status, 200);
   assert.equal(faviconResponse.headers.get("content-type"), "image/svg+xml;charset=utf-8");
@@ -141,6 +148,11 @@ try {
   });
   assert.equal(schoolEncyclopediaResponse.status, 200);
 
+  const majorEncyclopediaResponse = await fetch(`${baseUrl}/major-encyclopedia.html`, {
+    headers: { Cookie: cookie },
+  });
+  assert.equal(majorEncyclopediaResponse.status, 200);
+
   const schoolDatasetResponse = await fetch(`${baseUrl}/data/schools.md`, {
     headers: { Cookie: cookie },
   });
@@ -155,6 +167,11 @@ try {
     headers: { Cookie: cookie },
   });
   assert.equal(otherRegionSchoolDatasetResponse.status, 200);
+
+  const majorDatasetResponse = await fetch(`${baseUrl}/data/majors.md`, {
+    headers: { Cookie: cookie },
+  });
+  assert.equal(majorDatasetResponse.status, 200);
 
   for (const eventType of [
     "parse_codex_answer",
