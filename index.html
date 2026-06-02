@@ -15,7 +15,7 @@
     <meta name="twitter:description" content="面向学生与家长的 AI 美本规划工作台：背景整理、活动规划、资源匹配和报告导出。" />
     <title>AI 美本规划工作台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260602-major-dropdown" />
+    <link rel="stylesheet" href="./styles.css?v=20260602-frontend-polish" />
   </head>
   <body>
     <section id="authShell" class="landing-shell" aria-labelledby="landing-title">
@@ -52,6 +52,24 @@
           <p class="eyebrow">全免费使用</p>
           <h2 id="auth-title">领取你的申请行动地图</h2>
           <p class="auth-copy">注册后免费保存规划，并解锁 3500+ 课外活动资源、150+ 院校百科、GPA/SAT/AP 档案。网站核心功能目前全免费。</p>
+          <div class="auth-preview-map" aria-label="申请行动地图预览">
+            <div class="auth-preview-top">
+              <span>Action Map Preview</span>
+              <strong>9-11 年级</strong>
+            </div>
+            <div class="auth-preview-row is-active">
+              <span>1</span>
+              <p><strong>背景诊断</strong><small>先整理成绩、课程、活动证据</small></p>
+            </div>
+            <div class="auth-preview-row">
+              <span>2</span>
+              <p><strong>资源匹配</strong><small>竞赛 / 夏校 / 科研项目按方向筛选</small></p>
+            </div>
+            <div class="auth-preview-row">
+              <span>3</span>
+              <p><strong>下周行动</strong><small>生成可保存、可导出的申请清单</small></p>
+            </div>
+          </div>
           <form id="authForm" class="auth-form" method="post" action="/api/auth/register">
             <label id="authNameField">
               <span>姓名</span>
