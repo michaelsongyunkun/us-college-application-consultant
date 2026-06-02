@@ -67,7 +67,7 @@ for (const expected of [
   "\u5bfc\u51faSVG",
   "\u5bfc\u51faWord\u6587\u6863",
   "./assets/logo-mark.svg",
-  "./styles.css?v=20260602-frontend-polish",
+  "./styles.css?v=20260602-mobile-workbench",
   "./src/client/school-selection.js?v=20260602-selection-svg-word",
 ]) {
   assert.ok(pageHtml.includes(expected), `School selection page should include ${expected}.`);

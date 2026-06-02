@@ -11,6 +11,11 @@ assert.match(html, /class="[^"]*brand-page-header[^"]*"/, "Resource page should 
 assert.ok(html.includes('href="./index.html"'), "Resource page must retain access to the planning workspace.");
 assert.ok(filterForm.includes('id="resourceSearch"'), "搜索输入框应位于我的可参与条件区域中。");
 assert.ok(filterForm.includes('id="resourceSearchField"'), "资源库应提供跨标签通用搜索框。");
+assert.ok(html.includes('id="resourceFilterSummary"'), "资源库应显示当前筛选摘要。");
+assert.ok(html.includes('id="resourceFilterPills"'), "资源库应把已选筛选条件显示为 pills。");
+assert.ok(html.includes('id="resourceResultSummary"'), "资源库结果区顶部应显示当前结果数量。");
+assert.ok(html.includes('id="toggleResourceFilters"'), "资源库高级筛选应可以折叠展开。");
+assert.ok(filterForm.includes('class="resource-filter is-collapsed"'), "资源库高级筛选应默认折叠，避免表单占据首屏。");
 assert.ok(filterForm.includes('id="resourceSchoolContext"'), "可参与条件应允许选择当前就读体系。");
 assert.ok(filterForm.includes("中国大陆高中在读"), "就读体系应明确覆盖中国大陆高中学生。");
 assert.ok(filterForm.includes('id="resourceEligibilityFields"'), "项目资源应保留国籍、身份、就读体系和参与方式筛选区。");
@@ -22,7 +27,7 @@ assert.ok(filterForm.includes('id="journalDirection"'), "国际期刊汇总应�
 assert.ok(filterForm.includes('id="journalDirectionToggle"'), "论文方向应使用可控的向下展开按钮。");
 assert.ok(filterForm.includes('id="journalDirectionMenu"'), "论文方向应使用页面内下拉菜单而非浏览器原生弹层。");
 assert.ok(filterForm.includes('data-journal-direction-combobox'), "论文方向下拉应有独立 combobox 容器。");
-assert.ok(html.includes("styles.css?v=20260602-frontend-polish"), "资源库页面应刷新 CSS 版本以避免旧按钮样式缓存。");
+assert.ok(html.includes("styles.css?v=20260602-mobile-workbench"), "资源库页面应刷新 CSS 版本以避免旧按钮样式缓存。");
 assert.ok(filterForm.includes('id="journalIndexDatabase"'), "国际期刊汇总应允许选择检索库要求。");
 assert.ok(filterForm.includes("检索库要求"), "国际期刊筛选应使用用户指定的检索库口径。");
 assert.ok(!toolbar.includes('id="resourceSearch"'), "搜索输入框不应继续位于独立资源工具栏中。");
@@ -47,7 +52,11 @@ assert.ok(script.includes("populateActivityFilterOptions"), "课外活动库应�
 assert.ok(script.includes("populateJournalFilterOptions"), "国际期刊汇总应从 RAG 数据生成论文方向和检索库筛选项。");
 assert.ok(script.includes("activityFilters"), "课外活动库应使用独立于资格条件的活动筛选状态。");
 assert.ok(script.includes("journalFilters"), "国际期刊汇总应使用独立于项目资格条件的期刊筛选状态。");
+assert.ok(script.includes("renderResourceFilterSnapshot"), "资源库应根据当前筛选更新摘要和结果数。");
+assert.ok(script.includes("setResourceFilterCollapsed"), "资源库应控制高级筛选折叠状态。");
 assert.ok(styles.includes(".resource-combobox-toggle"), "论文方向按钮应有和普通筛选框一致的控件样式。");
+assert.ok(styles.includes(".resource-results-console"), "资源库应有固定筛选摘要条样式。");
+assert.ok(styles.includes(".resource-filter-pill"), "资源库应有已选条件 pill 样式。");
 assert.ok(styles.includes("top: calc(100% + 6px)"), "论文方向菜单应固定从控件下方向下展开。");
 assert.ok(styles.includes(".resource-combobox-menu .resource-combobox-option"), "论文方向菜单选项不应继承全局主按钮样式。");
 assert.ok(script.includes("相关申请 / 报名要求"), "已排除项目应展示触发筛选的申请或报名要求。");

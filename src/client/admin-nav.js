@@ -1,14 +1,16 @@
-const adminDashboardLinks = [...document.querySelectorAll("[data-admin-dashboard-link]")];
+function getAdminDashboardLinks() {
+  return [...document.querySelectorAll("[data-admin-dashboard-link]")];
+}
 
 function setAdminDashboardVisible(isVisible) {
-  for (const link of adminDashboardLinks) {
+  for (const link of getAdminDashboardLinks()) {
     link.classList.toggle("is-hidden", !isVisible);
     link.setAttribute("aria-hidden", String(!isVisible));
   }
 }
 
 async function updateAdminDashboardLinks() {
-  if (!adminDashboardLinks.length) return;
+  if (!getAdminDashboardLinks().length) return;
   setAdminDashboardVisible(false);
   try {
     const response = await fetch("/api/auth/me", { method: "GET" });

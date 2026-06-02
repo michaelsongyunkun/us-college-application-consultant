@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>资源库</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260602-frontend-polish" />
+    <link rel="stylesheet" href="./styles.css?v=20260602-mobile-workbench" />
   </head>
   <body>
     <main class="app-shell command-shell">
@@ -81,7 +81,20 @@
           <span id="resourceStatus" class="status" role="status" aria-live="polite">资源加载中</span>
         </div>
 
-        <form id="resourceEligibilityForm" class="resource-filter" autocomplete="off">
+        <div class="resource-results-console" aria-live="polite">
+          <div class="resource-results-summary">
+            <span>当前筛选</span>
+            <strong id="resourceFilterSummary">全部资源</strong>
+          </div>
+          <div id="resourceFilterPills" class="resource-filter-pills" aria-label="已选筛选条件">
+            <span class="resource-filter-pill is-empty">未设置条件</span>
+          </div>
+          <span id="resourceResultSummary" class="resource-result-count">结果加载中</span>
+          <button id="toggleResourceFilters" class="secondary" type="button" aria-expanded="false" aria-controls="resourceEligibilityForm">筛选</button>
+          <button id="clearResourceFiltersInline" class="secondary" type="button">清空</button>
+        </div>
+
+        <form id="resourceEligibilityForm" class="resource-filter is-collapsed" autocomplete="off">
           <div class="resource-filter-heading">
             <h3 id="resourceFilterTitle">我的可参与条件</h3>
             <p id="resourceFilterDescription">仅用于当前页面筛选，不会保存到账号资料。资格结论仍请以项目官网为准。</p>
@@ -233,8 +246,8 @@
       </section>
       </div>
     </main>
-    <script type="module" src="./src/client/admin-nav.js?v=20260601-admin-nav"></script>
-    <script type="module" src="./src/client/safe-navigation.mjs"></script>
+    <script type="module" src="./src/client/admin-nav.js?v=20260602-mobile-drawer"></script>
+    <script type="module" src="./src/client/safe-navigation.mjs?v=20260602-mobile-drawer"></script>
     <script type="module" src="./src/client/resource-library.js"></script>
   </body>
 </html>

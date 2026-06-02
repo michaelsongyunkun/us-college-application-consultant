@@ -41,6 +41,11 @@ const journalDirectionMenu = document.querySelector("#journalDirectionMenu");
 const journalDirectionCombobox = document.querySelector("[data-journal-direction-combobox]");
 const journalIndexDatabaseInput = document.querySelector("#journalIndexDatabase");
 const clearEligibilityButton = document.querySelector("#clearResourceEligibility");
+const toggleResourceFiltersButton = document.querySelector("#toggleResourceFilters");
+const clearResourceFiltersInlineButton = document.querySelector("#clearResourceFiltersInline");
+const resourceFilterSummary = document.querySelector("#resourceFilterSummary");
+const resourceFilterPills = document.querySelector("#resourceFilterPills");
+const resourceResultSummary = document.querySelector("#resourceResultSummary");
 const competitionTab = document.querySelector("#competitionTab");
 const summerSchoolTab = document.querySelector("#summerSchoolTab");
 const researchProjectTab = document.querySelector("#researchProjectTab");
@@ -243,6 +248,70 @@ function resultCountText(shownCount, matchingCount) {
   return `${hasFilters ? "可查看" : "显示"} ${shownCount} / ${matchingCount} 项`;
 }
 
+function selectedOptionText(select) {
+  return select?.selectedOptions?.[0]?.textContent?.trim() || "";
+}
+
+function activeLibraryLabel() {
+  return {
+    competitions: "竞赛库",
+    "summer-schools": "夏校库",
+    "research-projects": "实习/科研库",
+    "extracurricular-activities": "课外活动库",
+    "international-journals": "国际期刊汇总",
+  }[activeLibrary] || "当前资源库";
+}
+
+function participationPreferenceText(value) {
+  return {
+    online_only: "仅线上",
+    offline_only: "仅线下",
+    either: "线上线下都可",
+  }[value] || "";
+}
+
+function getActiveFilterLabels() {
+  const labels = [];
+  const query = searchInput?.value.trim();
+  if (query && activeLibrary !== "extracurricular-activities") labels.push(`搜索：${query}`);
+  if (activeLibrary === "extracurricular-activities") {
+    if (activityFilters.commonAppType) labels.push(`Common App：${activityFilters.commonAppType}`);
+    if (activityFilters.majorDirection) labels.push(`方向：${activityFilters.majorDirection}`);
+    return labels;
+  }
+  if (activeLibrary === "international-journals") {
+    if (journalFilters.direction) labels.push(`论文方向：${journalFilters.direction}`);
+    if (journalFilters.indexDatabase) labels.push(`检索库：${journalFilters.indexDatabase}`);
+    return labels;
+  }
+  if (eligibilityFilters.nationality) labels.push(`国籍：${eligibilityFilters.nationality}`);
+  if (eligibilityFilters.identityDescription) labels.push(`身份：${eligibilityFilters.identityDescription}`);
+  if (eligibilityFilters.schoolContext) labels.push(`就读体系：${selectedOptionText(schoolContextInput)}`);
+  if (eligibilityFilters.participationPreference) {
+    labels.push(`参与方式：${participationPreferenceText(eligibilityFilters.participationPreference)}`);
+  }
+  return labels;
+}
+
+function renderResourceFilterSnapshot(shownCount = 0, matchingCount = 0) {
+  if (resourceFilterSummary) resourceFilterSummary.textContent = activeLibraryLabel();
+  if (resourceResultSummary) {
+    resourceResultSummary.textContent =
+      matchingCount > 0 ? `显示 ${shownCount} / ${matchingCount} 项` : "暂无匹配结果";
+  }
+  if (!resourceFilterPills) return;
+  const labels = getActiveFilterLabels();
+  resourceFilterPills.innerHTML = labels.length
+    ? labels.map((label) => `<span class="resource-filter-pill">${escapeHtml(label)}</span>`).join("")
+    : '<span class="resource-filter-pill is-empty">未设置条件</span>';
+}
+
+function setResourceFilterCollapsed(isCollapsed) {
+  eligibilityForm?.classList.toggle("is-collapsed", isCollapsed);
+  toggleResourceFiltersButton?.setAttribute("aria-expanded", String(!isCollapsed));
+  if (toggleResourceFiltersButton) toggleResourceFiltersButton.textContent = isCollapsed ? "筛选" : "收起";
+}
+
 function resetVisibleResourceLimit() {
   visibleResourceLimit = DEFAULT_VISIBLE_RESULT_LIMIT;
 }
@@ -251,6 +320,7 @@ function updateLoadMoreResources(page, library) {
   if (library !== activeLibrary) return;
   matchingResourceCount = page.totalCount;
   loadMoreResourcesButton?.classList.toggle("is-hidden", !page.hasMore);
+  renderResourceFilterSnapshot(page.shownCount, page.totalCount);
 }
 
 function requirementSummary(item) {
@@ -647,6 +717,12 @@ summerSchoolTab?.addEventListener("click", () => switchLibrary("summer-schools")
 researchProjectTab?.addEventListener("click", () => switchLibrary("research-projects"));
 extracurricularActivityTab?.addEventListener("click", () => switchLibrary("extracurricular-activities"));
 internationalJournalTab?.addEventListener("click", () => switchLibrary("international-journals"));
+toggleResourceFiltersButton?.addEventListener("click", () => {
+  setResourceFilterCollapsed(!eligibilityForm?.classList.contains("is-collapsed"));
+});
+clearResourceFiltersInlineButton?.addEventListener("click", () => {
+  clearEligibilityButton?.click();
+});
 journalDirectionToggle?.addEventListener("click", toggleJournalDirectionMenu);
 journalDirectionToggle?.addEventListener("keydown", (event) => {
   if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
@@ -686,6 +762,7 @@ eligibilityForm?.addEventListener("submit", (event) => {
     status.textContent = hasActivityFilters() ? "活动筛选已应用" : `已载入 ${totalResourceCount()} 项资源`;
     resetVisibleResourceLimit();
     renderActiveLibrary();
+    setResourceFilterCollapsed(true);
     return;
   }
   if (activeLibrary === "international-journals") {
@@ -696,6 +773,7 @@ eligibilityForm?.addEventListener("submit", (event) => {
     status.textContent = hasJournalFilters() ? "期刊筛选已应用" : `已载入 ${totalResourceCount()} 项资源`;
     resetVisibleResourceLimit();
     renderActiveLibrary();
+    setResourceFilterCollapsed(true);
     return;
   }
   const selectedMode = eligibilityForm.querySelector('input[name="participationMode"]:checked');
@@ -711,6 +789,7 @@ eligibilityForm?.addEventListener("submit", (event) => {
     : `已载入 ${totalResourceCount()} 项资源`;
   resetVisibleResourceLimit();
   renderActiveLibrary();
+  setResourceFilterCollapsed(true);
 });
 clearEligibilityButton?.addEventListener("click", () => {
   eligibilityForm.reset();
@@ -729,6 +808,7 @@ clearEligibilityButton?.addEventListener("click", () => {
     indexDatabase: "",
   };
   setJournalDirection("");
+  setResourceFilterCollapsed(true);
   status.textContent = `已载入 ${totalResourceCount()} 项资源`;
   resetVisibleResourceLimit();
   renderActiveLibrary();

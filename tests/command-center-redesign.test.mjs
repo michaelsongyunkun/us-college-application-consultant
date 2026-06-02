@@ -21,6 +21,7 @@ const indexHtml = readFileSync("index.html", "utf8");
 const styles = readFileSync("styles.css", "utf8");
 const courseHelperHtml = readFileSync("course-helper.html", "utf8");
 const courseHelperScript = readFileSync("src/client/course-helper.js", "utf8");
+const safeNavigationScript = readFileSync("src/client/safe-navigation.mjs", "utf8");
 
 const authShell = indexHtml.match(/<section id="authShell"[\s\S]*?<\/section>\s*<main id="appShell"/)?.[0] || "";
 assert.ok(authShell.includes("landing-shell"), "Public landing shell should remain the public landing design.");
@@ -86,7 +87,7 @@ for (const [file, activeLabel] of pages) {
       `${file} should keep a hidden admin dashboard nav entry that can be revealed for admin users.`,
     );
     assert.ok(
-      html.includes('./src/client/admin-nav.js?v=20260601-admin-nav'),
+      html.includes('./src/client/admin-nav.js?v=20260602-mobile-drawer'),
       `${file} should load the shared admin nav visibility script.`,
     );
   }
@@ -109,6 +110,10 @@ const adminNavScript = readFileSync("src/client/admin-nav.js", "utf8");
 assert.match(adminNavScript, /\/api\/auth\/me/, "Admin nav script should check the authenticated user.");
 assert.match(adminNavScript, /role === "admin"/, "Admin nav script should reveal dashboard links only for admins.");
 assert.match(adminNavScript, /data-admin-dashboard-link/, "Admin nav script should target shared admin dashboard links.");
+assert.match(adminNavScript, /function getAdminDashboardLinks/, "Admin nav script should include links cloned into the mobile drawer.");
+assert.match(safeNavigationScript, /setupCommandMobileNavigation/, "Safe navigation should build the mobile command drawer.");
+assert.match(safeNavigationScript, /data-command-mobile-toggle/, "Mobile command drawer should expose an accessible toggle.");
+assert.match(safeNavigationScript, /getCurrentCommandTitle/, "Mobile command bar should show the current page title.");
 
 for (const selector of [
   ".command-shell",
@@ -116,6 +121,8 @@ for (const selector of [
   ".command-main",
   ".command-page-summary",
   ".next-action-panel",
+  ".command-mobile-bar",
+  ".command-mobile-drawer",
 ]) {
   assert.ok(styles.includes(selector), `Stylesheet should define ${selector}.`);
 }

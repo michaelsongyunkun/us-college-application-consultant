@@ -15,7 +15,7 @@
     <meta name="twitter:description" content="面向学生与家长的 AI 美本规划工作台：背景整理、活动规划、资源匹配和报告导出。" />
     <title>AI 美本规划工作台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260602-frontend-polish" />
+    <link rel="stylesheet" href="./styles.css?v=20260602-mobile-workbench" />
   </head>
   <body>
     <section id="authShell" class="landing-shell" aria-labelledby="landing-title">
@@ -68,6 +68,11 @@
             <div class="auth-preview-row">
               <span>3</span>
               <p><strong>下周行动</strong><small>生成可保存、可导出的申请清单</small></p>
+            </div>
+            <div class="auth-preview-report" aria-label="报告输出预览">
+              <span><strong>Match</strong><small>资源匹配 12 项</small></span>
+              <span><strong>Risk</strong><small>ED 风险待复核</small></span>
+              <span><strong>Next</strong><small>本周 3 个动作</small></span>
             </div>
           </div>
           <form id="authForm" class="auth-form" method="post" action="/api/auth/register">
@@ -890,8 +895,8 @@
       </div>
     </main>
 
-    <script type="module" src="./src/client/admin-nav.js?v=20260601-admin-nav"></script>
+    <script type="module" src="./src/client/admin-nav.js?v=20260602-mobile-drawer"></script>
     <script type="module" src="./src/client/app.js?v=20260602-deepseek-wait-time"></script>
-    <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-case-refresh"></script>
+    <script type="module" src="./src/client/safe-navigation.mjs?v=20260602-mobile-drawer"></script>
   </body>
 </html>

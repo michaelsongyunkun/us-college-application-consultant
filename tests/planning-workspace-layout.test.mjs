@@ -53,6 +53,7 @@ assert.match(
   /<form id="authForm" class="auth-form" method="post" action="\/api\/auth\/register">/,
   "The auth form should keep a native POST fallback instead of defaulting to an unsafe GET submission.",
 );
+assert.ok(html.includes("auth-preview-report"), "Public landing should show a product-like report preview in the first viewport.");
 
 for (const id of [
   "workspaceNextAction",
@@ -151,7 +152,7 @@ const planningActivityTableBody = html.match(/<table id="activityTable"[\s\S]*?<
 const commandSubnav = html.match(/<div class="command-subnav"[\s\S]*?<\/div>/)?.[0] || "";
 const dashboardOverview = html.match(/<section id="dashboardOverview"[\s\S]*?<\/section>/)?.[0] || "";
 
-assert.ok(html.includes("./styles.css?v=20260602-frontend-polish"), "Planning workspace should bust the stylesheet cache for frontend polish fixes.");
+assert.ok(html.includes("./styles.css?v=20260602-mobile-workbench"), "Planning workspace should bust the stylesheet cache for frontend polish fixes.");
 assert.ok(dashboardOverview.includes('id="dashboardTaskGrid"'), "Logged-in home should expose a task dashboard grid above the planning form.");
 for (const target of ["my-activities.html", "ask-deepseek.html", "school-selection.html", "#profilePanel"]) {
   assert.ok(dashboardOverview.includes(target), `Logged-in dashboard should link users to ${target}.`);
@@ -338,6 +339,8 @@ for (const selector of [
   assert.match(styles, new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `Missing style ${selector}`);
 }
 assert.match(styles, /@media \(max-width: 780px\)[\s\S]*\.landing-hero/, "Landing hero should stack on small screens.");
+assert.match(styles, /html\s*\{[\s\S]*?overflow-x:\s*hidden;/, "Landing shell should have a page-level horizontal overflow guard.");
+assert.match(styles, /\.auth-preview-report\s*\{/, "Action map preview should include compact report preview styling.");
 assert.match(appJs, /const heroStartButton = document\.querySelector\("#heroStartButton"\)/);
 assert.match(appJs, /heroStartButton\?\.addEventListener\("click"/);
 assert.match(appJs, /initialAuthMode === "login" \|\| getSafeNextPath\(\) \? "login" : "register"/);

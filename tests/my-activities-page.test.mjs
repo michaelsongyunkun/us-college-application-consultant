@@ -171,7 +171,7 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260602-frontend-polish")
+  pageHtml.includes("./styles.css?v=20260602-mobile-workbench")
     && pageHtml.includes("./src/client/my-activities.js?v=20260601-portfolio-versions-v2"),
   "我的申请页面应更新 CSS / JS 版本号，避免用户继续加载缓存的旧工作流。"
 );
@@ -213,6 +213,9 @@ assert.match(styles, /\.academic-record-row\s*\{/, "GPA/SAT/AP 可增删记录�
 assert.match(pageHtml, /id="exportPortfolioSvgButton"[^>]*>导出 SVG/, "我的申请档案应提供 SVG 导出入口。");
 assert.match(pageHtml, /id="exportPortfolioWordButton"[^>]*>导出 Word 文档/, "我的申请档案应提供 Word 导出入口。");
 assert.match(pageHtml, /id="clearPortfolioButton"[^>]*>清空当前方案/, "我的申请档案应提供清空当前方案入口。");
+assert.ok(pageHtml.includes('class="actions portfolio-actions"'), "我的申请档案顶部操作应使用紧凑按钮组。");
+assert.ok(pageHtml.includes('class="action-menu"'), "导出操作应收纳到菜单中。");
+assert.ok(styles.includes(".action-menu-panel"), "导出 / 更多菜单应有专用样式。");
 assert.match(script, /buildSvgDocument/, "我的申请档案应复用 SVG 报告导出。");
 assert.match(script, /buildWordDocument/, "我的申请档案应复用 Word 报告导出。");
 assert.match(script, /querySelector\("#exportPortfolioSvgButton"\)/, "我的申请档案脚本应绑定 SVG 导出按钮。");

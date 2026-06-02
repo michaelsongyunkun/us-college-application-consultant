@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>我的申请</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260602-frontend-polish" />
+    <link rel="stylesheet" href="./styles.css?v=20260602-mobile-workbench" />
   </head>
   <body>
     <main class="app-shell command-shell portfolio-shell">
@@ -60,11 +60,21 @@
             整理 GPA、SAT、AP、选校计划、活动、竞赛、夏校和推荐信材料，作为后续申请复盘的基础。
           </p>
         </div>
-        <div class="actions" aria-label="页面操作">
-          <button id="savePortfolioButton" type="button">保存进度</button>
-          <button id="exportPortfolioSvgButton" class="secondary" type="button">导出 SVG</button>
-          <button id="exportPortfolioWordButton" class="secondary" type="button">导出 Word 文档</button>
-          <button id="clearPortfolioButton" class="danger" type="button">清空当前方案</button>
+        <div class="actions portfolio-actions" aria-label="页面操作">
+          <button id="savePortfolioButton" type="button">保存</button>
+          <details class="action-menu">
+            <summary>导出</summary>
+            <div class="action-menu-panel">
+              <button id="exportPortfolioSvgButton" class="secondary" type="button">导出 SVG</button>
+              <button id="exportPortfolioWordButton" class="secondary" type="button">导出 Word 文档</button>
+            </div>
+          </details>
+          <details class="action-menu action-menu-muted">
+            <summary>更多</summary>
+            <div class="action-menu-panel">
+              <button id="clearPortfolioButton" class="danger" type="button">清空当前方案</button>
+            </div>
+          </details>
         </div>
       </header>
 
@@ -242,8 +252,8 @@
       </form>
       </div>
     </main>
-    <script type="module" src="./src/client/admin-nav.js?v=20260601-admin-nav"></script>
-    <script type="module" src="./src/client/safe-navigation.mjs?v=20260528-application-plan"></script>
+    <script type="module" src="./src/client/admin-nav.js?v=20260602-mobile-drawer"></script>
+    <script type="module" src="./src/client/safe-navigation.mjs?v=20260602-mobile-drawer"></script>
     <script type="module" src="./src/client/my-activities.js?v=20260601-portfolio-versions-v2"></script>
   </body>
 </html>
