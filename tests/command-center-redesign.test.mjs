@@ -51,6 +51,18 @@ for (const [file, activeLabel] of pages) {
     assert.ok(html.includes(navLabel), `${file} should include command nav label ${navLabel}.`);
   }
   const commandNav = html.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";
+  for (const section of ["core", "reference", "academic", "support"]) {
+    assert.ok(
+      commandNav.includes(`data-nav-section="${section}"`),
+      `${file} should group the left navigation into a ${section} section.`,
+    );
+  }
+  assert.ok(
+    commandNav.indexOf('data-nav-section="core"') < commandNav.indexOf('data-nav-section="reference"')
+      && commandNav.indexOf('data-nav-section="reference"') < commandNav.indexOf('data-nav-section="academic"')
+      && commandNav.indexOf('data-nav-section="academic"') < commandNav.indexOf('data-nav-section="support"'),
+    `${file} should order navigation groups by workflow, references, academic tools, then support.`,
+  );
   if (file !== "admin.html") {
     assert.ok(
       commandNav.includes('data-admin-dashboard-link') && commandNav.includes('href="./admin.html"'),

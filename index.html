@@ -209,27 +209,39 @@
           <span><strong>US College Compass</strong><small>Application Planning Center</small></span>
         </a>
         <nav class="command-sidebar-nav" aria-label="登录后功能导航">
-          <div class="command-nav-group">
-            <a href="./index.html" data-safe-nav aria-current="page">申请规划中心</a>
-            <div class="command-subnav" aria-label="申请规划中心快捷导航">
-              <a href="./index.html#planningOutputTable">活动规划表</a>
-              <a href="./index.html#competitionRecommendations">国际竞赛推荐</a>
-              <a href="./index.html#summerSchoolRecommendations">夏校推荐</a>
-              <a href="./index.html#recommendationLetterRecommendations">推荐信推荐</a>
-              <a href="./index.html#similarAdmissionCases">相似录取案例参考</a>
+            <div class="command-nav-section" data-nav-section="core">
+              <p class="command-nav-section-label">核心工作流</p>
+              <div class="command-nav-group">
+              <a href="./index.html" data-safe-nav aria-current="page">申请规划中心</a>
+                <div class="command-subnav" aria-label="申请规划中心快捷导航">
+                  <a href="./index.html#planningOutputTable">活动规划表</a>
+                  <a href="./index.html#competitionRecommendations">国际竞赛推荐</a>
+                  <a href="./index.html#summerSchoolRecommendations">夏校推荐</a>
+                  <a href="./index.html#recommendationLetterRecommendations">推荐信推荐</a>
+                  <a href="./index.html#similarAdmissionCases">相似录取案例参考</a>
+                </div>
+              </div>
+              <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
+              <a href="./school-selection.html" data-safe-nav>美本选校系统</a>
+              <a href="./ask-deepseek.html" data-safe-nav>问DeepSeek</a>
             </div>
-          </div>
-          <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
-          <a href="./school-selection.html" data-safe-nav>美本选校系统</a>
-          <a href="./ask-deepseek.html" data-safe-nav>问DeepSeek</a>
-          <a href="./resource-library.html" data-safe-nav>资源库</a>
-          <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
-          <a href="./course-helper.html" data-safe-nav>选课辅助器</a>
-          <a href="./gpa-calculator.html" data-safe-nav>GPA / AP 工具</a>
-          <a href="./disclaimer.html" data-safe-nav>免责声明</a>
-          <a href="./feedback.html" data-safe-nav>反馈与支持</a>
-          <a href="./contact.html" data-safe-nav>联系我们</a>
-          <a id="adminDashboardLink" class="is-hidden" href="./admin.html" data-safe-nav data-admin-dashboard-link aria-hidden="true">数据看板</a>
+            <div class="command-nav-section" data-nav-section="reference">
+              <p class="command-nav-section-label">资料检索</p>
+              <a href="./resource-library.html" data-safe-nav>资源库</a>
+              <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+            </div>
+            <div class="command-nav-section" data-nav-section="academic">
+              <p class="command-nav-section-label">学术工具</p>
+              <a href="./course-helper.html" data-safe-nav>选课辅助器</a>
+              <a href="./gpa-calculator.html" data-safe-nav>GPA / AP 工具</a>
+            </div>
+            <div class="command-nav-section" data-nav-section="support">
+              <p class="command-nav-section-label">支持与边界</p>
+              <a href="./disclaimer.html" data-safe-nav>免责声明</a>
+              <a href="./feedback.html" data-safe-nav>反馈与支持</a>
+              <a href="./contact.html" data-safe-nav>联系我们</a>
+              <a href="./admin.html" data-safe-nav class="is-hidden" data-admin-dashboard-link aria-hidden="true">数据看板</a>
+            </div>
         </nav>
         <div class="command-sidebar-note">
           <strong>使用边界</strong>
@@ -257,6 +269,38 @@
           </div>
         </div>
       </header>
+
+      <section id="dashboardOverview" class="command-page-summary dashboard-overview" aria-label="登录后任务驾驶舱">
+        <div class="dashboard-overview-copy">
+          <p class="eyebrow">今日工作台</p>
+          <h2>先选一个动作，把规划推进下去</h2>
+          <p>
+            不确定从哪里开始时，优先补齐申请档案；已有基础信息后，再生成规划、追问 DeepSeek 或产出选校版本。
+          </p>
+        </div>
+        <div id="dashboardTaskGrid" class="dashboard-task-grid" aria-label="核心任务入口">
+          <a class="dashboard-task-card is-primary" href="#profilePanel">
+            <span>01</span>
+            <strong>完善学生信息</strong>
+            <small>年级、方向、成绩和活动是所有建议的输入。</small>
+          </a>
+          <a class="dashboard-task-card" href="./my-activities.html" data-safe-nav>
+            <span>02</span>
+            <strong>整理申请档案</strong>
+            <small>沉淀 GPA、活动、推荐信和选校计划。</small>
+          </a>
+          <a class="dashboard-task-card" href="./ask-deepseek.html" data-safe-nav>
+            <span>03</span>
+            <strong>问 DeepSeek 体检</strong>
+            <small>让系统按档案找缺失项和下一步动作。</small>
+          </a>
+          <a class="dashboard-task-card" href="./school-selection.html" data-safe-nav>
+            <span>04</span>
+            <strong>生成选校方案</strong>
+            <small>用保守、均衡、冲刺版本复盘学校组合。</small>
+          </a>
+        </div>
+      </section>
 
       <section class="panel workspace-panel" aria-labelledby="workspace-title">
         <div class="section-heading table-heading">
@@ -361,7 +405,7 @@
         </details>
       </section>
 
-      <section class="panel intake-panel" aria-labelledby="intake-title">
+      <section id="profilePanel" class="panel intake-panel" aria-labelledby="intake-title">
         <div class="section-heading">
           <h2 id="intake-title">学生信息</h2>
           <p>用于生成规划。</p>

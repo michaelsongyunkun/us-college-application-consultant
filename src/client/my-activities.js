@@ -143,6 +143,12 @@ const summerSchoolsList = document.querySelector("#summerSchoolsList");
 const recommendationLettersPanel = document.querySelector("#recommendationLettersPanel");
 const planningActionsPanel = document.querySelector("#planningActionsPanel");
 const deepSeekNotesPanel = document.querySelector("#deepSeekNotesPanel");
+const portfolioCompletionCards = {
+  academic: document.querySelector("#portfolioCompletionAcademic"),
+  activities: document.querySelector("#portfolioCompletionActivities"),
+  schoolPlan: document.querySelector("#portfolioCompletionSchoolPlan"),
+  deepSeek: document.querySelector("#portfolioCompletionDeepSeek"),
+};
 
 let isDirty = false;
 let isRendering = false;
@@ -831,6 +837,7 @@ function importPlanningActivity(sourceId, activityIndex) {
 
 function updateCompletion() {
   const portfolio = collectPortfolio();
+  renderPortfolioCompletion(portfolio);
   if (academicRecordsProgress) {
     const records = portfolio.academicRecords || emptyAcademicRecords();
     academicRecordsProgress.textContent = `成绩档案：GPA ${records.gpaRecords.length} 学期 / SAT ${records.satTests.length} 次 / AP ${records.apExams.length} 门`;
@@ -847,6 +854,46 @@ function updateCompletion() {
   if (planningActionsProgress) {
     planningActionsProgress.textContent = `DeepSeek 行动：${portfolio.planningActions.length} 项`;
   }
+}
+
+function renderPortfolioCompletion(portfolio = collectPortfolio()) {
+  const academicRecords = portfolio.academicRecords || emptyAcademicRecords();
+  const hasAcademicSignal =
+    String(academicRecords.gpaScale || "").trim()
+    || (academicRecords.gpaRecords || []).some((record) => String(record.gpa || "").trim())
+    || (academicRecords.satTests || []).length > 0
+    || (academicRecords.apExams || []).length > 0;
+  const activityCount = (portfolio.activities || []).length;
+  const schoolCount = countApplicationPlanSchools(portfolio.applicationPlan);
+  const deepSeekCount = (portfolio.planningActions || []).length + (portfolio.deepSeekNotes || []).length;
+
+  setPortfolioCompletionCard(
+    portfolioCompletionCards.academic,
+    hasAcademicSignal ? "done" : "todo",
+    hasAcademicSignal ? "已有成绩基础，可继续补 SAT / AP。" : "先补 GPA 分制或最近学期 GPA。",
+  );
+  setPortfolioCompletionCard(
+    portfolioCompletionCards.activities,
+    activityCount >= 3 ? "done" : activityCount > 0 ? "progress" : "todo",
+    activityCount >= 3 ? `已有 ${activityCount} 项活动，可做质量体检。` : `当前 ${activityCount} 项，建议先补到 3 项。`,
+  );
+  setPortfolioCompletionCard(
+    portfolioCompletionCards.schoolPlan,
+    schoolCount > 0 ? "done" : "todo",
+    schoolCount > 0 ? `已保存 ${schoolCount} 所学校，适合进入版本复盘。` : "还没有选校计划，可先生成均衡版。",
+  );
+  setPortfolioCompletionCard(
+    portfolioCompletionCards.deepSeek,
+    deepSeekCount > 0 ? "done" : "todo",
+    deepSeekCount > 0 ? `已保存 ${deepSeekCount} 条 DeepSeek 产出。` : "建议先做一次申请档案体检。",
+  );
+}
+
+function setPortfolioCompletionCard(card, status, detail) {
+  if (!card) return;
+  card.dataset.status = status;
+  const detailElement = card.querySelector("small");
+  if (detailElement) detailElement.textContent = detail;
 }
 
 function countApplicationPlanSchools(plan = emptyApplicationPlan()) {

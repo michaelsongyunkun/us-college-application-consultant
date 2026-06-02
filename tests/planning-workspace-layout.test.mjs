@@ -149,8 +149,16 @@ const workspacePriorityActions = html.match(/<div id="workspacePriorityActions"[
 const workspacePanelTop = html.match(/<section class="panel workspace-panel"[\s\S]*?<details id="workspaceAdvancedActions"/)?.[0] || "";
 const planningActivityTableBody = html.match(/<table id="activityTable"[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/)?.[1] || "";
 const commandSubnav = html.match(/<div class="command-subnav"[\s\S]*?<\/div>/)?.[0] || "";
+const dashboardOverview = html.match(/<section id="dashboardOverview"[\s\S]*?<\/section>/)?.[0] || "";
 
 assert.ok(html.includes("./styles.css?v=20260601-workflow-quality-v2"), "Planning workspace should bust the stylesheet cache for workflow quality fixes.");
+assert.ok(dashboardOverview.includes('id="dashboardTaskGrid"'), "Logged-in home should expose a task dashboard grid above the planning form.");
+for (const target of ["my-activities.html", "ask-deepseek.html", "school-selection.html", "#profilePanel"]) {
+  assert.ok(dashboardOverview.includes(target), `Logged-in dashboard should link users to ${target}.`);
+}
+for (const selector of [".dashboard-overview", ".dashboard-task-grid", ".dashboard-task-card"]) {
+  assert.ok(styles.includes(selector), `Stylesheet should define ${selector}.`);
+}
 assert.ok(loggedInHeader.includes('class="brand-mark"'), "Logged-in header should use the shared product brand link.");
 assert.ok(loggedInHeader.includes("College Compass"), "Logged-in header should use the shared product brand name.");
 assert.ok(!loggedInHeader.includes("primary-nav"), "Logged-in header should not repeat the left-sidebar primary navigation.");

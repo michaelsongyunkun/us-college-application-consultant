@@ -23,6 +23,12 @@ for (const expected of [
   'id="exportPortfolioWordButton"',
   'id="clearPortfolioButton"',
   'id="portfolioStatus"',
+  'id="portfolioCompletionPanel"',
+  'id="portfolioCompletionGrid"',
+  'id="portfolioCompletionAcademic"',
+  'id="portfolioCompletionActivities"',
+  'id="portfolioCompletionSchoolPlan"',
+  'id="portfolioCompletionDeepSeek"',
   'id="academicRecordsProgress"',
   'id="gpaRecordsList"',
   'id="satTestsList"',
@@ -70,6 +76,15 @@ for (const copy of [
   "DeepSeek 行动：0 项",
 ]) {
   assert.ok(pageHtml.includes(copy) || script.includes(copy), `完成度文案应覆盖空状态：${copy}`);
+}
+
+assert.ok(
+  pageHtml.indexOf('id="portfolioCompletionPanel"') < pageHtml.indexOf('id="academicRecordsProgress"'),
+  "Application portfolio should show a completion guide before the detailed form sections.",
+);
+assert.ok(script.includes("renderPortfolioCompletion"), "Portfolio page should refresh the completion guide from saved data.");
+for (const selector of [".portfolio-completion-panel", ".portfolio-completion-grid", ".portfolio-completion-card"]) {
+  assert.ok(styles.includes(selector), `Stylesheet should define ${selector}.`);
 }
 
 for (const field of [

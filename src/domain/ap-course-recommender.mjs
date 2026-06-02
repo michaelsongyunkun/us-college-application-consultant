@@ -14,6 +14,60 @@ const RATING_SCORE = {
   C: 1,
 };
 
+const SCIENCE_COURSE_TERMS = [
+  "calculus",
+  "precalculus",
+  "statistics",
+  "computer science",
+  "biology",
+  "chemistry",
+  "physics",
+  "environmental science",
+];
+
+const LIBERAL_COURSE_TERMS = [
+  "african american studies",
+  "art",
+  "economics",
+  "english",
+  "government",
+  "history",
+  "human geography",
+  "language and culture",
+  "latin",
+  "literature",
+  "music",
+  "psychology",
+  "research",
+  "seminar",
+];
+
+const STUDY_SIDE_TAGS = {
+  science: new Set(["cs", "math", "engineering", "bio_med"]),
+  liberal: new Set(["humanities_social", "arts", "language", "business_econ"]),
+};
+
+const MAJOR_COURSE_TERMS = {
+  cs: ["computer science"],
+  math: ["calculus", "precalculus", "statistics"],
+  engineering: ["calculus", "physics", "chemistry"],
+  bio_med: ["biology", "chemistry", "psychology"],
+  business_econ: ["economics", "statistics", "calculus"],
+  humanities_social: ["government", "history", "human geography", "psychology"],
+  arts: ["art", "drawing", "music"],
+  language: ["english", "language", "latin", "literature"],
+};
+
+const AP_COURSE_SEQUENCES = [
+  ["AP Precalculus", "AP Calculus AB", "AP Calculus BC"],
+  ["AP Computer Science Principles", "AP Computer Science A"],
+  ["AP Physics 1", "AP Physics 2"],
+  ["AP Physics 1", "AP Physics C: Mechanics", "AP Physics C: Electricity and Magnetism"],
+  ["AP English Language and Composition", "AP English Literature and Composition"],
+  ["AP Seminar", "AP Research"],
+  ["AP Spanish Language and Culture", "AP Spanish Literature and Culture"],
+];
+
 const MAJOR_TAGS = [
   { tag: "cs", terms: ["计算机", "人工智能", "ai", "cs", "编程", "算法", "数据", "软件"] },
   { tag: "math", terms: ["数学", "统计", "精算", "量化", "数据", "math", "statistics"] },
@@ -133,6 +187,139 @@ function courseIsCompleted(course, completedCourseNames) {
   return completedCourseNames.some((completed) => courseName === completed || courseName.includes(completed) || completed.includes(courseName));
 }
 
+function hasPlannedCourseName(plannedCourseNames, courseName) {
+  const normalizedCourseName = normalizeCourseName(courseName);
+  return [...plannedCourseNames].some(
+    (plannedName) =>
+      plannedName === normalizedCourseName ||
+      plannedName.includes(normalizedCourseName) ||
+      normalizedCourseName.includes(plannedName),
+  );
+}
+
+function catalogHasCourse(courses, courseName) {
+  const normalizedCourseName = normalizeCourseName(courseName);
+  return courses.some((course) => {
+    const candidateName = normalizeCourseName(course.name);
+    return (
+      candidateName === normalizedCourseName ||
+      candidateName.includes(normalizedCourseName) ||
+      normalizedCourseName.includes(candidateName)
+    );
+  });
+}
+
+function sequenceIndexForCourse(sequence, course) {
+  const courseName = normalizeCourseName(course.name);
+  return sequence.findIndex((sequenceCourseName) => normalizeCourseName(sequenceCourseName) === courseName);
+}
+
+function prerequisiteNamesForCourse(course) {
+  return unique(
+    AP_COURSE_SEQUENCES.flatMap((sequence) => {
+      const index = sequenceIndexForCourse(sequence, course);
+      return index > 0 ? [sequence[index - 1]] : [];
+    }),
+  );
+}
+
+function courseWouldMoveBackward(course, plannedCourseNames) {
+  return AP_COURSE_SEQUENCES.some((sequence) => {
+    const index = sequenceIndexForCourse(sequence, course);
+    if (index < 0) return false;
+    return sequence.slice(index + 1).some((harderCourseName) => hasPlannedCourseName(plannedCourseNames, harderCourseName));
+  });
+}
+
+function courseHasSatisfiedSequence(course, plannedCourseNames, courses) {
+  if (courseWouldMoveBackward(course, plannedCourseNames)) return false;
+  return prerequisiteNamesForCourse(course).every((prerequisiteName) => {
+    if (hasPlannedCourseName(plannedCourseNames, prerequisiteName)) return true;
+    return !catalogHasCourse(courses, prerequisiteName);
+  });
+}
+
+function courseNameIncludesAny(course, terms) {
+  const name = normalizeCourseName(course.name);
+  return terms.some((term) => name.includes(term));
+}
+
+function courseStudySides(course) {
+  const sides = new Set();
+  if (courseNameIncludesAny(course, SCIENCE_COURSE_TERMS)) sides.add("science");
+  if (courseNameIncludesAny(course, LIBERAL_COURSE_TERMS)) sides.add("liberal");
+  if (sides.size) return sides;
+
+  const tags = course.tags || [];
+  for (const [side, sideTags] of Object.entries(STUDY_SIDE_TAGS)) {
+    if (tags.some((tag) => sideTags.has(tag))) sides.add(side);
+  }
+  return sides;
+}
+
+function courseHasStudySide(course, side) {
+  return courseStudySides(course).has(side);
+}
+
+function directMajorCourseBonus(course, studentProfile) {
+  const courseName = normalizeCourseName(course.name);
+  return studentProfile.majorTags.reduce((bonus, tag) => {
+    const terms = MAJOR_COURSE_TERMS[tag] || [];
+    return bonus + (terms.some((term) => courseName.includes(term)) ? 1.2 : 0);
+  }, 0);
+}
+
+function findBalanceReplacementIndex(selectedCandidates, requiredSide) {
+  const otherSide = requiredSide === "science" ? "liberal" : "science";
+  const otherSideCount = selectedCandidates.filter(({ course }) => courseHasStudySide(course, otherSide)).length;
+
+  for (let index = selectedCandidates.length - 1; index >= 0; index -= 1) {
+    const course = selectedCandidates[index].course;
+    if (!courseHasStudySide(course, "science") && !courseHasStudySide(course, "liberal")) return index;
+  }
+
+  for (let index = selectedCandidates.length - 1; index >= 0; index -= 1) {
+    const course = selectedCandidates[index].course;
+    if (courseHasStudySide(course, requiredSide)) continue;
+    if (!courseHasStudySide(course, otherSide) || otherSideCount > 1) return index;
+  }
+
+  return -1;
+}
+
+function ensureStudyBalance(selectedCandidates, prioritizedCandidates, count) {
+  if (count < 2) return selectedCandidates;
+  const balancedCandidates = [...selectedCandidates];
+
+  for (const side of ["science", "liberal"]) {
+    if (balancedCandidates.some(({ course }) => courseHasStudySide(course, side))) continue;
+    const balancingCandidate = prioritizedCandidates.find(
+      ({ course }) =>
+        courseHasStudySide(course, side) &&
+        !balancedCandidates.some(({ course: selectedCourse }) => selectedCourse.id === course.id),
+    );
+    if (!balancingCandidate) continue;
+
+    const replacementIndex = findBalanceReplacementIndex(balancedCandidates, side);
+    if (replacementIndex >= 0) {
+      balancedCandidates[replacementIndex] = balancingCandidate;
+    } else if (balancedCandidates.length < count) {
+      balancedCandidates.push(balancingCandidate);
+    }
+  }
+
+  return balancedCandidates.slice(0, count);
+}
+
+function selectCoursesForGrade(sortedCandidates, count, batchIndex) {
+  const priorityPoolSize = Math.min(sortedCandidates.length, Math.max(count * 3, count));
+  const prioritizedCandidates = [
+    ...rotate(sortedCandidates.slice(0, priorityPoolSize), batchIndex * count),
+    ...sortedCandidates.slice(priorityPoolSize),
+  ];
+  return ensureStudyBalance(prioritizedCandidates.slice(0, count), prioritizedCandidates, count);
+}
+
 function courseScore(course, studentProfile, targetGrade) {
   const tagOverlap = course.tags.filter((tag) => studentProfile.majorTags.includes(tag)).length;
   const academicOverlap = course.tags.filter((tag) => studentProfile.academicTags.includes(tag)).length;
@@ -140,7 +327,7 @@ function courseScore(course, studentProfile, targetGrade) {
   const ratingScore = RATING_SCORE[course.rating] || 2;
   const researchBonus = course.tags.includes("humanities_social") || course.keywords.includes("研究能力") ? 0.2 : 0;
   const earlyPenalty = Number(targetGrade) <= 10 && ["AP Research", "AP Calculus BC", "AP Physics C: Electricity and Magnetism"].includes(course.name) ? -0.8 : 0;
-  return tagOverlap * 4 + academicOverlap * 1.4 + textOverlap + ratingScore * 0.45 + researchBonus + earlyPenalty;
+  return tagOverlap * 4 + academicOverlap * 1.4 + textOverlap + directMajorCourseBonus(course, studentProfile) + ratingScore * 0.45 + researchBonus + earlyPenalty;
 }
 
 function buildReason(course, studentProfile, targetGrade) {
@@ -179,24 +366,21 @@ export function recommendApCoursePlan({ studentProfile, courses, batchIndex = 0 
 
   const availableCourses = normalizedCourses.filter((course) => !courseIsCompleted(course, studentProfile.completedCourseNames));
   const selectedIds = new Set();
+  const plannedCourseNames = new Set(studentProfile.completedCourseNames);
   const items = futureGrades.map((grade) => {
     const count = GRADE_COURSE_COUNTS[grade] || 3;
     const sortedCandidates = availableCourses
-      .filter((course) => !selectedIds.has(course.id))
+      .filter((course) => !selectedIds.has(course.id) && courseHasSatisfiedSequence(course, plannedCourseNames, normalizedCourses))
       .map((course) => ({
         course,
         score: courseScore(course, studentProfile, grade),
       }))
       .sort((a, b) => b.score - a.score || a.course.name.localeCompare(b.course.name, "en"));
 
-    const priorityPoolSize = Math.min(sortedCandidates.length, Math.max(count * 3, count));
-    const recommendations = [
-      ...rotate(sortedCandidates.slice(0, priorityPoolSize), batchIndex * count),
-      ...sortedCandidates.slice(priorityPoolSize),
-    ]
-      .slice(0, count)
+    const recommendations = selectCoursesForGrade(sortedCandidates, count, batchIndex)
       .map(({ course }) => {
         selectedIds.add(course.id);
+        plannedCourseNames.add(normalizeCourseName(course.name));
         return {
           id: course.id,
           name: course.name,
@@ -221,6 +405,6 @@ export function recommendApCoursePlan({ studentProfile, courses, batchIndex = 0 
 
   return {
     items,
-    notice: `已根据成绩与难点生成 ${futureGrades[0]} 至 12 年级 AP 选课计划。`,
+    notice: `已根据成绩与难点、文理均衡和先易后难顺序生成 ${futureGrades[0]} 至 12 年级 AP 选课计划。`,
   };
 }

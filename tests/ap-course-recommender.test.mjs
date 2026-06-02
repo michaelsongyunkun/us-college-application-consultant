@@ -7,6 +7,70 @@ import {
 } from "../src/domain/ap-course-recommender.mjs";
 
 const courses = parseApCoursesMarkdown(readFileSync("data/ap-courses.md", "utf8"));
+const courseLookup = new Map(courses.map((course) => [course.name, course]));
+
+const SCIENCE_COURSE_TERMS = [
+  "calculus",
+  "precalculus",
+  "statistics",
+  "computer science",
+  "biology",
+  "chemistry",
+  "physics",
+  "environmental science",
+];
+const LIBERAL_COURSE_TERMS = [
+  "african american studies",
+  "art",
+  "economics",
+  "english",
+  "government",
+  "history",
+  "human geography",
+  "language and culture",
+  "latin",
+  "literature",
+  "music",
+  "psychology",
+  "research",
+  "seminar",
+];
+
+function courseNameHasTerm(course, terms) {
+  const name = String(course.name || "").toLowerCase();
+  return terms.some((term) => name.includes(term));
+}
+
+function withCatalogCourse(course) {
+  return courseLookup.get(course.name) || course;
+}
+
+function isScienceCourse(course) {
+  return courseNameHasTerm(withCatalogCourse(course), SCIENCE_COURSE_TERMS);
+}
+
+function isLiberalCourse(course) {
+  return courseNameHasTerm(withCatalogCourse(course), LIBERAL_COURSE_TERMS);
+}
+
+function flatPlanEntries(apPlan) {
+  return apPlan.items.flatMap((item) =>
+    item.recommendations.map((course) => ({
+      grade: Number(item.grade),
+      course: withCatalogCourse(course),
+    })),
+  );
+}
+
+function assertCourseNotAfter(entries, earlierCourseName, laterCourseName) {
+  const earlier = entries.find((entry) => entry.course.name === earlierCourseName);
+  const later = entries.find((entry) => entry.course.name === laterCourseName);
+  if (!earlier || !later) return;
+  assert.ok(
+    earlier.grade <= later.grade,
+    `${earlierCourseName} should not be recommended after ${laterCourseName}`,
+  );
+}
 
 assert.ok(courses.length >= 38);
 assert.ok(courses.some((course) => course.name === "AP Calculus BC"));
@@ -48,6 +112,12 @@ assert.ok(plan.items.flatMap((item) => item.recommendations).every((course) => "
 assert.ok(plan.items.flatMap((item) => item.recommendations).every((course) => "fiveThreshold" in course));
 assert.ok(plan.items.flatMap((item) => item.recommendations).every((course) => "fourThreshold" in course));
 assert.ok(plan.notice.includes("成绩与难点"));
+for (const gradePlan of plan.items) {
+  assert.ok(gradePlan.recommendations.some(isScienceCourse), `${gradePlan.grade} grade should keep science/AP technical coverage`);
+  assert.ok(gradePlan.recommendations.some(isLiberalCourse), `${gradePlan.grade} grade should include humanities/social/language/arts coverage`);
+}
+assertCourseNotAfter(flatPlanEntries(plan), "AP Calculus AB", "AP Calculus BC");
+assertCourseNotAfter(flatPlanEntries(plan), "AP Physics C: Mechanics", "AP Physics C: Electricity and Magnetism");
 
 const refreshedPlan = recommendApCoursePlan({
   studentProfile,
@@ -89,3 +159,32 @@ assert.deepEqual(
   noApPlan.items.map((item) => item.recommendations.length),
   [3, 4, 3],
 );
+
+const sequenceFixtureCourses = [
+  { id: "fixture-calc-bc", name: "AP Calculus BC", rating: "S", tags: ["math"], keywords: [] },
+  { id: "fixture-calc-ab", name: "AP Calculus AB", rating: "B", tags: ["math"], keywords: [] },
+  { id: "fixture-physics-em", name: "AP Physics C: Electricity and Magnetism", rating: "S", tags: ["engineering"], keywords: [] },
+  { id: "fixture-physics-mech", name: "AP Physics C: Mechanics", rating: "B", tags: ["engineering"], keywords: [] },
+  { id: "fixture-english-lit", name: "AP English Literature and Composition", rating: "A+", tags: ["language"], keywords: [] },
+  { id: "fixture-english-lang", name: "AP English Language and Composition", rating: "B", tags: ["language"], keywords: [] },
+  { id: "fixture-csa", name: "AP Computer Science A", rating: "A", tags: ["cs"], keywords: [] },
+  { id: "fixture-csp", name: "AP Computer Science Principles", rating: "B", tags: ["cs"], keywords: [] },
+  { id: "fixture-biology", name: "AP Biology", rating: "A", tags: ["bio_med"], keywords: [] },
+  { id: "fixture-history", name: "AP United States History", rating: "B", tags: ["humanities_social"], keywords: [] },
+];
+
+const sequencePlan = recommendApCoursePlan({
+  studentProfile: buildApCourseStudentProfile({
+    grade: "9",
+    majorDirection: "Computer Science and Engineering",
+    completedCourses: [],
+    hasNoApCourses: true,
+  }),
+  courses: sequenceFixtureCourses,
+});
+const sequenceEntries = flatPlanEntries(sequencePlan);
+
+assertCourseNotAfter(sequenceEntries, "AP Calculus AB", "AP Calculus BC");
+assertCourseNotAfter(sequenceEntries, "AP Physics C: Mechanics", "AP Physics C: Electricity and Magnetism");
+assertCourseNotAfter(sequenceEntries, "AP English Language and Composition", "AP English Literature and Composition");
+assertCourseNotAfter(sequenceEntries, "AP Computer Science Principles", "AP Computer Science A");
