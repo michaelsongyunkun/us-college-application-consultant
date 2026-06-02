@@ -171,12 +171,22 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260601-workflow-quality-v2")
+  pageHtml.includes("./styles.css?v=20260602-action-card-refresh")
     && pageHtml.includes("./src/client/my-activities.js?v=20260601-portfolio-versions-v2"),
   "我的申请页面应更新 CSS / JS 版本号，避免用户继续加载缓存的旧工作流。"
 );
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");
 assert.match(styles, /\.portfolio-card\s*\{/, "履历条目应使用专用卡片样式。");
+assert.match(
+  styles,
+  /\.portfolio-completion-card:visited\s*\{[\s\S]*?color:\s*#26374f;/,
+  "Portfolio completion cards should override visited link colors.",
+);
+assert.match(
+  styles,
+  /\.dashboard-task-card\s+\*,\s*\.portfolio-completion-card\s+\*\s*\{[\s\S]*?text-decoration:\s*none;/,
+  "Portfolio completion card descendants should never inherit underlined link styling.",
+);
 assert.match(styles, /\.application-plan-grid\s*\{/, "我的申请页面应有选校计划布局样式。");
 assert.match(
   styles,

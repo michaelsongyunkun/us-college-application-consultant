@@ -146,7 +146,7 @@ assert.match(
   "Ask DeepSeek script should be cache-busted.",
 );
 assert.ok(
-  pageHtml.includes("styles.css?v=20260601-workflow-quality-v2"),
+  pageHtml.includes("styles.css?v=20260602-action-card-refresh"),
   "Ask DeepSeek page should refresh the stylesheet cache after workflow quality fixes.",
 );
 assert.match(styles, /\.deepseek-chat-log\s*\{/, "Ask DeepSeek should style the chat log.");

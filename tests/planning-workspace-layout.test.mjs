@@ -151,7 +151,7 @@ const planningActivityTableBody = html.match(/<table id="activityTable"[\s\S]*?<
 const commandSubnav = html.match(/<div class="command-subnav"[\s\S]*?<\/div>/)?.[0] || "";
 const dashboardOverview = html.match(/<section id="dashboardOverview"[\s\S]*?<\/section>/)?.[0] || "";
 
-assert.ok(html.includes("./styles.css?v=20260601-workflow-quality-v2"), "Planning workspace should bust the stylesheet cache for workflow quality fixes.");
+assert.ok(html.includes("./styles.css?v=20260602-action-card-refresh"), "Planning workspace should bust the stylesheet cache for action-card fixes.");
 assert.ok(dashboardOverview.includes('id="dashboardTaskGrid"'), "Logged-in home should expose a task dashboard grid above the planning form.");
 for (const target of ["my-activities.html", "ask-deepseek.html", "school-selection.html", "#profilePanel"]) {
   assert.ok(dashboardOverview.includes(target), `Logged-in dashboard should link users to ${target}.`);
@@ -159,6 +159,16 @@ for (const target of ["my-activities.html", "ask-deepseek.html", "school-selecti
 for (const selector of [".dashboard-overview", ".dashboard-task-grid", ".dashboard-task-card"]) {
   assert.ok(styles.includes(selector), `Stylesheet should define ${selector}.`);
 }
+assert.match(
+  styles,
+  /\.dashboard-task-card:visited\s*\{[\s\S]*?color:\s*#26374f;/,
+  "Dashboard task cards should override visited link colors.",
+);
+assert.match(
+  styles,
+  /\.dashboard-task-card\s+\*,\s*\.portfolio-completion-card\s+\*\s*\{[\s\S]*?text-decoration:\s*none;/,
+  "Action-card descendants should never inherit underlined link styling.",
+);
 assert.ok(loggedInHeader.includes('class="brand-mark"'), "Logged-in header should use the shared product brand link.");
 assert.ok(loggedInHeader.includes("College Compass"), "Logged-in header should use the shared product brand name.");
 assert.ok(!loggedInHeader.includes("primary-nav"), "Logged-in header should not repeat the left-sidebar primary navigation.");

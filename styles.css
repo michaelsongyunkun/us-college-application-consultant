@@ -390,7 +390,13 @@ html {
   padding: 15px;
   color: #26374f;
   text-decoration: none;
+  overflow-wrap: normal;
+  word-break: normal;
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.dashboard-task-card:visited {
+  color: #26374f;
 }
 
 .dashboard-task-card:hover,
@@ -398,6 +404,13 @@ html {
   border-color: #bcd9ca;
   box-shadow: 0 12px 26px rgba(31, 44, 70, 0.09);
   transform: translateY(-1px);
+}
+
+.dashboard-task-card *,
+.portfolio-completion-card * {
+  text-decoration: none;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .dashboard-task-card span {
@@ -420,6 +433,7 @@ html {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.55;
+  overflow-wrap: break-word;
 }
 
 .dashboard-task-card.is-primary {
@@ -3266,6 +3280,12 @@ button.danger:hover {
   padding: 14px;
   color: #26374f;
   text-decoration: none;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.portfolio-completion-card:visited {
+  color: #26374f;
 }
 
 .portfolio-completion-card span {
@@ -3288,6 +3308,7 @@ button.danger:hover {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.55;
+  overflow-wrap: break-word;
 }
 
 .portfolio-completion-card[data-status="done"] {
