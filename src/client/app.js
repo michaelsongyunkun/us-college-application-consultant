@@ -1202,8 +1202,8 @@ async function generateDeepSeekPlan() {
 
   const originalButtonText = generateDeepSeekButton.textContent;
   generateDeepSeekButton.disabled = true;
-  generateDeepSeekButton.textContent = "DeepSeek 生成中...";
-  deepSeekStatus.textContent = "DeepSeek 正在生成规划回答...";
+  generateDeepSeekButton.textContent = "DeepSeek 生成中，约 3-4 分钟...";
+  deepSeekStatus.textContent = "DeepSeek 正在生成规划回答，大约需要 3-4 分钟，请保持页面打开。";
   deepSeekStatus.classList.remove("error");
   setDeepSeekWorking(true);
   const startedAt = performance.now();

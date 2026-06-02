@@ -14,7 +14,8 @@ const selectionStrategyMode = document.querySelector("#selectionStrategyMode");
 const selectionPreferences = document.querySelector("#selectionPreferences");
 const generateSchoolSelectionButton = document.querySelector("#generateSchoolSelectionButton");
 const saveSchoolSelectionButton = document.querySelector("#saveSchoolSelectionButton");
-const exportSchoolSelectionButton = document.querySelector("#exportSchoolSelectionButton");
+const exportSchoolSelectionSvgButton = document.querySelector("#exportSchoolSelectionSvgButton");
+const exportSchoolSelectionWordButton = document.querySelector("#exportSchoolSelectionWordButton");
 const schoolSelectionStatus = document.querySelector("#schoolSelectionStatus");
 const schoolSelectionResults = document.querySelector("#schoolSelectionResults");
 const schoolSelectionVersionList = document.querySelector("#schoolSelectionVersionList");
@@ -28,11 +29,21 @@ const ROUND_CONFIG = [
   { key: "uc", label: "UC", count: "6所" },
 ];
 
+const EXPORT_ROUND_CONFIG = [
+  { key: "rea", label: "REA" },
+  { key: "ed1", label: "ED1" },
+  { key: "ed2", label: "ED2" },
+  { key: "ea", label: "EA" },
+  { key: "rd", label: "RD" },
+  { key: "uc", label: "UC" },
+];
+
 let currentSelection = null;
+let schoolSelectionVersions = [];
 
 async function generateSchoolSelection(event) {
   event.preventDefault();
-  setStatus("DeepSeek 正在生成选校方案...");
+  setStatus("DeepSeek 正在生成选校方案，大约需要 2 分钟，请保持页面打开。");
   setWorking(true);
   try {
     const data = await requestJson("/api/school-selection", {
@@ -71,7 +82,8 @@ export function renderSchoolSelectionResults(selection = {}) {
     ${renderNextActions(selection.nextActions || [])}
   `;
   if (saveSchoolSelectionButton) saveSchoolSelectionButton.disabled = false;
-  if (exportSchoolSelectionButton) exportSchoolSelectionButton.disabled = false;
+  if (exportSchoolSelectionSvgButton) exportSchoolSelectionSvgButton.disabled = false;
+  if (exportSchoolSelectionWordButton) exportSchoolSelectionWordButton.disabled = false;
 }
 
 function renderStrategySummary(strategy = {}) {
@@ -275,7 +287,7 @@ async function saveSchoolSelectionToPortfolio() {
     });
     currentSelection = selection;
     renderSchoolSelectionVersions(saved.schoolSelectionVersions || []);
-    setStatus(`已保存到我的申请档案：${countApplicationPlanSchools(saved.applicationPlan)} 所`);
+    setStatus(`已保存为选校版本，并同步到我的申请档案：${countApplicationPlanSchools(saved.applicationPlan)} 所`);
   } catch (error) {
     setStatus(error.message, true);
   } finally {
@@ -289,6 +301,32 @@ function saveSchoolSelectionVersion(existingVersions, version) {
     ...existingVersions.filter((item) => item.versionName !== version.versionName),
   ];
   return versions.slice(0, 12);
+}
+
+async function deleteSchoolSelectionVersion(versionIndex) {
+  const index = Number(versionIndex);
+  if (!Number.isInteger(index) || index < 0) return;
+  const version = schoolSelectionVersions[index];
+  if (!version) return;
+  const versionName = version.versionName || "这个选校版本";
+  if (!window.confirm(`确认删除“${versionName}”吗？删除后不会影响当前正在编辑的选校结果。`)) return;
+
+  setStatus("正在删除选校版本...");
+  try {
+    const portfolio = await requestJson(MY_ACTIVITIES_ENDPOINT, { method: "GET" });
+    const nextVersions = (portfolio.schoolSelectionVersions || []).filter((_, itemIndex) => itemIndex !== index);
+    const saved = await requestJson(MY_ACTIVITIES_ENDPOINT, {
+      method: "PUT",
+      body: JSON.stringify({
+        ...portfolio,
+        schoolSelectionVersions: nextVersions,
+      }),
+    });
+    renderSchoolSelectionVersions(saved.schoolSelectionVersions || []);
+    setStatus("选校版本已删除");
+  } catch (error) {
+    setStatus(error.message, true);
+  }
 }
 
 function buildSchoolSelectionVersion(selection) {
@@ -314,6 +352,246 @@ function exportSchoolSelection() {
   setStatus("选校结果已导出");
 }
 
+function exportSchoolSelectionSvg() {
+  const selection = getCurrentSelectionForExport();
+  if (!selection) return;
+  downloadTextFile(
+    `${getSchoolSelectionExportBaseName()}.svg`,
+    buildSchoolSelectionSvgDocument(selection),
+    "image/svg+xml;charset=utf-8",
+  );
+  setStatus("选校 SVG 已导出。");
+}
+
+function exportSchoolSelectionWord() {
+  const selection = getCurrentSelectionForExport();
+  if (!selection) return;
+  downloadTextFile(
+    `${getSchoolSelectionExportBaseName()}.doc`,
+    buildSchoolSelectionWordDocument(selection),
+    "application/msword;charset=utf-8",
+  );
+  setStatus("选校 Word 文档已导出。");
+}
+
+function getCurrentSelectionForExport() {
+  if (!currentSelection) {
+    setStatus("请先生成选校方案。", true);
+    return null;
+  }
+  return collectEditedSelection();
+}
+
+function getSchoolSelectionExportBaseName() {
+  const versionName = String(selectionStrategyMode?.value || "均衡版").replace(/[\\/:*?"<>|]/g, "-");
+  return `美本选校方案-${versionName}-${new Date().toISOString().slice(0, 10)}`;
+}
+
+function buildSchoolSelectionSvgDocument(selection) {
+  const rows = buildSchoolSelectionExportRows(selection);
+  const textRows = [];
+  for (const row of rows) {
+    for (const text of wrapExportText(row.text, row.maxLength || 42)) {
+      textRows.push({ ...row, text });
+    }
+  }
+  const height = Math.max(900, 96 + textRows.length * 30);
+  const textElements = textRows
+    .map((row, index) => {
+      const y = 76 + index * 30;
+      const x = 64 + (row.indent || 0);
+      return `<text x="${x}" y="${y}" class="${escapeXml(row.variant || "body")}">${escapeXml(row.text)}</text>`;
+    })
+    .join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="${height}" viewBox="0 0 1200 ${height}">
+  <rect width="1200" height="${height}" fill="#fffdf7"/>
+  <rect x="40" y="32" width="1120" height="${height - 64}" rx="18" fill="#ffffff" stroke="#e8e2d8"/>
+  <style>
+    text { font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif; fill: #1f2933; }
+    .title { font-size: 30px; font-weight: 800; fill: #1f4f3a; }
+    .meta { font-size: 14px; fill: #6b7280; }
+    .section { font-size: 20px; font-weight: 800; fill: #a86400; }
+    .school { font-size: 17px; font-weight: 700; fill: #1f4f3a; }
+    .body { font-size: 15px; fill: #344054; }
+    .muted { font-size: 14px; fill: #6b7280; }
+  </style>
+  ${textElements}
+</svg>`;
+}
+
+function buildSchoolSelectionWordDocument(selection) {
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${escapeHtml(getSchoolSelectionExportBaseName())}</title>
+    <style>
+      body { font-family: "Microsoft YaHei", Arial, sans-serif; color: #1f2933; line-height: 1.55; }
+      h1 { color: #1f4f3a; }
+      h2 { margin-top: 24px; color: #a86400; border-bottom: 1px solid #e8e2d8; padding-bottom: 6px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+      th, td { border: 1px solid #d9d2c8; padding: 8px; vertical-align: top; }
+      th { background: #faf8f2; color: #1f4f3a; text-align: left; }
+      .meta { color: #6b7280; }
+      .summary { background: #fff8e8; border: 1px solid #f1dfb8; padding: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>美本选校方案</h1>
+    <p class="meta">策略版本：${escapeHtml(selectionStrategyMode?.value || "均衡版")}｜导出时间：${escapeHtml(new Date().toLocaleString("zh-CN"))}</p>
+    ${selection.summary ? `<p class="summary">${formatWordText(selection.summary)}</p>` : ""}
+    ${renderSchoolSelectionWordStrategy(selection.strategy || {})}
+    ${EXPORT_ROUND_CONFIG.map((round) => renderSchoolSelectionWordRound(round, selection.rounds?.[round.key] || [])).join("")}
+    ${renderSchoolSelectionWordNextActions(selection.nextActions || [])}
+  </body>
+</html>`;
+}
+
+function buildSchoolSelectionExportRows(selection) {
+  const rows = [
+    { text: "美本选校方案", variant: "title", maxLength: 28 },
+    {
+      text: `策略版本：${selectionStrategyMode?.value || "均衡版"}｜导出时间：${new Date().toLocaleString("zh-CN")}`,
+      variant: "meta",
+      maxLength: 52,
+    },
+  ];
+  if (selection.summary) rows.push({ text: `方案摘要：${selection.summary}`, variant: "body", maxLength: 48 });
+
+  const strategyItems = [
+    ["早申策略", selection.strategy?.earlyStrategy],
+    ["UC 策略", selection.strategy?.ucStrategy],
+    ["RD 策略", selection.strategy?.rdStrategy],
+  ].filter(([, value]) => value);
+  if (strategyItems.length) {
+    rows.push({ text: "申请策略摘要", variant: "section", maxLength: 34 });
+    for (const [label, value] of strategyItems) {
+      rows.push({ text: `${label}：${value}`, variant: "body", indent: 20, maxLength: 48 });
+    }
+  }
+
+  for (const round of EXPORT_ROUND_CONFIG) {
+    const entries = selection.rounds?.[round.key] || [];
+    rows.push({ text: round.label, variant: "section", maxLength: 34 });
+    if (!entries.length) {
+      rows.push({ text: "暂无学校", variant: "muted", indent: 20, maxLength: 44 });
+      continue;
+    }
+    entries.forEach((entry, index) => {
+      rows.push({
+        text: `${index + 1}. ${entry.school || "未命名学校"}｜${entry.major || "专业待确认"}｜${getRiskLabel(entry.riskLevel)}`,
+        variant: "school",
+        indent: 20,
+        maxLength: 44,
+      });
+      if (entry.matchReason) rows.push({ text: `匹配理由：${entry.matchReason}`, variant: "body", indent: 40, maxLength: 48 });
+      if (entry.gaps?.length) rows.push({ text: `补强/核验：${entry.gaps.join("；")}`, variant: "body", indent: 40, maxLength: 48 });
+      if (entry.nextAction) rows.push({ text: `下一步：${entry.nextAction}`, variant: "body", indent: 40, maxLength: 48 });
+    });
+  }
+
+  if (selection.nextActions?.length) {
+    rows.push({ text: "全局下一步行动", variant: "section", maxLength: 34 });
+    selection.nextActions.forEach((action, index) => {
+      rows.push({ text: `${index + 1}. ${action}`, variant: "body", indent: 20, maxLength: 48 });
+    });
+  }
+  return rows;
+}
+
+function renderSchoolSelectionWordStrategy(strategy) {
+  const items = [
+    ["早申策略", strategy.earlyStrategy],
+    ["UC 策略", strategy.ucStrategy],
+    ["RD 策略", strategy.rdStrategy],
+  ].filter(([, value]) => value);
+  if (!items.length) return "";
+  return `
+    <h2>申请策略摘要</h2>
+    <table>
+      <tbody>
+        ${items.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${formatWordText(value)}</td></tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+function renderSchoolSelectionWordRound(round, entries) {
+  return `
+    <h2>${escapeHtml(round.label)}</h2>
+    ${
+      entries.length
+        ? `<table>
+            <thead>
+              <tr>
+                <th>学校</th>
+                <th>专业方向</th>
+                <th>风险等级</th>
+                <th>匹配理由</th>
+                <th>补强/核验</th>
+                <th>下一步行动</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${entries
+                .map(
+                  (entry) => `
+                    <tr>
+                      <td>${escapeHtml(entry.school || "未命名学校")}</td>
+                      <td>${escapeHtml(entry.major || "专业待确认")}</td>
+                      <td>${escapeHtml(getRiskLabel(entry.riskLevel))}</td>
+                      <td>${formatWordText(entry.matchReason || "")}</td>
+                      <td>${formatWordText((entry.gaps || []).join("\n"))}</td>
+                      <td>${formatWordText(entry.nextAction || "")}</td>
+                    </tr>`,
+                )
+                .join("")}
+            </tbody>
+          </table>`
+        : '<p class="meta">暂无学校。</p>'
+    }`;
+}
+
+function renderSchoolSelectionWordNextActions(actions) {
+  if (!actions.length) return "";
+  return `
+    <h2>全局下一步行动</h2>
+    <ol>${actions.map((action) => `<li>${formatWordText(action)}</li>`).join("")}</ol>`;
+}
+
+function wrapExportText(value, maxLength) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) return [""];
+  const lines = [];
+  for (let index = 0; index < text.length; index += maxLength) {
+    lines.push(text.slice(index, index + maxLength));
+  }
+  return lines;
+}
+
+function formatWordText(value) {
+  return escapeHtml(value || "").replace(/\r?\n/g, "<br>");
+}
+
+function getRiskLabel(value) {
+  return {
+    high: "冲刺",
+    medium: "匹配",
+    low: "稳妥",
+  }[String(value || "").toLowerCase()] || "匹配";
+}
+
+function escapeXml(value) {
+  return String(value || "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&apos;",
+  })[character]);
+}
+
 async function loadSchoolSelectionVersions() {
   try {
     const portfolio = await requestJson(MY_ACTIVITIES_ENDPOINT, { method: "GET" });
@@ -325,16 +603,20 @@ async function loadSchoolSelectionVersions() {
 
 function renderSchoolSelectionVersions(versions = []) {
   if (!schoolSelectionVersionList) return;
+  schoolSelectionVersions = versions;
   if (!versions.length) {
     schoolSelectionVersionList.innerHTML = '<p class="portfolio-empty">保存选校版本后会显示在这里。</p>';
     return;
   }
   schoolSelectionVersionList.innerHTML = versions
-    .map((version) => `
+    .map((version, index) => `
       <article class="school-selection-version-card">
         <strong>${escapeHtml(version.versionName || "选校版本")}</strong>
         <p>${escapeHtml(version.summary || "暂无摘要")}</p>
-        <small>${escapeHtml(version.source || "美本选校系统")}</small>
+        <div class="snapshot-actions">
+          <small>${escapeHtml(version.source || "美本选校系统")}</small>
+          <button type="button" class="danger" data-delete-school-selection-version="${index}">删除版本</button>
+        </div>
       </article>`)
     .join("");
 }
@@ -440,20 +722,23 @@ async function requestJson(url, options = {}) {
 function setWorking(isWorking) {
   if (!generateSchoolSelectionButton) return;
   generateSchoolSelectionButton.disabled = isWorking;
-  generateSchoolSelectionButton.textContent = isWorking ? "DeepSeek 生成中..." : "用 DeepSeek 生成选校方案";
+  generateSchoolSelectionButton.textContent = isWorking ? "DeepSeek 生成中，约 2 分钟..." : "用 DeepSeek 生成选校方案";
   generateSchoolSelectionButton.setAttribute("aria-busy", isWorking ? "true" : "false");
   if (saveSchoolSelectionButton) {
     saveSchoolSelectionButton.disabled = isWorking || !currentSelection;
   }
-  if (exportSchoolSelectionButton) {
-    exportSchoolSelectionButton.disabled = isWorking || !currentSelection;
+  if (exportSchoolSelectionSvgButton) {
+    exportSchoolSelectionSvgButton.disabled = isWorking || !currentSelection;
+  }
+  if (exportSchoolSelectionWordButton) {
+    exportSchoolSelectionWordButton.disabled = isWorking || !currentSelection;
   }
 }
 
 function setSaveWorking(isWorking) {
   if (!saveSchoolSelectionButton) return;
   saveSchoolSelectionButton.disabled = isWorking;
-  saveSchoolSelectionButton.textContent = isWorking ? "保存中..." : "保存到我的申请档案";
+  saveSchoolSelectionButton.textContent = isWorking ? "保存中..." : "保存为选校版本";
   saveSchoolSelectionButton.setAttribute("aria-busy", isWorking ? "true" : "false");
 }
 
@@ -465,5 +750,11 @@ function setStatus(message, isError = false) {
 
 schoolSelectionForm?.addEventListener("submit", generateSchoolSelection);
 saveSchoolSelectionButton?.addEventListener("click", saveSchoolSelectionToPortfolio);
-exportSchoolSelectionButton?.addEventListener("click", exportSchoolSelection);
+exportSchoolSelectionSvgButton?.addEventListener("click", exportSchoolSelectionSvg);
+exportSchoolSelectionWordButton?.addEventListener("click", exportSchoolSelectionWord);
+schoolSelectionVersionList?.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("[data-delete-school-selection-version]");
+  if (!deleteButton) return;
+  deleteSchoolSelectionVersion(deleteButton.dataset.deleteSchoolSelectionVersion);
+});
 loadSchoolSelectionVersions();

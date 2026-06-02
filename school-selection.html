@@ -175,6 +175,7 @@
             <div class="school-selection-actions full-span">
               <button id="generateSchoolSelectionButton" type="submit">用 DeepSeek 生成选校方案</button>
             </div>
+            <p class="workspace-meta full-span">生成选校方案大约需要 2 分钟，请保持页面打开。</p>
           </form>
         </section>
 
@@ -185,8 +186,9 @@
               <p>按 REA / ED1、ED2、EA、RD、UC 展示，保存前可直接编辑学校、专业和行动项。</p>
             </div>
             <div class="school-selection-heading-actions">
-              <button id="exportSchoolSelectionButton" class="secondary" type="button" disabled>导出结果</button>
-              <button id="saveSchoolSelectionButton" class="secondary" type="button" disabled>保存到我的申请档案</button>
+              <button id="exportSchoolSelectionSvgButton" class="secondary" type="button" disabled>导出SVG</button>
+              <button id="exportSchoolSelectionWordButton" class="secondary" type="button" disabled>导出Word文档</button>
+              <button id="saveSchoolSelectionButton" class="secondary" type="button" disabled>保存为选校版本</button>
             </div>
           </div>
           <div id="schoolSelectionResults" class="school-selection-results">
@@ -209,6 +211,6 @@
     </main>
     <script type="module" src="./src/client/admin-nav.js?v=20260601-admin-nav"></script>
     <script type="module" src="./src/client/safe-navigation.mjs"></script>
-    <script type="module" src="./src/client/school-selection.js?v=20260601-school-selection-quality-v2"></script>
+    <script type="module" src="./src/client/school-selection.js?v=20260602-selection-svg-word"></script>
   </body>
 </html>

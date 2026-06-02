@@ -31,8 +31,8 @@ assert.ok(!indexHtml.includes("Automation Status"), "Logged-in home should not s
 assert.ok(!indexHtml.includes('class="command-center-hero"'), "Logged-in home should not render the removed automation status board.");
 assert.ok(!indexHtml.includes("Planning Readiness"), "Logged-in home should not show the removed readiness card.");
 assert.ok(
-  indexHtml.includes('./src/client/app.js?v=20260601-school-selection'),
-  "Logged-in shell should cache-bust the main app module with the current school selection release.",
+  indexHtml.includes('./src/client/app.js?v=20260602-deepseek-wait-time'),
+  "Logged-in shell should cache-bust the main app module with the current DeepSeek wait-time release.",
 );
 assert.ok(
   !indexHtml.includes('./src/client/app.js?v=20260531-svg-only'),

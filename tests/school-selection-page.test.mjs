@@ -56,16 +56,22 @@ for (const expected of [
   'id="selectionPreferences"',
   'id="generateSchoolSelectionButton"',
   'id="saveSchoolSelectionButton"',
-  'id="exportSchoolSelectionButton"',
+  'id="exportSchoolSelectionSvgButton"',
+  'id="exportSchoolSelectionWordButton"',
   'id="schoolSelectionVersionList"',
   'id="schoolSelectionStatus"',
   'id="schoolSelectionResults"',
+  "大约需要 2 分钟",
+  "保存为选校版本",
+  "\u5bfc\u51faSVG",
+  "\u5bfc\u51faWord\u6587\u6863",
   "./assets/logo-mark.svg",
   "./styles.css?v=20260602-action-card-refresh",
-  "./src/client/school-selection.js?v=20260601-school-selection-quality-v2",
+  "./src/client/school-selection.js?v=20260602-selection-svg-word",
 ]) {
   assert.ok(pageHtml.includes(expected), `School selection page should include ${expected}.`);
 }
+assert.ok(!pageHtml.includes(">导出结果<"), "School selection should replace the old generic export label.");
 
 assert.ok(script.includes('"/api/school-selection"'), "School selection page should call the dedicated API.");
 assert.ok(script.includes("renderSchoolSelectionResults"), "School selection page should render grouped results.");
@@ -75,7 +81,14 @@ assert.ok(script.includes("selectionTargetMajor"), "School selection page should
 assert.ok(script.includes("selectionStrategyMode"), "School selection page should read conservative/balanced/aggressive version mode.");
 assert.ok(script.includes("saveSchoolSelectionToPortfolio"), "School selection should save edited results into my application portfolio.");
 assert.ok(script.includes("saveSchoolSelectionVersion"), "School selection should save versioned school selection plans.");
-assert.ok(script.includes("exportSchoolSelection"), "School selection should export the edited school selection result.");
+assert.ok(script.includes("deleteSchoolSelectionVersion"), "School selection should let users delete saved selection versions.");
+assert.ok(script.includes("data-delete-school-selection-version"), "Saved selection versions should expose a delete action.");
+assert.ok(script.includes("exportSchoolSelectionSvg"), "School selection should export the edited school selection result as SVG.");
+assert.ok(script.includes("exportSchoolSelectionWord"), "School selection should export the edited school selection result as Word.");
+assert.ok(script.includes("buildSchoolSelectionSvgDocument"), "School selection should build a dedicated SVG document.");
+assert.ok(script.includes("buildSchoolSelectionWordDocument"), "School selection should build a dedicated Word document.");
+assert.ok(script.includes("image/svg+xml;charset=utf-8"), "School selection SVG export should use the correct MIME type.");
+assert.ok(script.includes("application/msword;charset=utf-8"), "School selection Word export should use the correct MIME type.");
 assert.ok(script.includes("renderSchoolSelectionVersions"), "School selection should show saved versions for review.");
 assert.ok(script.includes("collectEditedSelection"), "School selection should collect edited school results before saving.");
 assert.ok(script.includes('"/api/my-activities"'), "School selection should load and save the application portfolio.");

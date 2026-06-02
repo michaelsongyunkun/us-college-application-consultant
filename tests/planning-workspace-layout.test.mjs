@@ -235,8 +235,8 @@ assert.match(
 );
 assert.match(
   html,
-  /src="\.\/src\/client\/app\.js\?v=20260601-school-selection"/,
-  "Main app script should be cache-busted when protected navigation behavior changes.",
+  /src="\.\/src\/client\/app\.js\?v=20260602-deepseek-wait-time"/,
+  "Main app script should be cache-busted when DeepSeek wait-time copy changes.",
 );
 assert.match(html, /id="resetButton"[^>]*class="danger"/, "Reset should use a danger action style.");
 assert.match(html, /id=["']deepSeekAutoGenerate["']/, "DeepSeek automatic generation panel should be available.");
@@ -245,6 +245,7 @@ assert.doesNotMatch(html, /DeepSeek API Key（仅本次请求使用，不保存�
 assert.doesNotMatch(html, /粘贴 DeepSeek API Key/, "DeepSeek Key placeholder should not be shown.");
 assert.match(html, /id=["']generateDeepSeekButton["']/, "DeepSeek generation button should be available.");
 assert.match(html, /自动生成/, "DeepSeek panel should be labeled clearly.");
+assert.match(html, /大约需要 3-4 分钟/, "DeepSeek planning panel should set a realistic wait-time expectation.");
 assert.match(html, /id=["']deepSeekWorkingIndicator["']/, "DeepSeek panel should include a visible working indicator.");
 assert.match(html, /class=["'][^"']*\bdeepseek-working\b/, "DeepSeek working indicator should have a dedicated style hook.");
 assert.match(html, /DeepSeek 正在生成规划/, "DeepSeek working indicator should tell users generation is in progress.");
@@ -282,6 +283,7 @@ assert.match(appJs, /export_svg/, "Main app should track SVG exports.");
 assert.match(appJs, /image\/svg\+xml;charset=utf-8/, "Main app should download SVG with the correct MIME type.");
 assert.match(appJs, /querySelector\("#generateDeepSeekButton"\)/, "Main app should bind DeepSeek generation.");
 assert.match(appJs, /querySelector\("#deepSeekWorkingIndicator"\)/, "Main app should bind the DeepSeek working indicator.");
+assert.match(appJs, /大约需要 3-4 分钟/, "Main app should keep the DeepSeek planning wait-time copy while generating.");
 assert.match(appJs, /querySelector\("#workspacePrimaryActionButton"\)/, "Main app should bind the workspace next-action button.");
 assert.match(appJs, /function getWorkspaceNextActionState/, "Main app should derive the recommended next action from workspace state.");
 assert.match(appJs, /function updateWorkspaceNextAction/, "Main app should render the recommended next action.");
