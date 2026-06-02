@@ -5369,6 +5369,7 @@ button.neutral:hover {
 
 .major-ai-result {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   padding: 0 var(--major-match-body-inset) 24px;
 }
@@ -5378,11 +5379,20 @@ button.neutral:hover {
 }
 
 .major-ai-answer {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #fff;
   color: #2c3645;
   padding: 16px;
+}
+
+.major-ai-answer :is(ol, ul) {
+  padding-left: 24px;
 }
 
 .case-list {

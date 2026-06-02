@@ -76,8 +76,18 @@ assert.match(
 );
 assert.match(
   styles,
-  /\.major-ai-result\s*\{[\s\S]*?padding:\s*0 var\(--major-match-body-inset\) 24px;/,
+  /\.major-ai-result\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\);[\s\S]*?padding:\s*0 var\(--major-match-body-inset\) 24px;/,
   "DeepSeek result area should align with the panel content.",
+);
+assert.match(
+  styles,
+  /\.major-ai-answer\s*\{[\s\S]*?box-sizing:\s*border-box;[\s\S]*?width:\s*100%;[\s\S]*?min-width:\s*0;[\s\S]*?max-width:\s*100%;[\s\S]*?overflow-x:\s*auto;/,
+  "DeepSeek answer card should shrink inside the panel instead of overflowing past the right corner.",
+);
+assert.match(
+  styles,
+  /\.major-ai-answer :is\(ol,\s*ul\)\s*\{[\s\S]*?padding-left:\s*24px;/,
+  "DeepSeek answer lists should use a compact inset rather than the browser default.",
 );
 assert.match(
   styles,
