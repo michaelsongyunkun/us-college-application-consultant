@@ -18,6 +18,8 @@ const pages = [
 
 const indexHtml = readFileSync("index.html", "utf8");
 const styles = readFileSync("styles.css", "utf8");
+const courseHelperHtml = readFileSync("course-helper.html", "utf8");
+const courseHelperScript = readFileSync("src/client/course-helper.js", "utf8");
 
 const authShell = indexHtml.match(/<section id="authShell"[\s\S]*?<\/section>\s*<main id="appShell"/)?.[0] || "";
 assert.ok(authShell.includes("landing-shell"), "Public landing shell should remain the public landing design.");
@@ -35,6 +37,16 @@ assert.ok(
 assert.ok(
   !indexHtml.includes('./src/client/app.js?v=20260531-svg-only'),
   "Logged-in shell should not keep serving the previous app module cache key.",
+);
+assert.match(
+  courseHelperHtml,
+  /src="\.\/src\/client\/course-helper\.js\?v=20260602-ap-rigor"/,
+  "Course helper page should cache-bust AP rigor planning updates.",
+);
+assert.match(
+  courseHelperScript,
+  /from "\.\.\/domain\/ap-course-recommender\.mjs\?v=20260602-ap-rigor"/,
+  "Course helper should cache-bust the AP recommender module after rigor rule updates.",
 );
 
 for (const [file, activeLabel] of pages) {

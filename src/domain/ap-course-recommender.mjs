@@ -58,6 +58,27 @@ const MAJOR_COURSE_TERMS = {
   language: ["english", "language", "latin", "literature"],
 };
 
+const MAJOR_RIGOR_COURSES = {
+  cs: ["AP Calculus BC", "AP Computer Science A", "AP Statistics"],
+  math: ["AP Calculus BC", "AP Statistics"],
+  engineering: [
+    "AP Calculus BC",
+    "AP Physics C: Mechanics",
+    "AP Physics C: Electricity and Magnetism",
+    "AP Chemistry",
+  ],
+  bio_med: ["AP Biology", "AP Chemistry", "AP Statistics", "AP Psychology"],
+  business_econ: ["AP Calculus BC", "AP Statistics", "AP Microeconomics", "AP Macroeconomics"],
+  humanities_social: [
+    "AP English Literature and Composition",
+    "AP United States Government and Politics",
+    "AP United States History",
+    "AP Research",
+  ],
+  arts: ["AP 2-D Art and Design", "AP 3-D Art and Design", "AP Drawing", "AP Art History"],
+  language: ["AP English Literature and Composition", "AP English Language and Composition", "AP Research"],
+};
+
 const AP_COURSE_SEQUENCES = [
   ["AP Precalculus", "AP Calculus AB", "AP Calculus BC"],
   ["AP Computer Science Principles", "AP Computer Science A"],
@@ -79,6 +100,16 @@ const MAJOR_TAGS = [
   { tag: "language", terms: ["语言", "文学", "翻译", "国际关系", "文化", "英语", "写作"] },
 ];
 
+const ENGLISH_MAJOR_TAGS = [
+  { tag: "cs", terms: ["computer science", "software", "programming", "algorithm", "data science"] },
+  { tag: "engineering", terms: ["engineering", "physics", "mechanical", "electrical", "robotics", "aerospace", "materials"] },
+  { tag: "bio_med", terms: ["biology", "biomedical", "medicine", "medical", "public health", "neuroscience", "psychology", "health"] },
+  { tag: "business_econ", terms: ["economics", "business", "finance", "management", "accounting", "entrepreneurship"] },
+  { tag: "humanities_social", terms: ["history", "political science", "politics", "social science", "law", "public policy", "media", "journalism", "education", "humanities", "sociology"] },
+  { tag: "arts", terms: ["art", "design", "architecture", "music", "visual", "film", "theater"] },
+  { tag: "language", terms: ["literature", "translation", "international relations", "culture", "english", "writing"] },
+];
+
 function normalizeText(value) {
   return String(value ?? "").toLowerCase();
 }
@@ -87,13 +118,27 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function includesTerm(normalizedText, term) {
+  const normalizedTerm = term.toLowerCase();
+  if (/^[a-z0-9]{1,2}$/.test(normalizedTerm)) {
+    return new RegExp(`(^|[^a-z0-9])${escapeRegExp(normalizedTerm)}([^a-z0-9]|$)`).test(normalizedText);
+  }
+  return normalizedText.includes(normalizedTerm);
+}
+
 function includesAny(text, terms) {
   const normalized = normalizeText(text);
-  return terms.some((term) => normalized.includes(term.toLowerCase()));
+  return terms.some((term) => includesTerm(normalized, term));
 }
 
 function tagsForText(text) {
-  return MAJOR_TAGS.filter((group) => includesAny(text, group.terms)).map((group) => group.tag);
+  return unique(
+    [...MAJOR_TAGS, ...ENGLISH_MAJOR_TAGS].filter((group) => includesAny(text, group.terms)).map((group) => group.tag),
+  );
 }
 
 function normalizeCourseName(value) {
@@ -239,6 +284,15 @@ function courseHasSatisfiedSequence(course, plannedCourseNames, courses) {
   });
 }
 
+function courseHasSatisfiedSequenceForPlanning(course, plannedCourseNames, courses, { allowLateRigor = false } = {}) {
+  if (courseWouldMoveBackward(course, plannedCourseNames)) return false;
+  const missingPrerequisites = prerequisiteNamesForCourse(course).filter((prerequisiteName) => {
+    if (hasPlannedCourseName(plannedCourseNames, prerequisiteName)) return false;
+    return catalogHasCourse(courses, prerequisiteName);
+  });
+  return !missingPrerequisites.length || allowLateRigor;
+}
+
 function courseNameIncludesAny(course, terms) {
   const name = normalizeCourseName(course.name);
   return terms.some((term) => name.includes(term));
@@ -269,17 +323,19 @@ function directMajorCourseBonus(course, studentProfile) {
   }, 0);
 }
 
-function findBalanceReplacementIndex(selectedCandidates, requiredSide) {
+function findBalanceReplacementIndex(selectedCandidates, requiredSide, lockedCourseIds = new Set()) {
   const otherSide = requiredSide === "science" ? "liberal" : "science";
   const otherSideCount = selectedCandidates.filter(({ course }) => courseHasStudySide(course, otherSide)).length;
 
   for (let index = selectedCandidates.length - 1; index >= 0; index -= 1) {
     const course = selectedCandidates[index].course;
+    if (lockedCourseIds.has(course.id)) continue;
     if (!courseHasStudySide(course, "science") && !courseHasStudySide(course, "liberal")) return index;
   }
 
   for (let index = selectedCandidates.length - 1; index >= 0; index -= 1) {
     const course = selectedCandidates[index].course;
+    if (lockedCourseIds.has(course.id)) continue;
     if (courseHasStudySide(course, requiredSide)) continue;
     if (!courseHasStudySide(course, otherSide) || otherSideCount > 1) return index;
   }
@@ -287,7 +343,7 @@ function findBalanceReplacementIndex(selectedCandidates, requiredSide) {
   return -1;
 }
 
-function ensureStudyBalance(selectedCandidates, prioritizedCandidates, count) {
+function ensureStudyBalance(selectedCandidates, prioritizedCandidates, count, lockedCourseIds = new Set()) {
   if (count < 2) return selectedCandidates;
   const balancedCandidates = [...selectedCandidates];
 
@@ -300,7 +356,7 @@ function ensureStudyBalance(selectedCandidates, prioritizedCandidates, count) {
     );
     if (!balancingCandidate) continue;
 
-    const replacementIndex = findBalanceReplacementIndex(balancedCandidates, side);
+    const replacementIndex = findBalanceReplacementIndex(balancedCandidates, side, lockedCourseIds);
     if (replacementIndex >= 0) {
       balancedCandidates[replacementIndex] = balancingCandidate;
     } else if (balancedCandidates.length < count) {
@@ -311,13 +367,33 @@ function ensureStudyBalance(selectedCandidates, prioritizedCandidates, count) {
   return balancedCandidates.slice(0, count);
 }
 
-function selectCoursesForGrade(sortedCandidates, count, batchIndex) {
+function courseMatchesConfiguredName(course, courseName) {
+  return normalizeCourseName(course.name) === normalizeCourseName(courseName);
+}
+
+function selectCoursesForGrade(sortedCandidates, count, batchIndex, requiredCourseNames = []) {
   const priorityPoolSize = Math.min(sortedCandidates.length, Math.max(count * 3, count));
   const prioritizedCandidates = [
     ...rotate(sortedCandidates.slice(0, priorityPoolSize), batchIndex * count),
     ...sortedCandidates.slice(priorityPoolSize),
   ];
-  return ensureStudyBalance(prioritizedCandidates.slice(0, count), prioritizedCandidates, count);
+  const requiredCandidates = [];
+  for (const courseName of requiredCourseNames) {
+    const requiredCandidate = prioritizedCandidates.find(
+      ({ course }) =>
+        courseMatchesConfiguredName(course, courseName) &&
+        !requiredCandidates.some(({ course: selectedCourse }) => selectedCourse.id === course.id),
+    );
+    if (requiredCandidate) requiredCandidates.push(requiredCandidate);
+  }
+
+  const lockedCourseIds = new Set(requiredCandidates.map(({ course }) => course.id));
+  const selectedCandidates = [
+    ...requiredCandidates,
+    ...prioritizedCandidates.filter(({ course }) => !lockedCourseIds.has(course.id)),
+  ].slice(0, count);
+
+  return ensureStudyBalance(selectedCandidates, prioritizedCandidates, count, lockedCourseIds);
 }
 
 function courseScore(course, studentProfile, targetGrade) {
@@ -330,8 +406,25 @@ function courseScore(course, studentProfile, targetGrade) {
   return tagOverlap * 4 + academicOverlap * 1.4 + textOverlap + directMajorCourseBonus(course, studentProfile) + ratingScore * 0.45 + researchBonus + earlyPenalty;
 }
 
-function buildReason(course, studentProfile, targetGrade) {
+function majorRigorCourseNames(studentProfile) {
+  return unique(studentProfile.majorTags.flatMap((tag) => MAJOR_RIGOR_COURSES[tag] || []));
+}
+
+function majorRigorDeadlineGrade(currentGrade) {
+  const current = Number(currentGrade);
+  if (!current || current >= 12) return "";
+  return current >= 11 ? "12" : "11";
+}
+
+function isRequiredRigorCourse(course, requiredCourseNames) {
+  return requiredCourseNames.some((courseName) => courseMatchesConfiguredName(course, courseName));
+}
+
+function buildReason(course, studentProfile, targetGrade, { isMajorRigor = false } = {}) {
   const major = studentProfile.majorDirection || "目标专业";
+  if (isMajorRigor) {
+    return `${course.name} 是 ${major} 方向的高阶 AP 信号，建议在 11 年级开始完成；如果当前进度已经较晚，也要最晚放在 12 年级补完。`;
+  }
   const matched = course.tags.filter((tag) => studentProfile.majorTags.includes(tag));
   const academicMatched = course.tags.filter((tag) => studentProfile.academicTags.includes(tag));
   if (matched.length) {
@@ -367,20 +460,30 @@ export function recommendApCoursePlan({ studentProfile, courses, batchIndex = 0 
   const availableCourses = normalizedCourses.filter((course) => !courseIsCompleted(course, studentProfile.completedCourseNames));
   const selectedIds = new Set();
   const plannedCourseNames = new Set(studentProfile.completedCourseNames);
+  const rigorCourseNames = majorRigorCourseNames(studentProfile);
+  const rigorDeadlineGrade = majorRigorDeadlineGrade(studentProfile.currentGrade);
   const items = futureGrades.map((grade) => {
     const count = GRADE_COURSE_COUNTS[grade] || 3;
+    const requiredCourseNames = grade === rigorDeadlineGrade ? rigorCourseNames : [];
     const sortedCandidates = availableCourses
-      .filter((course) => !selectedIds.has(course.id) && courseHasSatisfiedSequence(course, plannedCourseNames, normalizedCourses))
+      .filter(
+        (course) =>
+          !selectedIds.has(course.id) &&
+          courseHasSatisfiedSequenceForPlanning(course, plannedCourseNames, normalizedCourses, {
+            allowLateRigor: Number(grade) >= 11 && isRequiredRigorCourse(course, requiredCourseNames),
+          }),
+      )
       .map((course) => ({
         course,
         score: courseScore(course, studentProfile, grade),
       }))
       .sort((a, b) => b.score - a.score || a.course.name.localeCompare(b.course.name, "en"));
 
-    const recommendations = selectCoursesForGrade(sortedCandidates, count, batchIndex)
+    const recommendations = selectCoursesForGrade(sortedCandidates, count, batchIndex, requiredCourseNames)
       .map(({ course }) => {
         selectedIds.add(course.id);
         plannedCourseNames.add(normalizeCourseName(course.name));
+        const isMajorRigor = isRequiredRigorCourse(course, requiredCourseNames);
         return {
           id: course.id,
           name: course.name,
@@ -392,7 +495,7 @@ export function recommendApCoursePlan({ studentProfile, courses, batchIndex = 0 
           fourRate: course.fourRate,
           fiveThreshold: course.fiveThreshold,
           fourThreshold: course.fourThreshold,
-          reason: buildReason(course, studentProfile, grade),
+          reason: buildReason(course, studentProfile, grade, { isMajorRigor }),
         };
       });
 
@@ -405,6 +508,6 @@ export function recommendApCoursePlan({ studentProfile, courses, batchIndex = 0 
 
   return {
     items,
-    notice: `已根据成绩与难点、文理均衡和先易后难顺序生成 ${futureGrades[0]} 至 12 年级 AP 选课计划。`,
+    notice: `已根据成绩与难点、文理均衡和先易后难顺序生成 ${futureGrades[0]} 至 12 年级 AP 选课计划，并优先引导学生在 11 年级、最晚 12 年级完成目标专业最高阶 AP 课程。`,
   };
 }

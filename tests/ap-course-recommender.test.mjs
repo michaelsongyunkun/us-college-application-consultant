@@ -72,6 +72,17 @@ function assertCourseNotAfter(entries, earlierCourseName, laterCourseName) {
   );
 }
 
+function courseNamesForGrade(apPlan, grade) {
+  return apPlan.items.find((item) => item.grade === String(grade))?.recommendations.map((course) => course.name) || [];
+}
+
+function assertGradeIncludes(apPlan, grade, expectedCourseNames) {
+  const courseNames = courseNamesForGrade(apPlan, grade);
+  for (const courseName of expectedCourseNames) {
+    assert.ok(courseNames.includes(courseName), `${grade} grade should include ${courseName}; got ${courseNames.join(", ")}`);
+  }
+}
+
 assert.ok(courses.length >= 38);
 assert.ok(courses.some((course) => course.name === "AP Calculus BC"));
 assert.ok(courses.some((course) => course.name === "AP Computer Science A"));
@@ -188,3 +199,26 @@ assertCourseNotAfter(sequenceEntries, "AP Calculus AB", "AP Calculus BC");
 assertCourseNotAfter(sequenceEntries, "AP Physics C: Mechanics", "AP Physics C: Electricity and Magnetism");
 assertCourseNotAfter(sequenceEntries, "AP English Language and Composition", "AP English Literature and Composition");
 assertCourseNotAfter(sequenceEntries, "AP Computer Science Principles", "AP Computer Science A");
+
+const lateCsRigorPlan = recommendApCoursePlan({
+  studentProfile: buildApCourseStudentProfile({
+    grade: "11",
+    majorDirection: "Computer Science / AI / Data Science",
+    completedCourses: ["AP Precalculus"],
+  }),
+  courses,
+});
+
+assertGradeIncludes(lateCsRigorPlan, "12", ["AP Calculus BC", "AP Computer Science A", "AP Statistics"]);
+assert.match(lateCsRigorPlan.notice, /11.*12|12.*11/, "Rigor notice should explicitly name the 11th-to-12th grade deadline.");
+
+const engineeringRigorPlan = recommendApCoursePlan({
+  studentProfile: buildApCourseStudentProfile({
+    grade: "10",
+    majorDirection: "Engineering / Physics",
+    completedCourses: ["AP Precalculus", "AP Physics 1"],
+  }),
+  courses,
+});
+
+assertGradeIncludes(engineeringRigorPlan, "11", ["AP Calculus BC", "AP Physics C: Mechanics"]);
