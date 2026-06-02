@@ -269,7 +269,7 @@ async function runDeepSeekMajorMatch() {
   try {
     const data = await requestJson("/api/deepseek-rag", {
       method: "POST",
-      body: JSON.stringify({ question: prompt }),
+      body: JSON.stringify({ question: prompt, assistantProfile: "major-match" }),
     });
     const answer = sanitizeDeepSeekMajorAnswer(data.answer || "");
     deepSeekMajorResult.innerHTML = `

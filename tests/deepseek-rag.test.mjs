@@ -187,6 +187,29 @@ try {
   assert.match(sentPayload.messages[1].content, /https:\/\/example\.com\/robotics/);
   assert.match(sentPayload.messages[1].content, /Polygence/);
   assert.match(sentPayload.messages[1].content, /MIT/);
+
+  const majorMatchResponse = await post(
+    "/api/deepseek-rag",
+    {
+      question: "请根据我的申请档案自动匹配适合探索的美国本科专业。",
+      assistantProfile: "major-match",
+    },
+    cookie,
+  );
+  assert.equal(majorMatchResponse.status, 200);
+  assert.equal(calls.length, 2);
+  const majorMatchPayload = JSON.parse(calls[1].options.body);
+  const majorMatchSystemPrompt = majorMatchPayload.messages[0].content;
+  assert.match(majorMatchSystemPrompt, /美本本科专业匹配顾问/);
+  assert.match(majorMatchSystemPrompt, /推荐专业优先级表/);
+  assert.match(majorMatchSystemPrompt, /专业方向｜优先级｜匹配理由｜需要补强的证据｜申请叙事切入点/);
+  assert.match(majorMatchSystemPrompt, /不要输出资料来源清单、来源编号、文献列表、英文搜索词、英文 query 或任何“检索口径”类栏目/);
+  assert.match(majorMatchSystemPrompt, /信息不足时，不要直接停止判断/);
+  assert.match(majorMatchSystemPrompt, /只要活动、竞赛、夏校、AP 课程中任一类有信息/);
+  assert.match(majorMatchSystemPrompt, /不得提示“信息不足”或“档案信息缺口”/);
+  assert.match(majorMatchSystemPrompt, /只有活动、竞赛、夏校、AP 课程四类全部为空/);
+  assert.doesNotMatch(majorMatchSystemPrompt, /如果信息不足，请先输出“档案信息缺口”，再给出暂定匹配建议/);
+  assert.doesNotMatch(majorMatchSystemPrompt, /问DeepSeek”申请规划智能体/);
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });

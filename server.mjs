@@ -573,6 +573,7 @@ export function createAppServer({
           user,
           question: payload.question,
           historySummary: payload.historySummary,
+          assistantProfile: payload.assistantProfile,
           env,
           deepSeekFetch,
         }));
