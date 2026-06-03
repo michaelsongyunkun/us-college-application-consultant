@@ -210,7 +210,16 @@ function renderSchoolCard(entry) {
             ${renderRiskOptions(entry.riskLevel)}
           </select>
         </label>
+        <label>
+          <span>录取概率区间</span>
+          <input
+            data-selection-field="admissionProbability"
+            value="${escapeHtml(getAdmissionProbabilityLabel(entry.admissionProbability))}"
+            placeholder="例：8%-12%"
+          />
+        </label>
       </div>
+      <p class="school-selection-probability-note">录取概率区间为系统估算，非录取承诺。</p>
       <label>
         <span>匹配理由</span>
         <textarea data-selection-field="matchReason">${escapeHtml(entry.matchReason || "")}</textarea>
@@ -277,6 +286,7 @@ function collectEditedSelection() {
         school,
         major: getSelectionFieldValue(card, "major"),
         riskLevel: getSelectionFieldValue(card, "riskLevel") || "medium",
+        admissionProbability: getSelectionFieldValue(card, "admissionProbability") || "待估算",
         matchReason: getSelectionFieldValue(card, "matchReason"),
         gaps: splitLines(getSelectionFieldValue(card, "gaps")).slice(0, 6),
         nextAction: getSelectionFieldValue(card, "nextAction"),
@@ -549,10 +559,10 @@ function buildSchoolSelectionExportRows(selection) {
     }
     entries.forEach((entry, index) => {
       rows.push({
-        text: `${index + 1}. ${entry.school || "未命名学校"}｜${entry.major || "专业待确认"}｜${getRiskLabel(entry.riskLevel)}`,
+        text: `${index + 1}. ${entry.school || "未命名学校"}｜${entry.major || "专业待确认"}｜${getRiskLabel(entry.riskLevel)}｜录取概率区间：${getAdmissionProbabilityLabel(entry.admissionProbability)}`,
         variant: "school",
         indent: 20,
-        maxLength: 44,
+        maxLength: 50,
       });
       if (entry.matchReason) rows.push({ text: `匹配理由：${entry.matchReason}`, variant: "body", indent: 40, maxLength: 48 });
       if (entry.gaps?.length) rows.push({ text: `补强/核验：${entry.gaps.join("；")}`, variant: "body", indent: 40, maxLength: 48 });
@@ -596,6 +606,7 @@ function renderSchoolSelectionWordRound(round, entries) {
                 <th>学校</th>
                 <th>专业方向</th>
                 <th>风险等级</th>
+                <th>录取概率区间</th>
                 <th>匹配理由</th>
                 <th>补强/核验</th>
                 <th>下一步行动</th>
@@ -609,6 +620,7 @@ function renderSchoolSelectionWordRound(round, entries) {
                       <td>${escapeHtml(entry.school || "未命名学校")}</td>
                       <td>${escapeHtml(entry.major || "专业待确认")}</td>
                       <td>${escapeHtml(getRiskLabel(entry.riskLevel))}</td>
+                      <td>${escapeHtml(getAdmissionProbabilityLabel(entry.admissionProbability))}<br><span class="meta">系统估算，非录取承诺</span></td>
                       <td>${formatWordText(entry.matchReason || "")}</td>
                       <td>${formatWordText((entry.gaps || []).join("\n"))}</td>
                       <td>${formatWordText(entry.nextAction || "")}</td>
@@ -648,6 +660,10 @@ function getRiskLabel(value) {
     medium: "匹配",
     low: "稳妥",
   }[String(value || "").toLowerCase()] || "匹配";
+}
+
+function getAdmissionProbabilityLabel(value) {
+  return String(value || "").trim() || "待估算";
 }
 
 function escapeXml(value) {

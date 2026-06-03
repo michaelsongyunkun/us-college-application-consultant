@@ -49,6 +49,7 @@ const SYSTEM_PROMPT = [
   "- 只返回严格 JSON，不要 Markdown，不要代码块，不要解释性前后缀。",
   "- 不要编造学生没有提供的经历、奖项、成绩或活动；如果档案不足，只能在 gaps 或 nextActions 中提示需要补充。",
   "- 不承诺录取结果，riskLevel 只能使用 high、medium、low。",
+  "- 每所学校必须输出 admissionProbability，字段值使用录取概率区间，例如 5%-10%、15%-25%；这是规划估算，不是录取承诺。",
   "- 涉及截止日期、费用、资格、轮次政策和专业限制时，提醒用户核验申请年度官网。",
   "",
   "输出 JSON 前，请自行检查：",
@@ -58,10 +59,11 @@ const SYSTEM_PROMPT = [
   "4. rd.length 是否在 8 到 12 之间。",
   "5. uc.length 是否等于 6。",
   "6. riskLevel 是否只使用 high、medium、low。",
-  "7. 是否存在重复学校。",
-  "8. 是否输出了严格 JSON，没有 Markdown 或解释文字。",
-  "9. 是否避免编造用户档案中不存在的信息。",
-  "10. 是否提醒官网核验政策和截止日期。",
+  "7. 每所学校是否都有 admissionProbability，且是录取概率区间而不是录取承诺。",
+  "8. 是否存在重复学校。",
+  "9. 是否输出了严格 JSON，没有 Markdown 或解释文字。",
+  "10. 是否避免编造用户档案中不存在的信息。",
+  "11. 是否提醒官网核验政策和截止日期。",
   "",
   "JSON schema:",
   JSON.stringify(
@@ -79,6 +81,7 @@ const SYSTEM_PROMPT = [
             school: "学校英文名",
             major: "推荐专业或方向",
             riskLevel: "high|medium|low",
+            admissionProbability: "录取概率区间，例如 5%-10%；不是录取承诺",
             matchReason: "匹配理由",
             gaps: ["需要补强或核验的点"],
             nextAction: "下一步行动",
@@ -335,6 +338,7 @@ function normalizeSchool(value) {
   const major = cleanString(item.major);
   if (!major) throw new SchoolSelectionError(`每所学校必须包含专业方向：${school}。`, 502);
   const riskLevel = normalizeRiskLevel(item.riskLevel, school);
+  const admissionProbability = normalizeAdmissionProbability(item.admissionProbability, school);
   const matchReason = cleanString(item.matchReason);
   if (!matchReason) throw new SchoolSelectionError(`每所学校必须包含匹配理由：${school}。`, 502);
   const nextAction = cleanString(item.nextAction);
@@ -343,10 +347,19 @@ function normalizeSchool(value) {
     school,
     major,
     riskLevel,
+    admissionProbability,
     matchReason,
     gaps: normalizeStringList(item.gaps).slice(0, 6),
     nextAction,
   };
+}
+
+function normalizeAdmissionProbability(value, school) {
+  const normalized = cleanString(value);
+  if (!normalized) {
+    throw new SchoolSelectionError(`每所学校必须包含录取概率区间：${school}。`, 502);
+  }
+  return normalized;
 }
 
 function normalizeRiskLevel(value, school) {

@@ -118,6 +118,7 @@ try {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.selection.rounds.ed1[0].school, "University of Chicago");
+  assert.equal(body.selection.rounds.ed1[0].admissionProbability, "18%-28%");
   assert.match(body.selection.strategy.earlyStrategy, /ED1/);
   assert.equal(body.selection.rounds.uc.length, 6);
   assert.equal(JSON.stringify(body).includes("server-school-selection-secret"), false);
@@ -140,6 +141,7 @@ function school(name) {
     school: name,
     major: "Data Science",
     riskLevel: "medium",
+    admissionProbability: "18%-28%",
     matchReason: `${name} matches the portfolio.`,
     gaps: ["核验要求"],
     nextAction: "检查官网。",

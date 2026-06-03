@@ -43,6 +43,7 @@ const validSelection = {
 };
 
 assert.equal(validateSchoolSelectionResult(validSelection).rounds.ed1[0].school, "University of Chicago");
+assert.equal(validateSchoolSelectionResult(validSelection).rounds.ed1[0].admissionProbability, "8%-12%");
 assert.equal(validateSchoolSelectionResult(validSelection).strategy.earlyStrategy, "ED1 控制在高匹配高意愿学校。");
 
 assert.throws(
@@ -182,6 +183,9 @@ assert.match(sentPayload.messages[0].content, /专业匹配/);
 assert.match(sentPayload.messages[0].content, /地区与身份因素/);
 assert.match(sentPayload.messages[0].content, /不允许把同一所学校重复放入多个轮次/);
 assert.match(sentPayload.messages[0].content, /风险等级定义/);
+assert.match(sentPayload.messages[0].content, /admissionProbability/);
+assert.match(sentPayload.messages[0].content, /录取概率区间/);
+assert.match(sentPayload.messages[0].content, /不是录取承诺/);
 assert.match(sentPayload.messages[0].content, /输出 JSON 前/);
 assert.match(sentPayload.messages[1].content, /中国/);
 assert.match(sentPayload.messages[1].content, /中国大陆高中/);
@@ -204,6 +208,7 @@ function school(name, major, riskLevel) {
     school: name,
     major,
     riskLevel,
+    admissionProbability: riskLevel === "high" ? "8%-12%" : riskLevel === "medium" ? "18%-28%" : "35%-45%",
     matchReason: `${name} 与当前档案方向匹配。`,
     gaps: ["核验截止日期", "补充官网要求"],
     nextAction: "核验官网并完善材料清单。",

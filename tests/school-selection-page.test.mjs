@@ -68,7 +68,7 @@ for (const expected of [
   "\u5bfc\u51faWord\u6587\u6863",
   "./assets/logo-mark.svg",
   "./styles.css?v=20260602-mobile-workbench",
-  "./src/client/school-selection.js?v=20260602-selection-svg-word",
+  "./src/client/school-selection.js?v=20260603-admission-probability",
 ]) {
   assert.ok(pageHtml.includes(expected), `School selection page should include ${expected}.`);
 }
@@ -76,6 +76,9 @@ assert.ok(!pageHtml.includes(">导出结果<"), "School selection should replace
 
 assert.ok(script.includes('"/api/school-selection"'), "School selection page should call the dedicated API.");
 assert.ok(script.includes("renderSchoolSelectionResults"), "School selection page should render grouped results.");
+assert.ok(script.includes("admissionProbability"), "School selection should render and collect estimated admission probability ranges.");
+assert.ok(script.includes("录取概率区间"), "School selection should label admission probability as a range.");
+assert.ok(script.includes("非录取承诺"), "School selection should clarify that probability ranges are not admission guarantees.");
 assert.ok(script.includes("selectionNationality"), "School selection page should read nationality.");
 assert.ok(script.includes("selectionHighSchoolRegion"), "School selection page should read high school region.");
 assert.ok(script.includes("selectionTargetMajor"), "School selection page should read structured target major preference.");

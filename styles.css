@@ -3131,8 +3131,13 @@ button.danger:hover {
 
 .school-selection-card-fields {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.5fr);
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.45fr) minmax(140px, 0.55fr);
   gap: 10px;
+}
+
+.school-selection-probability-note {
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 .school-selection-card dl {
