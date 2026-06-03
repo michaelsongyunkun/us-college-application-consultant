@@ -62,13 +62,55 @@ try {
   assert.equal(calls[0].options.headers.Authorization, "Bearer env-deepseek-secret");
 
   const sentPayload = JSON.parse(calls[0].options.body);
-  assert.equal(sentPayload.model, "deepseek-v4-pro");
+  assert.equal(sentPayload.model, "deepseek-v4-flash");
   assert.equal(sentPayload.stream, false);
   assert.deepEqual(sentPayload.thinking, { type: "disabled" });
   assert.equal(sentPayload.messages[0].role, "system");
   assert.equal(sentPayload.messages[1].role, "user");
   assert.match(sentPayload.messages[1].content, /恰好15项/);
   assert.match(sentPayload.messages[1].content, /10年级/);
+
+  const proOverrideServer = createAppServer({
+    databasePath: join(tempDir, "deepseek-plan-override.sqlite"),
+    env: {
+      DEEPSEEK_API_KEY: "env-deepseek-secret",
+      DEEPSEEK_PLAN_MODEL: "Deepseek V4 pro",
+    },
+    deepSeekFetch: async (url, options) => {
+      calls.push({ url, options });
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { content: deepSeekAnswer } }],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    },
+  });
+  try {
+    await new Promise((resolve) => proOverrideServer.listen(0, "127.0.0.1", resolve));
+    const proRegistration = await fetch(`${serverUrl(proOverrideServer)}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "deepseek-plan-override@example.com",
+        name: "DeepSeek Pro Override",
+        password: "password123",
+      }),
+    });
+    const proCookie = proRegistration.headers.get("set-cookie");
+    const proResponse = await fetch(`${serverUrl(proOverrideServer)}/api/deepseek-plan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: proCookie },
+      body: JSON.stringify({
+        profile: { grade: "10年级", majorDirection: "AI教育" },
+        activities: [],
+      }),
+    });
+    assert.equal(proResponse.status, 200);
+    assert.equal(JSON.parse(calls.at(-1).options.body).model, "deepseek-v4-pro");
+  } finally {
+    await new Promise((resolve) => proOverrideServer.close(resolve));
+  }
 
   const requestKeyOnlyServer = createAppServer({
     databasePath: join(tempDir, "request-key-only.sqlite"),

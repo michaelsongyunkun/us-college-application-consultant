@@ -191,9 +191,10 @@ export function createSchoolSelectionService({ activityPortfolio, root = process
 export function validateSchoolSelectionResult(value) {
   const item = normalizeObject(value, "School selection result");
   const rounds = normalizeObject(item.rounds, "School selection rounds");
-  const normalizedRounds = repairUcRoundDuplicates(Object.fromEntries(
+  let normalizedRounds = repairUcRoundDuplicates(Object.fromEntries(
     ROUND_KEYS.map((key) => [key, normalizeRound(rounds[key], key)]),
   ));
+  normalizedRounds = repairEarlyApplicationChoice(normalizedRounds);
 
   if (normalizedRounds.rea.length + normalizedRounds.ed1.length !== 1) {
     throw new SchoolSelectionError("REA / ED1 只能二选一且合计 1 所。", 502);
@@ -324,6 +325,37 @@ function repairUcRoundDuplicates(rounds) {
     repairedRounds[round] = filteredSchools;
   }
   return changed ? repairedRounds : rounds;
+}
+
+function repairEarlyApplicationChoice(rounds) {
+  const earlyChoices = [
+    ...(rounds.ed1 || []).map((school) => ({ round: "ed1", school })),
+    ...(rounds.rea || []).map((school) => ({ round: "rea", school })),
+  ];
+  if (earlyChoices.length === 1) return rounds;
+
+  if (earlyChoices.length === 0) {
+    const donorRound = ["rd", "ea"].find((round) => {
+      const minimum = ROUND_LIMITS[round]?.[0] || 0;
+      return (rounds[round] || []).length > minimum;
+    });
+    if (!donorRound) return rounds;
+    const donorSchools = [...rounds[donorRound]];
+    const promotedSchool = donorSchools.pop();
+    return {
+      ...rounds,
+      [donorRound]: donorSchools,
+      rea: [],
+      ed1: [promotedSchool],
+    };
+  }
+
+  const preferredChoice = earlyChoices[0];
+  return {
+    ...rounds,
+    rea: preferredChoice.round === "rea" ? [preferredChoice.school] : [],
+    ed1: preferredChoice.round === "ed1" ? [preferredChoice.school] : [],
+  };
 }
 
 function isUniversityOfCaliforniaCampus(value) {

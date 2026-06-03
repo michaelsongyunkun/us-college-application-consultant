@@ -12,6 +12,7 @@ await writeFile(
     "# local secrets",
     "DEEPSEEK_API_KEY=from-env-file",
     "DEEPSEEK_MODEL=\"deepseek-v4-pro\"",
+    "DEEPSEEK_PLAN_MODEL=deepseek-v4-flash",
     "export DEEPSEEK_SCHOOL_SELECTION_MODEL='deepseek-v4-flash'",
     "EXISTING_VALUE=from-env-file",
     "INLINE_COMMENT=value # comment",
@@ -27,11 +28,13 @@ assert.equal(result.loaded, true);
 assert.deepEqual(result.keys.sort(), [
   "DEEPSEEK_API_KEY",
   "DEEPSEEK_MODEL",
+  "DEEPSEEK_PLAN_MODEL",
   "DEEPSEEK_SCHOOL_SELECTION_MODEL",
   "INLINE_COMMENT",
 ].sort());
 assert.equal(env.DEEPSEEK_API_KEY, "from-env-file");
 assert.equal(env.DEEPSEEK_MODEL, "deepseek-v4-pro");
+assert.equal(env.DEEPSEEK_PLAN_MODEL, "deepseek-v4-flash");
 assert.equal(env.DEEPSEEK_SCHOOL_SELECTION_MODEL, "deepseek-v4-flash");
 assert.equal(env.EXISTING_VALUE, "from-process");
 assert.equal(env.INLINE_COMMENT, "value");

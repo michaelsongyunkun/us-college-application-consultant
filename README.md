@@ -80,6 +80,8 @@ Then edit `.env` and set `DEEPSEEK_API_KEY`. The real `.env` file is ignored by 
 
 ```powershell
 $env:DEEPSEEK_MODEL="deepseek-v4-pro"
+$env:DEEPSEEK_PLAN_MODEL="deepseek-v4-flash"
+$env:DEEPSEEK_SCHOOL_SELECTION_MODEL="deepseek-v4-flash"
 ```
 
 ### 问DeepSeek RAG
@@ -123,6 +125,8 @@ NODE_ENV=production
 ```text
 DEEPSEEK_API_KEY=你的 DeepSeek API Key
 DEEPSEEK_MODEL=deepseek-v4-pro
+DEEPSEEK_PLAN_MODEL=deepseek-v4-flash
+DEEPSEEK_SCHOOL_SELECTION_MODEL=deepseek-v4-flash
 ```
 
 ## GitHub 发布注意事项

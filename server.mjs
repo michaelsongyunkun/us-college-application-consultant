@@ -251,7 +251,7 @@ async function handleDeepSeekPlan(
   }
 
   const systemPrompt = await readFile(promptPath, "utf8");
-  const model = normalizeDeepSeekModel(env.DEEPSEEK_MODEL);
+  const model = normalizeDeepSeekModel(env.DEEPSEEK_PLAN_MODEL, "deepseek-v4-flash");
 
   const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
     method: "POST",

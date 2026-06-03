@@ -63,17 +63,32 @@ assert.equal(
   false,
 );
 
-assert.throws(
-  () =>
-    validateSchoolSelectionResult({
-      ...validSelection,
-      rounds: {
-        ...validSelection.rounds,
-        rea: [school("Princeton University", "Computer Science", "high")],
-      },
-    }),
-  /REA \/ ED1 只能二选一且合计 1 所/,
-);
+const repairedEarlyConflict = validateSchoolSelectionResult({
+  ...validSelection,
+  rounds: {
+    ...validSelection.rounds,
+    rea: [school("Princeton University", "Computer Science", "high")],
+  },
+});
+assert.equal(repairedEarlyConflict.rounds.rea.length, 0);
+assert.equal(repairedEarlyConflict.rounds.ed1.length, 1);
+assert.equal(repairedEarlyConflict.rounds.ed1[0].school, "University of Chicago");
+
+const repairedMissingEarlyChoice = validateSchoolSelectionResult({
+  ...validSelection,
+  rounds: {
+    ...validSelection.rounds,
+    ed1: [],
+    rd: [
+      ...validSelection.rounds.rd,
+      school("Carnegie Mellon University", "Computer Science", "high"),
+    ],
+  },
+});
+assert.equal(repairedMissingEarlyChoice.rounds.rea.length, 0);
+assert.equal(repairedMissingEarlyChoice.rounds.ed1.length, 1);
+assert.equal(repairedMissingEarlyChoice.rounds.ed1[0].school, "Carnegie Mellon University");
+assert.equal(repairedMissingEarlyChoice.rounds.rd.length, 8);
 
 assert.throws(
   () =>
