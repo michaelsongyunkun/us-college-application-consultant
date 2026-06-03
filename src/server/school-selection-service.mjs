@@ -128,7 +128,7 @@ export function createSchoolSelectionService({ activityPortfolio, root = process
     const portfolio = activityPortfolio.getPortfolio(user);
     const ragSources = await buildSchoolSelectionRagSources({ root, input, portfolio });
     const ragContext = buildRagContext(ragSources);
-    const model = normalizeDeepSeekModel(env.DEEPSEEK_SCHOOL_SELECTION_MODEL || env.DEEPSEEK_MODEL);
+    const model = normalizeDeepSeekModel(env.DEEPSEEK_SCHOOL_SELECTION_MODEL, "deepseek-v4-flash");
     let lastValidationError = null;
     for (let attempt = 1; attempt <= MAX_SELECTION_ATTEMPTS; attempt += 1) {
       const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {

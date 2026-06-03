@@ -189,7 +189,7 @@ assert.equal(calls.length, 2, "School selection should retry once when the first
 assert.equal(calls[0].url, "https://api.deepseek.com/chat/completions");
 assert.equal(calls[0].options.headers.Authorization, "Bearer school-selection-secret");
 const sentPayload = JSON.parse(calls[0].options.body);
-assert.equal(sentPayload.model, "deepseek-v4-pro");
+assert.equal(sentPayload.model, "deepseek-v4-flash");
 assert.equal(sentPayload.stream, false);
 assert.deepEqual(sentPayload.thinking, { type: "disabled" });
 assert.match(sentPayload.messages[0].content, /美本选校系统/);

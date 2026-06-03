@@ -125,6 +125,7 @@ try {
   assert.equal(JSON.stringify(body).includes("request-key-should-be-ignored"), false);
 
   const sentPayload = JSON.parse(calls[0].options.body);
+  assert.equal(sentPayload.model, "deepseek-v4-flash");
   assert.match(sentPayload.messages[1].content, /中国大陆高中/);
   assert.match(sentPayload.messages[1].content, /Data Science/);
   assert.match(sentPayload.messages[1].content, /预算敏感度/);
