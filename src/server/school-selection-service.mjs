@@ -40,6 +40,7 @@ const SYSTEM_PROMPT = [
   "- UC 必须 6 所。",
   "- 不允许把同一所学校重复放入多个轮次，除非该校不同校区属于独立申请体系。",
   "- UC 必须只包含 University of California 系统校区。",
+  "- University of California 系统校区只能放入 uc 数组，不要放入 RD、EA、ED 或 REA。",
   "",
   "风险等级定义：",
   "- high：冲刺校，录取难度明显高于当前档案竞争力。",
@@ -190,9 +191,9 @@ export function createSchoolSelectionService({ activityPortfolio, root = process
 export function validateSchoolSelectionResult(value) {
   const item = normalizeObject(value, "School selection result");
   const rounds = normalizeObject(item.rounds, "School selection rounds");
-  const normalizedRounds = Object.fromEntries(
+  const normalizedRounds = repairUcRoundDuplicates(Object.fromEntries(
     ROUND_KEYS.map((key) => [key, normalizeRound(rounds[key], key)]),
-  );
+  ));
 
   if (normalizedRounds.rea.length + normalizedRounds.ed1.length !== 1) {
     throw new SchoolSelectionError("REA / ED1 只能二选一且合计 1 所。", 502);
@@ -305,6 +306,28 @@ function assertNoDuplicateSchools(rounds) {
       seen.set(key, round);
     }
   }
+}
+
+function repairUcRoundDuplicates(rounds) {
+  const ucSchoolKeys = new Set((rounds.uc || []).map((school) => normalizeSchoolName(school.school)).filter(Boolean));
+  if (!ucSchoolKeys.size) return rounds;
+
+  let changed = false;
+  const repairedRounds = { ...rounds };
+  for (const round of ROUND_KEYS.filter((key) => key !== "uc")) {
+    const originalSchools = repairedRounds[round] || [];
+    const filteredSchools = originalSchools.filter((school) => {
+      const shouldRemove = ucSchoolKeys.has(normalizeSchoolName(school.school)) && isUniversityOfCaliforniaCampus(school.school);
+      if (shouldRemove) changed = true;
+      return !shouldRemove;
+    });
+    repairedRounds[round] = filteredSchools;
+  }
+  return changed ? repairedRounds : rounds;
+}
+
+function isUniversityOfCaliforniaCampus(value) {
+  return /\buniversity of california\b|\buc\b/iu.test(cleanString(value));
 }
 
 function normalizeSchoolName(value) {

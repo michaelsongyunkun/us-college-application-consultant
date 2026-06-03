@@ -46,6 +46,23 @@ assert.equal(validateSchoolSelectionResult(validSelection).rounds.ed1[0].school,
 assert.equal(validateSchoolSelectionResult(validSelection).rounds.ed1[0].admissionProbability, "8%-12%");
 assert.equal(validateSchoolSelectionResult(validSelection).strategy.earlyStrategy, "ED1 控制在高匹配高意愿学校。");
 
+const repairedUcDuplicate = validateSchoolSelectionResult({
+  ...validSelection,
+  rounds: {
+    ...validSelection.rounds,
+    rd: [
+      school("University of California, Berkeley", "Data Science", "high"),
+      ...validSelection.rounds.rd,
+    ],
+  },
+});
+assert.equal(repairedUcDuplicate.rounds.uc.length, 6);
+assert.equal(repairedUcDuplicate.rounds.rd.length, 8);
+assert.equal(
+  repairedUcDuplicate.rounds.rd.some((entry) => entry.school === "University of California, Berkeley"),
+  false,
+);
+
 assert.throws(
   () =>
     validateSchoolSelectionResult({
