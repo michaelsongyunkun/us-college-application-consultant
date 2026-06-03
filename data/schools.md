@@ -6,6 +6,8 @@
 
 - **申请与文书**：CommonApp / Coalition / QuestBridge；主文书 650 词；必答 6 篇（约 900 词）：Why Major 250 / Community 250 / Service 250 / 3 道 50 词短问答
 
+- **标化政策**：Test-optional：Fall 2026 / Fall 2027 入学仍可不提交 SAT/ACT；Fall 2028 起恢复 SAT/ACT 必交。若提交，需由考试机构官方送分；AP/IB 可自报作补充。
+
 - **学校特色**：Ivy 中本科教育最纯粹，必做 Senior Thesis；新泽西小镇 + Residential Colleges + Eating Clubs。
 
 - **地理位置**：Princeton, New Jersey
@@ -19,6 +21,8 @@
 #### #2 麻省理工 MIT
 
 - **申请与文书**：自有系统（无 CommonApp 主文书）；必答 5 篇（约 1100 词）：Why Major / Community / Pleasure / Conflict / Contribution
+
+- **标化政策**：Test-required：必须提交 SAT 或 ACT；可在申请中自报，录取入读后需提交官方成绩。
 
 - **学校特色**：硬核 STEM + Maker / Hacker 文化；大一 P / NP 缓冲；跨学科融合（Media Lab、Sloan）。
 
@@ -34,6 +38,8 @@
 
 - **申请与文书**：CommonApp；必答 5 篇（约 1000 词）：Identity / Intellectual / Extracurricular / Roommate Letter / Future Hopes
 
+- **标化政策**：Test-required：通常需提交 SAT 或 ACT；如因考试机会、费用或不可抗力无法参加，可用 AP、IB、A-Level 或国家毕业考试等替代并说明原因。
+
 - **学校特色**：综合学术最强、House 制；全球资源与校友网络冠绝；强调领导力与公共影响力。
 
 - **地理位置**：Cambridge, Massachusetts
@@ -47,6 +53,8 @@
 #### #3 斯坦福 Stanford
 
 - **申请与文书**：CommonApp / Coalition；必答 8 题（约 950 词）：3 长文（Intellectual / Roommate / Meaningful）+ 5 个 ≤50 词短答
+
+- **标化政策**：Test-required：必须提交 SAT 或 ACT；可自报，录取入读后需提交官方成绩；ACT Science 与写作部分为可选。
 
 - **学校特色**：硅谷创业基因 + Design Thinking + 跨学科自由度高；阳光开放、低调实干。
 
@@ -62,6 +70,8 @@
 
 - **申请与文书**：CommonApp；必答 7 题（约 700 词）：Why Major + Why School + 3 选 1 长文 + 3 道短答
 
+- **标化政策**：Test-required：2026-05-27 官方宣布下一申请周期恢复 ACT/SAT 必交；ACT Science 与 Writing 可选，AP/IB 可补充但不能替代 SAT/ACT。
+
 - **学校特色**：人文 / 艺术 / 戏剧 / 写作传统深厚；Residential Colleges 紧密；学生组织能量大。
 
 - **地理位置**：New Haven, Connecticut
@@ -75,6 +85,8 @@
 #### #6 加州理工 Caltech
 
 - **申请与文书**：自有系统 / QuestBridge（不接 CommonApp）；必答 6 题（约 900 词）：STEM×2 / Why / Creativity / Honor Code / 短答×3
+
+- **标化政策**：Test-required：必须提交 SAT 或 ACT；Fall 2026 不要求 ACT Science 或 Writing，采用分数区间化评估，无最低分线。
 
 - **学校特色**：极致 STEM 小而精（约 1000 人）；Honor Code、研究密度全美第一。
 
@@ -90,6 +102,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Duke；另可在 5 题 Identity / Community / Race / LGBTQ+ 中选最多 2
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：南方精英 + 顶尖体育（篮球）；Trinity 文理 + Pratt 工程；医学 / 政策强。
 
 - **地理位置**：Durham, North Carolina
@@ -103,6 +117,8 @@
 #### #6 约翰霍普金斯 JHU
 
 - **申请与文书**：CommonApp；必答 1 题（约 350 词）：Collaboration / Community
+
+- **标化政策**：Test-required：Fall 2026 起本科新生申请必须提交 SAT 或 ACT；可自报，录取入读后需官方成绩。
 
 - **学校特色**：美国首所研究型大学；医学 / 生物 / SAIS 顶尖；本科生科研机会多。
 
@@ -118,6 +134,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 300 词）：Why NW；建议把 3 道可选题也写完
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：Medill 新闻 / Kellogg 本科商、Big Ten 体育；学季制节奏快。
 
 - **地理位置**：Evanston, Illinois
@@ -131,6 +149,8 @@
 #### #6 宾大 UPenn
 
 - **申请与文书**：CommonApp；必答 3 题（约 600 词）：Community 信 / Why+Major / 学院专属（Wharton / CAS / SEAS / Nursing 不同）
+
+- **标化政策**：Test-required：2025-26 申请周期起必须提交 SAT 或 ACT；确有考试困难者可在申请中提交 waiver。
 
 - **学校特色**：唯一 Ivy 商学院（Wharton）；One University Policy 跨院选课；城市校园。
 
@@ -148,6 +168,8 @@
 
 - **申请与文书**：CommonApp；必答 3 题（约 700 词）：Open Curriculum / Community / Joy（PLME / Brown-RISD 双学位另有题）
 
+- **标化政策**：Test-required：自 2024-25 申请周期起本科新生需提交 SAT 或 ACT；SAT Essay / ACT Writing 可选，ACT Science 可选。
+
 - **学校特色**：Open Curriculum；自由探索 + progressive 校风；PLME 七年医、Brown-RISD 双学位。
 
 - **地理位置**：Providence, Rhode Island
@@ -161,6 +183,8 @@
 #### #12 哥伦比亚 Columbia
 
 - **申请与文书**：CommonApp；必答 6 题（约 750 词）：3 道 List 短题 + Community 150 / Why 150 / Major 150
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：曼哈顿城市校园 + Core Curriculum；新闻 / 政治 / 金融王道。
 
@@ -176,6 +200,8 @@
 
 - **申请与文书**：CommonApp；必答 2 题（约 1000 词）：学院专属 650（CALS / Engineering / A&S / ILR 等）+ Community 350
 
+- **标化政策**：Test-required：Fall 2026 及以后入学的本科新生申请必须提交 SAT 或 ACT；适用于所有本科生学院。
+
 - **学校特色**：八大学院差异极大（CALS / ILR / Eng / A&S / Hotel / Hum Eco / AAP / Dyson）。
 
 - **地理位置**：Ithaca, New York
@@ -189,6 +215,8 @@
 #### #14 芝加哥 UChicago
 
 - **申请与文书**：CommonApp；必答 2 题（约 1000 词）：Why 250–500 + Extended Essay 650–1500（脑洞题）
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：Core + 学术怪诞趣味；经济 / 数学 / 政治理论强；“Life of the Mind”。
 
@@ -204,6 +232,8 @@
 
 - **申请与文书**：CommonApp；必答 3 题（约 600 词）：Why 100 + 2 篇 supp 各 250（题目每年不同）
 
+- **标化政策**：Test-required：本科新生申请必须提交 SAT 或 ACT；学校会对 SAT/ACT 进行 superscore。
+
 - **学校特色**：常春藤里最 LAC 化、新罕布什尔小镇、D-Plan、户外文化重。
 
 - **地理位置**：Hanover, New Hampshire
@@ -217,6 +247,8 @@
 #### #15 UCLA
 
 - **申请与文书**：UC Application；PIQ 8 选 4 × 350 词（约 1400 词），无校级题
+
+- **标化政策**：Test-free / test-blind：UC 系统不使用 SAT/ACT 作录取或奖学金评估；提交后仅可能用于入学后分班或学分参考。
 
 - **学校特色**：洛杉矶、UC 旗舰；电影 / 医学 / 工程强；公立藤校气质。
 
@@ -232,6 +264,8 @@
 
 - **申请与文书**：UC Application；同 UCLA PIQ
 
+- **标化政策**：Test-free / test-blind：UC 系统不使用 SAT/ACT 作录取或奖学金评估；提交后仅可能用于入学后分班或学分参考。
+
 - **学校特色**：硅谷北 + 公立顶尖；CS / 工程 / 商科 / 经济强势；学生密度大。
 
 - **地理位置**：Berkeley, California
@@ -245,6 +279,8 @@
 #### #18 莱斯 Rice
 
 - **申请与文书**：CommonApp；必答 4 项（约 800 词 + 1 张图）：Why Major 150 / Why Rice 150 / Personal 500 / The Box 图片
+
+- **标化政策**：Test-recommended：不强制 SAT/ACT，但官网建议如有成绩尽量提交；不提交者仍会完整评估。AP/IB 也可作为学术准备度补充。
 
 - **学校特色**：休斯顿、Residential Colleges 制；STEM / 建筑 / 音乐强；规模小社群紧密。
 
@@ -260,6 +296,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Community 二选一
 
+- **标化政策**：Test-optional：SAT/ACT 可选政策延续至 Fall 2027 入学；国际生仍需满足英语能力要求。
+
 - **学校特色**：纳什维尔、南方精英；Peabody 教育 / Blair 音乐强；社交校园文化。
 
 - **地理位置**：Nashville, Tennessee
@@ -273,6 +311,8 @@
 #### #18 圣母 Notre Dame
 
 - **申请与文书**：CommonApp；必答 3 题（约 550 词）：Why ND / Faith；Values；Community / Personal Reflection
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：印第安那、天主教传统 + 强体育（橄榄球）；Mendoza 商学院。
 
@@ -290,6 +330,8 @@
 
 - **申请与文书**：CommonApp；必答 2 题（约 850 词）：Community 300 + Why+Major 550
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：安娜堡大公立、Ross 商 / 工程 / 电影 / 医学强；Big House 体育。
 
 - **地理位置**：Ann Arbor, Michigan
@@ -303,6 +345,8 @@
 #### #21 圣路易斯华大 WashU
 
 - **申请与文书**：CommonApp；必答 1 题（约 200 词）：Why + Major
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：圣路易斯、Olin 商 + 医学 / 工程强；学生氛围合作友好。
 
@@ -318,6 +362,8 @@
 
 - **申请与文书**：CommonApp；必答 3 题（约 900 词）：Why Major / Why CMU / Personal Development
 
+- **标化政策**：按学院区分：School of Computer Science 必须提交 SAT/ACT；工程、人文社科、信息系统、理学院、Tepper 为 test-flexible（可用 SAT/ACT、AP、IB、A-Level 等）；艺术学院 test-optional。
+
 - **学校特色**：匹兹堡、计算机 / 戏剧 / 设计 / 工程全美顶尖；学院界限分明。
 
 - **地理位置**：Pittsburgh, Pennsylvania
@@ -331,6 +377,8 @@
 #### #24 埃默里 Emory
 
 - **申请与文书**：CommonApp；必答 2 题（约 300 词）：Academic 150 + 反思题 150（多选一）
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：亚特兰大、医预 / 商（Goizueta） / QSS 强；学生多元国际化。
 
@@ -346,6 +394,8 @@
 
 - **申请与文书**：CommonApp；必答 2 题（约 500 词）：学院专属 + Personal Reflection（多选一）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：夏洛茨维尔、Honor Code、文理传统 + 公立藤气质。
 
 - **地理位置**：Charlottesville, Virginia
@@ -359,6 +409,8 @@
 #### #24 乔治城 Georgetown
 
 - **申请与文书**：自有系统（不接 CommonApp）；必答 3 题（约 1500 词）：Personal Statement + Why GT + 学院专属
+
+- **标化政策**：Test-required：本科申请需提交 SAT 或 ACT；按乔治城长期政策，已参加的 SAT/ACT 成绩通常应完整提交。
 
 - **学校特色**：DC 中心、耶稣会大学；SFS 外交 / McDonough 商；自有系统。
 
@@ -374,6 +426,8 @@
 
 - **申请与文书**：CommonApp；必答 2 题（约 450 词）：信念题 + 服务 / 贡献题
 
+- **标化政策**：条件式 test-optional：按 UNC System 规则，weighted GPA ≥2.8 可不提交 SAT/ACT；2.5–2.8 区间需提交 SAT/ACT。
+
 - **学校特色**：教堂山、公立藤气质；公共健康 / 新闻 / 医学强；州内外比例严格。
 
 - **地理位置**：Chapel Hill, North Carolina
@@ -387,6 +441,8 @@
 #### #28 南加大 USC
 
 - **申请与文书**：CommonApp；必答 4 项（约 600 词 + 10 道短答）：Why Major 250 + Personal 250（三选一）+ 三词描述自己 + Snapshot 10 答
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：洛杉矶、电影 / 商 / 工程 / 传媒强；娱乐圈校友网络强。
 
@@ -402,6 +458,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why NYU + Identity（Tisch、Stern 等另有题）
 
+- **标化政策**：Test-flexible：可用 SAT/ACT、AP、IB、A-Level 等不同考试满足标化材料口径；具体可提交类型以 NYU 当年清单为准。
+
 - **学校特色**：曼哈顿、no campus；Stern 商 / Tisch 艺术 / Steinhardt 顶尖；国际化。
 
 - **地理位置**：New York, New York
@@ -415,6 +473,8 @@
 #### #30 UC San Diego
 
 - **申请与文书**：UC Application；同 UCLA PIQ
+
+- **标化政策**：Test-free / test-blind：UC 系统不使用 SAT/ACT 作录取或奖学金评估；提交后仅可能用于入学后分班或学分参考。
 
 - **学校特色**：圣地亚哥、强生物 / CS / 海洋；college 制；理工偏 nerdy。
 
@@ -432,6 +492,8 @@
 
 - **申请与文书**：自有系统（不接 CommonApp）；主文书 250 词；无必答 supp
 
+- **标化政策**：Test-required：佛州公立体系本科新生申请需提交 SAT、ACT 或 CLT 等认可考试成绩。
+
 - **学校特色**：佛州、强工程 / 商 / 法律；佛州本州生学费极低；橄榄球文化。
 
 - **地理位置**：Gainesville, Florida
@@ -445,6 +507,8 @@
 #### #31 UT Austin
 
 - **申请与文书**：Apply Texas / CommonApp；必答 3 题（约 750 词）：Leadership / Why Major / 特殊情况（可选）
+
+- **标化政策**：Test-required：本科新生申请需提交 SAT 或 ACT；成绩是整体评估的一部分。
 
 - **学校特色**：奥斯汀、Cockrell 工程 / McCombs 商；州内 Top 6% 自动录取。
 
@@ -460,6 +524,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 300 词）：Why GT + Why Major
 
+- **标化政策**：Test-required：所有 first-year applicants 必须提交至少一次 SAT 或 ACT；可自报，入读后需官方成绩。
+
 - **学校特色**：亚特兰大、纯理工公立；CS / 工程 / 设计强；co-op 文化深。
 
 - **地理位置**：Atlanta, Georgia
@@ -473,6 +539,8 @@
 #### #33 UC Santa Barbara
 
 - **申请与文书**：UC Application；同 UCLA PIQ
+
+- **标化政策**：Test-free / test-blind：UC 系统不使用 SAT/ACT 作录取或奖学金评估；提交后仅可能用于入学后分班或学分参考。
 
 - **学校特色**：UC 系统；UCSB 海滨 + 工程、Davis 农 + 兽医、Irvine CS / 生物。
 
@@ -488,6 +556,8 @@
 
 - **申请与文书**：UC Application；同 UCLA PIQ
 
+- **标化政策**：Test-free / test-blind：UC 系统不使用 SAT/ACT 作录取或奖学金评估；提交后仅可能用于入学后分班或学分参考。
+
 - **学校特色**：UC 系统；UCSB 海滨 + 工程、Davis 农 + 兽医、Irvine CS / 生物。
 
 - **地理位置**：Davis, California
@@ -501,6 +571,8 @@
 #### #33 UC Irvine
 
 - **申请与文书**：UC Application；同 UCLA PIQ
+
+- **标化政策**：Test-free / test-blind：UC 系统不使用 SAT/ACT 作录取或奖学金评估；提交后仅可能用于入学后分班或学分参考。
 
 - **学校特色**：UC 系统；UCSB 海滨 + 工程、Davis 农 + 兽医、Irvine CS / 生物。
 
@@ -516,6 +588,8 @@
 
 - **申请与文书**：CommonApp；必答 2 题（约 600 词）：主专业 + 备选专业
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：伊州 Champaign-Urbana、CS / 工程 / 会计 / 农业全美顶尖。
 
 - **地理位置**：Champaign-Urbana, Illinois
@@ -529,6 +603,8 @@
 #### #33 UW–Madison
 
 - **申请与文书**：CommonApp；必答 1 题（约 400 词）：Why + Major
+
+- **标化政策**：Test-optional：Spring 2027 前申请无需 SAT/ACT；Fall 2027 及以后政策待官方更新，建议学生仍保留考试准备。
 
 - **学校特色**：威州、强商（Wisconsin School of Business） / 工程 / 计算机；活力大公立。
 
@@ -544,6 +620,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 400 词）：4 选 1（Jesuit 传统 / Human-Centered / Identity / Difficult Experience）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：波士顿、耶稣会传统、强商科（Carroll） / 通识；Jesuit values。
 
 - **地理位置**：Chestnut Hill / Newton, Massachusetts
@@ -557,6 +635,8 @@
 #### #40 Rutgers 罗格斯
 
 - **申请与文书**：CommonApp；仅可选 supp（无必答）；Honors 另有题
+
+- **标化政策**：Test-optional：Rutgers New Brunswick 一般可选择不提交 SAT/ACT；特定医学、BA/MD 等项目可能另有必交要求。
 
 - **学校特色**：新泽西州立、Pharmacy / 心理学 / 商；大公立多 campus。
 
@@ -572,6 +652,8 @@
 
 - **申请与文书**：CommonApp；必答 2 题（约 350 词）：Why Tufts 150 + Personal 250（三选一）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：波士顿、强 IR / 工程 / 跨学科；与 MIT / Harvard 跨校选课。
 
 - **地理位置**：Medford / Somerville, Massachusetts
@@ -585,6 +667,8 @@
 #### #41 UW 华盛顿大学
 
 - **申请与文书**：自有系统（不接 CommonApp）；必答 2 题（约 950 词）：Personal Statement 650 + Short 300
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：西雅图、强 CS / 医学 / 工程；公立旗舰；Husky 校园文化。
 
@@ -600,6 +684,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why BU
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：波士顿、强商 / 传媒 / 工程；城市大学无传统校园；国际化。
 
 - **地理位置**：Boston, Massachusetts
@@ -613,6 +699,8 @@
 #### #44 OSU 俄亥俄州立
 
 - **申请与文书**：CommonApp；仅可选 supp（无必答）；Scholars / Honors 另有题
+
+- **标化政策**：Test-required：Columbus 校区 2026 入学及以后 first-year applicants 需提交官方 SAT 或 ACT；ACT Science 可选。
 
 - **学校特色**：Big Ten 公立、商 / 工程 / 兽医强；橄榄球文化；学生 约 60k 大公立。
 
@@ -628,6 +716,8 @@
 
 - **申请与文书**：CommonApp；必答 3 题（约 450 词）：Why Major 100 + Why Purdue 100 + Community 250
 
+- **标化政策**：Test-expected：Purdue 期望申请者提交 SAT 或 ACT；特殊情况下未能考试者可递交申请。若提交，ACT Science 可选。
+
 - **学校特色**：印第安那、CS / 航空航天 / 农业 / 工程王道；co-op 文化；性价比高。
 
 - **地理位置**：West Lafayette, Indiana
@@ -641,6 +731,8 @@
 #### #46 Lehigh 里海
 
 - **申请与文书**：CommonApp；必答 2 题（约 450 词）：Why+Major 150 + Community 300
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：宾州、Top STEM + IBE 商工综合项目；规模中等社群紧密。
 
@@ -656,6 +748,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题组（约 300 词）：句子开头填空 + 1 道领导力题（每项 ≤160 字符）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：大学公园、计算机 / 工程 / 公共政策强；DC 资源近。
 
 - **地理位置**：College Park, Maryland
@@ -669,6 +763,8 @@
 #### #46 UGA 佐治亚
 
 - **申请与文书**：CommonApp；必答 1 题（约 300 词）：Community / Become the person you are
+
+- **标化政策**：Test-required：所有 first-year applicants 需提交官方 SAT 或 ACT；UGA 主要看 English/EBRW 与 Math。
 
 - **学校特色**：雅典、强 Terry 商 / 法预 / 新闻；Hope Scholarship 体系。
 
@@ -684,6 +780,8 @@
 
 - **申请与文书**：Apply Texas / CommonApp；必答 2 题（约 500 词）：Leadership + 特殊情况
 
+- **标化政策**：Test-optional：本科新生申请不强制 SAT/ACT；若提交，将作为整体评估和部分项目/奖学金参考。
+
 - **学校特色**：大学城、强工程 / 农业 / 兽医；Aggie 文化与传统极重。
 
 - **地理位置**：College Station, Texas
@@ -697,6 +795,8 @@
 #### #50 维克森林 Wake Forest
 
 - **申请与文书**：CommonApp；必答 7 项（约 1000 词，以多 supp 出名）：5 本书 List + Why Major + Pro Humanitate + Top 3 Concerns + Tell Us + 其他
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：北卡、文理学院化大学、强商 + 通识；小班、师生比低。
 
@@ -714,6 +814,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Brandeis
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：波士顿郊外、强人文 / 社科 / 犹太研究；研究型小规模。
 
 - **地理位置**：Waltham, Massachusetts
@@ -727,6 +829,8 @@
 #### #54 W&M 威廉与玛丽
 
 - **申请与文书**：CommonApp；仅可选 supp（无必答）
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：弗吉尼亚、第二古老公立、文理传统 + 公立藤气质。
 
@@ -742,6 +846,8 @@
 
 - **申请与文书**：CommonApp；仅可选 supp（无必答）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：克利夫兰、强工程 / 医学 / CS；Co-op 项目。
 
 - **地理位置**：Cleveland, Ohio
@@ -755,6 +861,8 @@
 #### #54 NEU 东北大学
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why NEU（重点 co-op）
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：波士顿、co-op 旗舰、强 CS / 商 / 工程；国际化。
 
@@ -770,6 +878,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Tulane（高度开放）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：新奥尔良、强医预 / 商 / 公共健康；浓厚南方文化。
 
 - **地理位置**：New Orleans, Louisiana
@@ -783,6 +893,8 @@
 #### #58 Virginia Tech 弗吉尼亚理工
 
 - **申请与文书**：CommonApp；必答 4 题（约 480 词）：Ut Prosim / Adversity / Community / Leadership
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：黑堡、强工程 / CS / 农业；Ut Prosim（“That I May Serve”）校训。
 
@@ -798,6 +910,8 @@
 
 - **申请与文书**：CommonApp / Coalition / 自有；必答 1 题（约 350 词）：4 选 1（diversity / hardship / goals / leadership）
 
+- **标化政策**：Test-required：佛州公立体系本科新生申请需提交 SAT、ACT 或 CLT 等认可考试成绩。
+
 - **学校特色**：塔拉哈西、强商 / 电影 / 犯罪学；强体育文化。
 
 - **地理位置**：Tallahassee, Florida
@@ -811,6 +925,8 @@
 #### #58 Pepperdine 佩珀代因
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Faith / Values 与 Pepperdine 的契合
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：马里布海滨、基督教大学；强商 / 国际研究。
 
@@ -826,6 +942,8 @@
 
 - **申请与文书**：CommonApp；仅可选 supp（无必答）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：麻州五校联盟、强商 / 工程 / 公共政策；大公立。
 
 - **地理位置**：Amherst, Massachusetts
@@ -839,6 +957,8 @@
 #### #63 Penn State
 
 - **申请与文书**：CommonApp；必答 1 题（约 500 词）：背景 / 活动如何让你在 PSU 成功
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：大学城、强工程 / 商 / 农业；Big Ten 体育。
 
@@ -854,6 +974,8 @@
 
 - **申请与文书**：CommonApp；无必答 supp；Honors / 医预科另有题
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：强医学 / 商 / 工程；与 CMU 同城；研究型大学。
 
 - **地理位置**：Pittsburgh, Pennsylvania
@@ -867,6 +989,8 @@
 #### #63 RPI 伦斯勒
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why RPI + Why Major
+
+- **标化政策**：Test-optional：一般本科申请可选择不提交 SAT/ACT；Physician-Scientist 等特定项目可能要求。
 
 - **学校特色**：纽约 Troy、纯理工；强 CS / 工程；研究型小规模。
 
@@ -882,6 +1006,8 @@
 
 - **申请与文书**：CommonApp；仅可选 supp（无必答）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：强 PT / 保险 / 教育；新英格兰公立旗舰。
 
 - **地理位置**：Storrs, Connecticut
@@ -895,6 +1021,8 @@
 #### #67 Villanova 维拉诺瓦
 
 - **申请与文书**：CommonApp；必答 2 题（约 400 词）：奇题（设计课程 / motto / relationship 4 选 1）+ Augustine quote / Community
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：费城近郊、奥古斯丁会、强商科（VSB）。
 
@@ -910,6 +1038,8 @@
 
 - **申请与文书**：CommonApp；仅可选 supp（无必答）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
+
 - **学校特色**：DC 中心、强 IR / 政治学 / 商；政府资源近。
 
 - **地理位置**：Washington, D.C.
@@ -924,6 +1054,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Stevens + Why Major
 
+- **标化政策**：Test-optional：一般本科申请可选择不提交 SAT/ACT；Accelerated Pre-Medicine / Pre-Law 等项目可能要求。
+
 - **学校特色**：新泽西、纯理工；强 CS / 工程 / 金融工程；co-op 强。
 
 - **地理位置**：Hoboken, New Jersey
@@ -937,6 +1069,8 @@
 #### #72 American 美国大学
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why AU + Why Major
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。高竞争专业或高分段申请者建议结合学校最新中位分判断是否提交。
 
 - **学校特色**：DC、强政治学 / IR / 传媒；与政府机构关系密切。
 
@@ -956,6 +1090,8 @@
 
 - **申请与文书**：CommonApp / QuestBridge；必答 1 题（约 300 词）：Tutorial / Mountain Day；Purple Bubble 二选一（可选交 Writing Sample）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：麻州山区小镇、Tutorial 制（2人1师）、人文 + 政治 + 经济强。
 
 - **地理位置**：Williamstown, Massachusetts
@@ -969,6 +1105,8 @@
 #### #2 阿默斯特 Amherst
 
 - **申请与文书**：CommonApp；必答 1 题（约 300 词）：Amherst Quote / Intellectual Identity / Open Curriculum 三选一（可选 Graded Writing Sample）
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：麻州、Open Curriculum、Five College Consortium；人文与社科强。
 
@@ -984,6 +1122,8 @@
 
 - **申请与文书**：CommonApp；必答 3 项（约 500 词）：Academic 150 + Why Pomona 250 + Short Answers 组
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：加州、Claremont 5C 联盟；学术研究型 LAC 顶尖；小班教学。
 
 - **地理位置**：Claremont, California
@@ -997,6 +1137,8 @@
 #### #4 斯瓦斯莫尔 Swarthmore
 
 - **申请与文书**：CommonApp；必答 2 题（约 500 词）：Why Swarthmore + Identity / Perspective
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：费城近郊、Quaker 传统、Honors 项目、政治 / 工程强。
 
@@ -1012,6 +1154,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 400 词）：Why Wellesley 二选一（含校训反思）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：麻州、女子学院、强人文 + 商 + STEM；姐妹院 MIT 选课。
 
 - **地理位置**：Wellesley, Massachusetts
@@ -1025,6 +1169,8 @@
 #### #6 USNA 海军学院
 
 - **申请与文书**：自有系统（需国会提名、免学费、不接 CommonApp）；必答 2 题（约 1000 词）：Why USNA / Leadership
+
+- **标化政策**：服务学院 test-required：申请需提交 SAT/ACT，且还需完成提名、体能、体检等服务学院特有流程；建议多次考试争取 superscore。
 
 - **学校特色**：安纳波利斯、军校、需国会提名、免学费、Service 义务。
 
@@ -1040,6 +1186,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Offer of the College（Hyde 名言）反思
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：缅因、Offer of the College 校训传统；强政治 / 环境。
 
 - **地理位置**：Brunswick, Maine
@@ -1053,6 +1201,8 @@
 #### #8 卡尔顿 Carleton
 
 - **申请与文书**：CommonApp；必答 1 题（约 150 词）：Why Carleton
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：明尼苏达、强 STEM + 写作 LAC；学季制；学术氛围浓。
 
@@ -1068,6 +1218,8 @@
 
 - **申请与文书**：CommonApp；必答 2 题（约 450 词）：Why CMC + Cross-Perspective Conversation
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：加州 5C、强经济 / 政府 / 国际关系；pre-prof LAC。
 
 - **地理位置**：Claremont, California
@@ -1081,6 +1233,8 @@
 #### #10 戴维森 Davidson
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Davidson + Honor Code
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：北卡夏洛特、Honor Code 严格、强 pre-med / pre-law。
 
@@ -1098,6 +1252,8 @@
 
 - **申请与文书**：自有系统（需国会提名、免学费）；必答 3 题（约 900 词）：Why West Point / Leadership / Adversity
 
+- **标化政策**：服务学院 test-required：申请需提交 SAT/ACT（West Point 也接受 CLT 的政策按入学届别执行），并需提名、体能、体检；采用 superscore。
+
 - **学校特色**：纽约 West Point、军校、需国会提名、免学费、Service 义务。
 
 - **地理位置**：West Point, New York
@@ -1111,6 +1267,8 @@
 #### #12 史密斯 Smith
 
 - **申请与文书**：CommonApp；必答 1 题（约 200 词）：Why Smith（女子学院）
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：麻州、女子学院、Five College Consortium；强人文 + 工程。
 
@@ -1126,6 +1284,8 @@
 
 - **申请与文书**：CommonApp；必答 2 题（约 500 词）：Why W&L + Identity / Background
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：弗吉尼亚、Honor Code、强商 / 法预 / 历史；南方传统。
 
 - **地理位置**：Lexington, Virginia
@@ -1139,6 +1299,8 @@
 #### #14 瓦萨 Vassar
 
 - **申请与文书**：CommonApp；必答 1 题（约 300 词）：Why Vassar（+ 可选 "Your Space" 附件）
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：纽约 Poughkeepsie、人文 + 艺术强；以创作 / 视觉艺术著称。
 
@@ -1154,6 +1316,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Hamilton + Open Curriculum
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：纽约 Clinton、Open Curriculum、写作 + 公开演讲 LAC。
 
 - **地理位置**：Clinton, New York
@@ -1167,6 +1331,8 @@
 #### #16 米德尔伯里 Middlebury
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Midd / Community（多选一）
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：佛蒙特、强语言 / 国际研究 / 环境；冬季 J-term。
 
@@ -1182,6 +1348,8 @@
 
 - **申请与文书**：CommonApp；必答 3 题（约 800 词）：Why Barnard ＋ 女子学院 ＋ NYC ＋ Academic Interest
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：哥大姐妹女子学院、曼哈顿、人文 + STEM + Pre-Med 强。
 
 - **地理位置**：New York, New York
@@ -1195,6 +1363,8 @@
 #### #18 科尔比 Colby
 
 - **申请与文书**：CommonApp；必答 1 题（约 200 词）：Why Colby（Jan Plan）
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：缅因、Jan Plan 1 月独立学习、强环境 / 国际研究。
 
@@ -1210,6 +1380,8 @@
 
 - **申请与文书**：CommonApp；必答 2 题（约 400 词）：Why Colgate ＋ Identity / Community
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：纽约、Liberal Arts Core；强经济 / 政治 / 国际研究。
 
 - **地理位置**：Hamilton, New York
@@ -1223,6 +1395,8 @@
 #### #19 格林内尔 Grinnell
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Grinnell + Open Curriculum
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：爱荷华、Open Curriculum、强 social justice；学生偏左化。
 
@@ -1238,6 +1412,8 @@
 
 - **申请与文书**：CommonApp；必答 2 题（约 500 词）：Why + Honor Code ＋ Conversation / Identity
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：费城近郊、Quaker、Honor Code、强人文。
 
 - **地理位置**：Haverford, Pennsylvania
@@ -1251,6 +1427,8 @@
 #### #21 卫斯安 Wesleyan
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Wesleyan
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：康州、强电影 / 音乐 / 写作；创意 + 进步主义。
 
@@ -1266,6 +1444,8 @@
 
 - **申请与文书**：自有系统（需国会提名、免学费）；必答 3 题（约 900 词）：Why USAFA / Leadership / Adversity
 
+- **标化政策**：服务学院 test-required：申请需提交 SAT/ACT，并需提名、体能、体检；官方按单项最高分综合评估。
+
 - **学校特色**：科罗拉多、军校、需国会提名、免学费、Service 义务。
 
 - **地理位置**：Colorado Springs, Colorado
@@ -1279,6 +1459,8 @@
 #### #24 麦卡莱斯特 Macalester
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why + Global Citizenship
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：明尼苏达、强国际研究、Global Citizenship 校训。
 
@@ -1294,6 +1476,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Bryn Mawr（女子学院）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：费城近郊、女子学院、Quaker；强人文 / 数学。
 
 - **地理位置**：Bryn Mawr, Pennsylvania
@@ -1308,6 +1492,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 200 词）：Why Bates
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：缅因、强环境 / 政治 / 数学；test-optional 先驱。
 
 - **地理位置**：Lewiston, Maine
@@ -1321,6 +1507,8 @@
 #### #24 哈维；穆德 Harvey Mudd
 
 - **申请与文书**：CommonApp；必答 3 题（约 800 词）：STEM+Humanities 500 / 5C Community 300 / Optional Identity
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：加州 5C、纯 STEM + Humanities Core 必修；理工 LAC。
 
@@ -1338,6 +1526,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 350 词）：Why Richmond / Community（多选一）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：弗吉尼亚、强商 / 法预 + Jepson 领导力学院。
 
 - **地理位置**：Richmond, Virginia
@@ -1351,6 +1541,8 @@
 #### #28 创价大学 Soka
 
 - **申请与文书**：CommonApp；必答 1 题（约 400 词）：Why Soka + Peace & Global Citizenship
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：加州、佛教背景、强 Peace Studies / 国际研究；学生国际化。
 
@@ -1366,6 +1558,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 200 词）：Why Kenyon
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：俄亥俄、强英语 / 创意写作；Kenyon Review 文学期刊。
 
 - **地理位置**：Gambier, Ohio
@@ -1379,6 +1573,8 @@
 #### #30 科罗拉多 Colorado College
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why CC + Block Plan
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：Block Plan（一次一门课 3.5 周）；强环境 / 地质。
 
@@ -1394,6 +1590,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Mount Holyoke
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：麻州、Seven Sisters 女子学院之一；强 STEM + 国际。
 
 - **地理位置**：South Hadley, Massachusetts
@@ -1407,6 +1605,8 @@
 #### #33 拉法耶特 Lafayette
 
 - **申请与文书**：CommonApp；必答 1 题（约 150 词）：Why Lafayette
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：宾州、罕见 LAC + 工程学院；强商 / 工程。
 
@@ -1422,6 +1622,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 300 词）：Why Oxy + LA Location
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：洛杉矶、强 IR / 教育 / DWA 项目；Obama 母校。
 
 - **地理位置**：Los Angeles, California
@@ -1435,6 +1637,8 @@
 #### #35 三一学院（康州）Trinity
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Trinity
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：哈特福德、强 IR / 经济；都市 LAC。
 
@@ -1450,6 +1654,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Skidmore + Creative Thought
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：纽约 Saratoga、强艺术 / 创意写作；“Creative Thought Matters”。
 
 - **地理位置**：Saratoga Springs, New York
@@ -1463,6 +1669,8 @@
 #### #35 匹泽 Pitzer
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Pitzer + Core Values（5C 联盟）
+
+- **标化政策**：Test-free / score-free：本科申请不使用 SAT/ACT 作录取评估核心材料；按学校当年申请说明提交其他学术材料。
 
 - **学校特色**：加州 5C、强 social justice / 环境 / 心理学；进步主义。
 
@@ -1478,6 +1686,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Conn
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：康州、强心理 / 政府 / 跨学科；CISLA 中心。
 
 - **地理位置**：New London, Connecticut
@@ -1491,6 +1701,8 @@
 #### #38 巴克内尔 Bucknell
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Bucknell
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：宾州、LAC + 工程 + 商；中等规模社群紧密。
 
@@ -1506,6 +1718,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Spelman（HBCU 女子）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：亚特兰大、HBCU 女子学院；强 STEM + 政治；强校友网络。
 
 - **地理位置**：Atlanta, Georgia
@@ -1519,6 +1733,8 @@
 #### #38 塞瓦尼 Sewanee
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Sewanee
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：田纳西、South 圣公会、强英语 / 环境；学袍传统。
 
@@ -1534,6 +1750,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Whitman
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：华盛顿州、强 social science + 户外；学生关系紧密。
 
 - **地理位置**：Walla Walla, Washington
@@ -1547,6 +1765,8 @@
 #### #43 贝雷亚 Berea
 
 - **申请与文书**：CommonApp / 自有；必答 1 题（约 300 词）：Why Berea + Labor Program（100% 免学费）
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：肯塔基、100% 免学费、Labor Program 必须工作。
 
@@ -1562,6 +1782,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Dickinson
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：宾州、强语言 / 国际研究 / 环境；Useful Education。
 
 - **地理位置**：Carlisle, Pennsylvania
@@ -1575,6 +1797,8 @@
 #### #43 迪堡 DePauw
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why DePauw
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：印第安那、强商 / 媒体；社团文化（兄弟会）。
 
@@ -1590,6 +1814,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 200 词）：Why Centre
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：肯塔基、强海外项目、小而精；强校友网络。
 
 - **地理位置**：Danville, Kentucky
@@ -1603,6 +1829,8 @@
 #### #43 圣十字 Holy Cross
 
 - **申请与文书**：CommonApp；必答 1 题（约 300 词）：Why Holy Cross + Jesuit
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：麻州、耶稣会 LAC；强人文 + 商。
 
@@ -1618,6 +1846,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Furman + The Furman Advantage
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：南卡、Furman Advantage 项目 + 导师制；强政治 / 商。
 
 - **地理位置**：Greenville, South Carolina
@@ -1631,6 +1861,8 @@
 #### #49 厄勒姆 Earlham
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Earlham（Quaker）
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：印第安那、Quaker、强国际研究 / 和平研究。
 
@@ -1646,6 +1878,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Lawrence（LAC + Conservatory）
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：威州、LAC + Conservatory（音乐）；学生跨学科。
 
 - **地理位置**：Appleton, Wisconsin
@@ -1659,6 +1893,8 @@
 #### #49 圣约翰（安纳波利斯）St. John's
 
 - **申请与文书**：自有系统（不接 CommonApp）；必答 4 题（约 1750 词，文书极重）：Great Books / Book；Idea / Intellectual Question / Background
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：安纳波利斯、Great Books 唯一课程；自有系统。
 
@@ -1674,6 +1910,8 @@
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why St. Olaf
 
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
+
 - **学校特色**：明尼苏达、Lutheran 路德教会、强音乐 / 数学。
 
 - **地理位置**：Northfield, Minnesota
@@ -1687,6 +1925,8 @@
 #### #49 联合学院 Union
 
 - **申请与文书**：CommonApp；必答 1 题（约 250 词）：Why Union
+
+- **标化政策**：Test-optional：本科新生申请可选择不提交 SAT/ACT；若提交，将作为学术准备度的补充材料综合评估。
 
 - **学校特色**：纽约 Schenectady、强工程 + LAC 综合；学季制。
 

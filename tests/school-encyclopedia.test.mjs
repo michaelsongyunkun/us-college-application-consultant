@@ -37,15 +37,34 @@ assert.deepEqual(schools[0], {
     "看学术潜力 + 思辨深度 + 服务精神（in service of humanity）；偏沉稳深入、利他的学生。",
   recommendationRequirements:
     "1 升学顾问 + 2 任课老师（建议 1 STEM + 1 人文）；可再加 1 选交 Other Recommender。",
+  standardizedTesting:
+    "Test-optional：Fall 2026 / Fall 2027 入学仍可不提交 SAT/ACT；Fall 2028 起恢复 SAT/ACT 必交。若提交，需由考试机构官方送分；AP/IB 可自报作补充。",
 });
 assert.equal(filterSchools(schools, { category: "university", query: "Maker" })[0].name, "麻省理工 MIT");
 assert.equal(filterSchools(schools, { category: "liberal-arts", query: "Williams" })[0].rank, "1");
+assert.equal(
+  filterSchools(schools, { category: "university", query: "Fall 2028 起恢复" })[0].name,
+  "普林斯顿大学 Princeton",
+);
+assert.match(
+  filterSchools(schools, { category: "university", query: "School of Computer Science" })[0].standardizedTesting,
+  /test-flexible/,
+);
+assert.equal(
+  filterSchools(schools, { category: "university", query: "test-free" }).map((school) => school.name).slice(0, 2).join(" / "),
+  "UCLA / UC Berkeley",
+);
+assert.match(
+  filterSchools(schools, { category: "liberal-arts", query: "服务学院" })[0].standardizedTesting,
+  /SAT\/ACT/,
+);
 assert.deepEqual(
   filterSchools(schools, { category: "university", query: "UC Irvine" }).map((school) => ({
     rank: school.rank,
     name: school.name,
     location: school.location,
     safetyScore: school.safetyScore,
+    standardizedTesting: school.standardizedTesting,
   })),
   [
     {
@@ -53,6 +72,8 @@ assert.deepEqual(
       name: "UC Irvine",
       location: "Irvine, California",
       safetyScore: "9.5",
+      standardizedTesting:
+        "Test-free / test-blind：UC 系统不使用 SAT/ACT 作录取或奖学金评估；提交后仅可能用于入学后分班或学分参考。",
     },
   ],
 );

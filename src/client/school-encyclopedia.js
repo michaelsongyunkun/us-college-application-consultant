@@ -1,4 +1,4 @@
-import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260531-school-safety";
+import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260603-standardized-testing";
 import {
   DEFAULT_VISIBLE_RESULT_LIMIT,
   expandVisibleResultLimit,
@@ -121,6 +121,7 @@ function renderDomesticDetails(school) {
     ${locationDetail}
     ${safetyScoreDetail}
     <div><dt>申请与文书</dt><dd>${escapeHtml(displayValue(school.applicationAndEssays))}</dd></div>
+    <div><dt>标化政策</dt><dd>${escapeHtml(displayValue(school.standardizedTesting))}</dd></div>
     <div><dt>学校特色</dt><dd>${escapeHtml(displayValue(school.schoolFeatures))}</dd></div>
     <div><dt>录取偏好</dt><dd>${escapeHtml(displayValue(school.admissionPreferences))}</dd></div>
     <div><dt>推荐信要求</dt><dd>${escapeHtml(displayValue(school.recommendationRequirements))}</dd></div>`;

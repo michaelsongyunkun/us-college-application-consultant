@@ -37,6 +37,7 @@ assert.ok(script.includes('switchCategory("other-region")'), "其他地区按钮
 assert.ok(script.includes("A-Level / AL"), "英港澳加详情应展示 A-Level / AL 要求。");
 assert.ok(script.includes("AP / 美高"), "英港澳加详情应展示 AP / 美高要求。");
 assert.ok(script.includes("<dt>IB</dt>"), "英港澳加详情应展示 IB 要求。");
+assert.ok(script.includes("<dt>标化政策</dt>"), "美国院校详情应展示本科申请 SAT/ACT 标化政策。");
 assert.ok(script.includes("<dt>地理位置</dt>"), "院校详情应展示地理位置字段。");
 assert.ok(script.includes("安全评分"), "美国院校详情应展示安全评分字段。");
 assert.ok(script.includes("trackSchoolUsageEvent"), "院校百科应记录关键浏览行为。");
