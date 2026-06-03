@@ -21,6 +21,9 @@ const schoolSelectionStatus = document.querySelector("#schoolSelectionStatus");
 const schoolSelectionResults = document.querySelector("#schoolSelectionResults");
 const schoolSelectionVersionList = document.querySelector("#schoolSelectionVersionList");
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
+const SCHOOL_SELECTION_JOB_ENDPOINT = "/api/school-selection-jobs";
+const SCHOOL_SELECTION_JOB_POLL_INTERVAL_MS = 3000;
+const SCHOOL_SELECTION_JOB_TIMEOUT_MS = 6 * 60 * 1000;
 
 const ROUND_CONFIG = [
   { key: "reaEd1", label: "REA / ED1", count: "二选一，1所" },
@@ -94,26 +97,29 @@ async function generateSchoolSelection(event) {
   setWorking(true);
   const startedAt = performance.now();
   try {
-    const data = await requestJson("/api/school-selection", {
+    const payload = {
+      nationality: selectionNationality.value.trim(),
+      highSchoolRegion: selectionHighSchoolRegion.value.trim(),
+      targetMajor: selectionTargetMajor.value.trim(),
+      budgetSensitivity: selectionBudgetSensitivity.value.trim(),
+      regionPreference: selectionRegionPreference.value.trim(),
+      campusSetting: selectionCampusSetting.value.trim(),
+      schoolSize: selectionSchoolSize.value.trim(),
+      edRiskTolerance: selectionEdRiskTolerance.value.trim(),
+      scholarshipNeed: selectionScholarshipNeed.value.trim(),
+      strategyMode: selectionStrategyMode.value.trim(),
+      preferences: selectionPreferences.value.trim(),
+    };
+    const job = await requestJson(SCHOOL_SELECTION_JOB_ENDPOINT, {
       method: "POST",
-      body: JSON.stringify({
-        nationality: selectionNationality.value.trim(),
-        highSchoolRegion: selectionHighSchoolRegion.value.trim(),
-        targetMajor: selectionTargetMajor.value.trim(),
-        budgetSensitivity: selectionBudgetSensitivity.value.trim(),
-        regionPreference: selectionRegionPreference.value.trim(),
-        campusSetting: selectionCampusSetting.value.trim(),
-        schoolSize: selectionSchoolSize.value.trim(),
-        edRiskTolerance: selectionEdRiskTolerance.value.trim(),
-        scholarshipNeed: selectionScholarshipNeed.value.trim(),
-        strategyMode: selectionStrategyMode.value.trim(),
-        preferences: selectionPreferences.value.trim(),
-      }),
+      body: JSON.stringify(payload),
     });
-    renderSchoolSelectionResults(data.selection);
+    setStatus("生成任务已提交，DeepSeek 正在后台生成选校方案。");
+    const result = await waitForSchoolSelectionJob(job.jobId);
+    renderSchoolSelectionResults(result.selection);
     trackSchoolSelectionUsageEvent("school_selection_generate_success", {
       metrics: {
-        generatedActivityCount: countApplicationPlanSchools(data.selection?.rounds || {}),
+        generatedActivityCount: countApplicationPlanSchools(result.selection?.rounds || {}),
         durationMs: performance.now() - startedAt,
       },
     });
@@ -127,6 +133,44 @@ async function generateSchoolSelection(event) {
   } finally {
     setWorking(false);
   }
+}
+
+async function waitForSchoolSelectionJob(jobId) {
+  if (!jobId) throw new Error("选校生成任务创建失败，请刷新页面后重试。");
+  const deadline = performance.now() + SCHOOL_SELECTION_JOB_TIMEOUT_MS;
+  let consecutivePollFailures = 0;
+
+  while (performance.now() < deadline) {
+    let job;
+    try {
+      job = await requestJson(`${SCHOOL_SELECTION_JOB_ENDPOINT}/${encodeURIComponent(jobId)}`, {
+        method: "GET",
+      });
+      consecutivePollFailures = 0;
+    } catch (error) {
+      consecutivePollFailures += 1;
+      if (consecutivePollFailures >= 3) throw error;
+      setStatus("正在重新连接选校生成任务，请保持页面打开。");
+      await delay(SCHOOL_SELECTION_JOB_POLL_INTERVAL_MS);
+      continue;
+    }
+
+    if (job.status === "completed") {
+      if (!job.result?.selection) throw new Error("选校方案结果为空，请重新生成。");
+      return job.result;
+    }
+    if (job.status === "failed") {
+      throw new Error(job.error || "选校方案生成失败，请稍后重试。");
+    }
+    setStatus("DeepSeek 仍在后台生成选校方案，请保持页面打开。");
+    await delay(SCHOOL_SELECTION_JOB_POLL_INTERVAL_MS);
+  }
+
+  throw new Error("选校方案生成耗时过长，请刷新页面后重新生成。");
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function renderSchoolSelectionResults(selection = {}) {

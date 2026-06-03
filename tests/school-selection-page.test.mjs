@@ -74,7 +74,12 @@ for (const expected of [
 }
 assert.ok(!pageHtml.includes(">导出结果<"), "School selection should replace the old generic export label.");
 
-assert.ok(script.includes('"/api/school-selection"'), "School selection page should call the dedicated API.");
+assert.ok(script.includes('"/api/school-selection-jobs"'), "School selection page should create a background generation job.");
+assert.ok(script.includes("waitForSchoolSelectionJob"), "School selection page should poll the background job for results.");
+assert.ok(
+  !script.includes('requestJson("/api/school-selection"'),
+  "School selection generation should not depend on one long synchronous browser request.",
+);
 assert.ok(script.includes("renderSchoolSelectionResults"), "School selection page should render grouped results.");
 assert.ok(script.includes("admissionProbability"), "School selection should render and collect estimated admission probability ranges.");
 assert.ok(script.includes("录取概率区间"), "School selection should label admission probability as a range.");

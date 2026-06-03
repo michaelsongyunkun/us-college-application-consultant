@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createReadStream, existsSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
@@ -42,8 +43,10 @@ const DEFAULT_RATE_LIMITS = {
   "/api/deepseek-plan": { maxRequests: 10, windowMs: 60_000 },
   "/api/deepseek-rag": { maxRequests: 20, windowMs: 60_000 },
   "/api/school-selection": { maxRequests: 10, windowMs: 60_000 },
+  "/api/school-selection-jobs": { maxRequests: 10, windowMs: 60_000 },
   "/api/analytics/usage-event": { maxRequests: 120, windowMs: 60_000 },
 };
+const SCHOOL_SELECTION_JOB_TTL_MS = 30 * 60_000;
 const SECURITY_HEADERS = Object.freeze({
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
@@ -507,6 +510,60 @@ function createRateLimiter(rateLimits) {
   };
 }
 
+function serializeSchoolSelectionJob(job) {
+  const payload = {
+    jobId: job.id,
+    status: job.status,
+  };
+  if (job.status === "completed") {
+    payload.result = job.result;
+  }
+  if (job.status === "failed") {
+    payload.error = job.error || "School selection generation failed.";
+    payload.statusCode = job.statusCode || 500;
+  }
+  return payload;
+}
+
+function getSchoolSelectionJobError(error) {
+  if (error instanceof SchoolSelectionError || error instanceof RequestError) {
+    return {
+      error: error.message,
+      statusCode: error.statusCode,
+    };
+  }
+  console.error("Unexpected school selection job error:", error);
+  return {
+    error: "Server error",
+    statusCode: 500,
+  };
+}
+
+function startSchoolSelectionJob(job, { schoolSelection, user, payload, env, deepSeekFetch }) {
+  Promise.resolve()
+    .then(async () => {
+      job.status = "running";
+      job.updatedAt = Date.now();
+      job.result = await schoolSelection.generateSelection({
+        user,
+        payload,
+        env,
+        deepSeekFetch,
+      });
+      job.status = "completed";
+      job.completedAt = Date.now();
+      job.updatedAt = job.completedAt;
+    })
+    .catch((error) => {
+      const normalizedError = getSchoolSelectionJobError(error);
+      job.status = "failed";
+      job.error = normalizedError.error;
+      job.statusCode = normalizedError.statusCode;
+      job.completedAt = Date.now();
+      job.updatedAt = job.completedAt;
+    });
+}
+
 export function resolveDatabasePath(env = process.env) {
   return env.AUTH_DATABASE_PATH || env.DATABASE_PATH || defaultDatabasePath;
 }
@@ -529,6 +586,29 @@ export function createAppServer({
   const readJson = (request) => readRequestJson(request, maxRequestBodyBytes);
   const handleAuth = createAuthHandler(auth, { mailer, appBaseUrl, readJson });
   const getRateLimit = createRateLimiter(rateLimits);
+  const schoolSelectionJobs = new Map();
+
+  function pruneSchoolSelectionJobs() {
+    const expiredBefore = Date.now() - SCHOOL_SELECTION_JOB_TTL_MS;
+    for (const [jobId, job] of schoolSelectionJobs) {
+      if (job.updatedAt < expiredBefore) schoolSelectionJobs.delete(jobId);
+    }
+  }
+
+  function createSchoolSelectionJob(user, payload) {
+    pruneSchoolSelectionJobs();
+    const now = Date.now();
+    const job = {
+      id: randomUUID(),
+      userId: user.id,
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    };
+    schoolSelectionJobs.set(job.id, job);
+    startSchoolSelectionJob(job, { schoolSelection, user, payload, env, deepSeekFetch });
+    return job;
+  }
 
   const server = createServer(async (request, response) => {
     try {
@@ -592,6 +672,28 @@ export function createAppServer({
           env,
           deepSeekFetch,
         }));
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/school-selection-jobs") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        const job = createSchoolSelectionJob(user, await readJson(request));
+        sendJson(response, 202, { jobId: job.id, status: job.status });
+        return;
+      }
+
+      const schoolSelectionJobMatch = url.pathname.match(/^\/api\/school-selection-jobs\/([a-f0-9-]{36})$/);
+      if (request.method === "GET" && schoolSelectionJobMatch) {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        pruneSchoolSelectionJobs();
+        const job = schoolSelectionJobs.get(schoolSelectionJobMatch[1]);
+        if (!job || job.userId !== user.id) {
+          sendJson(response, 404, { error: "School selection job not found." });
+          return;
+        }
+        sendJson(response, 200, serializeSchoolSelectionJob(job));
         return;
       }
 

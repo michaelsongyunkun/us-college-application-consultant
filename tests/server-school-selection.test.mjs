@@ -68,6 +68,11 @@ try {
     highSchoolRegion: "中国大陆高中",
   });
   assert.equal(blockedApi.status, 401);
+  const blockedJob = await post("/api/school-selection-jobs", {
+    nationality: "中国",
+    highSchoolRegion: "中国大陆高中",
+  });
+  assert.equal(blockedJob.status, 401);
 
   const blockedPage = await fetch(`${serverUrl()}/school-selection.html`, { redirect: "manual" });
   assert.equal(blockedPage.status, 302);
@@ -132,6 +137,28 @@ try {
   assert.match(sentPayload.messages[1].content, /均衡/);
   assert.match(sentPayload.messages[1].content, /Robotics Portfolio Lab/);
   assert.match(sentPayload.messages[1].content, /1510/);
+
+  const jobResponse = await post(
+    "/api/school-selection-jobs",
+    {
+      nationality: "中国",
+      highSchoolRegion: "中国大陆高中",
+      preferences: "希望申请数据科学。",
+      targetMajor: "Data Science",
+      edRiskTolerance: "均衡",
+      budgetSensitivity: "中等",
+    },
+    cookie,
+  );
+  assert.equal(jobResponse.status, 202);
+  const createdJob = await jobResponse.json();
+  assert.match(createdJob.jobId, /^[a-f0-9-]{36}$/);
+  assert.equal(createdJob.status, "pending");
+
+  const completedJob = await waitForSchoolSelectionJob(createdJob.jobId, cookie);
+  assert.equal(completedJob.status, "completed");
+  assert.equal(completedJob.result.selection.rounds.ed1[0].school, "University of Chicago");
+  assert.equal(completedJob.result.selection.rounds.uc.length, 6);
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });
@@ -169,6 +196,17 @@ function put(path, payload, cookie = "") {
     headers: { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) },
     body: JSON.stringify(payload),
   });
+}
+
+async function waitForSchoolSelectionJob(jobId, cookie) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const response = await get(`/api/school-selection-jobs/${encodeURIComponent(jobId)}`, cookie);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    if (body.status === "completed" || body.status === "failed") return body;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error("School selection job did not finish in time.");
 }
 
 function serverUrl() {
