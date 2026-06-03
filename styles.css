@@ -3690,6 +3690,21 @@ button.danger:hover {
   padding: 16px 18px 12px;
 }
 
+.portfolio-panel-heading-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.portfolio-panel-heading-actions button {
+  min-height: 40px;
+  padding-inline: 14px;
+  white-space: nowrap;
+}
+
 .portfolio-subtitle {
   max-width: 760px;
   margin: 0;

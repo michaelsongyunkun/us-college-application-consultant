@@ -219,7 +219,10 @@
               <h2 id="planning-actions-title">DeepSeek 行动清单</h2>
               <p>从问DeepSeek和选校系统保存下来的下一步动作，会集中在这里复盘。</p>
             </div>
-            <span id="planningActionsProgress" class="status" role="status" aria-live="polite">DeepSeek 行动：0 项</span>
+            <div class="portfolio-panel-heading-actions">
+              <span id="planningActionsProgress" class="status" role="status" aria-live="polite">DeepSeek 行动：0 项</span>
+              <button id="clearPlanningActionsButton" class="danger" type="button">清空所有内容</button>
+            </div>
           </div>
           <div id="planningActionsPanel" class="deepseek-portfolio-list"></div>
         </section>
@@ -229,6 +232,9 @@
             <div>
               <h2 id="deepseek-notes-title">DeepSeek 保存摘录</h2>
               <p>保存关键回答、策略摘要和材料建议，便于后续整理成申请任务。</p>
+            </div>
+            <div class="portfolio-panel-heading-actions">
+              <button id="clearDeepSeekNotesButton" class="danger" type="button">清空所有内容</button>
             </div>
           </div>
           <div id="deepSeekNotesPanel" class="deepseek-portfolio-list"></div>

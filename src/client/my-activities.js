@@ -131,8 +131,18 @@ const savePortfolioButtons = document.querySelectorAll("[data-save-portfolio], #
 const exportPortfolioSvgButton = document.querySelector("#exportPortfolioSvgButton");
 const exportPortfolioWordButton = document.querySelector("#exportPortfolioWordButton");
 const clearPortfolioButton = document.querySelector("#clearPortfolioButton");
+const clearPlanningActionsButton = document.querySelector("#clearPlanningActionsButton");
+const clearDeepSeekNotesButton = document.querySelector("#clearDeepSeekNotesButton");
 const portfolioActionButtons = document.querySelectorAll(
-  "[data-save-portfolio], #savePortfolioButton, #exportPortfolioSvgButton, #exportPortfolioWordButton, #clearPortfolioButton",
+  [
+    "[data-save-portfolio]",
+    "#savePortfolioButton",
+    "#exportPortfolioSvgButton",
+    "#exportPortfolioWordButton",
+    "#clearPortfolioButton",
+    "#clearPlanningActionsButton",
+    "#clearDeepSeekNotesButton",
+  ].join(", "),
 );
 const portfolioStatus = document.querySelector("#portfolioStatus");
 const academicRecordsProgress = document.querySelector("#academicRecordsProgress");
@@ -1324,6 +1334,42 @@ async function clearCurrentPortfolio() {
   if (saved) setStatus("已清空当前方案");
 }
 
+async function clearDeepSeekPortfolioSection(section) {
+  const sectionConfig = {
+    planningActions: {
+      label: "DeepSeek 行动清单",
+      emptyPortfolio: { planningActions: [] },
+    },
+    deepSeekNotes: {
+      label: "DeepSeek 保存摘录",
+      emptyPortfolio: { deepSeekNotes: [] },
+    },
+  }[section];
+  if (!sectionConfig) return;
+
+  const portfolio = collectPortfolio();
+  if (!(portfolio[section] || []).length) {
+    setStatus(`${sectionConfig.label}已经是空的`);
+    return;
+  }
+  if (!window.confirm(`确认清空${sectionConfig.label}的所有内容？`)) return;
+
+  trackPortfolioUsageEvent("clear_draft", {
+    details: {
+      exportSurface: "portfolio",
+      clearSection: section,
+    },
+  });
+  renderPortfolio({
+    ...portfolio,
+    ...sectionConfig.emptyPortfolio,
+  });
+  isDirty = true;
+  updateCompletion();
+  const saved = await savePortfolio();
+  if (saved) setStatus(`已清空${sectionConfig.label}`);
+}
+
 async function loadActivityImportSources() {
   if (!activityImportSources) return;
   try {
@@ -1661,6 +1707,12 @@ savePortfolioButtons.forEach((button) => {
 exportPortfolioSvgButton?.addEventListener("click", exportPortfolioSvgDocument);
 exportPortfolioWordButton?.addEventListener("click", exportPortfolioWordDocument);
 clearPortfolioButton?.addEventListener("click", clearCurrentPortfolio);
+clearPlanningActionsButton?.addEventListener("click", () => {
+  clearDeepSeekPortfolioSection("planningActions");
+});
+clearDeepSeekNotesButton?.addEventListener("click", () => {
+  clearDeepSeekPortfolioSection("deepSeekNotes");
+});
 academicRecordsPanel?.addEventListener("click", (event) => {
   const addButton = event.target.closest("[data-add-academic-record]");
   if (addButton) {
