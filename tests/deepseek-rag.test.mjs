@@ -12,7 +12,7 @@ const server = createAppServer({
   databasePath: join(tempDir, "deepseek-rag.sqlite"),
   env: {
     DEEPSEEK_API_KEY: "env-rag-secret",
-    DEEPSEEK_MODEL: "deepseek-v4-pro",
+    DEEPSEEK_MODEL: "Deepseek V4 pro",
   },
   deepSeekFetch: async (url, options) => {
     calls.push({ url, options });

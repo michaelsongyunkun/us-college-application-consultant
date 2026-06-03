@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { resolveApiKey } from "./api-key.mjs";
+import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
 
 const ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "rd", "uc"];
 const MAX_SELECTION_ATTEMPTS = 2;
@@ -126,7 +127,7 @@ export function createSchoolSelectionService({ activityPortfolio, root = process
     const portfolio = activityPortfolio.getPortfolio(user);
     const ragSources = await buildSchoolSelectionRagSources({ root, input, portfolio });
     const ragContext = buildRagContext(ragSources);
-    const model = env.DEEPSEEK_SCHOOL_SELECTION_MODEL || env.DEEPSEEK_MODEL || "deepseek-v4-pro";
+    const model = normalizeDeepSeekModel(env.DEEPSEEK_SCHOOL_SELECTION_MODEL || env.DEEPSEEK_MODEL);
     let lastValidationError = null;
     for (let attempt = 1; attempt <= MAX_SELECTION_ATTEMPTS; attempt += 1) {
       const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {

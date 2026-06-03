@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { resolveApiKey } from "./api-key.mjs";
+import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
 
 const MAX_QUESTION_LENGTH = 1200;
 const MAX_HISTORY_SUMMARY_LENGTH = 1800;
@@ -151,7 +152,7 @@ export function createDeepSeekRagService({ root, planning, activityPortfolio }) 
     const intentProfile = analyzeQuestionIntent(normalizedQuestion);
     const weightedSelected = selectRelevantDocuments(documents, normalizedQuestion, intentProfile);
     const context = buildContext(weightedSelected);
-    const model = env.DEEPSEEK_RAG_MODEL || env.DEEPSEEK_MODEL || "deepseek-v4-pro";
+    const model = normalizeDeepSeekModel(env.DEEPSEEK_RAG_MODEL || env.DEEPSEEK_MODEL);
 
     const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
       method: "POST",

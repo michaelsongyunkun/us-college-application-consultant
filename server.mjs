@@ -18,6 +18,7 @@ import {
 import { createMailerFromEnv } from "./src/server/mailer.mjs";
 import { PlanningError, createPlanningService } from "./src/server/planning-service.mjs";
 import { loadEnvFile } from "./src/server/env-loader.mjs";
+import { normalizeDeepSeekModel } from "./src/server/deepseek-model.mjs";
 import {
   SchoolSelectionError,
   createSchoolSelectionService,
@@ -250,7 +251,7 @@ async function handleDeepSeekPlan(
   }
 
   const systemPrompt = await readFile(promptPath, "utf8");
-  const model = env.DEEPSEEK_MODEL || "deepseek-v4-pro";
+  const model = normalizeDeepSeekModel(env.DEEPSEEK_MODEL);
 
   const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
