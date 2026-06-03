@@ -17,12 +17,14 @@ import {
 } from "./src/server/deepseek-rag-service.mjs";
 import { createMailerFromEnv } from "./src/server/mailer.mjs";
 import { PlanningError, createPlanningService } from "./src/server/planning-service.mjs";
+import { loadEnvFile } from "./src/server/env-loader.mjs";
 import {
   SchoolSelectionError,
   createSchoolSelectionService,
 } from "./src/server/school-selection-service.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
+const envFileStatus = loadEnvFile(join(root, ".env"));
 const promptPath = join(root, "prompts", "us-college-admissions-strategist-agent.md");
 const defaultDatabasePath = join(root, "data", "auth.sqlite");
 const port = Number(process.env.PORT || 4177);
@@ -827,5 +829,13 @@ export function createAppServer({
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   createAppServer().listen(port, host, () => {
     console.log(`US college consultant running at http://${host}:${port}`);
+    if (envFileStatus.loaded) {
+      console.log(`Loaded .env with ${envFileStatus.keys.length} setting(s).`);
+    }
+    const hasDeepSeekApiKey = Boolean(String(process.env.DEEPSEEK_API_KEY || "").trim());
+    console.log(`DeepSeek API key: ${hasDeepSeekApiKey ? "configured" : "missing"}`);
+    if (!hasDeepSeekApiKey) {
+      console.log("Set DEEPSEEK_API_KEY in the system environment or project .env file to enable generation.");
+    }
   });
 }

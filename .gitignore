@@ -4,6 +4,7 @@ node_modules/
 # Environment variables and secrets
 .env
 .env.*
+!.env.example
 *.key
 api_key.txt
 openai_api_key.txt

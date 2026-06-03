@@ -68,6 +68,14 @@ $env:DEEPSEEK_API_KEY="你的key"
 node server.mjs
 ```
 
+Local file option:
+
+```text
+copy .env.example .env
+```
+
+Then edit `.env` and set `DEEPSEEK_API_KEY`. The real `.env` file is ignored by Git.
+
 可选模型：
 
 ```powershell
