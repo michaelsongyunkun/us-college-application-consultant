@@ -153,6 +153,14 @@ const service = createSchoolSelectionService({
         competitions: [],
         summerSchools: [],
         recommendationLetters: {},
+        schoolSelectionVersions: [
+          {
+            versionName: "Legacy generated version",
+            summary: "legacy-summary-marker",
+            selectionJson: "legacy-selection-json-marker",
+            source: "美本选校系统",
+          },
+        ],
         academicRecords: {
           gpaScale: "4.0制",
           gpaRecords: [{ gradeLevel: "10年级", term: "上学期", gpa: "3.9" }],
@@ -229,6 +237,7 @@ assert.match(sentPayload.messages[1].content, /ED 风险承受度/);
 assert.match(sentPayload.messages[1].content, /均衡/);
 assert.match(sentPayload.messages[1].content, /Robotics Portfolio Lab/);
 assert.match(sentPayload.messages[1].content, /1510/);
+assert.doesNotMatch(sentPayload.messages[1].content, /legacy-selection-json-marker/);
 assert.match(sentPayload.messages[1].content, /院校百科 RAG 参考/);
 assert.match(sentPayload.messages[1].content, /University of California|UC/);
 assert.match(sentPayload.messages[1].content, /先判断学生整体竞争力/);

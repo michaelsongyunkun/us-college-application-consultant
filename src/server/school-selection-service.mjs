@@ -288,8 +288,85 @@ function buildUserMessage({ input, portfolio, ragContext = "", repairMessage = "
     ragContext || "未匹配到高相关院校百科片段；仍需提醒用户核验申请年度官网。",
     "",
     "我的申请档案：",
-    JSON.stringify(portfolio, null, 2),
+    JSON.stringify(buildSchoolSelectionPortfolioContext(portfolio), null, 2),
   ].join("\n");
+}
+
+function buildSchoolSelectionPortfolioContext(portfolio = {}) {
+  const academicRecords = portfolio.academicRecords || {};
+  return {
+    applicationPlan: compactApplicationPlan(portfolio.applicationPlan),
+    activities: compactList(portfolio.activities, 10, [
+      "activityName",
+      "type",
+      "timeStage",
+      "role",
+      "description",
+      "outcome",
+      "status",
+    ]),
+    competitions: compactList(portfolio.competitions, 5, [
+      "competitionName",
+      "subject",
+      "yearGrade",
+      "award",
+      "contribution",
+      "status",
+    ]),
+    summerSchools: compactList(portfolio.summerSchools, 3, [
+      "programName",
+      "organizer",
+      "direction",
+      "participationTime",
+      "status",
+      "output",
+    ]),
+    recommendationLetters: compactObject(portfolio.recommendationLetters),
+    planningActions: compactList(portfolio.planningActions, 8, ["text", "source"]),
+    deepSeekNotes: compactList(portfolio.deepSeekNotes, 5, ["title", "content", "source"]),
+    academicRecords: {
+      gpaScale: cleanString(academicRecords.gpaScale),
+      gpaRecords: compactList(academicRecords.gpaRecords, 8, ["gradeLevel", "term", "gpa"]),
+      satTests: compactList(academicRecords.satTests, 3, ["totalScore", "englishScore", "mathScore", "testDate"]),
+      apExams: compactList(academicRecords.apExams, 12, ["courseName", "score", "examYear"]),
+    },
+  };
+}
+
+function compactApplicationPlan(applicationPlan = {}) {
+  return Object.fromEntries(
+    ["rea", "ed1", "ed2", "ea", "uc", "rd", "multiCountry"].map((round) => [
+      round,
+      compactList(applicationPlan[round], 24, ["school", "major"]),
+    ]),
+  );
+}
+
+function compactList(items, limit, fields) {
+  if (!Array.isArray(items)) return [];
+  return items.slice(0, limit).map((item) => compactObject(item, fields));
+}
+
+function compactObject(item, fields) {
+  if (!item || typeof item !== "object") return {};
+  const entries = fields ? fields.map((field) => [field, item[field]]) : Object.entries(item);
+  return Object.fromEntries(
+    entries
+      .map(([key, value]) => [key, compactValue(value)])
+      .filter(([, value]) => value !== "" && value !== undefined && value !== null),
+  );
+}
+
+function compactValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(compactValue).filter((item) => item !== "" && item !== undefined && item !== null);
+  }
+  if (value && typeof value === "object") return compactObject(value);
+  return truncateText(cleanString(value), 500);
+}
+
+function truncateText(value, maxLength) {
+  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
 }
 
 function assertNoDuplicateSchools(rounds) {
