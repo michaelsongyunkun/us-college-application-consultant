@@ -195,6 +195,7 @@ export function validateSchoolSelectionResult(value) {
     ROUND_KEYS.map((key) => [key, normalizeRound(rounds[key], key)]),
   ));
   normalizedRounds = repairEarlyApplicationChoice(normalizedRounds);
+  normalizedRounds = repairRoundDuplicates(normalizedRounds);
 
   if (normalizedRounds.rea.length + normalizedRounds.ed1.length !== 1) {
     throw new SchoolSelectionError("REA / ED1 只能二选一且合计 1 所。", 502);
@@ -356,6 +357,31 @@ function repairEarlyApplicationChoice(rounds) {
     rea: preferredChoice.round === "rea" ? [preferredChoice.school] : [],
     ed1: preferredChoice.round === "ed1" ? [preferredChoice.school] : [],
   };
+}
+
+function repairRoundDuplicates(rounds) {
+  const seen = new Set();
+  const removedByRound = Object.fromEntries(ROUND_KEYS.map((round) => [round, 0]));
+  let changed = false;
+  const repairedRounds = {};
+
+  for (const round of ROUND_KEYS) {
+    const schools = rounds[round] || [];
+    repairedRounds[round] = [];
+    for (const school of schools) {
+      const key = normalizeSchoolName(school.school);
+      const minimum = ROUND_LIMITS[round]?.[0] || 0;
+      if (key && seen.has(key) && schools.length - removedByRound[round] - 1 >= minimum) {
+        removedByRound[round] += 1;
+        changed = true;
+        continue;
+      }
+      if (key) seen.add(key);
+      repairedRounds[round].push(school);
+    }
+  }
+
+  return changed ? { ...rounds, ...repairedRounds } : rounds;
 }
 
 function isUniversityOfCaliforniaCampus(value) {

@@ -108,19 +108,21 @@ assert.throws(
   /UC 需要 6 所/,
 );
 
-assert.throws(
-  () =>
-    validateSchoolSelectionResult({
-      ...validSelection,
-      rounds: {
-        ...validSelection.rounds,
-        rd: [
-          school("New York University", "Business Analytics", "medium"),
-          ...validSelection.rounds.rd.slice(1),
-        ],
-      },
-    }),
-  /同一所学校不能重复/,
+const repairedRoundDuplicate = validateSchoolSelectionResult({
+  ...validSelection,
+  rounds: {
+    ...validSelection.rounds,
+    rd: [
+      school("New York University", "Business Analytics", "medium"),
+      ...validSelection.rounds.rd,
+    ],
+  },
+});
+assert.equal(repairedRoundDuplicate.rounds.ed2[0].school, "New York University");
+assert.equal(repairedRoundDuplicate.rounds.rd.length, 8);
+assert.equal(
+  repairedRoundDuplicate.rounds.rd.some((entry) => entry.school === "New York University"),
+  false,
 );
 
 assert.throws(
