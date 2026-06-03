@@ -177,10 +177,13 @@ try {
     "parse_codex_answer",
     "export_json",
     "export_svg",
+    "export_word",
     "save_draft",
     "clear_draft",
     "generate_plan_success",
     "generate_plan_failure",
+    "generate_deepseek_plan_success",
+    "generate_deepseek_plan_failure",
     "build_codex_task",
     "copy_codex_task",
     "refresh_competitions",
@@ -188,6 +191,25 @@ try {
     "refresh_case_matches",
     "course_helper_visit",
     "refresh_ap_recommendations",
+    "data_load_failure",
+    "deepseek_rag_question_success",
+    "deepseek_rag_question_failure",
+    "deepseek_review_export",
+    "deepseek_review_save",
+    "deepseek_answer_save",
+    "school_selection_generate_success",
+    "school_selection_generate_failure",
+    "school_selection_save",
+    "school_selection_export_svg",
+    "school_selection_export_word",
+    "portfolio_save",
+    "portfolio_import_activity",
+    "gpa_sync_portfolio",
+    "resource_filter_applied",
+    "resource_load_more",
+    "school_detail_open",
+    "major_match_success",
+    "major_match_failure",
   ]) {
     const trackResponse = await fetch(`${baseUrl}/api/analytics/usage-event`, {
       method: "POST",
@@ -422,10 +444,17 @@ try {
   assert.ok(dashboard.usageEvents.some((event) => event.filledActivityCount === 3));
   assert.ok(dashboard.usageEvents.some((event) => event.generatedActivityCount === 10));
   assert.ok(dashboard.usageEvents.some((event) => event.failureReason === "test failure"));
+  assert.ok(
+    dashboard.usageCategorySummary.some(
+      (item) => item.category === "导出与下载" && item.count >= 3,
+    ),
+  );
   assert.equal(dashboard.overview.activeUsers, 1);
-  assert.equal(dashboard.overview.planGenerations, 1);
-  assert.equal(dashboard.overview.svgExports, 1);
-  assert.equal(dashboard.overview.recommendationRefreshes, 3);
+  assert.equal(dashboard.overview.aiActions, 5);
+  assert.equal(dashboard.overview.saveActions, 7);
+  assert.equal(dashboard.overview.exportActions, 6);
+  assert.equal(dashboard.overview.recommendationActions, 8);
+  assert.equal(dashboard.overview.failureEvents, 6);
 
   const exportedReportResponse = await fetch(`${baseUrl}/api/admin/login-dashboard?eventType=export_svg`, {
     headers: { Cookie: adminLoginResponse.headers.get("set-cookie") },
@@ -433,7 +462,7 @@ try {
   assert.equal(exportedReportResponse.status, 200);
   const exportedReportDashboard = await exportedReportResponse.json();
   assert.deepEqual(exportedReportDashboard.usageEvents.map((event) => event.eventType), ["export_svg"]);
-  assert.equal(exportedReportDashboard.overview.planGenerations, 1);
+  assert.equal(exportedReportDashboard.overview.aiActions, 5);
 
 } finally {
   await new Promise((resolve) => server.close(resolve));

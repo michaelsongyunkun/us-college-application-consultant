@@ -47,6 +47,31 @@ function categoryLabel(category) {
   }[category] || "院校资料";
 }
 
+function trackSchoolUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
+  fetch("/api/analytics/usage-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventType,
+      profile: {
+        grade: "",
+        majorDirection: "",
+      },
+      metrics: {
+        completionFields: searchInput?.value.trim() ? 1 : 0,
+        generatedActivityCount: 1,
+        ...metrics,
+      },
+      details: {
+        source: "school_encyclopedia",
+        activeCategory,
+        query: searchInput?.value.trim() || "",
+        ...details,
+      },
+    }),
+  }).catch(() => {});
+}
+
 function renderRankingValue(label, value) {
   return value ? `${label}：${value}` : "";
 }
@@ -174,6 +199,15 @@ schoolList.addEventListener("click", (event) => {
   toggle.setAttribute("aria-expanded", String(!expanded));
   toggle.textContent = expanded ? "展开详情" : "收起详情";
   detail.classList.toggle("is-hidden", expanded);
+  if (!expanded) {
+    const school = schools.find((item) => String(item.id) === String(toggle.dataset.schoolToggle));
+    trackSchoolUsageEvent("school_detail_open", {
+      details: {
+        schoolName: school?.name || "",
+        schoolCategory: school?.category || activeCategory,
+      },
+    });
+  }
 });
 
 searchInput.addEventListener("input", () => {

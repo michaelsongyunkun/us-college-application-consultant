@@ -23,6 +23,8 @@ assert.ok(
   pageScript.includes('"/api/my-activities"'),
   "GPA calculator should read and save the application workspace portfolio.",
 );
+assert.match(pageScript, /trackGpaUsageEvent/, "GPA calculator should record portfolio sync usage.");
+assert.match(pageScript, /gpa_sync_portfolio/, "GPA calculator should track GPA syncs into the portfolio.");
 assert.match(pageScript, /function buildSyncedAcademicRecords/, "GPA calculator should build academic record sync payloads.");
 assert.match(pageScript, /syncGpaToPortfolioButton/, "GPA calculator should wire the sync button.");
 

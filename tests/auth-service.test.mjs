@@ -150,11 +150,27 @@ try {
   });
   auth.recordUsageEvent({
     user: registration.user,
+    eventType: "school_selection_generate_success",
+  });
+  auth.recordUsageEvent({
+    user: registration.user,
     eventType: "export_svg",
   });
   auth.recordUsageEvent({
     user: registration.user,
+    eventType: "portfolio_save",
+  });
+  auth.recordUsageEvent({
+    user: registration.user,
     eventType: "refresh_competitions",
+  });
+  auth.recordUsageEvent({
+    user: registration.user,
+    eventType: "deepseek_rag_question_failure",
+  });
+  auth.recordUsageEvent({
+    user: registration.user,
+    eventType: "data_load_failure",
   });
 
   const dashboard = auth.getLoginDashboard({
@@ -170,18 +186,22 @@ try {
   assert.ok(dashboard.weeklyActivity.length >= 1);
   assert.deepEqual(dashboard.overview, {
     activeUsers: 1,
-    planGenerations: 1,
-    svgExports: 1,
-    recommendationRefreshes: 1,
-    failedLogins: 3,
+    aiActions: 2,
+    saveActions: 1,
+    exportActions: 1,
+    recommendationActions: 1,
+    failureEvents: 5,
   });
+  assert.ok(
+    dashboard.usageCategorySummary.some((item) => item.category === "AI 生成与问答" && item.count === 2),
+  );
 
   const exportsOnly = auth.getLoginDashboard({
     requester: adminLogin.user,
     filters: { eventType: "export_svg" },
   });
   assert.deepEqual(exportsOnly.usageEvents.map((event) => event.eventType), ["export_svg"]);
-  assert.equal(exportsOnly.overview.planGenerations, 1);
+  assert.equal(exportsOnly.overview.aiActions, 2);
 
   assert.throws(
     () =>

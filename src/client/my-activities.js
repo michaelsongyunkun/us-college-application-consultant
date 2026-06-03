@@ -832,6 +832,14 @@ function importPlanningActivity(sourceId, activityIndex) {
   updateCompletion();
   setStatus("已导入 1 项活动，请保存进度。");
   setImportStatus(`已导入：${cleanPlanningActivityText(activity.activityName, "未命名活动")}`);
+  trackPortfolioUsageEvent("portfolio_import_activity", {
+    metrics: { generatedActivityCount: 1 },
+    details: {
+      sourceId,
+      activityIndex,
+      activityName: cleanPlanningActivityText(activity.activityName, "未命名活动"),
+    },
+  });
   portfolioForm.elements.namedItem(controlName("activities", imported.index, "activityName"))?.focus();
 }
 
@@ -1299,6 +1307,9 @@ async function savePortfolio() {
     isDirty = false;
     updateCompletion();
     setStatus("已保存");
+    trackPortfolioUsageEvent("portfolio_save", {
+      details: { saveSurface: "my_activities" },
+    });
     return saved;
   } catch (error) {
     setStatus(error.message, true);

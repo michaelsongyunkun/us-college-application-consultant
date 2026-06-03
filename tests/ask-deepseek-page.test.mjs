@@ -182,6 +182,12 @@ assert.ok(script.includes("conversationSummary"), "Ask DeepSeek should keep a co
 assert.ok(script.includes("historySummary"), "Ask DeepSeek should send conversation memory to the RAG API.");
 assert.ok(script.includes("exportDeepSeekConversation"), "Ask DeepSeek should export the current conversation for review.");
 assert.ok(script.includes("saveDeepSeekReviewVersion"), "Ask DeepSeek should save a review version into the portfolio.");
+assert.ok(script.includes("trackDeepSeekUsageEvent"), "Ask DeepSeek should record key usage events.");
+assert.ok(script.includes("deepseek_rag_question_success"), "Ask DeepSeek should track successful RAG questions.");
+assert.ok(script.includes("deepseek_rag_question_failure"), "Ask DeepSeek should track failed RAG questions.");
+assert.ok(script.includes("deepseek_review_export"), "Ask DeepSeek should track conversation exports.");
+assert.ok(script.includes("deepseek_review_save"), "Ask DeepSeek should track saved review versions.");
+assert.ok(script.includes("deepseek_answer_save"), "Ask DeepSeek should track saved answer excerpts.");
 assert.ok(script.includes("renderMissingFieldChecklist"), "Ask DeepSeek should render missing-field guidance.");
 assert.ok(script.includes("data-deepseek-save-actions"), "Ask DeepSeek should save answers as action checklists.");
 assert.ok(script.includes("data-deepseek-save-note"), "Ask DeepSeek should save answers into the application portfolio notes.");

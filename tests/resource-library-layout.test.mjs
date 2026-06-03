@@ -54,6 +54,9 @@ assert.ok(script.includes("activityFilters"), "课外活动库应使用独立于
 assert.ok(script.includes("journalFilters"), "国际期刊汇总应使用独立于项目资格条件的期刊筛选状态。");
 assert.ok(script.includes("renderResourceFilterSnapshot"), "资源库应根据当前筛选更新摘要和结果数。");
 assert.ok(script.includes("setResourceFilterCollapsed"), "资源库应控制高级筛选折叠状态。");
+assert.ok(script.includes("trackResourceUsageEvent"), "资源库应记录关键筛选和加载行为。");
+assert.ok(script.includes("resource_filter_applied"), "资源库应记录筛选条件应用。");
+assert.ok(script.includes("resource_load_more"), "资源库应记录加载更多资源。");
 assert.ok(styles.includes(".resource-combobox-toggle"), "论文方向按钮应有和普通筛选框一致的控件样式。");
 assert.ok(styles.includes(".resource-results-console"), "资源库应有固定筛选摘要条样式。");
 assert.ok(styles.includes(".resource-filter-pill"), "资源库应有已选条件 pill 样式。");

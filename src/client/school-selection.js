@@ -41,10 +41,57 @@ const EXPORT_ROUND_CONFIG = [
 let currentSelection = null;
 let schoolSelectionVersions = [];
 
+function collectSchoolSelectionAnalyticsProfile() {
+  return {
+    grade: "",
+    majorDirection: selectionTargetMajor?.value.trim() || "",
+  };
+}
+
+function countCompletedSelectionFields() {
+  return [
+    selectionNationality,
+    selectionHighSchoolRegion,
+    selectionTargetMajor,
+    selectionBudgetSensitivity,
+    selectionRegionPreference,
+    selectionCampusSetting,
+    selectionSchoolSize,
+    selectionEdRiskTolerance,
+    selectionScholarshipNeed,
+    selectionStrategyMode,
+    selectionPreferences,
+  ].filter((field) => String(field?.value || "").trim()).length;
+}
+
+function trackSchoolSelectionUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
+  fetch("/api/analytics/usage-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventType,
+      profile: collectSchoolSelectionAnalyticsProfile(),
+      metrics: {
+        completionFields: countCompletedSelectionFields(),
+        generatedActivityCount: currentSelection ? countApplicationPlanSchools(currentSelection.rounds) : 0,
+        ...metrics,
+      },
+      details: {
+        source: "school_selection",
+        nationality: selectionNationality?.value.trim() || "",
+        highSchoolRegion: selectionHighSchoolRegion?.value.trim() || "",
+        strategyMode: selectionStrategyMode?.value || "",
+        ...details,
+      },
+    }),
+  }).catch(() => {});
+}
+
 async function generateSchoolSelection(event) {
   event.preventDefault();
   setStatus("DeepSeek 正在生成选校方案，大约需要 2 分钟，请保持页面打开。");
   setWorking(true);
+  const startedAt = performance.now();
   try {
     const data = await requestJson("/api/school-selection", {
       method: "POST",
@@ -63,8 +110,18 @@ async function generateSchoolSelection(event) {
       }),
     });
     renderSchoolSelectionResults(data.selection);
+    trackSchoolSelectionUsageEvent("school_selection_generate_success", {
+      metrics: {
+        generatedActivityCount: countApplicationPlanSchools(data.selection?.rounds || {}),
+        durationMs: performance.now() - startedAt,
+      },
+    });
     setStatus("选校方案已生成");
   } catch (error) {
+    trackSchoolSelectionUsageEvent("school_selection_generate_failure", {
+      metrics: { generatedActivityCount: 0, durationMs: performance.now() - startedAt },
+      details: { failureReason: error.message },
+    });
     setStatus(error.message, true);
   } finally {
     setWorking(false);
@@ -287,6 +344,9 @@ async function saveSchoolSelectionToPortfolio() {
     });
     currentSelection = selection;
     renderSchoolSelectionVersions(saved.schoolSelectionVersions || []);
+    trackSchoolSelectionUsageEvent("school_selection_save", {
+      metrics: { generatedActivityCount: countApplicationPlanSchools(selection.rounds) },
+    });
     setStatus(`已保存为选校版本，并同步到我的申请档案：${countApplicationPlanSchools(saved.applicationPlan)} 所`);
   } catch (error) {
     setStatus(error.message, true);
@@ -355,6 +415,10 @@ function exportSchoolSelection() {
 function exportSchoolSelectionSvg() {
   const selection = getCurrentSelectionForExport();
   if (!selection) return;
+  trackSchoolSelectionUsageEvent("school_selection_export_svg", {
+    metrics: { generatedActivityCount: countApplicationPlanSchools(selection.rounds) },
+    details: { format: "svg" },
+  });
   downloadTextFile(
     `${getSchoolSelectionExportBaseName()}.svg`,
     buildSchoolSelectionSvgDocument(selection),
@@ -366,6 +430,10 @@ function exportSchoolSelectionSvg() {
 function exportSchoolSelectionWord() {
   const selection = getCurrentSelectionForExport();
   if (!selection) return;
+  trackSchoolSelectionUsageEvent("school_selection_export_word", {
+    metrics: { generatedActivityCount: countApplicationPlanSchools(selection.rounds) },
+    details: { format: "word" },
+  });
   downloadTextFile(
     `${getSchoolSelectionExportBaseName()}.doc`,
     buildSchoolSelectionWordDocument(selection),

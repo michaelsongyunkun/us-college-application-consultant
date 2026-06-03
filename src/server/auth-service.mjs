@@ -28,8 +28,102 @@ const USAGE_EVENT_TYPES = new Set([
   "course_helper_visit",
   "refresh_ap_recommendations",
   "data_load_failure",
+  "deepseek_rag_question_success",
+  "deepseek_rag_question_failure",
+  "deepseek_review_export",
+  "deepseek_review_save",
+  "deepseek_answer_save",
+  "school_selection_generate_success",
+  "school_selection_generate_failure",
+  "school_selection_save",
+  "school_selection_export_svg",
+  "school_selection_export_word",
+  "portfolio_save",
+  "portfolio_import_activity",
+  "gpa_sync_portfolio",
+  "resource_filter_applied",
+  "resource_load_more",
+  "school_detail_open",
+  "major_match_success",
+  "major_match_failure",
+]);
+const AI_ACTION_EVENTS = [
+  "generate_plan_success",
+  "generate_deepseek_plan_success",
+  "deepseek_rag_question_success",
+  "school_selection_generate_success",
+  "major_match_success",
+];
+const SAVE_ACTION_EVENTS = [
+  "save_draft",
+  "deepseek_review_save",
+  "deepseek_answer_save",
+  "school_selection_save",
+  "portfolio_save",
+  "portfolio_import_activity",
+  "gpa_sync_portfolio",
+];
+const EXPORT_ACTION_EVENTS = [
+  "export_json",
+  "export_svg",
+  "export_word",
+  "deepseek_review_export",
+  "school_selection_export_svg",
+  "school_selection_export_word",
+];
+const RECOMMENDATION_ACTION_EVENTS = [
+  "refresh_competitions",
+  "refresh_summer_schools",
+  "refresh_case_matches",
+  "course_helper_visit",
+  "refresh_ap_recommendations",
+  "resource_filter_applied",
+  "resource_load_more",
+  "school_detail_open",
+];
+const FAILURE_ACTION_EVENTS = [
+  "parse_codex_failure",
+  "generate_plan_failure",
+  "generate_deepseek_plan_failure",
+  "data_load_failure",
+  "deepseek_rag_question_failure",
+  "school_selection_generate_failure",
+  "major_match_failure",
+];
+const USAGE_EVENT_CATEGORY_ORDER = [
+  "AI 生成与问答",
+  "保存与沉淀",
+  "导出与下载",
+  "资源与推荐",
+  "工作流操作",
+  "异常与失败",
+];
+const USAGE_EVENT_CATEGORY_BY_TYPE = new Map([
+  ...AI_ACTION_EVENTS.map((eventType) => [eventType, "AI 生成与问答"]),
+  ...SAVE_ACTION_EVENTS.map((eventType) => [eventType, "保存与沉淀"]),
+  ...EXPORT_ACTION_EVENTS.map((eventType) => [eventType, "导出与下载"]),
+  ...RECOMMENDATION_ACTION_EVENTS.map((eventType) => [eventType, "资源与推荐"]),
+  ...FAILURE_ACTION_EVENTS.map((eventType) => [eventType, "异常与失败"]),
+  ["parse_codex_answer", "工作流操作"],
+  ["clear_draft", "工作流操作"],
+  ["build_codex_task", "工作流操作"],
+  ["copy_codex_task", "工作流操作"],
 ]);
 const FEEDBACK_STATUS_OPTIONS = new Set(["未处理", "处理中", "已解决", "已忽略"]);
+
+function getUsageEventCategory(eventType) {
+  return USAGE_EVENT_CATEGORY_BY_TYPE.get(eventType) || "工作流操作";
+}
+
+function summarizeUsageCategories(usageSummary) {
+  const counts = new Map();
+  for (const item of usageSummary) {
+    counts.set(item.category, (counts.get(item.category) || 0) + item.count);
+  }
+  return USAGE_EVENT_CATEGORY_ORDER
+    .filter((category) => counts.has(category))
+    .map((category) => ({ category, count: counts.get(category) }));
+}
 
 class AuthError extends Error {
   constructor(message, statusCode) {
@@ -330,7 +424,12 @@ export function createAuthService({
          GROUP BY event_type
          ORDER BY event_type`,
       )
-      .all(usageFilters.params);
+      .all(usageFilters.params)
+      .map((item) => ({
+        ...item,
+        category: getUsageEventCategory(item.eventType),
+      }));
+    const usageCategorySummary = summarizeUsageCategories(usageSummary);
     const usageEvents = db
       .prepare(
         `SELECT
@@ -357,28 +456,28 @@ export function createAuthService({
         ORDER BY occurred_at DESC
         LIMIT 200`,
       )
-      .all(usageFilters.params);
+      .all(usageFilters.params)
+      .map((event) => ({
+        ...event,
+        category: getUsageEventCategory(event.eventType),
+      }));
 
+    const failedLogins = db
+      .prepare(
+        `SELECT COUNT(*) AS count
+         FROM login_events
+         ${appendFilterCondition(trendEventFilters.where, "status = 'failure'")}`,
+      )
+      .get(trendEventFilters.params).count;
     const overview = {
       activeUsers: db
         .prepare(`SELECT COUNT(DISTINCT user_id) AS count FROM usage_events ${baseUsageFilters.where}`)
         .get(baseUsageFilters.params).count,
-      planGenerations: countUsageEvents("generate_plan_success", baseUsageFilters),
-      svgExports: countUsageEvents("export_svg", baseUsageFilters),
-      recommendationRefreshes: db
-        .prepare(
-          `SELECT COUNT(*) AS count
-           FROM usage_events
-           ${appendFilterCondition(baseUsageFilters.where, "event_type IN ('refresh_competitions', 'refresh_summer_schools', 'refresh_case_matches')")}`,
-        )
-        .get(baseUsageFilters.params).count,
-      failedLogins: db
-        .prepare(
-          `SELECT COUNT(*) AS count
-           FROM login_events
-           ${appendFilterCondition(trendEventFilters.where, "status = 'failure'")}`,
-        )
-        .get(trendEventFilters.params).count,
+      aiActions: countUsageEventsByTypes(AI_ACTION_EVENTS, baseUsageFilters),
+      saveActions: countUsageEventsByTypes(SAVE_ACTION_EVENTS, baseUsageFilters),
+      exportActions: countUsageEventsByTypes(EXPORT_ACTION_EVENTS, baseUsageFilters),
+      recommendationActions: countUsageEventsByTypes(RECOMMENDATION_ACTION_EVENTS, baseUsageFilters),
+      failureEvents: failedLogins + countUsageEventsByTypes(FAILURE_ACTION_EVENTS, baseUsageFilters),
     };
 
     const feedbackFilters = buildFeedbackFilters(filters);
@@ -414,18 +513,25 @@ export function createAuthService({
       dailyActivity,
       weeklyActivity,
       usageSummary,
+      usageCategorySummary,
       usageEvents,
       feedbackEntries,
     };
 
-    function countUsageEvents(eventType, activeFilters) {
+    function countUsageEventsByTypes(eventTypes, activeFilters) {
+      const paramsForTypes = { ...activeFilters.params };
+      const placeholders = eventTypes.map((eventType, index) => {
+        const key = `overviewEventType${index}`;
+        paramsForTypes[key] = eventType;
+        return `@${key}`;
+      });
       return db
         .prepare(
           `SELECT COUNT(*) AS count
            FROM usage_events
-           ${appendFilterCondition(activeFilters.where, "event_type = @overviewEventType")}`,
+           ${appendFilterCondition(activeFilters.where, `event_type IN (${placeholders.join(", ")})`)}`,
         )
-        .get({ ...activeFilters.params, overviewEventType: eventType }).count;
+        .get(paramsForTypes).count;
     }
   }
 

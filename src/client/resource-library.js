@@ -293,6 +293,35 @@ function getActiveFilterLabels() {
   return labels;
 }
 
+function trackResourceUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
+  const activeFilters = getActiveFilterLabels();
+  fetch("/api/analytics/usage-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventType,
+      profile: {
+        grade: "",
+        majorDirection: activityMajorDirectionInput?.value.trim() || journalDirectionInput?.value || "",
+      },
+      metrics: {
+        completionFields: activeFilters.length,
+        generatedActivityCount: matchingResourceCount,
+        ...metrics,
+      },
+      details: {
+        source: "resource_library",
+        activeLibrary,
+        query: searchInput?.value.trim() || "",
+        nationality: nationalityInput?.value.trim() || "",
+        schoolContext: schoolContextInput?.value || "",
+        filters: activeFilters,
+        ...details,
+      },
+    }),
+  }).catch(() => {});
+}
+
 function renderResourceFilterSnapshot(shownCount = 0, matchingCount = 0) {
   if (resourceFilterSummary) resourceFilterSummary.textContent = activeLibraryLabel();
   if (resourceResultSummary) {
@@ -762,6 +791,9 @@ eligibilityForm?.addEventListener("submit", (event) => {
     status.textContent = hasActivityFilters() ? "活动筛选已应用" : `已载入 ${totalResourceCount()} 项资源`;
     resetVisibleResourceLimit();
     renderActiveLibrary();
+    trackResourceUsageEvent("resource_filter_applied", {
+      details: { filterMode: "activity" },
+    });
     setResourceFilterCollapsed(true);
     return;
   }
@@ -773,6 +805,9 @@ eligibilityForm?.addEventListener("submit", (event) => {
     status.textContent = hasJournalFilters() ? "期刊筛选已应用" : `已载入 ${totalResourceCount()} 项资源`;
     resetVisibleResourceLimit();
     renderActiveLibrary();
+    trackResourceUsageEvent("resource_filter_applied", {
+      details: { filterMode: "journal" },
+    });
     setResourceFilterCollapsed(true);
     return;
   }
@@ -789,6 +824,9 @@ eligibilityForm?.addEventListener("submit", (event) => {
     : `已载入 ${totalResourceCount()} 项资源`;
   resetVisibleResourceLimit();
   renderActiveLibrary();
+  trackResourceUsageEvent("resource_filter_applied", {
+    details: { filterMode: "resource", hasEligibilityFilters: applied },
+  });
   setResourceFilterCollapsed(true);
 });
 clearEligibilityButton?.addEventListener("click", () => {
@@ -816,6 +854,9 @@ clearEligibilityButton?.addEventListener("click", () => {
 loadMoreResourcesButton?.addEventListener("click", () => {
   visibleResourceLimit = expandVisibleResultLimit(visibleResourceLimit, matchingResourceCount);
   renderActiveLibrary();
+  trackResourceUsageEvent("resource_load_more", {
+    details: { visibleResourceLimit },
+  });
 });
 
 loadResources();

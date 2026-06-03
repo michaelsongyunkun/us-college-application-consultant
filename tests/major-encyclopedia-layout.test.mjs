@@ -49,6 +49,9 @@ assert.ok(script.includes('"/api/deepseek-rag"'), "DeepSeek major matching shoul
 assert.ok(script.includes('assistantProfile: "major-match"'), "DeepSeek major matching should request the dedicated major-match system prompt.");
 assert.ok(script.includes("专业百科 RAG"), "DeepSeek prompt should explicitly ask for 专业百科 RAG.");
 assert.ok(script.includes("sanitizeDeepSeekMajorAnswer"), "DeepSeek major matching should sanitize hidden columns from model output.");
+assert.ok(script.includes("trackMajorUsageEvent"), "专业百科应记录关键使用行为。");
+assert.ok(script.includes("major_match_success"), "专业百科应记录 DeepSeek 专业匹配成功。");
+assert.ok(script.includes("major_match_failure"), "专业百科应记录 DeepSeek 专业匹配失败。");
 assert.ok(!script.includes('document.querySelector("#majorSearch")'), "Major page script should not bind the removed search input.");
 assert.ok(!script.includes("适合检索的英文口径"), "DeepSeek major matching should not ask for English search wording.");
 assert.ok(!script.includes("参考资料"), "DeepSeek major matching should not render a visible references block.");

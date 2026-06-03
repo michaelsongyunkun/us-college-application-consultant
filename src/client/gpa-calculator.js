@@ -54,6 +54,32 @@ async function requestJson(url, options = {}) {
   return data;
 }
 
+function trackGpaUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
+  fetch("/api/analytics/usage-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventType,
+      profile: {
+        grade: syncGpaGradeLevel?.value || "",
+        majorDirection: "",
+      },
+      metrics: {
+        completionFields: [syncGpaGradeLevel?.value, syncGpaTerm?.value].filter(Boolean).length,
+        filledActivityCount: latestGpaResult?.validCourseCount || 0,
+        generatedActivityCount: latestGpaResult?.gpa === null ? 0 : 1,
+        ...metrics,
+      },
+      details: {
+        source: "gpa_calculator",
+        scale: latestGpaResult?.scale || "",
+        term: syncGpaTerm?.value || "",
+        ...details,
+      },
+    }),
+  }).catch(() => {});
+}
+
 function createCourseRow({ name = "", grade = "", credits = "", isAp = false } = {}) {
   const row = document.createElement("div");
   row.className = "gpa-course-row";
@@ -212,6 +238,13 @@ async function syncGpaToPortfolio() {
       )?.gpa || latestGpaResult.gpa.toFixed(2)}`;
       gpaSyncStatus.classList.remove("error");
     }
+    trackGpaUsageEvent("gpa_sync_portfolio", {
+      metrics: {
+        durationMs: 0,
+        filledActivityCount: latestGpaResult.validCourseCount,
+      },
+      details: { gpa: latestGpaResult.gpa.toFixed(2) },
+    });
   } catch (error) {
     if (error.status === 401) {
       window.location.href = "/?next=/gpa-calculator.html";

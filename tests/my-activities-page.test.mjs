@@ -226,5 +226,7 @@ assert.match(script, /image\/svg\+xml;charset=utf-8/, "SVG 导出应使用 SVG M
 assert.match(script, /export_word/, "我的申请档案 Word 导出应记录 usage event。");
 assert.match(script, /export_svg/, "我的申请档案 SVG 导出应记录 usage event。");
 assert.match(script, /clear_draft/, "我的申请档案清空当前方案应记录 usage event。");
+assert.match(script, /portfolio_save/, "我的申请档案保存应记录专用 usage event。");
+assert.match(script, /portfolio_import_activity/, "我的申请档案导入规划活动应记录 usage event。");
 assert.match(script, /function buildPortfolioExportPayload/, "导出应从当前档案收集报告数据。");
 assert.match(script, /function clearCurrentPortfolio/, "清空当前方案应重置当前档案。");

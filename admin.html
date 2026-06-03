@@ -65,7 +65,7 @@
         <div>
           <p class="eyebrow">Operations Intelligence</p>
           <h2>用数据监控真实产品使用</h2>
-          <p>统一查看活跃用户、计划生成、导出、推荐刷新、登录失败和反馈状态，让工具运营更像正式系统。</p>
+          <p>统一查看 AI 生成与问答、档案保存、导出下载、资源推荐、异常事件和反馈状态，让工具运营更像正式系统。</p>
         </div>
         <div class="command-summary-metrics">
           <span><strong>行为</strong>趋势</span>
@@ -104,24 +104,29 @@
           <small>发生关键操作的用户</small>
         </div>
         <div class="overview-card">
-          <span>解析 Codex 回答进表格</span>
-          <strong id="metricPlanGenerations">0</strong>
-          <small>成功填入表格</small>
+          <span>AI 生成与问答</span>
+          <strong id="metricAiActions">0</strong>
+          <small>规划、选校、专业、问答</small>
         </div>
         <div class="overview-card">
-          <span>SVG 导出</span>
-          <strong id="metricSvgExports">0</strong>
-          <small>已导出报告</small>
+          <span>保存与沉淀</span>
+          <strong id="metricSaveActions">0</strong>
+          <small>草稿、档案、复盘</small>
         </div>
         <div class="overview-card">
-          <span>推荐刷新</span>
-          <strong id="metricRecommendationRefreshes">0</strong>
-          <small>竞赛与夏校</small>
+          <span>导出与下载</span>
+          <strong id="metricExportActions">0</strong>
+          <small>SVG、Word、JSON</small>
+        </div>
+        <div class="overview-card">
+          <span>资源与推荐</span>
+          <strong id="metricRecommendationActions">0</strong>
+          <small>筛选、刷新、详情</small>
         </div>
         <div class="overview-card alert-metric">
-          <span>登录失败</span>
-          <strong id="metricFailedLogins">0</strong>
-          <small>需要关注的异常</small>
+          <span>异常事件</span>
+          <strong id="metricFailureEvents">0</strong>
+          <small>登录与功能失败</small>
         </div>
       </section>
 
@@ -145,15 +150,28 @@
                 <select id="filterEventType" name="eventType">
                   <option value="">全部关键操作</option>
                   <option value="generate_plan_success">解析 Codex 回答进表格成功</option>
+                  <option value="generate_deepseek_plan_success">DeepSeek 自动生成成功</option>
+                  <option value="deepseek_rag_question_success">问 DeepSeek 成功</option>
+                  <option value="school_selection_generate_success">选校方案生成成功</option>
+                  <option value="major_match_success">专业匹配成功</option>
                   <option value="export_svg">导出 SVG</option>
                   <option value="export_word">导出 Word</option>
+                  <option value="school_selection_export_svg">选校 SVG 导出</option>
+                  <option value="school_selection_export_word">选校 Word 导出</option>
                   <option value="parse_codex_answer">解析 Codex 回答</option>
+                  <option value="save_draft">保存草稿</option>
+                  <option value="portfolio_save">保存我的申请档案</option>
+                  <option value="school_selection_save">保存选校方案</option>
                   <option value="refresh_competitions">竞赛换一批</option>
                   <option value="refresh_summer_schools">夏校换一批</option>
+                  <option value="refresh_case_matches">案例换一批</option>
+                  <option value="resource_filter_applied">资源筛选</option>
+                  <option value="data_load_failure">数据加载失败</option>
                 </select>
               </label>
             </form>
           </div>
+          <div id="usageCategorySummaryList" class="metric-list summary-strip"></div>
           <div id="usageSummaryList" class="metric-list summary-strip"></div>
           <div class="table-wrap focused-table">
             <table>

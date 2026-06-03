@@ -56,6 +56,30 @@ function setDeepSeekStatus(message, isError = false) {
   deepSeekMajorStatus.classList.toggle("error", isError);
 }
 
+function trackMajorUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
+  fetch("/api/analytics/usage-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventType,
+      profile: {
+        grade: "",
+        majorDirection: activeCategory === "all" ? "" : activeCategory,
+      },
+      metrics: {
+        completionFields: activeCategory === "all" ? 0 : 1,
+        generatedActivityCount: 1,
+        ...metrics,
+      },
+      details: {
+        source: "major_encyclopedia",
+        activeCategory,
+        ...details,
+      },
+    }),
+  }).catch(() => {});
+}
+
 async function requestJson(url, options = {}) {
   const response = await fetch(url, {
     ...options,
@@ -266,6 +290,7 @@ async function runDeepSeekMajorMatch() {
   deepSeekMajorMatchButton.disabled = true;
   setDeepSeekStatus("正在检索专业百科 RAG 与我的申请档案...");
   deepSeekMajorResult.innerHTML = '<p class="resource-empty">DeepSeek 正在生成专业匹配建议...</p>';
+  const startedAt = performance.now();
   try {
     const data = await requestJson("/api/deepseek-rag", {
       method: "POST",
@@ -274,9 +299,16 @@ async function runDeepSeekMajorMatch() {
     const answer = sanitizeDeepSeekMajorAnswer(data.answer || "");
     deepSeekMajorResult.innerHTML = `
       <div class="major-ai-answer">${renderMarkdown(answer)}</div>`;
+    trackMajorUsageEvent("major_match_success", {
+      metrics: { durationMs: performance.now() - startedAt },
+    });
     setDeepSeekStatus("已生成匹配");
   } catch (error) {
     deepSeekMajorResult.innerHTML = `<p class="resource-empty">${escapeHtml(error.message)}</p>`;
+    trackMajorUsageEvent("major_match_failure", {
+      metrics: { generatedActivityCount: 0, durationMs: performance.now() - startedAt },
+      details: { failureReason: error.message },
+    });
     setDeepSeekStatus(error.message, true);
   } finally {
     deepSeekMajorMatchButton.disabled = false;

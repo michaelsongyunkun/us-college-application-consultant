@@ -165,6 +165,23 @@ const conversationTurns = [];
 const conversationArchive = [];
 const assistantMessages = new Map();
 
+function trackDeepSeekUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
+  fetch("/api/analytics/usage-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      eventType,
+      profile: {},
+      metrics,
+      details: {
+        source: "ask_deepseek",
+        conversationTurns: conversationArchive.length,
+        ...details,
+      },
+    }),
+  }).catch(() => {});
+}
+
 for (const workflow of Object.values(WORKFLOW_PROMPTS)) {
   workflow.prompt = `${workflow.prompt}\n\n${STANDARD_RESPONSE_SECTIONS}`;
 }
@@ -446,10 +463,11 @@ form.addEventListener("submit", async (event) => {
   await askDeepSeek({ question });
 });
 
-async function askDeepSeek({ question, displayQuestion = question }) {
+async function askDeepSeek({ question, displayQuestion = question, workflowKey = "" }) {
   appendMessage({ role: "user", content: displayQuestion });
   questionInput.value = "";
   const thinkingMessageId = renderThinkingMessage();
+  const startedAt = performance.now();
 
   try {
     setWorking(true);
@@ -475,6 +493,18 @@ async function askDeepSeek({ question, displayQuestion = question }) {
       missingFields: data.missingFields || [],
       createdAt: new Date().toISOString(),
     });
+    trackDeepSeekUsageEvent("deepseek_rag_question_success", {
+      metrics: {
+        completionFields: 1,
+        generatedActivityCount: sources.length,
+        durationMs: performance.now() - startedAt,
+      },
+      details: {
+        workflowKey,
+        questionLength: question.length,
+        missingFieldCount: (data.missingFields || []).length,
+      },
+    });
     setStatus(`已回复，附 ${sources.length} 条参考资料`);
   } catch (error) {
     stopProgressStatus();
@@ -482,6 +512,10 @@ async function askDeepSeek({ question, displayQuestion = question }) {
       role: "assistant",
       content: error.message,
       error: true,
+    });
+    trackDeepSeekUsageEvent("deepseek_rag_question_failure", {
+      metrics: { completionFields: 1, durationMs: performance.now() - startedAt },
+      details: { workflowKey, questionLength: question.length, failureReason: error.message },
     });
     setStatus(error.message, true);
   } finally {
@@ -519,7 +553,7 @@ async function saveAnswerAsActions(messageId, button) {
     setStatus("这条回答里没有识别到可保存的行动项。", true);
     return;
   }
-  await savePortfolioUpdate((portfolio) => ({
+  const saved = await savePortfolioUpdate((portfolio) => ({
     ...portfolio,
     planningActions: mergePortfolioItems(
       portfolio.planningActions || [],
@@ -527,6 +561,12 @@ async function saveAnswerAsActions(messageId, button) {
       "text",
     ),
   }), "行动清单已保存到我的申请档案", button);
+  if (saved) {
+    trackDeepSeekUsageEvent("deepseek_answer_save", {
+      metrics: { generatedActivityCount: actions.length },
+      details: { saveType: "actions" },
+    });
+  }
 }
 
 function exportDeepSeekConversation() {
@@ -535,6 +575,10 @@ function exportDeepSeekConversation() {
     conversationSummary,
     turns: conversationArchive,
   };
+  trackDeepSeekUsageEvent("deepseek_review_export", {
+    metrics: { generatedActivityCount: conversationArchive.length },
+    details: { format: "json" },
+  });
   downloadTextFile(
     `deepseek-review-${new Date().toISOString().slice(0, 10)}.json`,
     JSON.stringify(payload, null, 2),
@@ -548,7 +592,7 @@ async function saveDeepSeekReviewVersion() {
     setStatus("暂无可保存的对话复盘。", true);
     return;
   }
-  await savePortfolioUpdate((portfolio) => ({
+  const saved = await savePortfolioUpdate((portfolio) => ({
     ...portfolio,
     deepSeekNotes: mergePortfolioItems(
       portfolio.deepSeekNotes || [],
@@ -566,6 +610,11 @@ async function saveDeepSeekReviewVersion() {
       "content",
     ),
   }), "DeepSeek 对话复盘已保存到我的申请档案", saveReviewButton);
+  if (saved) {
+    trackDeepSeekUsageEvent("deepseek_review_save", {
+      metrics: { generatedActivityCount: conversationArchive.length },
+    });
+  }
 }
 
 async function saveAnswerAsNote(messageId, button) {
@@ -576,10 +625,16 @@ async function saveAnswerAsNote(messageId, button) {
     content: String(message.content || "").trim().slice(0, 2400),
     source: "问DeepSeek",
   };
-  await savePortfolioUpdate((portfolio) => ({
+  const saved = await savePortfolioUpdate((portfolio) => ({
     ...portfolio,
     deepSeekNotes: mergePortfolioItems(portfolio.deepSeekNotes || [], [note], "content"),
   }), "回答摘录已保存到我的申请档案", button);
+  if (saved) {
+    trackDeepSeekUsageEvent("deepseek_answer_save", {
+      metrics: { generatedActivityCount: 1 },
+      details: { saveType: "note" },
+    });
+  }
 }
 
 async function savePortfolioUpdate(updater, successMessage, button) {
@@ -595,8 +650,10 @@ async function savePortfolioUpdate(updater, successMessage, button) {
       body: JSON.stringify(updater(portfolio)),
     });
     setStatus(successMessage);
+    return true;
   } catch (error) {
     setStatus(error.message, true);
+    return false;
   } finally {
     if (button) {
       button.disabled = false;
@@ -678,6 +735,7 @@ workflowRegion?.addEventListener("click", (event) => {
   askDeepSeek({
     question: workflow.prompt,
     displayQuestion: `启动 Workflow：${workflow.label}`,
+    workflowKey: button.dataset.deepseekWorkflow,
   });
 });
 

@@ -93,6 +93,12 @@ assert.ok(script.includes("application/msword;charset=utf-8"), "School selection
 assert.ok(script.includes("renderSchoolSelectionVersions"), "School selection should show saved versions for review.");
 assert.ok(script.includes("collectEditedSelection"), "School selection should collect edited school results before saving.");
 assert.ok(script.includes('"/api/my-activities"'), "School selection should load and save the application portfolio.");
+assert.ok(script.includes("trackSchoolSelectionUsageEvent"), "School selection should record key usage events.");
+assert.ok(script.includes("school_selection_generate_success"), "School selection should track successful generation.");
+assert.ok(script.includes("school_selection_generate_failure"), "School selection should track failed generation.");
+assert.ok(script.includes("school_selection_save"), "School selection should track saves into the portfolio.");
+assert.ok(script.includes("school_selection_export_svg"), "School selection should track SVG exports separately.");
+assert.ok(script.includes("school_selection_export_word"), "School selection should track Word exports separately.");
 assert.ok(script.includes("renderStrategySummary"), "School selection should show an application strategy summary.");
 assert.ok(script.includes("REA / ED1"), "School selection page should label the mutually exclusive early bucket.");
 assert.ok(script.includes("3-5所"), "School selection page should explain the EA count range.");

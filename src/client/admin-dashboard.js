@@ -9,14 +9,16 @@ const userSummaryBody = document.querySelector("#userSummaryBody");
 const loginEventsBody = document.querySelector("#loginEventsBody");
 const dailyActivityList = document.querySelector("#dailyActivityList");
 const weeklyActivityList = document.querySelector("#weeklyActivityList");
+const usageCategorySummaryList = document.querySelector("#usageCategorySummaryList");
 const usageSummaryList = document.querySelector("#usageSummaryList");
 const usageEventsBody = document.querySelector("#usageEventsBody");
 const feedbackEntriesBody = document.querySelector("#feedbackEntriesBody");
 const metricActiveUsers = document.querySelector("#metricActiveUsers");
-const metricPlanGenerations = document.querySelector("#metricPlanGenerations");
-const metricSvgExports = document.querySelector("#metricSvgExports");
-const metricRecommendationRefreshes = document.querySelector("#metricRecommendationRefreshes");
-const metricFailedLogins = document.querySelector("#metricFailedLogins");
+const metricAiActions = document.querySelector("#metricAiActions");
+const metricSaveActions = document.querySelector("#metricSaveActions");
+const metricExportActions = document.querySelector("#metricExportActions");
+const metricRecommendationActions = document.querySelector("#metricRecommendationActions");
+const metricFailureEvents = document.querySelector("#metricFailureEvents");
 const adminTabs = [...document.querySelectorAll("[data-admin-tab]")];
 const adminPanels = [...document.querySelectorAll("[data-admin-panel]")];
 let latestDashboard = null;
@@ -42,6 +44,24 @@ const usageEventLabels = {
   course_helper_visit: "访问选课辅助器",
   refresh_ap_recommendations: "重新生成 AP 推荐",
   data_load_failure: "数据加载失败",
+  deepseek_rag_question_success: "问 DeepSeek 成功",
+  deepseek_rag_question_failure: "问 DeepSeek 失败",
+  deepseek_review_export: "导出 DeepSeek 复盘",
+  deepseek_review_save: "保存 DeepSeek 复盘",
+  deepseek_answer_save: "保存 DeepSeek 回答",
+  school_selection_generate_success: "选校方案生成成功",
+  school_selection_generate_failure: "选校方案生成失败",
+  school_selection_save: "保存选校方案",
+  school_selection_export_svg: "选校 SVG 导出",
+  school_selection_export_word: "选校 Word 导出",
+  portfolio_save: "保存我的申请档案",
+  portfolio_import_activity: "导入规划活动",
+  gpa_sync_portfolio: "同步 GPA 到档案",
+  resource_filter_applied: "资源筛选",
+  resource_load_more: "加载更多资源",
+  school_detail_open: "展开院校详情",
+  major_match_success: "专业匹配成功",
+  major_match_failure: "专业匹配失败",
 };
 const feedbackStatusOptions = ["未处理", "处理中", "已解决", "已忽略"];
 
@@ -159,7 +179,25 @@ function renderUsageSummary(items) {
     .join("");
 }
 
+function renderUsageCategorySummary(items) {
+  if (!items.length) {
+    usageCategorySummaryList.innerHTML = '<p class="case-notice">当前范围暂无分组统计</p>';
+    return;
+  }
+  usageCategorySummaryList.innerHTML = items
+    .map(
+      (item) => `
+        <div class="metric-row category-row">
+          <span>${escapeHtml(item.category)}</span>
+          <strong>${item.count}</strong>
+        </div>
+      `,
+    )
+    .join("");
+}
+
 function usageOutcome(event) {
+  if (event.failureReason) return `失败：${event.failureReason}`;
   return event.generatedActivityCount || event.filledActivityCount || event.completionFields || "-";
 }
 
@@ -232,10 +270,11 @@ function renderFeedbackEntries(entries) {
 function renderOverview(dashboard) {
   const overview = dashboard.overview || {};
   metricActiveUsers.textContent = overview.activeUsers || 0;
-  metricPlanGenerations.textContent = overview.planGenerations || 0;
-  metricSvgExports.textContent = overview.svgExports || 0;
-  metricRecommendationRefreshes.textContent = overview.recommendationRefreshes || 0;
-  metricFailedLogins.textContent = overview.failedLogins || 0;
+  metricAiActions.textContent = overview.aiActions || 0;
+  metricSaveActions.textContent = overview.saveActions || 0;
+  metricExportActions.textContent = overview.exportActions || 0;
+  metricRecommendationActions.textContent = overview.recommendationActions || 0;
+  metricFailureEvents.textContent = overview.failureEvents || 0;
 }
 
 function buildDashboardUrl() {
@@ -261,6 +300,7 @@ async function loadDashboard() {
     renderEvents(dashboard.events || []);
     renderActivity(dailyActivityList, dashboard.dailyActivity || [], "date");
     renderActivity(weeklyActivityList, dashboard.weeklyActivity || [], "week");
+    renderUsageCategorySummary(dashboard.usageCategorySummary || []);
     renderUsageSummary(dashboard.usageSummary || []);
     renderUsageEvents(dashboard.usageEvents || []);
     renderFeedbackEntries(dashboard.feedbackEntries || []);
@@ -386,9 +426,10 @@ function activeExportTable() {
   }
   return makeExcelTable(
     "行为趋势",
-    ["时间", "操作", "用户", "邮箱", "年级", "专业方向", "数量/完成度"],
+    ["时间", "分组", "操作", "用户", "邮箱", "年级", "专业方向", "数量/完成度"],
     (latestDashboard.usageEvents || []).map((event) => [
       formatDateTime(event.occurredAt),
+      event.category || "-",
       usageEventLabels[event.eventType] || event.eventType,
       event.userName || "-",
       event.userEmail || "-",

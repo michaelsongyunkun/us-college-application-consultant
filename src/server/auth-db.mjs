@@ -2,6 +2,50 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database from "better-sqlite3";
 
+const USAGE_EVENT_TYPES = [
+  "parse_codex_answer",
+  "parse_codex_failure",
+  "export_json",
+  "export_svg",
+  "export_word",
+  "save_draft",
+  "clear_draft",
+  "generate_plan_success",
+  "generate_plan_failure",
+  "generate_deepseek_plan_success",
+  "generate_deepseek_plan_failure",
+  "build_codex_task",
+  "copy_codex_task",
+  "refresh_competitions",
+  "refresh_summer_schools",
+  "refresh_case_matches",
+  "course_helper_visit",
+  "refresh_ap_recommendations",
+  "data_load_failure",
+  "deepseek_rag_question_success",
+  "deepseek_rag_question_failure",
+  "deepseek_review_export",
+  "deepseek_review_save",
+  "deepseek_answer_save",
+  "school_selection_generate_success",
+  "school_selection_generate_failure",
+  "school_selection_save",
+  "school_selection_export_svg",
+  "school_selection_export_word",
+  "portfolio_save",
+  "portfolio_import_activity",
+  "gpa_sync_portfolio",
+  "resource_filter_applied",
+  "resource_load_more",
+  "school_detail_open",
+  "major_match_success",
+  "major_match_failure",
+];
+
+function usageEventTypeSqlList() {
+  return USAGE_EVENT_TYPES.map((eventType) => `'${eventType}'`).join(",\n          ");
+}
+
 export function createAuthDatabase({ databasePath }) {
   mkdirSync(dirname(databasePath), { recursive: true });
   const db = new Database(databasePath);
@@ -61,25 +105,7 @@ export function createAuthDatabase({ databasePath }) {
       user_email TEXT NOT NULL,
       event_type TEXT NOT NULL CHECK (
         event_type IN (
-          'parse_codex_answer',
-          'parse_codex_failure',
-          'export_json',
-          'export_svg',
-          'export_word',
-          'save_draft',
-          'clear_draft',
-          'generate_plan_success',
-          'generate_plan_failure',
-          'generate_deepseek_plan_success',
-          'generate_deepseek_plan_failure',
-          'build_codex_task',
-          'copy_codex_task',
-          'refresh_competitions',
-          'refresh_summer_schools',
-          'refresh_case_matches',
-          'course_helper_visit',
-          'refresh_ap_recommendations',
-          'data_load_failure'
+          ${usageEventTypeSqlList()}
         )
       ),
       grade TEXT,
@@ -239,7 +265,8 @@ function migrateUsageEventsConstraint(db) {
   const table = db
     .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usage_events'")
     .get();
-  if (!table?.sql || table.sql.includes("export_svg")) return;
+  if (!table?.sql) return;
+  if (USAGE_EVENT_TYPES.every((eventType) => table.sql.includes(`'${eventType}'`))) return;
 
   db.exec(`
     ALTER TABLE usage_events RENAME TO usage_events_old;
@@ -251,25 +278,7 @@ function migrateUsageEventsConstraint(db) {
       user_email TEXT NOT NULL,
       event_type TEXT NOT NULL CHECK (
         event_type IN (
-          'parse_codex_answer',
-          'parse_codex_failure',
-          'export_json',
-          'export_svg',
-          'export_word',
-          'save_draft',
-          'clear_draft',
-          'generate_plan_success',
-          'generate_plan_failure',
-          'generate_deepseek_plan_success',
-          'generate_deepseek_plan_failure',
-          'build_codex_task',
-          'copy_codex_task',
-          'refresh_competitions',
-          'refresh_summer_schools',
-          'refresh_case_matches',
-          'course_helper_visit',
-          'refresh_ap_recommendations',
-          'data_load_failure'
+          ${usageEventTypeSqlList()}
         )
       ),
       grade TEXT,
