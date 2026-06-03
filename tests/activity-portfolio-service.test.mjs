@@ -39,6 +39,7 @@ try {
       ea: [],
       uc: [],
       rd: [],
+      multiCountry: [],
     },
     activities: [],
     competitions: [],
@@ -76,6 +77,10 @@ try {
       ],
       uc: [{ school: "University of California, Los Angeles", major: "Applied Math" }],
       rd: [{ school: "Harvard University", major: "History" }],
+      multiCountry: [
+        { school: "University of Waterloo", major: "Computer Science" },
+        { school: "National University of Singapore", major: "Data Science" },
+      ],
     },
     activities: Array.from({ length: 12 }, (_, index) => ({
       activityName: `Activity ${index + 1}`,
@@ -170,6 +175,8 @@ try {
   assert.equal(saved.applicationPlan.ea.length, 2);
   assert.equal(saved.applicationPlan.uc[0].major, "Applied Math");
   assert.equal(saved.applicationPlan.rd[0].school, "Harvard University");
+  assert.equal(saved.applicationPlan.multiCountry.length, 2);
+  assert.equal(saved.applicationPlan.multiCountry[0].school, "University of Waterloo");
   assert.equal(saved.activities.length, 10, "课外活动最多保存 10 项。");
   assert.equal(saved.activities[0].activityName, "Activity 1");
   assert.equal(saved.activities[0].type, "科研");
@@ -213,6 +220,7 @@ try {
       ea: [],
       uc: [],
       rd: [],
+      multiCountry: [],
     },
     activities: [],
     competitions: [],

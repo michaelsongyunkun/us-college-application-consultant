@@ -82,6 +82,11 @@ assert.ok(script.includes("selectionTargetMajor"), "School selection page should
 assert.ok(script.includes("selectionStrategyMode"), "School selection page should read conservative/balanced/aggressive version mode.");
 assert.ok(script.includes("saveSchoolSelectionToPortfolio"), "School selection should save edited results into my application portfolio.");
 assert.ok(script.includes("saveSchoolSelectionVersion"), "School selection should save versioned school selection plans.");
+assert.ok(script.includes("multiCountry"), "Saving US school-selection versions should preserve multi-country backup schools.");
+assert.ok(
+  script.includes("buildApplicationPlan(selection, portfolio.applicationPlan"),
+  "School selection should merge generated US rounds with the existing portfolio plan instead of replacing overseas backups.",
+);
 assert.ok(script.includes("deleteSchoolSelectionVersion"), "School selection should let users delete saved selection versions.");
 assert.ok(script.includes("data-delete-school-selection-version"), "Saved selection versions should expose a delete action.");
 assert.ok(script.includes("exportSchoolSelectionSvg"), "School selection should export the edited school selection result as SVG.");

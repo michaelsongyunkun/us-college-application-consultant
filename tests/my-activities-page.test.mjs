@@ -121,9 +121,18 @@ for (const field of [
   "考试日期",
   "考试年份",
   "renderApplicationPlan",
+  "renderApplicationSchoolCombobox",
+  "data-application-school-combobox",
+  "data-application-school-option",
+  "closeApplicationSchoolComboboxes",
   "data-add-application-round",
   "data-remove-application-round",
   "application-round-schools.md",
+  "international-schools.md",
+  "other-region-schools.md",
+  "parseApplicationBackupSchoolsMarkdown",
+  "multiCountry",
+  "\u591a\u56fd\u8054\u7533",
   "enforceEarlyBindingExclusivity",
   "removeApplicationRound",
 ]) {
@@ -171,8 +180,8 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260602-mobile-workbench")
-    && pageHtml.includes("./src/client/my-activities.js?v=20260601-portfolio-versions-v2"),
+  pageHtml.includes("./styles.css?v=20260602-school-combobox")
+    && pageHtml.includes("./src/client/my-activities.js?v=20260602-school-combobox"),
   "我的申请页面应更新 CSS / JS 版本号，避免用户继续加载缓存的旧工作流。"
 );
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");
@@ -202,6 +211,21 @@ assert.match(
   styles,
   /\.application-plan-row label,\s*\.application-plan-row input,\s*\.application-plan-row select\s*\{[\s\S]*?min-width:\s*0;/,
   "选校计划输入控件应设置 min-width: 0，避免卡片重叠。"
+);
+assert.match(
+  styles,
+  /\.application-school-combobox-menu\s*\{[\s\S]*?top:\s*calc\(100%\s*\+\s*6px\);[\s\S]*?max-height:\s*260px;[\s\S]*?overflow-y:\s*auto;/,
+  "Application school combobox menu should be anchored below the trigger and scroll internally.",
+);
+assert.match(
+  styles,
+  /\.portfolio-panel\.application-plan-panel\s*\{[\s\S]*?overflow:\s*visible;/,
+  "Application plan panel should allow the downward school menu to extend below the row.",
+);
+assert.doesNotMatch(
+  script,
+  /<select name="\$\{escapeHtml\(applicationControlName\(roundKey, index, "school"\)\)\}">/,
+  "Application school choice should use a controlled downward combobox instead of the native select popup.",
 );
 assert.match(
   styles,

@@ -7,7 +7,7 @@ const SCHOOL_SELECTION_VERSION_LIMIT = 12;
 const GPA_RECORD_LIMIT = 16;
 const SAT_TEST_LIMIT = 10;
 const AP_EXAM_LIMIT = 40;
-const APPLICATION_ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "uc", "rd"];
+const APPLICATION_ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "uc", "rd", "multiCountry"];
 const APPLICATION_ROUND_LIMITS = {
   rea: 1,
   ed1: 1,
@@ -15,6 +15,7 @@ const APPLICATION_ROUND_LIMITS = {
   ea: 50,
   uc: 20,
   rd: 50,
+  multiCountry: 50,
 };
 
 const ACTIVITY_FIELDS = [

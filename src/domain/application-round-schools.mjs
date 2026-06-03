@@ -1,4 +1,6 @@
-export const APPLICATION_ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "uc", "rd"];
+import { parseSchoolsMarkdown } from "./school-encyclopedia.mjs";
+
+export const APPLICATION_ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "uc", "rd", "multiCountry"];
 
 export const APPLICATION_ROUND_LABELS = Object.freeze({
   rea: "REA",
@@ -7,6 +9,7 @@ export const APPLICATION_ROUND_LABELS = Object.freeze({
   ea: "EA",
   uc: "UC",
   rd: "RD",
+  multiCountry: "多国联申",
 });
 
 const ROUND_LABEL_TO_KEY = new Map([
@@ -61,9 +64,29 @@ export function parseApplicationRoundSchoolsMarkdown(markdown = "") {
 }
 
 export function getEligibleSchools(schools = [], round) {
-  const roundKey = String(round || "").toLowerCase();
+  const requestedRound = String(round || "").trim();
+  const roundKey = APPLICATION_ROUND_KEYS.find(
+    (key) => key.toLowerCase() === requestedRound.toLowerCase(),
+  );
   if (!APPLICATION_ROUND_KEYS.includes(roundKey)) return [];
   return schools.filter((school) => isEligibleForRound(school, roundKey));
+}
+
+export function parseApplicationBackupSchoolsMarkdown(...markdownInputs) {
+  return markdownInputs
+    .flatMap((markdown) => parseSchoolsMarkdown(markdown))
+    .filter((school) => school.category === "international" || school.category === "other-region")
+    .map((school) =>
+      finalizeSchool({
+        name: school.name,
+        category: [school.categoryLabel, school.region].filter(Boolean).join(" / "),
+        rank: school.rank,
+        note: [school.website, school.applicationRequirement, school.englishRequirement]
+          .filter(Boolean)
+          .join("；"),
+        rounds: { ...emptyRounds(), multiCountry: "yes" },
+      }),
+    );
 }
 
 export function isEligibleForRound(school, round) {
@@ -91,5 +114,6 @@ function emptyRounds() {
     rea: "",
     uc: "",
     rd: "",
+    multiCountry: "",
   };
 }

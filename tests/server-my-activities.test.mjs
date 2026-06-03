@@ -37,6 +37,7 @@ try {
       ea: [],
       uc: [],
       rd: [],
+      multiCountry: [],
     },
     activities: [],
     competitions: [],
@@ -107,6 +108,10 @@ try {
         ],
         uc: [{ school: "University of California, Los Angeles", major: "Applied Math" }],
         rd: [{ school: "Harvard University", major: "History" }],
+        multiCountry: [
+          { school: "University of Waterloo", major: "Computer Science" },
+          { school: "ETH Zurich", major: "Engineering" },
+        ],
       },
       activities: [
         {
@@ -209,6 +214,7 @@ try {
   assert.equal(saved.applicationPlan.ed1[0].school, "University of Chicago");
   assert.equal(saved.applicationPlan.ea.length, 2);
   assert.equal(saved.applicationPlan.uc[0].major, "Applied Math");
+  assert.equal(saved.applicationPlan.multiCountry[1].school, "ETH Zurich");
   assert.equal(saved.activities[0].activityName, "社区科普社");
   assert.equal(saved.competitions[0].competitionName, "Physics Bowl");
   assert.equal(saved.summerSchools[0].programName, "YYGS");
@@ -246,6 +252,7 @@ try {
       ea: [],
       uc: [],
       rd: [],
+      multiCountry: [],
     },
     activities: [],
     competitions: [],

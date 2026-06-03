@@ -2,6 +2,7 @@ import { escapeHtml } from "./html-utils.mjs";
 import {
   APPLICATION_ROUND_LABELS,
   getEligibleSchools,
+  parseApplicationBackupSchoolsMarkdown,
   parseApplicationRoundSchoolsMarkdown,
 } from "../domain/application-round-schools.mjs";
 import { markdownToPlainText } from "../domain/agent-output-parser.mjs?v=20260531-import-visual-text";
@@ -12,6 +13,10 @@ import { insertEntryIntoFirstEmptySlot } from "./portfolio-entry-slots.mjs?v=202
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const ACTIVITY_IMPORT_SOURCES_ENDPOINT = "/api/my-activities/import-sources";
 const APPLICATION_ROUND_SCHOOLS_ENDPOINT = "./data/application-round-schools.md";
+const APPLICATION_BACKUP_SCHOOLS_ENDPOINTS = [
+  "./data/international-schools.md",
+  "./data/other-region-schools.md",
+];
 const ACTIVITY_SLOT_COUNT = 10;
 const COMPETITION_SLOT_COUNT = 5;
 const SUMMER_SCHOOL_SLOT_COUNT = 3;
@@ -72,6 +77,13 @@ const APPLICATION_ROUND_CONFIG = [
   { key: "ea", label: "EA", title: "EA", addable: true, note: "可新增多所" },
   { key: "uc", label: "UC", title: "UC", addable: true, note: "UC系统单独记录" },
   { key: "rd", label: "RD", title: "RD", addable: true, note: "可新增多所" },
+  {
+    key: "multiCountry",
+    label: "多国联申",
+    title: "多国联申",
+    addable: true,
+    note: "英港澳加新与其他地区院校申请备份",
+  },
 ];
 
 const ACTIVITY_TYPE_OPTIONS = ["科研", "公益", "社团", "竞赛延展", "艺术", "体育", "实习", "其他"];
@@ -154,7 +166,7 @@ let isDirty = false;
 let isRendering = false;
 let currentPortfolio = emptyPortfolio();
 let applicationRoundSchools = [];
-let applicationRoundRowCounts = { ea: 1, uc: 1, rd: 1 };
+let applicationRoundRowCounts = { ea: 1, uc: 1, rd: 1, multiCountry: 1 };
 let planningActivitySources = [];
 
 function cleanPlanningActivityText(value, fallback = "") {
@@ -169,6 +181,7 @@ function emptyApplicationPlan() {
     ea: [],
     uc: [],
     rd: [],
+    multiCountry: [],
   };
 }
 
@@ -376,7 +389,7 @@ function renderApplicationRoundCard(round, entries = []) {
 function renderApplicationPlanRow(round, index, entry = {}) {
   return `
     <div class="application-plan-row${round.addable ? " with-action" : ""}" data-application-round="${escapeHtml(round.key)}" data-application-index="${index}">
-      ${renderApplicationSchoolSelect(round.key, index, entry.school)}
+      ${renderApplicationSchoolCombobox(round.key, index, entry.school)}
       ${renderApplicationMajorInput(round.key, index, entry.major)}
       ${round.addable ? renderApplicationRemoveButton(round.key, round.label, index) : ""}
     </div>`;
@@ -393,28 +406,87 @@ function renderApplicationRemoveButton(roundKey, label, index) {
     >删除</button>`;
 }
 
-function renderApplicationSchoolSelect(roundKey, index, value = "") {
+function renderApplicationSchoolCombobox(roundKey, index, value = "") {
   const options = getEligibleSchools(applicationRoundSchools, roundKey);
   const selectedValue = String(value || "");
-  const hasSelectedOption = options.some((school) => school.name === selectedValue);
+  const selectedOption = options.find((school) => school.name === selectedValue);
+  const hasSelectedOption = Boolean(selectedOption);
+  const selectedLabel = selectedOption
+    ? applicationSchoolDisplayLabel(selectedOption)
+    : selectedValue
+      ? `${selectedValue}（当前已保存）`
+      : "";
+  const controlName = applicationControlName(roundKey, index, "school");
+  const menuId = applicationSchoolMenuId(roundKey, index);
   return `
-    <label>
+    <label class="application-school-field">
       <span>院校</span>
-      <select name="${escapeHtml(applicationControlName(roundKey, index, "school"))}">
-        <option value="">${options.length ? "请选择院校" : "正在加载院校"}</option>
+      <input
+        type="hidden"
+        name="${escapeHtml(controlName)}"
+        value="${escapeHtml(selectedValue)}"
+        data-application-school-value
+      />
+      <div class="application-school-combobox" data-application-school-combobox>
+        <button
+          type="button"
+          class="application-school-combobox-trigger"
+          data-application-school-trigger
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-controls="${escapeHtml(menuId)}"
+        >
+          <span data-application-school-trigger-text>${escapeHtml(selectedLabel || (options.length ? "请选择院校" : "正在加载院校"))}</span>
+        </button>
+        <div
+          id="${escapeHtml(menuId)}"
+          class="application-school-combobox-menu"
+          data-application-school-menu
+          role="listbox"
+          hidden
+        >
         ${
           selectedValue && !hasSelectedOption
-            ? `<option value="${escapeHtml(selectedValue)}" selected>${escapeHtml(selectedValue)}（当前已保存）</option>`
+            ? renderApplicationSchoolOption(selectedValue, `${selectedValue}（当前已保存）`, true)
             : ""
         }
-        ${options
-          .map((school) => {
-            const label = `${school.name} · ${school.category} ${school.rank}`;
-            return `<option value="${escapeHtml(school.name)}" ${school.name === selectedValue ? "selected" : ""}>${escapeHtml(label)}</option>`;
-          })
-          .join("")}
-      </select>
+        ${
+          options.length
+            ? options
+                .map((school) =>
+                  renderApplicationSchoolOption(
+                    school.name,
+                    applicationSchoolDisplayLabel(school),
+                    school.name === selectedValue,
+                  ),
+                )
+                .join("")
+            : '<p class="application-school-combobox-empty">正在加载院校</p>'
+        }
+        </div>
+      </div>
     </label>`;
+}
+
+function renderApplicationSchoolOption(value, label, selected = false) {
+  return `
+    <button
+      type="button"
+      class="application-school-combobox-option${selected ? " is-selected" : ""}"
+      data-application-school-option
+      data-school-value="${escapeHtml(value)}"
+      data-school-label="${escapeHtml(label)}"
+      role="option"
+      aria-selected="${selected ? "true" : "false"}"
+    >${escapeHtml(label)}</button>`;
+}
+
+function applicationSchoolDisplayLabel(school) {
+  return `${school.name} · ${school.category} ${school.rank}`.trim();
+}
+
+function applicationSchoolMenuId(roundKey, index) {
+  return `application-school-menu-${roundKey}-${index}`;
 }
 
 function renderApplicationMajorInput(roundKey, index, value = "") {
@@ -1268,13 +1340,24 @@ async function loadActivityImportSources() {
 async function loadApplicationRoundSchools() {
   if (!applicationPlanList) return;
   try {
-    const response = await fetch(APPLICATION_ROUND_SCHOOLS_ENDPOINT);
+    const [response, internationalResponse, otherRegionResponse] = await Promise.all([
+      fetch(APPLICATION_ROUND_SCHOOLS_ENDPOINT),
+      ...APPLICATION_BACKUP_SCHOOLS_ENDPOINTS.map((endpoint) => fetch(endpoint)),
+    ]);
     if (response.status === 401) {
       window.location.href = "./index.html";
       throw new Error("请先登录");
     }
-    if (!response.ok) throw new Error("院校轮次数据加载失败");
-    applicationRoundSchools = parseApplicationRoundSchoolsMarkdown(await response.text());
+    if (!response.ok || !internationalResponse.ok || !otherRegionResponse.ok) {
+      throw new Error("院校轮次数据加载失败");
+    }
+    applicationRoundSchools = [
+      ...parseApplicationRoundSchoolsMarkdown(await response.text()),
+      ...parseApplicationBackupSchoolsMarkdown(
+        await internationalResponse.text(),
+        await otherRegionResponse.text(),
+      ),
+    ];
     const plan = collectPortfolio().applicationPlan;
     currentPortfolio = { ...currentPortfolio, applicationPlan: plan };
     renderApplicationPlan(plan);
@@ -1385,6 +1468,59 @@ function focusAcademicRecord(type, records) {
   portfolioForm.elements.namedItem(controlName(group, index, field))?.focus();
 }
 
+function toggleApplicationSchoolCombobox(trigger) {
+  const combobox = trigger?.closest("[data-application-school-combobox]");
+  const menu = combobox?.querySelector("[data-application-school-menu]");
+  if (!combobox || !menu) return;
+  const shouldOpen = menu.hidden;
+  closeApplicationSchoolComboboxes(combobox);
+  menu.hidden = !shouldOpen;
+  trigger.setAttribute("aria-expanded", String(shouldOpen));
+  if (shouldOpen) {
+    menu.querySelector(".is-selected")?.scrollIntoView({ block: "nearest" });
+  }
+}
+
+function closeApplicationSchoolComboboxes(exceptCombobox = null) {
+  applicationPlanList
+    ?.querySelectorAll("[data-application-school-combobox]")
+    .forEach((combobox) => {
+      if (combobox === exceptCombobox) return;
+      combobox.querySelector("[data-application-school-menu]")?.setAttribute("hidden", "");
+      combobox.querySelector("[data-application-school-trigger]")?.setAttribute("aria-expanded", "false");
+    });
+}
+
+function selectApplicationSchool(option) {
+  const field = option.closest(".application-school-field");
+  const input = field?.querySelector("[data-application-school-value]");
+  if (!field || !input) return;
+  updateApplicationSchoolValue(input, option.dataset.schoolValue || "", option.dataset.schoolLabel || "");
+  closeApplicationSchoolComboboxes();
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function updateApplicationSchoolValue(input, value, label = "") {
+  input.value = value;
+  const field = input.closest(".application-school-field");
+  const triggerText = field?.querySelector("[data-application-school-trigger-text]");
+  if (triggerText) triggerText.textContent = label || "请选择院校";
+  field?.querySelectorAll("[data-application-school-option]").forEach((option) => {
+    const selected = value && option.dataset.schoolValue === value;
+    option.classList.toggle("is-selected", selected);
+    option.setAttribute("aria-selected", String(Boolean(selected)));
+  });
+}
+
+function focusApplicationSchoolControl(roundKey, index) {
+  applicationPlanList
+    ?.querySelector(
+      `[data-application-round="${roundKey}"][data-application-index="${index}"] [data-application-school-trigger]`,
+    )
+    ?.focus();
+}
+
 function addApplicationRound(roundKey) {
   const round = APPLICATION_ROUND_CONFIG.find((item) => item.key === roundKey && item.addable);
   if (!round) return;
@@ -1394,9 +1530,7 @@ function addApplicationRound(roundKey) {
   isDirty = true;
   setStatus("有未保存修改");
   updateCompletion();
-  portfolioForm.elements
-    .namedItem(applicationControlName(roundKey, applicationRoundRowCounts[roundKey] - 1, "school"))
-    ?.focus();
+  focusApplicationSchoolControl(roundKey, applicationRoundRowCounts[roundKey] - 1);
 }
 
 function removeApplicationRound(roundKey, index) {
@@ -1428,7 +1562,10 @@ function collectApplicationRoundRows(roundKey) {
 
 function enforceEarlyBindingExclusivity(event) {
   const target = event.target;
-  if (!(target instanceof HTMLSelectElement) || !target.value) return;
+  const isSchoolControl =
+    target instanceof HTMLSelectElement
+    || (target instanceof HTMLInputElement && target.matches("[data-application-school-value]"));
+  if (!isSchoolControl || !target.value) return;
   if (target.name === applicationControlName("rea", 0, "school")) clearApplicationRound("ed1");
   if (target.name === applicationControlName("ed1", 0, "school")) clearApplicationRound("rea");
 }
@@ -1436,7 +1573,11 @@ function enforceEarlyBindingExclusivity(event) {
 function clearApplicationRound(roundKey) {
   for (const field of ["school", "major"]) {
     const element = portfolioForm.elements.namedItem(applicationControlName(roundKey, 0, field));
-    if (element) element.value = "";
+    if (!element) continue;
+    element.value = "";
+    if (element instanceof HTMLInputElement && element.matches("[data-application-school-value]")) {
+      updateApplicationSchoolValue(element, "");
+    }
   }
 }
 
@@ -1534,6 +1675,16 @@ academicRecordsPanel?.addEventListener("click", (event) => {
   );
 });
 applicationPlanList?.addEventListener("click", (event) => {
+  const schoolTrigger = event.target.closest("[data-application-school-trigger]");
+  if (schoolTrigger) {
+    toggleApplicationSchoolCombobox(schoolTrigger);
+    return;
+  }
+  const schoolOption = event.target.closest("[data-application-school-option]");
+  if (schoolOption) {
+    selectApplicationSchool(schoolOption);
+    return;
+  }
   const addButton = event.target.closest("[data-add-application-round]");
   if (addButton) {
     addApplicationRound(addButton.dataset.addApplicationRound);
@@ -1545,6 +1696,14 @@ applicationPlanList?.addEventListener("click", (event) => {
     removeButton.dataset.removeApplicationRound,
     Number(removeButton.dataset.applicationIndex),
   );
+});
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-application-school-combobox]")) return;
+  closeApplicationSchoolComboboxes();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  closeApplicationSchoolComboboxes();
 });
 activityImportSources?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-import-activity]");

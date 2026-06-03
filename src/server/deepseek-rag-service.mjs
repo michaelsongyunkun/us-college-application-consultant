@@ -42,6 +42,7 @@ const APPLICATION_ROUND_LABELS = {
   ea: "EA",
   uc: "UC",
   rd: "RD",
+  multiCountry: "多国联申",
 };
 
 const SYSTEM_PROMPT = [

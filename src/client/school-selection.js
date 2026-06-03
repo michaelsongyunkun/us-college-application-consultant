@@ -325,7 +325,7 @@ async function saveSchoolSelectionToPortfolio() {
       method: "PUT",
       body: JSON.stringify({
         ...portfolio,
-        applicationPlan: buildApplicationPlan(selection),
+        applicationPlan: buildApplicationPlan(selection, portfolio.applicationPlan),
         schoolSelectionVersions: saveSchoolSelectionVersion(
           portfolio.schoolSelectionVersions || [],
           version,
@@ -689,13 +689,17 @@ function renderSchoolSelectionVersions(versions = []) {
     .join("");
 }
 
-function buildApplicationPlan(selection) {
-  return Object.fromEntries(
+function buildApplicationPlan(selection, existingPlan = {}) {
+  const generatedPlan = Object.fromEntries(
     Object.entries(selection.rounds).map(([round, entries]) => [
       round,
       entries.map((entry) => ({ school: entry.school, major: entry.major })),
     ]),
   );
+  return {
+    ...generatedPlan,
+    multiCountry: Array.isArray(existingPlan?.multiCountry) ? existingPlan.multiCountry : [],
+  };
 }
 
 function buildPlanningActions(selection) {

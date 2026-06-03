@@ -107,7 +107,7 @@ const service = createSchoolSelectionService({
   activityPortfolio: {
     getPortfolio() {
       return {
-        applicationPlan: { rea: [], ed1: [], ed2: [], ea: [], uc: [], rd: [] },
+        applicationPlan: { rea: [], ed1: [], ed2: [], ea: [], uc: [], rd: [], multiCountry: [] },
         activities: [
           {
             activityName: "Robotics Portfolio Lab",
