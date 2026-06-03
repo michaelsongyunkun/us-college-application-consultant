@@ -1,4 +1,5 @@
 import { escapeHtml } from "./html-utils.mjs";
+import { getRequestErrorMessage } from "./auth-client-errors.mjs";
 
 const schoolSelectionForm = document.querySelector("#schoolSelectionForm");
 const selectionNationality = document.querySelector("#selectionNationality");
@@ -791,13 +792,18 @@ function downloadTextFile(filename, content, mimeType) {
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+  } catch (error) {
+    throw new Error(getRequestErrorMessage(error));
+  }
   const data = await response.json().catch(() => ({}));
   if (response.status === 401) {
     window.location.href = "./index.html";
