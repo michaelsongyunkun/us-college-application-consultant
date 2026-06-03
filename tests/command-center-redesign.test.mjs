@@ -59,7 +59,7 @@ for (const [file, activeLabel] of pages) {
   assert.ok(html.includes("./assets/logo-mark.svg"), `${file} should preserve the current logo mark.`);
   assert.match(
     html,
-    /\.\/styles\.css\?v=20260602-[a-z0-9-]+/,
+    /\.\/styles\.css\?v=\d{8}-[a-z0-9-]+/,
     `${file} should load the cache-busted command center stylesheet.`,
   );
   assert.ok(html.includes("US College Compass"), `${file} should preserve the current brand name.`);
