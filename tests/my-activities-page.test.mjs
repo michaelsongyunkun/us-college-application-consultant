@@ -29,6 +29,11 @@ for (const expected of [
   'id="portfolioCompletionActivities"',
   'id="portfolioCompletionSchoolPlan"',
   'id="portfolioCompletionDeepSeek"',
+  'class="portfolio-section-tabs"',
+  'href="#academicRecordsPanel"',
+  'href="#activitiesList"',
+  'href="#recommendationLettersPanel"',
+  'href="#applicationPlanList"',
   'id="academicRecordsProgress"',
   'id="gpaRecordsList"',
   'id="satTestsList"',
@@ -84,10 +89,19 @@ assert.ok(
   pageHtml.indexOf('id="portfolioCompletionPanel"') < pageHtml.indexOf('id="academicRecordsProgress"'),
   "Application portfolio should show a completion guide before the detailed form sections.",
 );
+assert.ok(
+  pageHtml.indexOf('class="portfolio-section-tabs"') < pageHtml.indexOf('id="portfolioForm"'),
+  "Application portfolio should show section jump controls before the long detailed form.",
+);
 assert.ok(script.includes("renderPortfolioCompletion"), "Portfolio page should refresh the completion guide from saved data.");
-for (const selector of [".portfolio-completion-panel", ".portfolio-completion-grid", ".portfolio-completion-card"]) {
+for (const selector of [".portfolio-section-tabs", ".portfolio-section-tab", ".portfolio-completion-panel", ".portfolio-completion-grid", ".portfolio-completion-card"]) {
   assert.ok(styles.includes(selector), `Stylesheet should define ${selector}.`);
 }
+assert.match(
+  styles,
+  /\.portfolio-section-tabs\s*\{[\s\S]*?position:\s*sticky;/,
+  "Portfolio section tabs should stay available while users work through the long form.",
+);
 
 for (const field of [
   "activityName",
@@ -187,7 +201,7 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260603-deepseek-clear-buttons")
+  pageHtml.includes("./styles.css?v=20260604-ux-command-flow")
     && pageHtml.includes("./src/client/my-activities.js?v=20260603-deepseek-clear-buttons"),
   "我的申请页面应更新 CSS / JS 版本号，避免用户继续加载缓存的旧工作流。"
 );

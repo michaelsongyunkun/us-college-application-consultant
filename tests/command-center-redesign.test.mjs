@@ -32,6 +32,13 @@ assert.ok(!indexHtml.includes("美本申请规划 Agent"), "Logged-in home shoul
 assert.ok(!indexHtml.includes("Automation Status"), "Logged-in home should not show the removed automation status board.");
 assert.ok(!indexHtml.includes('class="command-center-hero"'), "Logged-in home should not render the removed automation status board.");
 assert.ok(!indexHtml.includes("Planning Readiness"), "Logged-in home should not show the removed readiness card.");
+assert.ok(indexHtml.includes('id="commandFocusBar"'), "Logged-in home should expose a compact command focus bar above task cards.");
+assert.ok(indexHtml.includes('class="button-link command-primary-action"'), "Command focus bar should provide one primary next-step action.");
+assert.ok(indexHtml.includes('class="command-focus-metrics"'), "Command focus bar should summarize input, generation, and saved-version progress.");
+assert.ok(
+  indexHtml.indexOf('id="commandFocusBar"') < indexHtml.indexOf('id="dashboardTaskGrid"'),
+  "Command focus bar should lead the dashboard before secondary task cards.",
+);
 assert.ok(
   indexHtml.includes('./src/client/app.js?v=20260602-deepseek-wait-time'),
   "Logged-in shell should cache-bust the main app module with the current DeepSeek wait-time release.",
@@ -120,6 +127,8 @@ for (const selector of [
   ".command-sidebar",
   ".command-main",
   ".command-page-summary",
+  ".dashboard-command-bar",
+  ".command-focus-metrics",
   ".next-action-panel",
   ".command-mobile-bar",
   ".command-mobile-drawer",
@@ -165,4 +174,9 @@ assert.match(
 
 assert.match(styles, /--brand-green:\s*#287250;/, "Brand green should be preserved.");
 assert.match(styles, /--brand-orange:\s*#a86400;/, "Brand orange should be preserved.");
+assert.match(
+  styles,
+  /button:focus-visible,\s*\.button-link:focus-visible,\s*\.quiet-link:focus-visible,\s*\.command-sidebar-nav a:focus-visible,\s*\.action-menu summary:focus-visible/,
+  "Core command controls should share visible keyboard focus states.",
+);
 assert.ok(!styles.includes("background: #172033;"), "Command shell should not use the old dark navy background blocks.");

@@ -44,6 +44,8 @@ for (const expected of [
   "RD",
   "UC",
   'id="schoolSelectionForm"',
+  'class="school-selection-essential-grid"',
+  'class="school-selection-advanced full-span"',
   'id="selectionNationality"',
   'id="selectionHighSchoolRegion"',
   'id="selectionTargetMajor"',
@@ -67,12 +69,32 @@ for (const expected of [
   "\u5bfc\u51faSVG",
   "\u5bfc\u51faWord\u6587\u6863",
   "./assets/logo-mark.svg",
-  "./styles.css?v=20260602-mobile-workbench",
+  "./styles.css?v=20260604-ux-command-flow",
   "./src/client/school-selection.js?v=20260603-admission-probability",
 ]) {
   assert.ok(pageHtml.includes(expected), `School selection page should include ${expected}.`);
 }
 assert.ok(!pageHtml.includes(">导出结果<"), "School selection should replace the old generic export label.");
+assert.ok(
+  pageHtml.indexOf('class="school-selection-essential-grid"') < pageHtml.indexOf('class="school-selection-advanced full-span"'),
+  "School selection form should ask for essential inputs before optional advanced preferences.",
+);
+const advancedPreferences = pageHtml.match(/<details class="school-selection-advanced full-span"[\s\S]*?<\/details>/)?.[0] || "";
+for (const advancedField of [
+  'id="selectionBudgetSensitivity"',
+  'id="selectionRegionPreference"',
+  'id="selectionCampusSetting"',
+  'id="selectionSchoolSize"',
+  'id="selectionEdRiskTolerance"',
+  'id="selectionScholarshipNeed"',
+  'id="selectionPreferences"',
+]) {
+  assert.ok(advancedPreferences.includes(advancedField), `Advanced preference drawer should contain ${advancedField}.`);
+}
+assert.ok(
+  !advancedPreferences.includes('id="selectionNationality"') && !advancedPreferences.includes('id="selectionHighSchoolRegion"'),
+  "Required generation fields should remain outside the advanced preference drawer.",
+);
 
 assert.ok(script.includes('"/api/school-selection-jobs"'), "School selection page should create a background generation job.");
 assert.ok(script.includes("waitForSchoolSelectionJob"), "School selection page should poll the background job for results.");
@@ -121,6 +143,8 @@ assert.doesNotMatch(script, /deepSeekApiKey/i, "School selection should not expo
 for (const selector of [
   ".school-selection-shell",
   ".school-selection-form",
+  ".school-selection-essential-grid",
+  ".school-selection-advanced",
   ".school-selection-results",
   ".school-selection-round",
   ".school-selection-card",
@@ -137,6 +161,16 @@ assert.match(
   styles,
   /\.school-selection-form\s*\{[\s\S]*?padding:\s*24px 30px 30px;/,
   "School selection form should have dedicated inner padding.",
+);
+assert.match(
+  styles,
+  /\.school-selection-essential-grid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/,
+  "School selection essential fields should use a concise two-column grid on desktop.",
+);
+assert.match(
+  styles,
+  /\.school-selection-advanced summary\s*\{[\s\S]*?min-height:\s*48px;/,
+  "Advanced preference drawer should use a comfortable touch target.",
 );
 assert.match(
   styles,

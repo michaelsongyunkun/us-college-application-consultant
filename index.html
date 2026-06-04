@@ -15,7 +15,7 @@
     <meta name="twitter:description" content="面向学生与家长的 AI 美本规划工作台：背景整理、活动规划、资源匹配和报告导出。" />
     <title>AI 美本规划工作台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260602-mobile-workbench" />
+    <link rel="stylesheet" href="./styles.css?v=20260604-ux-command-flow" />
   </head>
   <body>
     <section id="authShell" class="landing-shell" aria-labelledby="landing-title">
@@ -294,13 +294,33 @@
         </div>
       </header>
 
-      <section id="dashboardOverview" class="command-page-summary dashboard-overview" aria-label="登录后任务驾驶舱">
-        <div class="dashboard-overview-copy">
-          <p class="eyebrow">今日工作台</p>
-          <h2>先选一个动作，把规划推进下去</h2>
-          <p>
-            不确定从哪里开始时，优先补齐申请档案；已有基础信息后，再生成规划、追问 DeepSeek 或产出选校版本。
-          </p>
+      <section id="dashboardOverview" class="command-page-summary dashboard-overview command-focus-overview" aria-label="登录后任务驾驶舱">
+        <div id="commandFocusBar" class="dashboard-command-bar" aria-label="今日优先行动">
+          <div class="command-focus-copy">
+            <p class="eyebrow">今日工作台</p>
+            <h2>先补齐输入，再生成规划</h2>
+            <p>
+              不确定从哪里开始时，先把学生信息和申请档案补到可用状态；已有基础信息后，再生成规划、追问 DeepSeek 或产出选校版本。
+            </p>
+          </div>
+          <div class="command-focus-actions">
+            <a class="button-link command-primary-action" href="#profilePanel">完善学生信息</a>
+            <a class="quiet-link command-secondary-action" href="./my-activities.html" data-safe-nav>查看申请档案</a>
+          </div>
+          <dl class="command-focus-metrics" aria-label="申请规划进度摘要">
+            <div>
+              <dt>输入</dt>
+              <dd>学生背景</dd>
+            </div>
+            <div>
+              <dt>生成</dt>
+              <dd>活动规划</dd>
+            </div>
+            <div>
+              <dt>沉淀</dt>
+              <dd>档案版本</dd>
+            </div>
+          </dl>
         </div>
         <div id="dashboardTaskGrid" class="dashboard-task-grid" aria-label="核心任务入口">
           <a class="dashboard-task-card is-primary" href="#profilePanel">
