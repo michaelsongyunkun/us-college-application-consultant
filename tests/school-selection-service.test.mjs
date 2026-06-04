@@ -246,6 +246,11 @@ const retryPayload = JSON.parse(calls[1].options.body);
 assert.match(retryPayload.messages[1].content, /上一次输出未通过二次校验/);
 assert.match(retryPayload.messages[1].content, /EA 需要 3-5 所/);
 
+assert.match(sentPayload.messages[0].content, /Top30/);
+assert.match(sentPayload.messages[0].content, /Top30 之后/);
+assert.match(sentPayload.messages[0].content, /不要把 Top30 的极低概率口径套用到所有学校/);
+assert.match(sentPayload.messages[0].content, /低估/);
+
 function school(name, major, riskLevel) {
   return {
     school: name,
