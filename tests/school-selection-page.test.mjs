@@ -104,6 +104,8 @@ assert.ok(
 );
 assert.ok(script.includes("renderSchoolSelectionResults"), "School selection page should render grouped results.");
 assert.ok(script.includes("admissionProbability"), "School selection should render and collect estimated admission probability ranges.");
+assert.ok(script.includes('class="school-selection-major-field"'), "School selection major field should have a dedicated layout hook.");
+assert.ok(script.includes('class="school-selection-probability-field"'), "School selection admission probability field should have a dedicated layout hook.");
 assert.ok(script.includes("录取概率区间"), "School selection should label admission probability as a range.");
 assert.ok(script.includes("非录取承诺"), "School selection should clarify that probability ranges are not admission guarantees.");
 assert.ok(script.includes("selectionNationality"), "School selection page should read nationality.");
@@ -181,4 +183,24 @@ assert.match(
   styles,
   /\.school-selection-results\s*\{[\s\S]*?padding:\s*24px 30px 30px;/,
   "School selection results should have dedicated inner padding.",
+);
+assert.match(
+  styles,
+  /\.school-selection-card-grid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(min\(100%,\s*300px\),\s*1fr\)\);/,
+  "School selection cards should not shrink below a readable generated-result width.",
+);
+assert.match(
+  styles,
+  /\.school-selection-card-fields\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\);/,
+  "School selection generated-result fields should use shrink-safe columns.",
+);
+assert.match(
+  styles,
+  /\.school-selection-major-field\s*\{[\s\S]*?grid-column:\s*1\s*\/\s*-1;/,
+  "School selection major field should span the result card so admission probability cannot cover it.",
+);
+assert.match(
+  styles,
+  /\.school-selection-card-fields label span\s*\{[\s\S]*?overflow-wrap:\s*anywhere;/,
+  "School selection field labels should wrap inside result cards instead of overlapping.",
 );

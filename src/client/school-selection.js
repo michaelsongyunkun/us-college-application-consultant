@@ -245,17 +245,17 @@ function renderSchoolCard(entry) {
         </label>
       </div>
       <div class="school-selection-card-fields">
-        <label>
+        <label class="school-selection-major-field">
           <span>专业方向</span>
           <input data-selection-field="major" value="${escapeHtml(entry.major || "")}" placeholder="待确认" />
         </label>
-        <label>
+        <label class="school-selection-risk-field">
           <span>风险等级</span>
           <select data-selection-field="riskLevel">
             ${renderRiskOptions(entry.riskLevel)}
           </select>
         </label>
-        <label>
+        <label class="school-selection-probability-field">
           <span>录取概率区间</span>
           <input
             data-selection-field="admissionProbability"
