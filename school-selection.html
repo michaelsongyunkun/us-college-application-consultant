@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>美本选校系统</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260605-sidebar-root-scroll" />
+    <link rel="stylesheet" href="./styles.css?v=20260605-ui" />
   </head>
   <body>
     <main class="app-shell command-shell school-selection-shell">
@@ -132,7 +132,16 @@
                 </label>
                 <label>
                   <span>地区偏好</span>
-                  <input id="selectionRegionPreference" name="regionPreference" type="text" placeholder="例如：东海岸 / 加州 / 不考虑过冷地区" />
+                  <select id="selectionRegionPreference" name="regionPreference">
+                    <option value="">请选择</option>
+                    <option value="东海岸 / 纽约-波士顿">东海岸 / 纽约-波士顿</option>
+                    <option value="加州 / 西海岸">加州 / 西海岸</option>
+                    <option value="五大湖 / 中西部">五大湖 / 中西部</option>
+                    <option value="南部 / 东南部">南部 / 东南部</option>
+                    <option value="大城市优先">大城市优先</option>
+                    <option value="不考虑过冷地区">不考虑过冷地区</option>
+                    <option value="都可以 / 无明显偏好">都可以 / 无明显偏好</option>
+                  </select>
                 </label>
                 <label>
                   <span>校园环境</span>

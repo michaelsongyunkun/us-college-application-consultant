@@ -69,7 +69,7 @@ for (const expected of [
   "\u5bfc\u51faSVG",
   "\u5bfc\u51faWord\u6587\u6863",
   "./assets/logo-mark.svg",
-  "./styles.css?v=20260605-sidebar-root-scroll",
+  "./styles.css?v=20260605-ui",
   "./src/client/school-selection.js?v=20260603-admission-probability",
 ]) {
   assert.ok(pageHtml.includes(expected), `School selection page should include ${expected}.`);
@@ -91,6 +91,16 @@ for (const advancedField of [
 ]) {
   assert.ok(advancedPreferences.includes(advancedField), `Advanced preference drawer should contain ${advancedField}.`);
 }
+assert.match(
+  advancedPreferences,
+  /<select id="selectionRegionPreference" name="regionPreference">[\s\S]*?<option value="">请选择<\/option>[\s\S]*?<option value="加州 \/ 西海岸">加州 \/ 西海岸<\/option>[\s\S]*?<\/select>/,
+  "地区偏好应使用下拉选择，不应要求手动输入。",
+);
+assert.doesNotMatch(
+  advancedPreferences,
+  /<input[^>]+id="selectionRegionPreference"/,
+  "地区偏好不应再渲染为文本输入框。",
+);
 assert.ok(
   !advancedPreferences.includes('id="selectionNationality"') && !advancedPreferences.includes('id="selectionHighSchoolRegion"'),
   "Required generation fields should remain outside the advanced preference drawer.",

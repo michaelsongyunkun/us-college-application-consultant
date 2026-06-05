@@ -201,7 +201,7 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260605-sidebar-root-scroll")
+  pageHtml.includes("./styles.css?v=20260605-ui")
     && pageHtml.includes("./src/client/my-activities.js?v=20260603-deepseek-clear-buttons"),
   "我的申请页面应更新 CSS / JS 版本号，避免用户继续加载缓存的旧工作流。"
 );
@@ -237,6 +237,21 @@ assert.match(
   styles,
   /\.application-school-combobox-menu\s*\{[\s\S]*?top:\s*calc\(100%\s*\+\s*6px\);[\s\S]*?max-height:\s*260px;[\s\S]*?overflow-y:\s*auto;/,
   "Application school combobox menu should be anchored below the trigger and scroll internally.",
+);
+assert.match(
+  styles,
+  /\.application-school-combobox-trigger:hover\s*\{[\s\S]*?background:\s*#fff;[\s\S]*?color:\s*var\(--ink\);/,
+  "Application school trigger should remain white on hover instead of inheriting the global green button hover.",
+);
+assert.match(
+  styles,
+  /\.application-school-combobox-option\.is-selected\s*\{[\s\S]*?background:\s*#fff;[\s\S]*?color:\s*var\(--ink\);/,
+  "Application school selected option should remain white.",
+);
+assert.doesNotMatch(
+  styles,
+  /\.application-school-combobox-option:hover,\s*\.application-school-combobox-option:focus-visible,\s*\.application-school-combobox-option\.is-selected\s*\{[\s\S]*?background:\s*var\(--surface-green\)/,
+  "Application school selected option should not share the old green selected state.",
 );
 assert.match(
   styles,
