@@ -18,6 +18,10 @@ import {
 } from "./src/server/deepseek-rag-service.mjs";
 import { createMailerFromEnv } from "./src/server/mailer.mjs";
 import { PlanningError, createPlanningService } from "./src/server/planning-service.mjs";
+import {
+  ProgressPlannerError,
+  createProgressPlannerService,
+} from "./src/server/progress-planner-service.mjs";
 import { loadEnvFile } from "./src/server/env-loader.mjs";
 import { normalizeDeepSeekModel } from "./src/server/deepseek-model.mjs";
 import {
@@ -574,6 +578,7 @@ export function createAppServer({
   authDb = createAuthDatabase({ databasePath }),
   auth = createAuthService({ authDb }),
   planning = createPlanningService({ authDb }),
+  progressPlanner = createProgressPlannerService({ authDb }),
   activityPortfolio = createActivityPortfolioService({ authDb }),
   deepSeekRag = createDeepSeekRagService({ root, planning, activityPortfolio }),
   schoolSelection = createSchoolSelectionService({ activityPortfolio, root }),
@@ -733,6 +738,20 @@ export function createAppServer({
         return;
       }
 
+      if (request.method === "GET" && url.pathname === "/api/progress-planner") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        sendJson(response, 200, progressPlanner.getPlanner(user));
+        return;
+      }
+
+      if (request.method === "PUT" && url.pathname === "/api/progress-planner") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        sendJson(response, 200, progressPlanner.savePlanner(user, await readJson(request)));
+        return;
+      }
+
       if (request.method === "GET" && url.pathname === "/api/plans") {
         const user = requireUser(request, response, auth);
         if (!user) return;
@@ -873,6 +892,7 @@ export function createAppServer({
         (requestPath === "/course-helper.html" ||
           requestPath === "/gpa-calculator.html" ||
           requestPath === "/my-activities.html" ||
+          requestPath === "/planning-tracker.html" ||
           requestPath === "/school-selection.html" ||
           requestPath === "/ask-deepseek.html" ||
           requestPath === "/resource-library.html" ||
@@ -915,6 +935,7 @@ export function createAppServer({
         error instanceof DeepSeekRagError ||
         error instanceof SchoolSelectionError ||
         error instanceof PlanningError ||
+        error instanceof ProgressPlannerError ||
         error instanceof RequestError
       ) {
         sendJson(response, error.statusCode, { error: error.message });

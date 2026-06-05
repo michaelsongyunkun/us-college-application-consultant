@@ -28,9 +28,9 @@ for (const expected of [
   'id="portfolioCompletionAcademic"',
   'id="portfolioCompletionActivities"',
   'id="portfolioCompletionSchoolPlan"',
-  'id="portfolioCompletionDeepSeek"',
   'class="portfolio-section-tabs"',
   'href="#academicRecordsPanel"',
+  'href="#activityImportPanel"',
   'href="#activitiesList"',
   'href="#recommendationLettersPanel"',
   'href="#applicationPlanList"',
@@ -40,17 +40,13 @@ for (const expected of [
   'id="apExamsList"',
   'id="applicationPlanList"',
   'id="applicationPlanProgress"',
+  'id="activityImportPanel"',
   'id="activityImportSources"',
   'id="activityImportStatus"',
   'id="activitiesList"',
   'id="competitionsList"',
   'id="summerSchoolsList"',
   'id="recommendationLettersPanel"',
-  'id="planningActionsPanel"',
-  'id="deepSeekNotesPanel"',
-  'id="planningActionsProgress"',
-  'id="clearPlanningActionsButton"',
-  'id="clearDeepSeekNotesButton"',
   'id="activitiesProgress"',
   'id="competitionsProgress"',
   'id="summerSchoolsProgress"',
@@ -66,11 +62,23 @@ assert.ok(
 );
 
 assert.ok(
-  pageHtml.indexOf('id="recommendationLettersPanel"') < pageHtml.indexOf('id="planningActionsPanel"')
-    && pageHtml.indexOf('id="planningActionsPanel"') < pageHtml.indexOf('id="deepSeekNotesPanel"')
-    && pageHtml.indexOf('id="deepSeekNotesPanel"') < pageHtml.indexOf('id="applicationPlanList"')
+  pageHtml.indexOf('id="recommendationLettersPanel"') < pageHtml.indexOf('id="applicationPlanList"')
     && pageHtml.indexOf('id="applicationPlanList"') < pageHtml.indexOf('class="portfolio-save-bar"'),
-  "DeepSeek 产出应位于推荐信与选校计划之间，选校计划仍靠近保存栏。"
+  "选校计划应位于推荐信之后并靠近保存栏。"
+);
+
+assert.ok(
+  pageHtml.includes('<details id="activityImportPanel"')
+    && pageHtml.includes('<summary class="section-heading table-heading">')
+    && pageHtml.includes('id="activity-import-title">从申请规划导入</h2>')
+    && pageHtml.includes("</details>"),
+  "从申请规划导入模块应使用 details/summary 支持收起和展开。"
+);
+
+assert.doesNotMatch(
+  pageHtml,
+  /portfolioCompletionDeepSeek|planningActionsPanel|deepSeekNotesPanel|planningActionsProgress|clearPlanningActionsButton|clearDeepSeekNotesButton|DeepSeek 行动清单|DeepSeek 保存摘录/,
+  "我的申请页面不应再展示 DeepSeek 行动清单或保存摘录区块。"
 );
 
 for (const copy of [
@@ -80,7 +88,6 @@ for (const copy of [
   "竞赛：已填写 0/5",
   "夏校：已填写 0/3",
   "推荐信：待补充",
-  "DeepSeek 行动：0 项",
 ]) {
   assert.ok(pageHtml.includes(copy) || script.includes(copy), `完成度文案应覆盖空状态：${copy}`);
 }
@@ -97,10 +104,22 @@ assert.ok(script.includes("renderPortfolioCompletion"), "Portfolio page should r
 for (const selector of [".portfolio-section-tabs", ".portfolio-section-tab", ".portfolio-completion-panel", ".portfolio-completion-grid", ".portfolio-completion-card"]) {
   assert.ok(styles.includes(selector), `Stylesheet should define ${selector}.`);
 }
+for (const selector of [
+  "details.activity-import-panel > summary",
+  "details.activity-import-panel:not([open]) > summary::after",
+  "details.activity-import-panel:not([open]) > .activity-import-sources",
+]) {
+  assert.ok(styles.includes(selector), `Stylesheet should define collapsible import selector ${selector}.`);
+}
 assert.match(
   styles,
   /\.portfolio-section-tabs\s*\{[\s\S]*?position:\s*sticky;/,
   "Portfolio section tabs should stay available while users work through the long form.",
+);
+assert.match(
+  styles,
+  /\.portfolio-completion-grid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/,
+  "Portfolio completion guide should use three columns after removing the DeepSeek card.",
 );
 
 for (const field of [
@@ -118,11 +137,6 @@ for (const field of [
   "applicationPlan",
   "planningActions",
   "deepSeekNotes",
-  "renderPlanningActions",
-  "renderDeepSeekNotes",
-  "clearDeepSeekPortfolioSection",
-  "clearPlanningActionsButton",
-  "clearDeepSeekNotesButton",
   "planningActions: []",
   "deepSeekNotes: []",
   "academicRecords",
@@ -201,8 +215,8 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260605-ui")
-    && pageHtml.includes("./src/client/my-activities.js?v=20260603-deepseek-clear-buttons"),
+  pageHtml.includes("./styles.css?v=20260605-import-collapse")
+    && pageHtml.includes("./src/client/my-activities.js?v=20260605-import-collapse"),
   "我的申请页面应更新 CSS / JS 版本号，避免用户继续加载缓存的旧工作流。"
 );
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");

@@ -144,6 +144,7 @@ const PROTECTED_NEXT_PATHS = new Set([
   "/course-helper.html",
   "/gpa-calculator.html",
   "/my-activities.html",
+  "/planning-tracker.html",
   "/school-selection.html",
   "/ask-deepseek.html",
   "/resource-library.html",

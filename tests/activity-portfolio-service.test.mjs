@@ -62,6 +62,7 @@ try {
       ],
       satTests: [],
       apExams: [],
+      standardizedPlan: {},
     },
     updatedAt: null,
   });
@@ -165,6 +166,18 @@ try {
         { courseName: "AP Calculus BC（微积分 BC）", score: "5", examYear: "2026" },
         { courseName: "AP Biology（生物）", score: "未出分", examYear: "2026" },
       ],
+      standardizedPlan: {
+        input: {
+          grade: "11年级",
+          preferredExam: "sat",
+        },
+        route: {
+          summary: "SAT 主线 + TOEFL 补齐",
+          primaryExam: "SAT",
+          risks: ["目标学校存在必交政策"],
+        },
+        savedAt: "2026-06-05T00:00:00.000Z",
+      },
     },
   });
 
@@ -202,6 +215,8 @@ try {
   assert.equal(saved.academicRecords.satTests[0].testDate, "2026-03-14");
   assert.equal(saved.academicRecords.apExams[0].courseName, "AP Calculus BC（微积分 BC）");
   assert.equal(saved.academicRecords.apExams[1].score, "未出分");
+  assert.equal(saved.academicRecords.standardizedPlan.route.primaryExam, "SAT");
+  assert.deepEqual(saved.academicRecords.standardizedPlan.route.risks, ["目标学校存在必交政策"]);
   assert.equal(saved.updatedAt, "2026-05-28T00:00:00.000Z");
 
   const reloaded = portfolios.getPortfolio(firstStudent);
@@ -243,6 +258,7 @@ try {
       ],
       satTests: [],
       apExams: [],
+      standardizedPlan: {},
     },
     updatedAt: null,
   });

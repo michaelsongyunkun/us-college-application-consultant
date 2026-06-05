@@ -7,6 +7,9 @@ const SCHOOL_SELECTION_VERSION_LIMIT = 12;
 const GPA_RECORD_LIMIT = 16;
 const SAT_TEST_LIMIT = 10;
 const AP_EXAM_LIMIT = 40;
+const STANDARDIZED_PLAN_ARRAY_LIMIT = 80;
+const STANDARDIZED_PLAN_OBJECT_FIELD_LIMIT = 120;
+const STANDARDIZED_PLAN_MAX_DEPTH = 7;
 const APPLICATION_ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "uc", "rd", "multiCountry"];
 const APPLICATION_ROUND_LIMITS = {
   rea: 1,
@@ -314,6 +317,7 @@ function defaultAcademicRecords() {
     gpaRecords: DEFAULT_GPA_RECORDS.map((record) => ({ ...record })),
     satTests: [],
     apExams: [],
+    standardizedPlan: {},
   };
 }
 
@@ -327,6 +331,7 @@ function normalizeAcademicRecords(value) {
       : defaultAcademicRecords().gpaRecords,
     satTests: normalizeSatTests(item.satTests),
     apExams: normalizeApExams(item.apExams),
+    standardizedPlan: normalizeStandardizedPlan(item.standardizedPlan),
   };
 }
 
@@ -360,6 +365,45 @@ function normalizeApExams(value) {
     })
     .filter(hasAnyValue)
     .slice(0, AP_EXAM_LIMIT);
+}
+
+function normalizeStandardizedPlan(value) {
+  if (value === undefined || value === null) return {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new ActivityPortfolioError("Standardized plan must be an object", 400);
+  }
+  const normalized = normalizeLooseJson(value, 0);
+  return normalized && typeof normalized === "object" && !Array.isArray(normalized) ? normalized : {};
+}
+
+function normalizeLooseJson(value, depth) {
+  if (depth > STANDARDIZED_PLAN_MAX_DEPTH) return "";
+  if (value === undefined || value === null) return "";
+  if (typeof value === "string") return cleanString(value).slice(0, 2000);
+  if (typeof value === "number") return Number.isFinite(value) ? value : "";
+  if (typeof value === "boolean") return value;
+  if (Array.isArray(value)) {
+    return value
+      .slice(0, STANDARDIZED_PLAN_ARRAY_LIMIT)
+      .map((entry) => normalizeLooseJson(entry, depth + 1))
+      .filter((entry) => !isLooseJsonEmpty(entry));
+  }
+  if (typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .slice(0, STANDARDIZED_PLAN_OBJECT_FIELD_LIMIT)
+        .map(([key, entry]) => [cleanString(key).slice(0, 80), normalizeLooseJson(entry, depth + 1)])
+        .filter(([key, entry]) => key && !isLooseJsonEmpty(entry)),
+    );
+  }
+  return cleanString(value).slice(0, 2000);
+}
+
+function isLooseJsonEmpty(value) {
+  if (value === "" || value === undefined || value === null) return true;
+  if (Array.isArray(value)) return value.length === 0;
+  if (value && typeof value === "object") return Object.keys(value).length === 0;
+  return false;
 }
 
 function normalizeScore(value, min, max) {

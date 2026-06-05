@@ -2,7 +2,7 @@ import {
   buildApCourseStudentProfile,
   parseApCoursesMarkdown,
   recommendApCoursePlan,
-} from "../domain/ap-course-recommender.mjs?v=20260602-ap-rigor";
+} from "../domain/ap-course-recommender.mjs?v=20260605-ap-balance-fit";
 
 const form = document.querySelector("#courseHelperForm");
 const apCourseGrid = document.querySelector("#apCourseGrid");
@@ -147,6 +147,11 @@ function renderRecommendations() {
               <h3>建议修读 ${gradePlan.targetCount} 门 AP</h3>
             </div>
           </div>
+          ${
+            gradePlan.balanceSummary
+              ? `<p class="ap-balance-summary">${escapeHtml(gradePlan.balanceSummary)}</p>`
+              : ""
+          }
           <div class="ap-plan-courses">
             ${gradePlan.recommendations
               .map(
@@ -156,6 +161,16 @@ function renderRecommendations() {
                       <strong>${escapeHtml(course.name)}</strong>
                       <span>${escapeHtml(course.rating || "B")}</span>
                     </div>
+                    <div class="ap-plan-tags" aria-label="AP 课程推荐标签">
+                      <span class="ap-plan-tag is-fit">${escapeHtml(course.fitType || "兴趣拓展")}</span>
+                      <span class="ap-plan-tag">${escapeHtml(course.studySide || "跨学科")}</span>
+                      ${
+                        course.fitType === "课程链前置"
+                          ? '<span class="ap-plan-tag is-chain">课程链</span>'
+                          : ""
+                      }
+                      <span class="ap-plan-tag is-score">匹配 ${escapeHtml(course.fitScore ?? "-")}</span>
+                    </div>
                     <p>${escapeHtml(course.chineseName || course.category)}</p>
                     <dl class="ap-score-meta">
                       <div><dt>5 分率</dt><dd>${escapeHtml(course.fiveRate || "未提供")}</dd></div>
@@ -163,7 +178,16 @@ function renderRecommendations() {
                       <div><dt>5 分阈值</dt><dd>${escapeHtml(course.fiveThreshold || "未提供")}</dd></div>
                       <div><dt>4 分阈值</dt><dd>${escapeHtml(course.fourThreshold || "未提供")}</dd></div>
                     </dl>
-                    <p>${escapeHtml(course.reason)}</p>
+                    <div class="ap-plan-reason-grid">
+                      <div>
+                        <strong>专业相关</strong>
+                        <p>${escapeHtml(course.reason)}</p>
+                      </div>
+                      <div>
+                        <strong>文理结构</strong>
+                        <p>${escapeHtml(course.balanceReason)}</p>
+                      </div>
+                    </div>
                   </section>`,
               )
               .join("")}

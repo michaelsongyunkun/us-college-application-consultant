@@ -169,6 +169,15 @@ export function createAuthDatabase({ databasePath }) {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS student_progress_planners (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      planner_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS planning_projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -207,6 +216,8 @@ export function createAuthDatabase({ databasePath }) {
     CREATE INDEX IF NOT EXISTS idx_feedback_entries_feedback_date ON feedback_entries(feedback_date);
     CREATE INDEX IF NOT EXISTS idx_student_activity_portfolios_user_id
       ON student_activity_portfolios(user_id);
+    CREATE INDEX IF NOT EXISTS idx_student_progress_planners_user_id
+      ON student_progress_planners(user_id);
     CREATE INDEX IF NOT EXISTS idx_planning_projects_user_id ON planning_projects(user_id);
     CREATE INDEX IF NOT EXISTS idx_planning_snapshots_project_id ON planning_snapshots(project_id);
     CREATE INDEX IF NOT EXISTS idx_planning_snapshots_user_id ON planning_snapshots(user_id);

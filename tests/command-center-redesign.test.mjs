@@ -1,16 +1,17 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const pages = [
   ["index.html", "申请规划中心"],
   ["my-activities.html", "我的申请档案"],
+  ["planning-tracker.html", "计划与进度"],
   ["school-selection.html", "美本选校系统"],
   ["ask-deepseek.html", "问DeepSeek"],
   ["resource-library.html", "资源库"],
   ["school-encyclopedia.html", "院校百科"],
   ["major-encyclopedia.html", "专业百科"],
-  ["gpa-calculator.html", "GPA / AP 工具"],
   ["course-helper.html", "选课辅助器"],
+  ["gpa-calculator.html", "GPA / AP 工具"],
   ["feedback.html", "反馈与支持"],
   ["contact.html", "联系我们"],
   ["disclaimer.html", "免责声明"],
@@ -21,6 +22,8 @@ const indexHtml = readFileSync("index.html", "utf8");
 const styles = readFileSync("styles.css", "utf8");
 const courseHelperHtml = readFileSync("course-helper.html", "utf8");
 const courseHelperScript = readFileSync("src/client/course-helper.js", "utf8");
+const planningTrackerHtml = readFileSync("planning-tracker.html", "utf8");
+const planningTrackerScript = readFileSync("src/client/planning-tracker.js", "utf8");
 const safeNavigationScript = readFileSync("src/client/safe-navigation.mjs", "utf8");
 
 const authShell = indexHtml.match(/<section id="authShell"[\s\S]*?<\/section>\s*<main id="appShell"/)?.[0] || "";
@@ -49,14 +52,56 @@ assert.ok(
 );
 assert.match(
   courseHelperHtml,
-  /src="\.\/src\/client\/course-helper\.js\?v=20260602-ap-rigor"/,
-  "Course helper page should cache-bust AP rigor planning updates.",
+  /src="\.\/src\/client\/course-helper\.js\?v=20260605-ap-balance-fit"/,
+  "Course helper page should cache-bust AP balance-fit planning updates.",
 );
 assert.match(
   courseHelperScript,
-  /from "\.\.\/domain\/ap-course-recommender\.mjs\?v=20260602-ap-rigor"/,
-  "Course helper should cache-bust the AP recommender module after rigor rule updates.",
+  /from "\.\.\/domain\/ap-course-recommender\.mjs\?v=20260605-ap-balance-fit"/,
+  "Course helper should cache-bust the AP recommender module after balance-fit rule updates.",
 );
+for (const expected of [
+  "balanceSummary",
+  "fitType",
+  "studySide",
+  "balanceReason",
+  "fitScore",
+  "ap-balance-summary",
+  "ap-plan-tags",
+  "ap-plan-tag",
+  "专业相关",
+  "文理结构",
+]) {
+  assert.ok(courseHelperScript.includes(expected), `Course helper should render AP fit/balance field: ${expected}`);
+}
+for (const selector of [".ap-balance-summary", ".ap-plan-tags", ".ap-plan-tag", ".ap-plan-reason-grid"]) {
+  assert.ok(styles.includes(selector), `Stylesheet should define AP fit/balance UI selector ${selector}.`);
+}
+assert.equal(existsSync("standardized-planner.html"), false, "Standardized planner page should be removed.");
+assert.equal(existsSync("src/client/standardized-planner.js"), false, "Standardized planner client script should be removed.");
+assert.equal(existsSync("src/domain/standardized-test-planner.mjs"), false, "Standardized planner domain module should be removed.");
+assert.equal(existsSync("tests/standardized-test-planner.test.mjs"), false, "Standardized planner tests should be removed with the feature.");
+assert.match(
+  planningTrackerHtml,
+  /src="\.\/src\/client\/planning-tracker\.js\?v=20260605-planning-tracker"/,
+  "Planning tracker page should cache-bust its client module.",
+);
+assert.match(
+  planningTrackerScript,
+  /from "\.\.\/domain\/progress-planner\.mjs\?v=20260605-planning-tracker"/,
+  "Planning tracker should import the deterministic progress planner domain module.",
+);
+for (const expected of [
+  "planningTrackerForm",
+  "progressTaskList",
+  "progressDashboardMetrics",
+  "checkInForm",
+  "计划与进度",
+]) {
+  assert.ok(planningTrackerHtml.includes(expected) || planningTrackerScript.includes(expected), `Planning tracker should expose ${expected}.`);
+}
+assert.ok(indexHtml.includes("制定本周计划"), "Logged-in dashboard should include a weekly planning entry.");
+assert.ok(indexHtml.includes("./planning-tracker.html"), "Logged-in dashboard should link to the planning tracker.");
 
 for (const [file, activeLabel] of pages) {
   const html = readFileSync(file, "utf8");
@@ -72,9 +117,11 @@ for (const [file, activeLabel] of pages) {
   assert.ok(html.includes("US College Compass"), `${file} should preserve the current brand name.`);
   assert.ok(html.includes("Application Planning Center"), `${file} should position the logged-in product as a planning center.`);
   assert.ok(html.includes(`aria-current="page">${activeLabel}`), `${file} should mark ${activeLabel} as the active command nav item.`);
-  for (const navLabel of ["申请规划中心", "我的申请档案", "美本选校系统", "资源库", "院校百科", "专业百科", "选课辅助器", "GPA / AP 工具", "免责声明", "反馈与支持", "联系我们"]) {
+  for (const navLabel of ["申请规划中心", "我的申请档案", "计划与进度", "美本选校系统", "资源库", "院校百科", "专业百科", "选课辅助器", "GPA / AP 工具", "免责声明", "反馈与支持", "联系我们"]) {
     assert.ok(html.includes(navLabel), `${file} should include command nav label ${navLabel}.`);
   }
+  assert.ok(!html.includes("标化路线规划器"), `${file} should not link to the removed standardized planner.`);
+  assert.ok(!html.includes("./standardized-planner.html"), `${file} should not reference the removed standardized planner page.`);
   const commandNav = html.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";
   for (const section of ["core", "reference", "academic", "support"]) {
     assert.ok(
@@ -99,7 +146,11 @@ for (const [file, activeLabel] of pages) {
     );
   }
   assert.ok(
-    commandNav.indexOf("院校百科") < commandNav.indexOf("专业百科")
+    commandNav.indexOf("申请规划中心") < commandNav.indexOf("我的申请档案")
+      && commandNav.indexOf("我的申请档案") < commandNav.indexOf("计划与进度")
+      && commandNav.indexOf("计划与进度") < commandNav.indexOf("美本选校系统")
+      && commandNav.indexOf("美本选校系统") < commandNav.indexOf("问DeepSeek")
+      && commandNav.indexOf("院校百科") < commandNav.indexOf("专业百科")
       && commandNav.indexOf("专业百科") < commandNav.indexOf("选课辅助器")
       && commandNav.indexOf("选课辅助器") < commandNav.indexOf("GPA / AP 工具")
       && commandNav.indexOf("GPA / AP 工具") < commandNav.indexOf("免责声明")

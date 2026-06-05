@@ -15,7 +15,7 @@
     <meta name="twitter:description" content="面向学生与家长的 AI 美本规划工作台：背景整理、活动规划、资源匹配和报告导出。" />
     <title>AI 美本规划工作台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260605-ui" />
+    <link rel="stylesheet" href="./styles.css?v=20260605-ui-calm-os-v2" />
   </head>
   <body>
     <section id="authShell" class="landing-shell" aria-labelledby="landing-title">
@@ -34,24 +34,25 @@
 
       <div class="landing-hero">
         <div class="hero-copy">
-          <p class="eyebrow">中国AI升学规划行业TOP级 · 全站免费使用</p>
-          <h1 id="landing-title">生成规划，<br /><span>顺手匹配资源</span></h1>
+          <p class="eyebrow">免费申请规划工具 · 可保存复盘</p>
+          <h1 id="landing-title">生成规划，<br /><span>整理成一套可复盘系统</span></h1>
           <p class="hero-description">
-            输入年级、方向、成绩和已有活动，免费生成一张美本申请行动地图，再连接 3500+ 课外活动资源和 150+ 院校百科，把建议落到可查、可核验的选择上。
+            输入年级、方向、成绩和已有活动，生成可保存的申请行动地图，顺手匹配资源，并对照 3500+ 项目资源与 150+ 院校信息，把建议落到可执行、可核验、可复盘的选择上。
           </p>
           <button id="heroStartButton" type="button">免费生成我的行动地图</button>
           <div class="hero-proof" aria-label="产品能力">
-            <p><strong>资深升学顾问认可</strong><span>活动规划更贴近申请实战</span></p>
-            <p><strong>3500+课外活动资源</strong><span>覆盖竞赛、夏校、研究和项目方向</span></p>
-            <p><strong>150+院校详解</strong><span>对照学校要求与申请轮次</span></p>
-            <p><strong>全免费开放</strong><span>规划工具、资源库与院校百科均可免费使用</span></p>
+            <p><strong>建议可复核</strong><span>关键要求保留人工核验边界</span></p>
+            <p><strong>3500+ 课外活动资源</strong><span>覆盖竞赛、夏校、研究和活动方向</span></p>
+            <p><strong>150+院校信息</strong><span>对照学校要求与申请轮次</span></p>
+            <p><strong>可保存导出</strong><span>规划、档案与报告支持持续复盘</span></p>
           </div>
+          <!-- 历史营销文案已从可见 UI 移除：中国AI升学规划行业TOP级 / 全站免费使用 / 资深升学顾问认可 / 3500+课外活动资源 / 150+院校详解 / 全免费开放 -->
         </div>
 
         <div id="authCard" class="auth-card">
           <p class="eyebrow">全免费使用</p>
           <h2 id="auth-title">领取你的申请行动地图</h2>
-          <p class="auth-copy">注册后免费保存规划，并解锁 3500+ 课外活动资源、150+ 院校百科、GPA/SAT/AP 档案。网站核心功能目前全免费。</p>
+          <p class="auth-copy">注册后可免费保存规划，继续使用资源库、院校百科、GPA/SAT/AP 档案和报告导出。网站核心功能目前全免费。</p>
           <div class="auth-preview-map" aria-label="申请行动地图预览">
             <div class="auth-preview-top">
               <span>Action Map Preview</span>
@@ -245,6 +246,7 @@
                 </div>
               </div>
               <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
+              <a href="./planning-tracker.html" data-safe-nav>计划与进度</a>
               <a href="./school-selection.html" data-safe-nav>美本选校系统</a>
               <a href="./ask-deepseek.html" data-safe-nav>问DeepSeek</a>
             </div>
@@ -298,27 +300,27 @@
         <div id="commandFocusBar" class="dashboard-command-bar" aria-label="今日优先行动">
           <div class="command-focus-copy">
             <p class="eyebrow">今日工作台</p>
-            <h2>先补齐输入，再生成规划</h2>
+            <h2>当前优先：补齐输入</h2>
             <p>
-              不确定从哪里开始时，先把学生信息和申请档案补到可用状态；已有基础信息后，再生成规划、追问 DeepSeek 或产出选校版本。
+              先确认学生背景和申请档案，再生成规划并保存可复盘版本。
             </p>
           </div>
           <div class="command-focus-actions">
-            <a class="button-link command-primary-action" href="#profilePanel">完善学生信息</a>
-            <a class="quiet-link command-secondary-action" href="./my-activities.html" data-safe-nav>查看申请档案</a>
+            <a class="button-link command-primary-action" href="#profilePanel">继续完善</a>
+            <a class="quiet-link command-secondary-action" href="./my-activities.html" data-safe-nav>打开申请档案</a>
           </div>
           <dl class="command-focus-metrics" aria-label="申请规划进度摘要">
             <div>
-              <dt>输入</dt>
+              <dt>资料</dt>
               <dd>学生背景</dd>
             </div>
             <div>
-              <dt>生成</dt>
-              <dd>活动规划</dd>
+              <dt>规划</dt>
+              <dd>可生成</dd>
             </div>
             <div>
-              <dt>沉淀</dt>
-              <dd>档案版本</dd>
+              <dt>复盘</dt>
+              <dd>可保存</dd>
             </div>
           </dl>
         </div>
@@ -333,13 +335,18 @@
             <strong>整理申请档案</strong>
             <small>沉淀 GPA、活动、推荐信和选校计划。</small>
           </a>
-          <a class="dashboard-task-card" href="./ask-deepseek.html" data-safe-nav>
+          <a class="dashboard-task-card" href="./planning-tracker.html" data-safe-nav>
             <span>03</span>
+            <strong>制定本周计划</strong>
+            <small>把标化、文书、活动和选校拆成可追踪行动。</small>
+          </a>
+          <a class="dashboard-task-card" href="./ask-deepseek.html" data-safe-nav>
+            <span>04</span>
             <strong>问 DeepSeek 体检</strong>
             <small>让系统按档案找缺失项和下一步动作。</small>
           </a>
           <a class="dashboard-task-card" href="./school-selection.html" data-safe-nav>
-            <span>04</span>
+            <span>05</span>
             <strong>生成选校方案</strong>
             <small>用保守、均衡、冲刺版本复盘学校组合。</small>
           </a>

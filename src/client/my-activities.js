@@ -131,8 +131,6 @@ const savePortfolioButtons = document.querySelectorAll("[data-save-portfolio], #
 const exportPortfolioSvgButton = document.querySelector("#exportPortfolioSvgButton");
 const exportPortfolioWordButton = document.querySelector("#exportPortfolioWordButton");
 const clearPortfolioButton = document.querySelector("#clearPortfolioButton");
-const clearPlanningActionsButton = document.querySelector("#clearPlanningActionsButton");
-const clearDeepSeekNotesButton = document.querySelector("#clearDeepSeekNotesButton");
 const portfolioActionButtons = document.querySelectorAll(
   [
     "[data-save-portfolio]",
@@ -140,8 +138,6 @@ const portfolioActionButtons = document.querySelectorAll(
     "#exportPortfolioSvgButton",
     "#exportPortfolioWordButton",
     "#clearPortfolioButton",
-    "#clearPlanningActionsButton",
-    "#clearDeepSeekNotesButton",
   ].join(", "),
 );
 const portfolioStatus = document.querySelector("#portfolioStatus");
@@ -154,7 +150,6 @@ const activitiesProgress = document.querySelector("#activitiesProgress");
 const competitionsProgress = document.querySelector("#competitionsProgress");
 const summerSchoolsProgress = document.querySelector("#summerSchoolsProgress");
 const recommendationProgress = document.querySelector("#recommendationProgress");
-const planningActionsProgress = document.querySelector("#planningActionsProgress");
 const applicationPlanProgress = document.querySelector("#applicationPlanProgress");
 const applicationPlanList = document.querySelector("#applicationPlanList");
 const activityImportSources = document.querySelector("#activityImportSources");
@@ -163,13 +158,10 @@ const activitiesList = document.querySelector("#activitiesList");
 const competitionsList = document.querySelector("#competitionsList");
 const summerSchoolsList = document.querySelector("#summerSchoolsList");
 const recommendationLettersPanel = document.querySelector("#recommendationLettersPanel");
-const planningActionsPanel = document.querySelector("#planningActionsPanel");
-const deepSeekNotesPanel = document.querySelector("#deepSeekNotesPanel");
 const portfolioCompletionCards = {
   academic: document.querySelector("#portfolioCompletionAcademic"),
   activities: document.querySelector("#portfolioCompletionActivities"),
   schoolPlan: document.querySelector("#portfolioCompletionSchoolPlan"),
-  deepSeek: document.querySelector("#portfolioCompletionDeepSeek"),
 };
 
 let isDirty = false;
@@ -216,6 +208,7 @@ function emptyAcademicRecords() {
     gpaRecords: GPA_DEFAULT_RECORDS.map((record) => ({ ...record })),
     satTests: [],
     apExams: [],
+    standardizedPlan: {},
   };
 }
 
@@ -231,8 +224,6 @@ function renderPortfolio(portfolio = emptyPortfolio()) {
   recommendationLettersPanel.innerHTML = renderRecommendationLetters(
     currentPortfolio.recommendationLetters || {},
   );
-  planningActionsPanel.innerHTML = renderPlanningActions(currentPortfolio.planningActions || []);
-  deepSeekNotesPanel.innerHTML = renderDeepSeekNotes(currentPortfolio.deepSeekNotes || []);
   isRendering = false;
   updateCompletion();
 }
@@ -263,6 +254,9 @@ function normalizeAcademicRecordsForView(records = emptyAcademicRecords()) {
     gpaRecords: Array.isArray(records?.gpaRecords) ? records.gpaRecords : fallback.gpaRecords,
     satTests: Array.isArray(records?.satTests) ? records.satTests : [],
     apExams: Array.isArray(records?.apExams) ? records.apExams : [],
+    standardizedPlan: records?.standardizedPlan && typeof records.standardizedPlan === "object"
+      ? records.standardizedPlan
+      : {},
   };
 }
 
@@ -661,42 +655,6 @@ function renderRecommendationLetters(recommendationLetters) {
     </div>`;
 }
 
-function renderPlanningActions(actions = []) {
-  if (!actions.length) {
-    return '<p class="portfolio-empty">从问DeepSeek或美本选校系统保存行动后，会显示在这里。</p>';
-  }
-  return actions
-    .map(
-      (action, index) => `
-        <article class="deepseek-portfolio-item">
-          <span>${index + 1}</span>
-          <div>
-            <strong>${escapeHtml(action.text || "未命名行动")}</strong>
-            <small>${escapeHtml(action.source || "DeepSeek")}</small>
-          </div>
-        </article>`,
-    )
-    .join("");
-}
-
-function renderDeepSeekNotes(notes = []) {
-  if (!notes.length) {
-    return '<p class="portfolio-empty">保存关键回答后，会显示在这里。</p>';
-  }
-  return notes
-    .map(
-      (note) => `
-        <article class="deepseek-portfolio-item note">
-          <div>
-            <strong>${escapeHtml(note.title || "DeepSeek 摘录")}</strong>
-            <p>${escapeHtml(note.content || "").replaceAll("\n", "<br />")}</p>
-            <small>${escapeHtml(note.source || "DeepSeek")}</small>
-          </div>
-        </article>`,
-    )
-    .join("");
-}
-
 function renderTeacherFields(prefix, title, teacher) {
   return `
     <fieldset class="portfolio-fieldset full-span">
@@ -794,6 +752,7 @@ function collectAcademicRecords() {
     gpaRecords: collectAcademicRows("gpa", "academicGpa", gpaRecordFields),
     satTests: collectAcademicRows("sat", "academicSat", satTestFields),
     apExams: collectAcademicRows("ap", "academicAp", apExamFields),
+    standardizedPlan: currentPortfolio.academicRecords?.standardizedPlan || {},
   };
 }
 
@@ -941,9 +900,6 @@ function updateCompletion() {
   recommendationProgress.textContent = hasAnyRecommendation(portfolio.recommendationLetters)
     ? "推荐信：已填写"
     : "推荐信：待补充";
-  if (planningActionsProgress) {
-    planningActionsProgress.textContent = `DeepSeek 行动：${portfolio.planningActions.length} 项`;
-  }
 }
 
 function renderPortfolioCompletion(portfolio = collectPortfolio()) {
@@ -955,7 +911,6 @@ function renderPortfolioCompletion(portfolio = collectPortfolio()) {
     || (academicRecords.apExams || []).length > 0;
   const activityCount = (portfolio.activities || []).length;
   const schoolCount = countApplicationPlanSchools(portfolio.applicationPlan);
-  const deepSeekCount = (portfolio.planningActions || []).length + (portfolio.deepSeekNotes || []).length;
 
   setPortfolioCompletionCard(
     portfolioCompletionCards.academic,
@@ -971,11 +926,6 @@ function renderPortfolioCompletion(portfolio = collectPortfolio()) {
     portfolioCompletionCards.schoolPlan,
     schoolCount > 0 ? "done" : "todo",
     schoolCount > 0 ? `已保存 ${schoolCount} 所学校，适合进入版本复盘。` : "还没有选校计划，可先生成均衡版。",
-  );
-  setPortfolioCompletionCard(
-    portfolioCompletionCards.deepSeek,
-    deepSeekCount > 0 ? "done" : "todo",
-    deepSeekCount > 0 ? `已保存 ${deepSeekCount} 条 DeepSeek 产出。` : "建议先做一次申请档案体检。",
   );
 }
 
@@ -1334,42 +1284,6 @@ async function clearCurrentPortfolio() {
   if (saved) setStatus("已清空当前方案");
 }
 
-async function clearDeepSeekPortfolioSection(section) {
-  const sectionConfig = {
-    planningActions: {
-      label: "DeepSeek 行动清单",
-      emptyPortfolio: { planningActions: [] },
-    },
-    deepSeekNotes: {
-      label: "DeepSeek 保存摘录",
-      emptyPortfolio: { deepSeekNotes: [] },
-    },
-  }[section];
-  if (!sectionConfig) return;
-
-  const portfolio = collectPortfolio();
-  if (!(portfolio[section] || []).length) {
-    setStatus(`${sectionConfig.label}已经是空的`);
-    return;
-  }
-  if (!window.confirm(`确认清空${sectionConfig.label}的所有内容？`)) return;
-
-  trackPortfolioUsageEvent("clear_draft", {
-    details: {
-      exportSurface: "portfolio",
-      clearSection: section,
-    },
-  });
-  renderPortfolio({
-    ...portfolio,
-    ...sectionConfig.emptyPortfolio,
-  });
-  isDirty = true;
-  updateCompletion();
-  const saved = await savePortfolio();
-  if (saved) setStatus(`已清空${sectionConfig.label}`);
-}
-
 async function loadActivityImportSources() {
   if (!activityImportSources) return;
   try {
@@ -1707,12 +1621,6 @@ savePortfolioButtons.forEach((button) => {
 exportPortfolioSvgButton?.addEventListener("click", exportPortfolioSvgDocument);
 exportPortfolioWordButton?.addEventListener("click", exportPortfolioWordDocument);
 clearPortfolioButton?.addEventListener("click", clearCurrentPortfolio);
-clearPlanningActionsButton?.addEventListener("click", () => {
-  clearDeepSeekPortfolioSection("planningActions");
-});
-clearDeepSeekNotesButton?.addEventListener("click", () => {
-  clearDeepSeekPortfolioSection("deepSeekNotes");
-});
 academicRecordsPanel?.addEventListener("click", (event) => {
   const addButton = event.target.closest("[data-add-academic-record]");
   if (addButton) {

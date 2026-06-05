@@ -113,6 +113,7 @@ try {
   }
 
   for (const protectedPath of [
+    "/planning-tracker.html",
     "/course-helper.html",
     "/gpa-calculator.html",
     "/my-activities.html",

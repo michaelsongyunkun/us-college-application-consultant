@@ -60,6 +60,7 @@ try {
       ],
       satTests: [],
       apExams: [],
+      standardizedPlan: {},
     },
     updatedAt: null,
   });
@@ -205,6 +206,25 @@ try {
           { courseName: "AP Calculus BC（微积分 BC）", score: "5", examYear: "2026" },
           { courseName: "AP Biology（生物）", score: "未出分", examYear: "2026" },
         ],
+        standardizedPlan: {
+          input: {
+            grade: "11年级",
+            preferredExam: "sat",
+            weeklyStudyHours: "8",
+          },
+          route: {
+            summary: "SAT 主线 + TOEFL 补齐",
+            primaryExam: "SAT",
+            planVariant: "parallel_required",
+            adaptationFactors: ["目标学校存在必交政策", "语言成绩缺失，需要并行安排"],
+            sectionFocus: [{ exam: "SAT", section: "EBRW / 阅读与文法", priority: "高", reason: "阅读差距较大" }],
+            decisionGates: [{ label: "并行线检查", trigger: "第 1 月结束", action: "保留 SAT 主线，同时固定语言考试窗口" }],
+            timeBudgetWarning: "每周备考时间处于 5-8 小时区间，需要固定分配。",
+            priorities: [{ exam: "SAT", level: "高", reason: "目标学校存在必交政策" }],
+            nextActions: ["核验学校官网标化政策"],
+          },
+          savedAt: "2026-06-05T00:00:00.000Z",
+        },
       },
     },
     firstCookie,
@@ -226,6 +246,13 @@ try {
   assert.equal(saved.academicRecords.gpaRecords[0].gpa, "92");
   assert.equal(saved.academicRecords.satTests[0].totalScore, "1480");
   assert.equal(saved.academicRecords.apExams[1].score, "未出分");
+  assert.equal(saved.academicRecords.standardizedPlan.route.primaryExam, "SAT");
+  assert.equal(saved.academicRecords.standardizedPlan.route.planVariant, "parallel_required");
+  assert.equal(saved.academicRecords.standardizedPlan.route.adaptationFactors[1], "语言成绩缺失，需要并行安排");
+  assert.equal(saved.academicRecords.standardizedPlan.route.sectionFocus[0].section, "EBRW / 阅读与文法");
+  assert.equal(saved.academicRecords.standardizedPlan.route.decisionGates[0].action, "保留 SAT 主线，同时固定语言考试窗口");
+  assert.match(saved.academicRecords.standardizedPlan.route.timeBudgetWarning, /固定分配/);
+  assert.deepEqual(saved.academicRecords.standardizedPlan.route.nextActions, ["核验学校官网标化政策"]);
   assert.ok(saved.updatedAt);
 
   const reloaded = await get("/api/my-activities", firstCookie);
@@ -275,6 +302,7 @@ try {
       ],
       satTests: [],
       apExams: [],
+      standardizedPlan: {},
     },
     updatedAt: null,
   });
