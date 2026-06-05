@@ -143,8 +143,23 @@ assert.match(
 );
 assert.match(
   styles,
+  /\.app-shell\.command-shell\s*\{[\s\S]*?align-items:\s*stretch;/,
+  "Command shell should stretch the sidebar and main content to the same desktop column height.",
+);
+assert.match(
+  styles,
+  /\.command-sidebar\s*\{[\s\S]*?position:\s*sticky;[\s\S]*?top:\s*18px;[\s\S]*?align-self:\s*start;[\s\S]*?height:\s*calc\(100vh - 36px\);[\s\S]*?overflow:\s*hidden;/,
+  "Desktop command sidebar should stay in the viewport and let its navigation scroll internally.",
+);
+assert.match(
+  styles,
   /\.command-sidebar-nav\s*\{[\s\S]*?overflow-y:\s*auto;/,
   "Command sidebar navigation should scroll vertically when entries exceed the viewport.",
+);
+assert.match(
+  styles,
+  /\.command-sidebar-nav\s*\{[\s\S]*?align-content:\s*start;[\s\S]*?grid-auto-rows:\s*max-content;/,
+  "Command sidebar navigation groups should stay content-height instead of stretching down a tall equal-height sidebar.",
 );
 assert.match(
   styles,

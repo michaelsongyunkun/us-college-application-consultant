@@ -27,7 +27,7 @@ assert.ok(filterForm.includes('id="journalDirection"'), "国际期刊汇总应�
 assert.ok(filterForm.includes('id="journalDirectionToggle"'), "论文方向应使用可控的向下展开按钮。");
 assert.ok(filterForm.includes('id="journalDirectionMenu"'), "论文方向应使用页面内下拉菜单而非浏览器原生弹层。");
 assert.ok(filterForm.includes('data-journal-direction-combobox'), "论文方向下拉应有独立 combobox 容器。");
-assert.ok(html.includes("styles.css?v=20260604-ux-command-flow"), "资源库页面应刷新 CSS 版本以避免旧按钮样式缓存。");
+assert.ok(html.includes("styles.css?v=20260605-sidebar-root-scroll"), "资源库页面应刷新 CSS 版本以避免旧按钮样式缓存。");
 assert.ok(filterForm.includes('id="journalIndexDatabase"'), "国际期刊汇总应允许选择检索库要求。");
 assert.ok(filterForm.includes("检索库要求"), "国际期刊筛选应使用用户指定的检索库口径。");
 assert.ok(!toolbar.includes('id="resourceSearch"'), "搜索输入框不应继续位于独立资源工具栏中。");

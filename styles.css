@@ -27,11 +27,11 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: visible;
 }
 
 body {
-  overflow-x: hidden;
+  overflow-x: visible;
 }
 
 /* Command center app shell */
@@ -42,12 +42,13 @@ body {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
   gap: 0;
-  align-items: start;
+  align-items: stretch;
 }
 
 .command-sidebar {
   position: sticky;
   top: 18px;
+  align-self: start;
   min-width: 0;
   height: calc(100vh - 36px);
   min-height: calc(100vh - 36px);
@@ -109,6 +110,9 @@ body {
 
 .command-sidebar-nav {
   display: grid;
+  align-content: start;
+  align-items: start;
+  grid-auto-rows: max-content;
   min-height: 0;
   gap: 6px;
   margin-right: -10px;
@@ -145,6 +149,7 @@ body {
 
 .command-nav-section {
   display: grid;
+  align-content: start;
   gap: 5px;
 }
 

@@ -201,7 +201,7 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260604-ux-command-flow")
+  pageHtml.includes("./styles.css?v=20260605-sidebar-root-scroll")
     && pageHtml.includes("./src/client/my-activities.js?v=20260603-deepseek-clear-buttons"),
   "我的申请页面应更新 CSS / JS 版本号，避免用户继续加载缓存的旧工作流。"
 );
