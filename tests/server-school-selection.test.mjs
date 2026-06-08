@@ -123,7 +123,8 @@ try {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.selection.rounds.ed1[0].school, "University of Chicago");
-  assert.equal(body.selection.rounds.ed1[0].admissionProbability, "18%-28%");
+  assert.equal(body.selection.rounds.ed1[0].admissionProbability, "12%-18%");
+  assert.match(body.selection.rounds.ed1[0].gaps.join(" "), /录取友好度为 5\/10/);
   assert.match(body.selection.strategy.earlyStrategy, /ED1/);
   assert.equal(body.selection.rounds.uc.length, 6);
   assert.equal(JSON.stringify(body).includes("server-school-selection-secret"), false);
@@ -159,6 +160,7 @@ try {
   const completedJob = await waitForSchoolSelectionJob(createdJob.jobId, cookie);
   assert.equal(completedJob.status, "completed");
   assert.equal(completedJob.result.selection.rounds.ed1[0].school, "University of Chicago");
+  assert.equal(completedJob.result.selection.rounds.ed1[0].admissionProbability, "12%-18%");
   assert.equal(completedJob.result.selection.rounds.uc.length, 6);
 } finally {
   await new Promise((resolve) => server.close(resolve));

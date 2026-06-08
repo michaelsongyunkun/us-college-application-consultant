@@ -27,6 +27,8 @@ assert.deepEqual(schools[0], {
   categoryLabel: "综合大学 T80",
   rank: "1",
   name: "普林斯顿大学 Princeton",
+  chinaApplicantFriendliness:
+    "4.5 / 10（中低）。标注依据：整体录取率约4%(CDS); 本科约5,709人; 顶尖校国际池极拥挤",
   applicationAndEssays:
     "CommonApp / Coalition / QuestBridge；主文书 650 词；必答 6 篇（约 900 词）：Why Major 250 / Community 250 / Service 250 / 3 道 50 词短问答",
   schoolFeatures:
@@ -40,7 +42,12 @@ assert.deepEqual(schools[0], {
   standardizedTesting:
     "Test-optional：Fall 2026 / Fall 2027 入学仍可不提交 SAT/ACT；Fall 2028 起恢复 SAT/ACT 必交。若提交，需由考试机构官方送分；AP/IB 可自报作补充。",
 });
+assert.equal(schools.filter((school) => school.chinaApplicantFriendliness).length, 112);
 assert.equal(filterSchools(schools, { category: "university", query: "Maker" })[0].name, "麻省理工 MIT");
+assert.equal(
+  filterSchools(schools, { category: "university", query: "顶尖校国际池极拥挤" })[0].name,
+  "普林斯顿大学 Princeton",
+);
 assert.equal(filterSchools(schools, { category: "liberal-arts", query: "Williams" })[0].rank, "1");
 assert.equal(
   filterSchools(schools, { category: "university", query: "Fall 2028 起恢复" })[0].name,

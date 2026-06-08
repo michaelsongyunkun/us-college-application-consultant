@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs";
 import { resolveApiKey } from "./api-key.mjs";
 import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
 
@@ -20,6 +21,75 @@ const SCHOOL_ENCYCLOPEDIA_FILES = [
   { file: "international-schools.md", label: "英港澳加新院校" },
   { file: "other-region-schools.md", label: "其他地区院校" },
 ];
+const LOW_FRIENDLINESS_SCORE = 5;
+const MEDIUM_FRIENDLINESS_SCORE = 6.5;
+const SCHOOL_NAME_ALIASES = new Map(Object.entries({
+  mit: "massachusettsinstituteoftechnology",
+  yale: "yaleuniversity",
+  duke: "dukeuniversity",
+  jhu: "johnshopkinsuniversity",
+  johnshopkins: "johnshopkinsuniversity",
+  upenn: "universityofpennsylvania",
+  penn: "universityofpennsylvania",
+  caltech: "californiainstituteoftechnology",
+  uchicago: "universityofchicago",
+  washu: "washingtonuniversityinstlouis",
+  notredame: "universityofnotredame",
+  cmu: "carnegiemellonuniversity",
+  umich: "universityofmichiganannarbor",
+  michigan: "universityofmichiganannarbor",
+  unc: "universityofnorthcarolinaatchapelhill",
+  uva: "universityofvirginia",
+  usc: "universityofsoutherncalifornia",
+  uf: "universityofflorida",
+  ucla: "universityofcalifornialosangeles",
+  ucberkeley: "universityofcaliforniaberkeley",
+  berkeley: "universityofcaliforniaberkeley",
+  ucsd: "universityofcaliforniasandiego",
+  ucsandiego: "universityofcaliforniasandiego",
+  ucsb: "universityofcaliforniasantabarbara",
+  ucsantabarbara: "universityofcaliforniasantabarbara",
+  ucdavis: "universityofcaliforniadavis",
+  ucirvine: "universityofcaliforniairvine",
+  uiuc: "universityofillinoisurbana-champaign",
+  uwmadison: "universityofwisconsinmadison",
+  wisconsinmadison: "universityofwisconsinmadison",
+  uw: "universityofwashington",
+  utaustin: "universityoftexasataustin",
+  texasataustin: "universityoftexasataustin",
+  gt: "georgiainstituteoftechnology",
+  gatech: "georgiainstituteoftechnology",
+  georgiatech: "georgiainstituteoftechnology",
+  bc: "bostoncollege",
+  bu: "bostonuniversity",
+  osu: "theohiostateuniversity",
+  ohiostate: "theohiostateuniversity",
+  umd: "universityofmarylandcollegepark",
+  maryland: "universityofmarylandcollegepark",
+  uga: "universityofgeorgia",
+  tamu: "texasamuniversity",
+  wfu: "wakeforestuniversity",
+  wm: "williamandmary",
+  williammary: "williamandmary",
+  cwru: "casewesternreserveuniversity",
+  neu: "northeasternuniversity",
+  northeastern: "northeasternuniversity",
+  umassamherst: "universityofmassachusettsamherst",
+  pennstate: "pennsylvaniastateuniversityuniversitypark",
+  pitt: "universityofpittsburgh",
+  rpi: "rensselaerpolytechnicinstitute",
+  uconn: "universityofconnecticut",
+  gwu: "georgewashingtonuniversity",
+  usna: "unitedstatesnavalacademy",
+  cmc: "claremontmckennacollege",
+  usma: "unitedstatesmilitaryacademyatwestpoint",
+  wl: "washingtonandleeuniversity",
+  wlu: "washingtonandleeuniversity",
+  usafa: "unitedstatesairforceacademy",
+  soka: "sokauniversityofamerica",
+  sewanee: "theuniversityofthesouth",
+  stjohns: "stjohnscollege",
+}));
 
 const SYSTEM_PROMPT = [
   "你是 US College Compass 的美本选校系统，服务对象是准备申请美国本科的学生和家长。",
@@ -52,6 +122,8 @@ const SYSTEM_PROMPT = [
   "- Top30 或同等超高选择性学校可以保持非常保守的概率区间；这些学校即使背景优秀也不要给出确定性表述。",
   "- Top30 之后的学校要按学生背景、专业匹配、成绩/课程、活动/竞赛、国际生身份和学校录取画像综合校准，不要把 Top30 的极低概率口径套用到所有学校。",
   "- 对 Top30 之后且与学生档案明显匹配的 medium/low 学校，概率区间应体现更高把握度，避免系统性低估；低风险学校通常应明显高于匹配校，匹配校通常应明显高于冲刺校。",
+  "- 必须充分使用院校百科中的“中国学生录取友好度”字段校准每所学校的 admissionProbability；友好度低的学校，即使学生背景较强，也要下调录取概率区间并避免标为过于乐观的风险等级。",
+  "- 友好度 1.0-3.5 视为低友好，概率应显著下调；4.0-5.0 视为中低友好，概率应下调；5.5-6.5 视为中等友好，概率口径应略偏保守；7.0 以上不因该字段额外压低。",
   "- 不要把官网整体录取率直接等同于该学生个人录取概率；官网录取率只能作为选择性参考，最终 admissionProbability 必须结合该学生档案竞争力和专业适配度给出区间。",
   "- 信息不足时用更宽的区间并在 gaps 中说明缺口，不要因为缺少信息就把 Top30 之后的学校全部压到极低概率。",
   "",
@@ -135,6 +207,7 @@ export function createSchoolSelectionService({ activityPortfolio, root = process
 
     const portfolio = activityPortfolio.getPortfolio(user);
     const ragSources = await buildSchoolSelectionRagSources({ root, input, portfolio });
+    const friendlinessIndex = await buildSchoolFriendlinessIndex(root);
     const ragContext = buildRagContext(ragSources);
     const model = normalizeDeepSeekModel(env.DEEPSEEK_SCHOOL_SELECTION_MODEL, "deepseek-v4-flash");
     const maxTokens = normalizePositiveInteger(
@@ -182,8 +255,9 @@ export function createSchoolSelectionService({ activityPortfolio, root = process
       }
 
       try {
+        const validatedSelection = validateSchoolSelectionResult(parseSelectionJson(answer));
         return {
-          selection: validateSchoolSelectionResult(parseSelectionJson(answer)),
+          selection: calibrateSelectionWithFriendliness(validatedSelection, friendlinessIndex),
           selectionVersion: input.strategyMode,
           ragSources: ragSources.map(serializeRagSource),
           attempts: attempt,
@@ -228,6 +302,200 @@ export function validateSchoolSelectionResult(value) {
     rounds: normalizedRounds,
     nextActions: normalizeStringList(item.nextActions).slice(0, 8),
   };
+}
+
+async function buildSchoolFriendlinessIndex(root) {
+  try {
+    const markdown = await readFile(join(root, "data", "schools.md"), "utf8");
+    return buildSchoolFriendlinessIndexFromSchools(parseSchoolsMarkdown(markdown));
+  } catch {
+    return { entries: [], byKey: new Map() };
+  }
+}
+
+function buildSchoolFriendlinessIndexFromSchools(schools) {
+  const entries = schools
+    .map((school) => {
+      const friendliness = parseFriendlinessText(school.chinaApplicantFriendliness);
+      if (!friendliness) return null;
+      const keys = buildFriendlinessSchoolKeys(school.name);
+      return {
+        schoolName: school.name,
+        keys,
+        ...friendliness,
+      };
+    })
+    .filter(Boolean);
+  const byKey = new Map();
+  for (const entry of entries) {
+    for (const key of entry.keys) {
+      if (!byKey.has(key)) byKey.set(key, entry);
+    }
+  }
+  return { entries, byKey };
+}
+
+function parseFriendlinessText(value) {
+  const text = cleanString(value);
+  const score = Number(text.match(/(\d+(?:\.\d+)?)\s*\/\s*10/u)?.[1]);
+  if (!Number.isFinite(score)) return null;
+  return {
+    text,
+    score,
+    tier: text.match(/（([^）]+)）/u)?.[1] || "",
+  };
+}
+
+function calibrateSelectionWithFriendliness(selection, friendlinessIndex) {
+  if (!friendlinessIndex?.entries?.length) return selection;
+  return {
+    ...selection,
+    rounds: Object.fromEntries(
+      ROUND_KEYS.map((round) => [
+        round,
+        (selection.rounds?.[round] || []).map((school) =>
+          calibrateSchoolWithFriendliness(school, friendlinessIndex),
+        ),
+      ]),
+    ),
+  };
+}
+
+function calibrateSchoolWithFriendliness(school, friendlinessIndex) {
+  const friendliness = findFriendlinessRecord(school.school, friendlinessIndex);
+  if (!friendliness || friendliness.score > MEDIUM_FRIENDLINESS_SCORE) return school;
+
+  const multiplier = friendlinessProbabilityMultiplier(friendliness.score);
+  const probability = scaleAdmissionProbability(school.admissionProbability, multiplier);
+  const riskLevel = calibrateRiskLevelWithFriendliness(school.riskLevel, friendliness.score);
+  const changed = probability.changed || riskLevel !== school.riskLevel;
+  if (!changed) return school;
+
+  return {
+    ...school,
+    riskLevel,
+    admissionProbability: probability.value,
+    gaps: appendFriendlinessCalibrationGap(school.gaps, friendliness),
+  };
+}
+
+function findFriendlinessRecord(schoolName, friendlinessIndex) {
+  const schoolKey = canonicalSchoolKey(schoolName);
+  const directMatch = friendlinessIndex.byKey.get(schoolKey);
+  if (directMatch) return directMatch;
+
+  let bestMatch = null;
+  let bestKeyLength = 0;
+  for (const entry of friendlinessIndex.entries) {
+    for (const entryKey of entry.keys) {
+      if (entryKey.length < 4) continue;
+      if (!schoolKey.includes(entryKey) && !entryKey.includes(schoolKey)) continue;
+      if (entryKey.length > bestKeyLength) {
+        bestMatch = entry;
+        bestKeyLength = entryKey.length;
+      }
+    }
+  }
+  return bestMatch;
+}
+
+function friendlinessProbabilityMultiplier(score) {
+  if (score <= 3.5) return 0.45;
+  if (score <= LOW_FRIENDLINESS_SCORE) return 0.65;
+  if (score <= MEDIUM_FRIENDLINESS_SCORE) return 0.85;
+  return 1;
+}
+
+function calibrateRiskLevelWithFriendliness(riskLevel, score) {
+  const normalized = cleanString(riskLevel).toLowerCase();
+  if (score <= 3.5) return "high";
+  if (score <= LOW_FRIENDLINESS_SCORE && normalized === "low") return "medium";
+  return normalized || "medium";
+}
+
+function scaleAdmissionProbability(value, multiplier) {
+  const original = cleanString(value);
+  if (multiplier >= 1) return { value: original, changed: false };
+
+  const match = original.match(/(\d+(?:\.\d+)?)\s*%?\s*(?:-|–|—|~|至|到)\s*(\d+(?:\.\d+)?)\s*%/u);
+  if (!match) return scaleSingleAdmissionProbability(original, multiplier);
+
+  const lower = Number(match[1]);
+  const upper = Number(match[2]);
+  if (!Number.isFinite(lower) || !Number.isFinite(upper)) {
+    return { value: original, changed: false };
+  }
+
+  const sortedLower = Math.min(lower, upper);
+  const sortedUpper = Math.max(lower, upper);
+  const adjustedLower = scalePercentValue(sortedLower, multiplier);
+  const adjustedUpper = Math.max(adjustedLower + 1, scalePercentValue(sortedUpper, multiplier));
+  const adjusted = `${formatPercentValue(adjustedLower)}%-${formatPercentValue(adjustedUpper)}%`;
+  return { value: adjusted, changed: adjusted !== original };
+}
+
+function scaleSingleAdmissionProbability(value, multiplier) {
+  const original = cleanString(value);
+  const single = original.match(/(\d+(?:\.\d+)?)\s*%/u);
+  if (!single) return { value: original, changed: false };
+  const upper = Number(single[1]);
+  if (!Number.isFinite(upper)) return { value: original, changed: false };
+  const adjustedUpper = scalePercentValue(upper, multiplier);
+  const adjustedLower = Math.max(1, adjustedUpper - 2);
+  const adjusted = `${formatPercentValue(adjustedLower)}%-${formatPercentValue(adjustedUpper)}%`;
+  return { value: adjusted, changed: adjusted !== original };
+}
+
+function scalePercentValue(value, multiplier) {
+  if (value <= 0) return 0;
+  return Math.max(1, Math.round(value * multiplier));
+}
+
+function formatPercentValue(value) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/u, "");
+}
+
+function appendFriendlinessCalibrationGap(gaps, friendliness) {
+  const note = [
+    `院校百科中国学生录取友好度为 ${friendliness.score}/10`,
+    friendliness.tier ? `（${friendliness.tier}）` : "",
+    "，已据此下调录取概率区间。",
+  ].join("");
+  const existing = normalizeStringList(gaps);
+  if (existing.includes(note)) return existing;
+  return [...existing.slice(0, 5), note];
+}
+
+function buildFriendlinessSchoolKeys(name) {
+  const candidates = [
+    name,
+    extractEnglishSchoolName(name),
+  ].filter(Boolean);
+  return [...new Set(candidates.flatMap((candidate) => {
+    const rawKey = normalizeSchoolKey(candidate);
+    const canonicalKey = canonicalSchoolKey(candidate);
+    return [rawKey, canonicalKey].filter(Boolean);
+  }))];
+}
+
+function extractEnglishSchoolName(value) {
+  return (String(value || "").match(/[A-Za-z][A-Za-z .&'()/-]*/g) || [])
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
+function canonicalSchoolKey(value) {
+  const key = normalizeSchoolKey(value);
+  return SCHOOL_NAME_ALIASES.get(key) || key;
+}
+
+function normalizeSchoolKey(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, "");
 }
 
 function normalizeStrategy(value) {
@@ -338,6 +606,8 @@ function buildSchoolSelectionPortfolioContext(portfolio = {}) {
     planningActions: compactList(portfolio.planningActions, 8, ["text", "source"]),
     deepSeekNotes: compactList(portfolio.deepSeekNotes, 5, ["title", "content", "source"]),
     academicRecords: {
+      courseSystem: cleanString(academicRecords.courseSystem),
+      ibPredictedScore: cleanString(academicRecords.ibPredictedScore),
       gpaScale: cleanString(academicRecords.gpaScale),
       gpaRecords: compactList(academicRecords.gpaRecords, 8, ["gradeLevel", "term", "gpa"]),
       satTests: compactList(academicRecords.satTests, 3, ["totalScore", "englishScore", "mathScore", "testDate"]),

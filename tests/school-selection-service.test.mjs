@@ -206,6 +206,8 @@ const generated = await service.generateSelection({
 
 assert.equal(generated.selection.rounds.uc.length, 6);
 assert.equal(generated.selection.rounds.ea.length, 3);
+assert.equal(generated.selection.rounds.ed1[0].admissionProbability, "5%-8%");
+assert.match(generated.selection.rounds.ed1[0].gaps.join(" "), /录取友好度为 5\/10/);
 assert.equal(generated.selectionVersion, "均衡版");
 assert.ok(generated.ragSources.some((source) => source.type === "school-encyclopedia"));
 assert.equal(JSON.stringify(generated).includes("school-selection-secret"), false);
@@ -227,6 +229,8 @@ assert.match(sentPayload.messages[0].content, /不允许把同一所学校重复
 assert.match(sentPayload.messages[0].content, /风险等级定义/);
 assert.match(sentPayload.messages[0].content, /admissionProbability/);
 assert.match(sentPayload.messages[0].content, /录取概率区间/);
+assert.match(sentPayload.messages[0].content, /中国学生录取友好度/);
+assert.match(sentPayload.messages[0].content, /友好度低的学校/);
 assert.match(sentPayload.messages[0].content, /不是录取承诺/);
 assert.match(sentPayload.messages[0].content, /输出 JSON 前/);
 assert.match(sentPayload.messages[1].content, /中国/);
@@ -250,6 +254,7 @@ assert.match(sentPayload.messages[0].content, /Top30/);
 assert.match(sentPayload.messages[0].content, /Top30 之后/);
 assert.match(sentPayload.messages[0].content, /不要把 Top30 的极低概率口径套用到所有学校/);
 assert.match(sentPayload.messages[0].content, /低估/);
+assert.match(sentPayload.messages[0].content, /概率应显著下调/);
 
 function school(name, major, riskLevel) {
   return {

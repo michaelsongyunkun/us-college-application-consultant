@@ -1,4 +1,4 @@
-import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260603-standardized-testing";
+import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260608-school-friendliness";
 import {
   DEFAULT_VISIBLE_RESULT_LIMIT,
   expandVisibleResultLimit,
@@ -117,9 +117,13 @@ function renderDomesticDetails(school) {
   const safetyScoreDetail = school.safetyScore
     ? `<div><dt>安全评分</dt><dd>${escapeHtml(school.safetyScore)} / 10</dd></div>`
     : "";
+  const chinaApplicantFriendlinessDetail = school.chinaApplicantFriendliness
+    ? `<div><dt>中国学生录取友好度</dt><dd>${escapeHtml(school.chinaApplicantFriendliness)}</dd></div>`
+    : "";
   return `
     ${locationDetail}
     ${safetyScoreDetail}
+    ${chinaApplicantFriendlinessDetail}
     <div><dt>申请与文书</dt><dd>${escapeHtml(displayValue(school.applicationAndEssays))}</dd></div>
     <div><dt>标化政策</dt><dd>${escapeHtml(displayValue(school.standardizedTesting))}</dd></div>
     <div><dt>学校特色</dt><dd>${escapeHtml(displayValue(school.schoolFeatures))}</dd></div>
