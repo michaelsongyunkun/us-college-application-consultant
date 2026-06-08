@@ -4,6 +4,58 @@ import {
 } from "../domain/agent-output-parser.mjs?v=20260531-narrative-cleanup";
 
 const PROFILE_CHOICE_SEPARATOR = "；";
+const PLANNING_PROFILE_FIELD_LIMIT = 800;
+const PLANNING_PROFILE_FIELD_COUNT_LIMIT = 24;
+const PLANNING_ACTIVITY_SHORT_FIELD_LIMIT = 120;
+const PLANNING_ACTIVITY_NAME_LIMIT = 240;
+const PLANNING_ACTIVITY_DESCRIPTION_LIMIT = 1200;
+
+export function buildPlanningGenerationPayload({ profile = {}, activities = [] } = {}) {
+  return {
+    profile: compactPlanningProfile(profile),
+    activities: compactPlanningActivities(activities),
+  };
+}
+
+function compactPlanningProfile(profile) {
+  if (!profile || typeof profile !== "object" || Array.isArray(profile)) return {};
+  return Object.fromEntries(
+    Object.entries(profile)
+      .slice(0, PLANNING_PROFILE_FIELD_COUNT_LIMIT)
+      .map(([key, value]) => [key, truncateGenerationText(value, PLANNING_PROFILE_FIELD_LIMIT)])
+      .filter(([, value]) => value),
+  );
+}
+
+function compactPlanningActivities(activities) {
+  if (!Array.isArray(activities)) return [];
+  return activities
+    .slice(0, PLANNING_ACTIVITY_COUNT)
+    .map((activity, index) => ({
+      id: Number(activity?.id) || index + 1,
+      type: truncateGenerationText(activity?.type, PLANNING_ACTIVITY_SHORT_FIELD_LIMIT),
+      activityName: truncateGenerationText(activity?.activityName, PLANNING_ACTIVITY_NAME_LIMIT),
+      executionDescription: truncateGenerationText(
+        activity?.executionDescription,
+        PLANNING_ACTIVITY_DESCRIPTION_LIMIT,
+      ),
+      suggestedGrade: truncateGenerationText(activity?.suggestedGrade, PLANNING_ACTIVITY_SHORT_FIELD_LIMIT),
+    }))
+    .filter((activity) =>
+      [activity.type, activity.activityName, activity.executionDescription, activity.suggestedGrade].some(Boolean),
+    );
+}
+
+function truncateGenerationText(value, maxLength) {
+  const text = markdownToPlainText(formatGenerationValue(value));
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+function formatGenerationValue(value) {
+  if (Array.isArray(value)) return value.map(formatGenerationValue).filter(Boolean).join(PROFILE_CHOICE_SEPARATOR);
+  if (value && typeof value === "object") return JSON.stringify(value);
+  return String(value ?? "");
+}
 
 export function combineProfileChoiceValues(choice = "", custom = "") {
   return [...normalizeChoiceValues(choice), custom]

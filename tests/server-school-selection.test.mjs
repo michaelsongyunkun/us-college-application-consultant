@@ -131,6 +131,7 @@ try {
 
   const sentPayload = JSON.parse(calls[0].options.body);
   assert.equal(sentPayload.model, "deepseek-v4-flash");
+  assert.equal(sentPayload.max_tokens, 9000);
   assert.match(sentPayload.messages[1].content, /中国大陆高中/);
   assert.match(sentPayload.messages[1].content, /Data Science/);
   assert.match(sentPayload.messages[1].content, /预算敏感度/);

@@ -18,3 +18,8 @@ assert.equal(
   getRequestErrorMessage(new Error("Invalid email or password")),
   "Invalid email or password",
 );
+
+assert.equal(
+  getRequestErrorMessage(new Error("Request body too large")),
+  "输入内容过长，请精简超长描述后再试。",
+);

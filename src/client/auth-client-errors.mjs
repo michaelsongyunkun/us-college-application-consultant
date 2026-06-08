@@ -1,4 +1,7 @@
 export function getRequestErrorMessage(error, context = getBrowserLocationContext()) {
+  if (/request body too large|413/i.test(error?.message || "")) {
+    return "输入内容过长，请精简超长描述后再试。";
+  }
   if (error instanceof TypeError && /fetch/i.test(error.message || "")) {
     if (isLocalContext(context)) {
       return "无法连接本地服务，请确认启动窗口仍在运行，然后刷新页面重试。";

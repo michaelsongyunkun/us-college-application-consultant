@@ -6,13 +6,21 @@ import { createAppServer } from "../server.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-deepseek-plan-"));
 const calls = [];
-const deepSeekAnswer = `### 输出列表（严格按表格填写）
+const deepSeekAnswer = buildPlanAnswer(15);
+
+function buildPlanAnswer(count) {
+  const rows = Array.from({ length: count }, (_, index) => {
+    const id = index + 1;
+    return `| ${id} | 学术突破 | AI教育公益研究 ${id} | 问题：乡村学生缺少个性化练习；成果：搭建Python错题分类工具 ${id}；影响：服务80名学生 | 10-11 |`;
+  }).join("\n");
+  return `### 输出列表（严格按表格填写）
 | 序号 | 活动类型（Type） | 活动名称（精准描述） | 具体执行描述（需含：问题/成果/影响） | 建议年级 |
 |------|------------------|----------------------|--------------------------------------|----------|
-| 1 | 学术突破 | AI教育公益研究 | 问题：乡村学生缺少个性化练习；成果：搭建Python错题分类工具；影响：服务80名学生 | 10-11 |
+${rows}
 
 ### 【活动叙事逻辑解读】
 以AI教育公益为Spike，形成技术能力与社区影响的闭环。`;
+}
 
 const server = createAppServer({
   databasePath: join(tempDir, "deepseek.sqlite"),
@@ -52,8 +60,8 @@ try {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.answer, deepSeekAnswer);
-  assert.equal(body.parsed.activities.length, 1);
-  assert.equal(body.parsed.activities[0].activityName, "AI教育公益研究");
+  assert.equal(body.parsed.activities.length, 15);
+  assert.equal(body.parsed.activities[0].activityName, "AI教育公益研究 1");
   assert.equal(JSON.stringify(body).includes("env-deepseek-secret"), false);
 
   assert.equal(calls.length, 1);
@@ -65,10 +73,79 @@ try {
   assert.equal(sentPayload.model, "deepseek-v4-flash");
   assert.equal(sentPayload.stream, false);
   assert.deepEqual(sentPayload.thinking, { type: "disabled" });
+  assert.equal(sentPayload.max_tokens, 6500);
   assert.equal(sentPayload.messages[0].role, "system");
   assert.equal(sentPayload.messages[1].role, "user");
   assert.match(sentPayload.messages[1].content, /恰好15项/);
   assert.match(sentPayload.messages[1].content, /10年级/);
+
+  const longResponse = await post(
+    "/api/deepseek-plan",
+    {
+      profile: {
+        grade: "10年级",
+        majorDirection: "Data Science",
+        interests: "I".repeat(8000),
+        existingActivities: "E".repeat(8000),
+      },
+      activities: Array.from({ length: 15 }, (_, index) => ({
+        type: `Type ${index + 1}`,
+        activityName: `Activity ${index + 1} ${"N".repeat(2000)}`,
+        executionDescription: `Description ${index + 1} ${"D".repeat(5000)}`,
+        suggestedGrade: "10-11",
+      })),
+    },
+    cookie,
+  );
+  assert.equal(longResponse.status, 200);
+  const longPayload = JSON.parse(calls.at(-1).options.body);
+  assert.ok(longPayload.messages[1].content.length < 35_000);
+  assert.doesNotMatch(longPayload.messages[1].content, /D{2000}|I{2000}|N{1000}/);
+
+  const retryCalls = [];
+  const retryServer = createAppServer({
+    databasePath: join(tempDir, "deepseek-plan-retry.sqlite"),
+    env: {
+      DEEPSEEK_API_KEY: "env-deepseek-secret",
+    },
+    deepSeekFetch: async (url, options) => {
+      retryCalls.push({ url, options });
+      const content = retryCalls.length === 1 ? buildPlanAnswer(1) : buildPlanAnswer(15);
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { content } }],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    },
+  });
+  try {
+    await new Promise((resolve) => retryServer.listen(0, "127.0.0.1", resolve));
+    const retryRegistration = await fetch(`${serverUrl(retryServer)}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "deepseek-plan-retry@example.com",
+        name: "DeepSeek Retry",
+        password: "password123",
+      }),
+    });
+    const retryCookie = retryRegistration.headers.get("set-cookie");
+    const retryResponse = await fetch(`${serverUrl(retryServer)}/api/deepseek-plan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: retryCookie },
+      body: JSON.stringify({
+        profile: { grade: "10年级", majorDirection: "AI教育" },
+        activities: [],
+      }),
+    });
+    assert.equal(retryResponse.status, 200);
+    assert.equal((await retryResponse.json()).parsed.activities.length, 15);
+    assert.equal(retryCalls.length, 2);
+    assert.match(JSON.parse(retryCalls[1].options.body).messages[1].content, /未通过解析校验/);
+  } finally {
+    await new Promise((resolve) => retryServer.close(resolve));
+  }
 
   const proOverrideServer = createAppServer({
     databasePath: join(tempDir, "deepseek-plan-override.sqlite"),

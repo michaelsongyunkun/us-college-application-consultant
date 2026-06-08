@@ -7,6 +7,7 @@ const ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "rd", "uc"];
 const MAX_SELECTION_ATTEMPTS = 2;
 const MAX_RAG_SOURCES = 8;
 const MAX_RAG_CONTEXT_CHARS = 12_000;
+const DEEPSEEK_SCHOOL_SELECTION_MAX_TOKENS = 9000;
 const ROUND_LIMITS = Object.freeze({
   ed2: [1, 1],
   ea: [3, 5],
@@ -136,6 +137,10 @@ export function createSchoolSelectionService({ activityPortfolio, root = process
     const ragSources = await buildSchoolSelectionRagSources({ root, input, portfolio });
     const ragContext = buildRagContext(ragSources);
     const model = normalizeDeepSeekModel(env.DEEPSEEK_SCHOOL_SELECTION_MODEL, "deepseek-v4-flash");
+    const maxTokens = normalizePositiveInteger(
+      env.DEEPSEEK_SCHOOL_SELECTION_MAX_TOKENS,
+      DEEPSEEK_SCHOOL_SELECTION_MAX_TOKENS,
+    );
     let lastValidationError = null;
     for (let attempt = 1; attempt <= MAX_SELECTION_ATTEMPTS; attempt += 1) {
       const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
@@ -161,6 +166,7 @@ export function createSchoolSelectionService({ activityPortfolio, root = process
           thinking: { type: "disabled" },
           stream: false,
           temperature: attempt === 1 ? 0.2 : 0.1,
+          max_tokens: maxTokens,
         }),
       });
 
@@ -652,4 +658,9 @@ function extractDeepSeekResponseText(data) {
 
 function cleanString(value) {
   return String(value ?? "").trim();
+}
+
+function normalizePositiveInteger(value, fallback) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }

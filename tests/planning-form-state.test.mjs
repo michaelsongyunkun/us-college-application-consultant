@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  buildPlanningGenerationPayload,
   collectActivitiesFromTable,
   combineProfileChoiceValues,
   fillActivityTable,
@@ -114,4 +115,29 @@ assert.equal(formatProfileChoiceSummary([]), "请选择（可多选）");
 assert.equal(
   formatProfileChoiceSummary(["科研探索 / 实验设计", "编程 / 数据分析"], "做过一个心理学问卷小项目"),
   "科研探索 / 实验设计；编程 / 数据分析；做过一个心理学问卷小项目",
+);
+
+const compactedGenerationPayload = buildPlanningGenerationPayload({
+  profile: {
+    majorDirection: "Computer Science",
+    interests: "I".repeat(5000),
+    existingActivities: "E".repeat(5000),
+  },
+  activities: Array.from({ length: 20 }, (_, index) => ({
+    type: `Type ${index + 1} ${"T".repeat(500)}`,
+    activityName: `Activity ${index + 1} ${"N".repeat(2000)}`,
+    executionDescription: `Description ${index + 1} ${"D".repeat(5000)}`,
+    suggestedGrade: `Grade ${index + 1} ${"G".repeat(500)}`,
+  })),
+});
+
+assert.equal(compactedGenerationPayload.profile.majorDirection, "Computer Science");
+assert.ok(compactedGenerationPayload.profile.interests.length < 1000);
+assert.ok(compactedGenerationPayload.profile.interests.endsWith("..."));
+assert.equal(compactedGenerationPayload.activities.length, 15);
+assert.ok(compactedGenerationPayload.activities[0].executionDescription.length < 1300);
+assert.ok(compactedGenerationPayload.activities[0].executionDescription.endsWith("..."));
+assert.doesNotMatch(
+  JSON.stringify(compactedGenerationPayload),
+  new RegExp("D{2000}|I{2000}|N{1000}"),
 );

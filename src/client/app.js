@@ -28,6 +28,7 @@ import { getRequestErrorMessage } from "./auth-client-errors.mjs";
 import { escapeHtml } from "./html-utils.mjs";
 import {
   applyProfileFields,
+  buildPlanningGenerationPayload,
   collectActivitiesFromTable,
   collectPlanningProfileFromForm,
   collectProfileFromForm,
@@ -1212,10 +1213,10 @@ async function generateDeepSeekPlan() {
   try {
     const data = await requestJson("/api/deepseek-plan", {
       method: "POST",
-      body: JSON.stringify({
+      body: JSON.stringify(buildPlanningGenerationPayload({
         profile: collectPlanningProfile(),
         activities: collectActivities(),
-      }),
+      })),
     });
 
     rawAnswer.value = data.answer || "";
