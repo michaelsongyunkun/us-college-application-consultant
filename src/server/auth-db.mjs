@@ -164,6 +164,7 @@ export function createAuthDatabase({ databasePath }) {
       deepseek_notes_json TEXT NOT NULL DEFAULT '[]',
       school_selection_versions_json TEXT NOT NULL DEFAULT '[]',
       academic_records_json TEXT NOT NULL DEFAULT '{}',
+      capability_assessment_json TEXT NOT NULL DEFAULT '{}',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -262,6 +263,12 @@ export function createAuthDatabase({ databasePath }) {
     "student_activity_portfolios",
     "school_selection_versions_json",
     "TEXT NOT NULL DEFAULT '[]'",
+  );
+  ensureColumn(
+    db,
+    "student_activity_portfolios",
+    "capability_assessment_json",
+    "TEXT NOT NULL DEFAULT '{}'",
   );
   migrateUsageEventsConstraint(db);
   return {

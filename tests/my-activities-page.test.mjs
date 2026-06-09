@@ -16,7 +16,7 @@ assert.ok(
 
 for (const expected of [
   "我的申请",
-  "整理 GPA、SAT、AP、选校计划、活动、竞赛、夏校和推荐信材料，作为后续申请复盘的基础。",
+  "整理课程成绩、SAT、AP、选校计划、活动、竞赛、夏校和推荐信材料，作为后续申请复盘的基础。",
   'id="portfolioForm"',
   'id="savePortfolioButton"',
   'id="exportPortfolioSvgButton"',
@@ -28,8 +28,17 @@ for (const expected of [
   'id="portfolioCompletionAcademic"',
   'id="portfolioCompletionActivities"',
   'id="portfolioCompletionSchoolPlan"',
+  'id="capabilityAssessmentPanel"',
+  'id="capabilityAssessmentTitle"',
+  'id="generateCapabilityAssessmentButton"',
+  'id="capabilityAssessmentStatus"',
+  'id="capabilityAssessmentContent"',
+  '档案能力评估智能体',
+  '生成能力雷达图',
+  '选校计划不参与评分',
   'class="portfolio-section-tabs"',
   'href="#academicRecordsPanel"',
+  'href="#capabilityAssessmentPanel"',
   'href="#activityImportPanel"',
   'href="#activitiesList"',
   'href="#recommendationLettersPanel"',
@@ -83,7 +92,7 @@ assert.doesNotMatch(
 
 for (const copy of [
   "选校计划：已填写 0 所",
-  "成绩档案：GPA 8 学期 / SAT 0 次 / AP 0 门",
+  "成绩档案：课程体系待选 / SAT 0 次 / AP 0 门",
   "课外活动：已填写 0/10",
   "竞赛：已填写 0/5",
   "夏校：已填写 0/3",
@@ -97,12 +106,39 @@ assert.ok(
   "Application portfolio should show a completion guide before the detailed form sections.",
 );
 assert.ok(
+  pageHtml.indexOf('id="portfolioCompletionPanel"') < pageHtml.indexOf('id="capabilityAssessmentPanel"')
+    && pageHtml.indexOf('id="capabilityAssessmentPanel"') < pageHtml.indexOf('class="portfolio-section-tabs"'),
+  "Capability assessment should sit between the completion guide and the sticky section tabs.",
+);
+assert.ok(
   pageHtml.indexOf('class="portfolio-section-tabs"') < pageHtml.indexOf('id="portfolioForm"'),
   "Application portfolio should show section jump controls before the long detailed form.",
 );
 assert.ok(script.includes("renderPortfolioCompletion"), "Portfolio page should refresh the completion guide from saved data.");
-for (const selector of [".portfolio-section-tabs", ".portfolio-section-tab", ".portfolio-completion-panel", ".portfolio-completion-grid", ".portfolio-completion-card"]) {
+for (const selector of [
+  ".portfolio-section-tabs",
+  ".portfolio-section-tab",
+  ".portfolio-completion-panel",
+  ".portfolio-completion-grid",
+  ".portfolio-completion-card",
+  ".portfolio-capability-panel",
+  ".portfolio-capability-layout",
+  ".portfolio-radar-svg",
+  ".portfolio-capability-dimensions",
+]) {
   assert.ok(styles.includes(selector), `Stylesheet should define ${selector}.`);
+}
+for (const scriptNeedle of [
+  "CAPABILITY_ASSESSMENT_ENDPOINT",
+  "/api/portfolio-capability-assessment",
+  "generateCapabilityAssessment",
+  "renderCapabilityRadar",
+  "capabilityAssessment",
+  "deepseek-capability-agent",
+  "DeepSeek Agent，不含选校计划",
+  "能力评估（不含选校计划）",
+]) {
+  assert.ok(script.includes(scriptNeedle), `Capability assessment script should include ${scriptNeedle}.`);
 }
 for (const selector of [
   "details.activity-import-panel > summary",
@@ -140,6 +176,10 @@ for (const field of [
   "planningActions: []",
   "deepSeekNotes: []",
   "academicRecords",
+  "课程体系",
+  "IB课程",
+  "其他课程体系",
+  "最终 IB 预估分（满分45）",
   "GPA分制",
   "4.0分制",
   "100分制",
@@ -215,8 +255,8 @@ assert.ok(script.includes("有未保存修改"), "页面应显示脏状态文案
 assert.ok(script.includes("已保存"), "页面应显示保存成功文案。");
 assert.ok(!script.includes("AI 推荐"), "空状态不应渲染 AI 编造内容。");
 assert.ok(
-  pageHtml.includes("./styles.css?v=20260605-import-collapse")
-    && pageHtml.includes("./src/client/my-activities.js?v=20260605-import-collapse"),
+  pageHtml.includes("./styles.css?v=20260609-capability-deepseek-agent")
+    && pageHtml.includes("./src/client/my-activities.js?v=20260609-capability-deepseek-agent"),
   "我的申请页面应更新 CSS / JS 版本号，避免用户继续加载缓存的旧工作流。"
 );
 assert.match(styles, /\.portfolio-grid\s*\{/, "我的课外活动页面应有专用布局样式。");

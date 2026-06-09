@@ -10,6 +10,9 @@ const AP_EXAM_LIMIT = 40;
 const STANDARDIZED_PLAN_ARRAY_LIMIT = 80;
 const STANDARDIZED_PLAN_OBJECT_FIELD_LIMIT = 120;
 const STANDARDIZED_PLAN_MAX_DEPTH = 7;
+const CAPABILITY_RADAR_SCORE_LIMIT = 8;
+const CAPABILITY_LIST_LIMIT = 8;
+const CAPABILITY_TEXT_LIMIT = 600;
 const APPLICATION_ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "uc", "rd", "multiCountry"];
 const APPLICATION_ROUND_LIMITS = {
   rea: 1,
@@ -56,6 +59,9 @@ const APPLICATION_PLAN_FIELDS = ["school", "major"];
 const GPA_RECORD_FIELDS = ["gradeLevel", "term", "gpa"];
 const SAT_TEST_FIELDS = ["totalScore", "englishScore", "mathScore", "testDate"];
 const AP_EXAM_FIELDS = ["courseName", "score", "examYear"];
+const COURSE_SYSTEM_IB = "IB课程";
+const COURSE_SYSTEM_OTHER = "其他课程体系";
+const COURSE_SYSTEM_OPTIONS = new Set([COURSE_SYSTEM_IB, COURSE_SYSTEM_OTHER]);
 const GPA_SCALE_OPTIONS = new Set(["4.0分制", "100分制", "4.3分制", "5分制"]);
 const AP_SCORE_OPTIONS = new Set(["1", "2", "3", "4", "5", "未出分"]);
 const DEFAULT_GPA_RECORDS = Object.freeze(
@@ -88,6 +94,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
           deepseek_notes_json,
           school_selection_versions_json,
           academic_records_json,
+          capability_assessment_json,
           updated_at
         FROM student_activity_portfolios
         WHERE user_id = ?`,
@@ -130,6 +137,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
         "School selection versions",
       ),
       academicRecords: parseAcademicRecords(row.academic_records_json),
+      capabilityAssessment: parseCapabilityAssessment(row.capability_assessment_json),
       updatedAt: row.updated_at,
     };
   }
@@ -150,9 +158,10 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
         deepseek_notes_json,
         school_selection_versions_json,
         academic_records_json,
+        capability_assessment_json,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
         application_plan_json = excluded.application_plan_json,
         activities_json = excluded.activities_json,
@@ -163,6 +172,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
         deepseek_notes_json = excluded.deepseek_notes_json,
         school_selection_versions_json = excluded.school_selection_versions_json,
         academic_records_json = excluded.academic_records_json,
+        capability_assessment_json = excluded.capability_assessment_json,
         updated_at = excluded.updated_at`,
     ).run(
       userId,
@@ -175,6 +185,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
       JSON.stringify(portfolio.deepSeekNotes),
       JSON.stringify(portfolio.schoolSelectionVersions),
       JSON.stringify(portfolio.academicRecords),
+      JSON.stringify(portfolio.capabilityAssessment),
       timestamp,
       timestamp,
     );
@@ -198,6 +209,7 @@ function emptyPortfolio() {
     deepSeekNotes: [],
     schoolSelectionVersions: [],
     academicRecords: defaultAcademicRecords(),
+    capabilityAssessment: {},
     updatedAt: null,
   };
 }
@@ -239,6 +251,7 @@ function normalizePortfolio(payload) {
       "School selection versions",
     ),
     academicRecords: normalizeAcademicRecords(value.academicRecords),
+    capabilityAssessment: normalizeCapabilityAssessment(value.capabilityAssessment),
   };
 }
 
@@ -313,6 +326,8 @@ function normalizeRecommendationLetters(value) {
 
 function defaultAcademicRecords() {
   return {
+    courseSystem: "",
+    ibPredictedScore: "",
     gpaScale: "",
     gpaRecords: DEFAULT_GPA_RECORDS.map((record) => ({ ...record })),
     satTests: [],
@@ -324,15 +339,34 @@ function defaultAcademicRecords() {
 function normalizeAcademicRecords(value) {
   if (value === undefined || value === null) return defaultAcademicRecords();
   const item = normalizeObject(value, "Academic records");
+  const explicitCourseSystem = cleanString(item.courseSystem);
+  const ibPredictedScore = normalizeScore(item.ibPredictedScore, 0, 45);
+  const gpaScale = GPA_SCALE_OPTIONS.has(cleanString(item.gpaScale)) ? cleanString(item.gpaScale) : "";
+  const gpaRecords = Object.hasOwn(item, "gpaRecords")
+    ? normalizeCollection(item.gpaRecords, GPA_RECORD_LIMIT, GPA_RECORD_FIELDS, "GPA records")
+    : defaultAcademicRecords().gpaRecords;
+  const courseSystem = normalizeAcademicCourseSystem(explicitCourseSystem, {
+    gpaScale,
+    gpaRecords,
+    ibPredictedScore,
+  });
+  const isIbCourseSystem = courseSystem === COURSE_SYSTEM_IB;
   return {
-    gpaScale: GPA_SCALE_OPTIONS.has(cleanString(item.gpaScale)) ? cleanString(item.gpaScale) : "",
-    gpaRecords: Object.hasOwn(item, "gpaRecords")
-      ? normalizeCollection(item.gpaRecords, GPA_RECORD_LIMIT, GPA_RECORD_FIELDS, "GPA records")
-      : defaultAcademicRecords().gpaRecords,
+    courseSystem,
+    ibPredictedScore: isIbCourseSystem ? ibPredictedScore : "",
+    gpaScale: isIbCourseSystem ? "" : gpaScale,
+    gpaRecords: isIbCourseSystem ? [] : gpaRecords,
     satTests: normalizeSatTests(item.satTests),
     apExams: normalizeApExams(item.apExams),
     standardizedPlan: normalizeStandardizedPlan(item.standardizedPlan),
   };
+}
+
+function normalizeAcademicCourseSystem(value, { gpaScale = "", gpaRecords = [], ibPredictedScore = "" } = {}) {
+  if (COURSE_SYSTEM_OPTIONS.has(value)) return value;
+  if (ibPredictedScore) return COURSE_SYSTEM_IB;
+  if (gpaScale || gpaRecords.some((record) => cleanString(record.gpa))) return COURSE_SYSTEM_OTHER;
+  return "";
 }
 
 function normalizeSatTests(value) {
@@ -374,6 +408,66 @@ function normalizeStandardizedPlan(value) {
   }
   const normalized = normalizeLooseJson(value, 0);
   return normalized && typeof normalized === "object" && !Array.isArray(normalized) ? normalized : {};
+}
+
+function normalizeCapabilityAssessment(value) {
+  if (value === undefined || value === null) return {};
+  const item = normalizeObject(value, "Capability assessment");
+  const radarScores = normalizeCapabilityRadarScores(item.radarScores);
+  if (!radarScores.length) return {};
+  return pruneEmpty({
+    version: cleanString(item.version).slice(0, 32) || "local-v1",
+    generatedAt: cleanString(item.generatedAt),
+    inputHash: cleanString(item.inputHash).slice(0, 120),
+    inputCompleteness: normalizeScore(item.inputCompleteness, 0, 100),
+    overallScore: normalizeScore(item.overallScore, 0, 100),
+    overallSummary: cleanString(item.overallSummary).slice(0, CAPABILITY_TEXT_LIMIT),
+    radarScores,
+    strengths: normalizeCapabilityTextList(item.strengths),
+    gaps: normalizeCapabilityTextList(item.gaps),
+    actions30Days: normalizeCapabilityTextList(item.actions30Days),
+    generatedBy: cleanString(item.generatedBy).slice(0, 80),
+  });
+}
+
+function normalizeCapabilityRadarScores(value) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw new ActivityPortfolioError("Capability radar scores must be an array", 400);
+  }
+  return value
+    .map((entry) => {
+      const item = normalizeObject(entry, "Capability radar score");
+      const score = normalizeScore(item.score, 0, 100);
+      if (!score) return null;
+      return pruneEmpty({
+        key: cleanString(item.key).slice(0, 60),
+        label: cleanString(item.label).slice(0, 80),
+        score,
+        confidence: normalizeCapabilityConfidence(item.confidence),
+        evidence: normalizeCapabilityTextList(item.evidence, 5),
+        missing: normalizeCapabilityTextList(item.missing, 5),
+        nextAction: cleanString(item.nextAction).slice(0, CAPABILITY_TEXT_LIMIT),
+      });
+    })
+    .filter((entry) => entry?.key && entry.label)
+    .slice(0, CAPABILITY_RADAR_SCORE_LIMIT);
+}
+
+function normalizeCapabilityConfidence(value) {
+  const confidence = cleanString(value).toLowerCase();
+  return ["high", "medium", "low"].includes(confidence) ? confidence : "medium";
+}
+
+function normalizeCapabilityTextList(value, limit = CAPABILITY_LIST_LIMIT) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw new ActivityPortfolioError("Capability assessment lists must be arrays", 400);
+  }
+  return value
+    .map((entry) => cleanString(entry).slice(0, CAPABILITY_TEXT_LIMIT))
+    .filter(Boolean)
+    .slice(0, limit);
 }
 
 function normalizeLooseJson(value, depth) {
@@ -452,6 +546,17 @@ function parseRecommendationLetters(serialized) {
 function parseAcademicRecords(serialized) {
   try {
     return normalizeAcademicRecords(JSON.parse(serialized || "{}"));
+  } catch (error) {
+    if (error instanceof ActivityPortfolioError || error instanceof SyntaxError) {
+      throw new ActivityPortfolioError("Stored activity portfolio is invalid", 500);
+    }
+    throw error;
+  }
+}
+
+function parseCapabilityAssessment(serialized) {
+  try {
+    return normalizeCapabilityAssessment(JSON.parse(serialized || "{}"));
   } catch (error) {
     if (error instanceof ActivityPortfolioError || error instanceof SyntaxError) {
       throw new ActivityPortfolioError("Stored activity portfolio is invalid", 500);

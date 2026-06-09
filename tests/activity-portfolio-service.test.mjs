@@ -30,6 +30,11 @@ try {
     email: "second-portfolio@example.com",
     password: "password123",
   }).user;
+  const ibStudent = auth.register({
+    name: "IB Student",
+    email: "ib-portfolio@example.com",
+    password: "password123",
+  }).user;
 
   assert.deepEqual(portfolios.getPortfolio(firstStudent), {
     applicationPlan: {
@@ -49,6 +54,8 @@ try {
     deepSeekNotes: [],
     schoolSelectionVersions: [],
     academicRecords: {
+      courseSystem: "",
+      ibPredictedScore: "",
       gpaScale: "",
       gpaRecords: [
         { gradeLevel: "9年级", term: "上学期", gpa: "" },
@@ -64,6 +71,7 @@ try {
       apExams: [],
       standardizedPlan: {},
     },
+    capabilityAssessment: {},
     updatedAt: null,
   });
 
@@ -179,6 +187,38 @@ try {
         savedAt: "2026-06-05T00:00:00.000Z",
       },
     },
+    capabilityAssessment: {
+      version: "local-v1",
+      generatedAt: "2026-06-09T00:00:00.000Z",
+      inputHash: "non-school-fields",
+      inputCompleteness: 72,
+      overallScore: 78,
+      overallSummary: "Academic preparation is strong; evidence depth needs work.",
+      radarScores: [
+        {
+          key: "academicReadiness",
+          label: "Academic readiness",
+          score: 86,
+          confidence: "high",
+          evidence: ["SAT 1510", "AP Calculus BC 5"],
+          missing: ["Latest transcript proof"],
+          nextAction: "Add the latest transcript and AP proof.",
+        },
+        {
+          key: "materialsReadiness",
+          label: "Materials readiness",
+          score: 62,
+          confidence: "medium",
+          evidence: ["Resume and activity list prepared"],
+          missing: ["Teacher 2 detail"],
+          nextAction: "Confirm the second recommender evidence packet.",
+        },
+      ],
+      strengths: ["Strong standardized testing record"],
+      gaps: ["More proof links needed"],
+      actions30Days: ["Add proof links for top activities"],
+      generatedBy: "local-rule-agent",
+    },
   });
 
   assert.equal(saved.applicationPlan.rea.length, 0);
@@ -206,6 +246,8 @@ try {
   assert.match(saved.deepSeekNotes[0].content, /推荐信素材/);
   assert.equal(saved.schoolSelectionVersions[0].versionName, "均衡版");
   assert.match(saved.schoolSelectionVersions[0].summary, /分层覆盖/);
+  assert.equal(saved.academicRecords.courseSystem, "其他课程体系");
+  assert.equal(saved.academicRecords.ibPredictedScore, "");
   assert.equal(saved.academicRecords.gpaRecords.length, 2);
   assert.equal(saved.academicRecords.gpaScale, "4.0分制");
   assert.equal(saved.academicRecords.gpaRecords[0].gradeLevel, "9年级");
@@ -217,6 +259,12 @@ try {
   assert.equal(saved.academicRecords.apExams[1].score, "未出分");
   assert.equal(saved.academicRecords.standardizedPlan.route.primaryExam, "SAT");
   assert.deepEqual(saved.academicRecords.standardizedPlan.route.risks, ["目标学校存在必交政策"]);
+  assert.equal(saved.capabilityAssessment.version, "local-v1");
+  assert.equal(saved.capabilityAssessment.overallScore, "78");
+  assert.equal(saved.capabilityAssessment.radarScores.length, 2);
+  assert.equal(saved.capabilityAssessment.radarScores[0].key, "academicReadiness");
+  assert.equal(saved.capabilityAssessment.radarScores[0].score, "86");
+  assert.deepEqual(saved.capabilityAssessment.actions30Days, ["Add proof links for top activities"]);
   assert.equal(saved.updatedAt, "2026-05-28T00:00:00.000Z");
 
   const reloaded = portfolios.getPortfolio(firstStudent);
@@ -226,7 +274,24 @@ try {
   assert.deepEqual(reloaded.planningActions, saved.planningActions);
   assert.deepEqual(reloaded.deepSeekNotes, saved.deepSeekNotes);
   assert.deepEqual(reloaded.schoolSelectionVersions, saved.schoolSelectionVersions);
+  assert.deepEqual(reloaded.capabilityAssessment, saved.capabilityAssessment);
   assert.equal(reloaded.recommendationLetters.notes, "6 月更新材料");
+
+  const ibSaved = portfolios.savePortfolio(ibStudent, {
+    academicRecords: {
+      courseSystem: "IB课程",
+      ibPredictedScore: "44",
+      gpaScale: "4.0分制",
+      gpaRecords: [{ gradeLevel: "11年级", term: "上学期", gpa: "3.9" }],
+      satTests: [],
+      apExams: [],
+    },
+  });
+  assert.equal(ibSaved.academicRecords.courseSystem, "IB课程");
+  assert.equal(ibSaved.academicRecords.ibPredictedScore, "44");
+  assert.equal(ibSaved.academicRecords.gpaScale, "");
+  assert.deepEqual(ibSaved.academicRecords.gpaRecords, []);
+
   assert.deepEqual(portfolios.getPortfolio(secondStudent), {
     applicationPlan: {
       rea: [],
@@ -245,6 +310,8 @@ try {
     deepSeekNotes: [],
     schoolSelectionVersions: [],
     academicRecords: {
+      courseSystem: "",
+      ibPredictedScore: "",
       gpaScale: "",
       gpaRecords: [
         { gradeLevel: "9年级", term: "上学期", gpa: "" },
@@ -260,6 +327,7 @@ try {
       apExams: [],
       standardizedPlan: {},
     },
+    capabilityAssessment: {},
     updatedAt: null,
   });
 

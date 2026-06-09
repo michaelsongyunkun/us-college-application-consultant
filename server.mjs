@@ -17,6 +17,10 @@ import {
   createActivityPortfolioService,
 } from "./src/server/activity-portfolio-service.mjs";
 import {
+  PortfolioCapabilityAgentError,
+  createPortfolioCapabilityAgentService,
+} from "./src/server/portfolio-capability-agent-service.mjs";
+import {
   DeepSeekRagError,
   createDeepSeekRagService,
 } from "./src/server/deepseek-rag-service.mjs";
@@ -57,6 +61,7 @@ const DEFAULT_RATE_LIMITS = {
   "/api/feedback": { maxRequests: 10, windowMs: 60_000 },
   "/api/deepseek-plan": { maxRequests: 10, windowMs: 60_000 },
   "/api/deepseek-rag": { maxRequests: 20, windowMs: 60_000 },
+  "/api/portfolio-capability-assessment": { maxRequests: 10, windowMs: 60_000 },
   "/api/school-selection": { maxRequests: 10, windowMs: 60_000 },
   "/api/school-selection-jobs": { maxRequests: 10, windowMs: 60_000 },
   "/api/analytics/usage-event": { maxRequests: 120, windowMs: 60_000 },
@@ -672,6 +677,7 @@ export function createAppServer({
   planning = createPlanningService({ authDb }),
   progressPlanner = createProgressPlannerService({ authDb }),
   activityPortfolio = createActivityPortfolioService({ authDb }),
+  portfolioCapabilityAgent = createPortfolioCapabilityAgentService({ activityPortfolio }),
   deepSeekRag = createDeepSeekRagService({ root, planning, activityPortfolio }),
   schoolSelection = createSchoolSelectionService({ activityPortfolio, root }),
   mailer = createMailerFromEnv(env),
@@ -813,6 +819,18 @@ export function createAppServer({
         const user = requireUser(request, response, auth);
         if (!user) return;
         sendJson(response, 200, activityPortfolio.getPortfolio(user));
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/portfolio-capability-assessment") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        sendJson(response, 200, await portfolioCapabilityAgent.generateAssessment({
+          user,
+          payload: await readJson(request),
+          env,
+          deepSeekFetch,
+        }));
         return;
       }
 
@@ -1024,6 +1042,7 @@ export function createAppServer({
       if (
         error instanceof AuthError ||
         error instanceof ActivityPortfolioError ||
+        error instanceof PortfolioCapabilityAgentError ||
         error instanceof DeepSeekRagError ||
         error instanceof SchoolSelectionError ||
         error instanceof PlanningError ||

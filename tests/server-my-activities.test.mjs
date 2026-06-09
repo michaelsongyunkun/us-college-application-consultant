@@ -47,6 +47,8 @@ try {
     deepSeekNotes: [],
     schoolSelectionVersions: [],
     academicRecords: {
+      courseSystem: "",
+      ibPredictedScore: "",
       gpaScale: "",
       gpaRecords: [
         { gradeLevel: "9年级", term: "上学期", gpa: "" },
@@ -62,6 +64,7 @@ try {
       apExams: [],
       standardizedPlan: {},
     },
+    capabilityAssessment: {},
     updatedAt: null,
   });
 
@@ -226,6 +229,38 @@ try {
           savedAt: "2026-06-05T00:00:00.000Z",
         },
       },
+      capabilityAssessment: {
+        version: "local-v1",
+        generatedAt: "2026-06-09T00:00:00.000Z",
+        inputHash: "portfolio-non-school-fields",
+        inputCompleteness: 68,
+        overallScore: 74,
+        overallSummary: "本地规则版已生成能力雷达，选校信息未参与评分。",
+        radarScores: [
+          {
+            key: "activityDepth",
+            label: "活动深度",
+            score: 76,
+            confidence: "medium",
+            evidence: ["社区科普社覆盖 80 名学生"],
+            missing: ["长期投入周期"],
+            nextAction: "补充活动持续时间和个人职责。",
+          },
+          {
+            key: "materialsReadiness",
+            label: "材料准备度",
+            score: 70,
+            confidence: "high",
+            evidence: ["简历", "活动清单", "项目说明"],
+            missing: [],
+            nextAction: "把证明链接补齐到核心条目。",
+          },
+        ],
+        strengths: ["已有可量化活动成果"],
+        gaps: ["证明材料链接仍需补齐"],
+        actions30Days: ["补充核心活动 proofLink"],
+        generatedBy: "local-rule-agent",
+      },
     },
     firstCookie,
   );
@@ -242,6 +277,8 @@ try {
   assert.equal(saved.planningActions[0].text, "核验 ED 截止日期");
   assert.equal(saved.deepSeekNotes[0].title, "选校策略摘要");
   assert.equal(saved.schoolSelectionVersions[0].versionName, "均衡版");
+  assert.equal(saved.academicRecords.courseSystem, "其他课程体系");
+  assert.equal(saved.academicRecords.ibPredictedScore, "");
   assert.equal(saved.academicRecords.gpaScale, "100分制");
   assert.equal(saved.academicRecords.gpaRecords[0].gpa, "92");
   assert.equal(saved.academicRecords.satTests[0].totalScore, "1480");
@@ -253,6 +290,11 @@ try {
   assert.equal(saved.academicRecords.standardizedPlan.route.decisionGates[0].action, "保留 SAT 主线，同时固定语言考试窗口");
   assert.match(saved.academicRecords.standardizedPlan.route.timeBudgetWarning, /固定分配/);
   assert.deepEqual(saved.academicRecords.standardizedPlan.route.nextActions, ["核验学校官网标化政策"]);
+  assert.equal(saved.capabilityAssessment.generatedBy, "local-rule-agent");
+  assert.equal(saved.capabilityAssessment.inputCompleteness, "68");
+  assert.equal(saved.capabilityAssessment.radarScores.length, 2);
+  assert.equal(saved.capabilityAssessment.radarScores[0].key, "activityDepth");
+  assert.equal(saved.capabilityAssessment.radarScores[0].score, "76");
   assert.ok(saved.updatedAt);
 
   const reloaded = await get("/api/my-activities", firstCookie);
@@ -263,6 +305,7 @@ try {
   assert.deepEqual(reloadedPortfolio.deepSeekNotes, saved.deepSeekNotes);
   assert.deepEqual(reloadedPortfolio.schoolSelectionVersions, saved.schoolSelectionVersions);
   assert.deepEqual(reloadedPortfolio.academicRecords, saved.academicRecords);
+  assert.deepEqual(reloadedPortfolio.capabilityAssessment, saved.capabilityAssessment);
 
   const secondRegistration = await post("/api/auth/register", {
     email: "activities-b@example.com",
@@ -289,6 +332,8 @@ try {
     deepSeekNotes: [],
     schoolSelectionVersions: [],
     academicRecords: {
+      courseSystem: "",
+      ibPredictedScore: "",
       gpaScale: "",
       gpaRecords: [
         { gradeLevel: "9年级", term: "上学期", gpa: "" },
@@ -304,6 +349,7 @@ try {
       apExams: [],
       standardizedPlan: {},
     },
+    capabilityAssessment: {},
     updatedAt: null,
   });
   const secondImportSources = await get("/api/my-activities/import-sources", secondCookie);

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>我的申请</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260605-import-collapse-calm-os-v2" />
+    <link rel="stylesheet" href="./styles.css?v=20260609-capability-deepseek-agent" />
   </head>
   <body>
     <main class="app-shell command-shell portfolio-shell">
@@ -58,7 +58,7 @@
           <p class="eyebrow">Application Workspace</p>
           <h1>我的申请</h1>
           <p class="portfolio-subtitle">
-            整理 GPA、SAT、AP、选校计划、活动、竞赛、夏校和推荐信材料，作为后续申请复盘的基础。
+            整理课程成绩、SAT、AP、选校计划、活动、竞赛、夏校和推荐信材料，作为后续申请复盘的基础。
           </p>
         </div>
         <div class="actions portfolio-actions" aria-label="页面操作">
@@ -83,7 +83,7 @@
         <div>
           <p class="eyebrow">Application Record</p>
           <h2>把材料沉淀成可复盘档案</h2>
-          <p>GPA、SAT、AP、活动、竞赛、夏校、推荐信与选校计划会作为后续规划输入。</p>
+          <p>课程成绩、SAT、AP、活动、竞赛、夏校、推荐信与选校计划会作为后续规划输入。</p>
         </div>
         <div class="command-summary-metrics">
           <span><strong>10</strong>活动槽位</span>
@@ -104,8 +104,8 @@
         <div id="portfolioCompletionGrid" class="portfolio-completion-grid">
           <a id="portfolioCompletionAcademic" class="portfolio-completion-card" href="#academicRecordsPanel">
             <span>成绩</span>
-            <strong>补 GPA / SAT / AP</strong>
-            <small>选校、推荐信和活动建议都需要统一成绩口径。</small>
+            <strong>补课程成绩 / SAT / AP</strong>
+            <small>IB 填预估总分，其他课程体系填 GPA，便于统一成绩口径。</small>
           </a>
           <a id="portfolioCompletionActivities" class="portfolio-completion-card" href="#activitiesList">
             <span>活动</span>
@@ -120,8 +120,29 @@
         </div>
       </section>
 
+      <section id="capabilityAssessmentPanel" class="portfolio-capability-panel" aria-labelledby="capabilityAssessmentTitle">
+        <div class="portfolio-capability-heading">
+          <div>
+            <p class="eyebrow">DeepSeek Agent</p>
+            <h2 id="capabilityAssessmentTitle">档案能力评估智能体</h2>
+            <p>由服务端 DeepSeek Agent 评估成绩、课外活动、竞赛、夏校、推荐信和证明材料；选校计划不参与评分。</p>
+          </div>
+          <div class="portfolio-capability-actions">
+            <button id="generateCapabilityAssessmentButton" type="button">生成能力雷达图</button>
+            <span id="capabilityAssessmentStatus" class="status" role="status" aria-live="polite">DeepSeek Agent 待生成</span>
+          </div>
+        </div>
+        <div id="capabilityAssessmentContent" class="portfolio-capability-content" aria-live="polite">
+          <div class="portfolio-capability-empty">
+            <strong>让 DeepSeek Agent 先体检当前档案。</strong>
+            <p>生成后会看到能力雷达图、强项、短板和 30 天行动建议；结果会跟随申请档案一起保存。</p>
+          </div>
+        </div>
+      </section>
+
       <nav class="portfolio-section-tabs" aria-label="申请档案分段导航">
         <a class="portfolio-section-tab is-primary" href="#academicRecordsPanel">成绩</a>
+        <a class="portfolio-section-tab" href="#capabilityAssessmentPanel">能力评估</a>
         <a class="portfolio-section-tab" href="#activityImportPanel">导入</a>
         <a class="portfolio-section-tab" href="#activitiesList">活动</a>
         <a class="portfolio-section-tab" href="#competitionsList">竞赛</a>
@@ -135,15 +156,15 @@
           <div class="section-heading table-heading">
             <div>
               <h2 id="academic-records-title">成绩与考试</h2>
-              <p>先记录 GPA 分制，再整理 9-12 年级上下学期 GPA、SAT 考试和 AP 考试。</p>
+              <p>先选择 IB 或其他课程体系；IB 填最终预估总分，其他课程体系记录 GPA，再整理 SAT 和 AP 考试。</p>
             </div>
-            <span id="academicRecordsProgress" class="status" role="status" aria-live="polite">成绩档案：GPA 8 学期 / SAT 0 次 / AP 0 门</span>
+            <span id="academicRecordsProgress" class="status" role="status" aria-live="polite">成绩档案：课程体系待选 / SAT 0 次 / AP 0 门</span>
           </div>
           <div id="academicRecordsPanel" class="academic-records-layout">
             <div class="academic-record-block academic-gpa-block">
               <div class="portfolio-card-heading">
-                <h3>GPA</h3>
-                <button type="button" class="secondary" data-add-academic-record="gpa">新增学期</button>
+                <h3 id="academicCourseBlockTitle">课程成绩</h3>
+                <button id="addGpaRecordButton" type="button" class="secondary" data-add-academic-record="gpa" hidden>新增学期</button>
               </div>
               <div id="gpaRecordsList" class="academic-record-list" data-academic-section="gpa"></div>
             </div>
@@ -239,6 +260,6 @@
     </main>
     <script type="module" src="./src/client/admin-nav.js?v=20260602-mobile-drawer"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260602-mobile-drawer"></script>
-    <script type="module" src="./src/client/my-activities.js?v=20260605-import-collapse"></script>
+    <script type="module" src="./src/client/my-activities.js?v=20260609-capability-deepseek-agent"></script>
   </body>
 </html>
