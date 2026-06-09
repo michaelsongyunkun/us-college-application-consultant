@@ -79,6 +79,23 @@ try {
   assert.match(sentPayload.messages[1].content, /恰好15项/);
   assert.match(sentPayload.messages[1].content, /10年级/);
 
+  const jobResponse = await post(
+    "/api/deepseek-plan-jobs",
+    {
+      profile: { grade: "10骞寸骇", majorDirection: "AI鏁欒偛" },
+      activities: [],
+    },
+    cookie,
+  );
+  assert.equal(jobResponse.status, 202);
+  const createdJob = await jobResponse.json();
+  assert.match(createdJob.jobId, /^[a-f0-9-]{36}$/);
+  assert.equal(createdJob.status, "pending");
+  const completedJob = await waitForJob("/api/deepseek-plan-jobs", createdJob.jobId, cookie);
+  assert.equal(completedJob.status, "completed");
+  assert.equal(completedJob.result.answer, deepSeekAnswer);
+  assert.equal(completedJob.result.parsed.activities.length, 15);
+
   const longResponse = await post(
     "/api/deepseek-plan",
     {
@@ -233,6 +250,23 @@ function post(path, payload, cookie = "") {
     headers: { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) },
     body: JSON.stringify(payload),
   });
+}
+
+function get(path, cookie = "") {
+  return fetch(`${serverUrl()}${path}`, {
+    headers: cookie ? { Cookie: cookie } : {},
+  });
+}
+
+async function waitForJob(endpoint, jobId, cookie) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const response = await get(`${endpoint}/${encodeURIComponent(jobId)}`, cookie);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    if (body.status === "completed" || body.status === "failed") return body;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(`${endpoint} job did not finish in time.`);
 }
 
 function serverUrl(targetServer = server) {

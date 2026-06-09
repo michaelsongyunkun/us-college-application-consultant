@@ -22,6 +22,7 @@ const schoolSelectionResults = document.querySelector("#schoolSelectionResults")
 const schoolSelectionVersionList = document.querySelector("#schoolSelectionVersionList");
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const SCHOOL_SELECTION_JOB_ENDPOINT = "/api/school-selection-jobs";
+const SCHOOL_SELECTION_PENDING_JOB_KEY = "school-selection-pending-job";
 const SCHOOL_SELECTION_JOB_POLL_INTERVAL_MS = 3000;
 const SCHOOL_SELECTION_JOB_TIMEOUT_MS = 6 * 60 * 1000;
 
@@ -44,6 +45,7 @@ const EXPORT_ROUND_CONFIG = [
 
 let currentSelection = null;
 let schoolSelectionVersions = [];
+let schoolSelectionJobPolling = false;
 
 function collectSchoolSelectionAnalyticsProfile() {
   return {
@@ -93,7 +95,9 @@ function trackSchoolSelectionUsageEvent(eventType, { metrics = {}, details = {} 
 
 async function generateSchoolSelection(event) {
   event.preventDefault();
-  setStatus("DeepSeek 正在生成选校方案，大约需要 2 分钟，请保持页面打开。");
+  if (schoolSelectionJobPolling) return;
+  schoolSelectionJobPolling = true;
+  setStatus("正在提交 DeepSeek 后台选校任务，提交后可切换页面。");
   setWorking(true);
   const startedAt = performance.now();
   try {
@@ -114,6 +118,7 @@ async function generateSchoolSelection(event) {
       method: "POST",
       body: JSON.stringify(payload),
     });
+    rememberPendingSchoolSelectionJob(job.jobId);
     setStatus("生成任务已提交，DeepSeek 正在后台生成选校方案。");
     const result = await waitForSchoolSelectionJob(job.jobId);
     renderSchoolSelectionResults(result.selection);
@@ -124,13 +129,16 @@ async function generateSchoolSelection(event) {
       },
     });
     setStatus("选校方案已生成");
+    clearPendingSchoolSelectionJob();
   } catch (error) {
+    if (error.final || /not found/i.test(error.message)) clearPendingSchoolSelectionJob();
     trackSchoolSelectionUsageEvent("school_selection_generate_failure", {
       metrics: { generatedActivityCount: 0, durationMs: performance.now() - startedAt },
       details: { failureReason: error.message },
     });
     setStatus(error.message, true);
   } finally {
+    schoolSelectionJobPolling = false;
     setWorking(false);
   }
 }
@@ -150,7 +158,7 @@ async function waitForSchoolSelectionJob(jobId) {
     } catch (error) {
       consecutivePollFailures += 1;
       if (consecutivePollFailures >= 3) throw error;
-      setStatus("正在重新连接选校生成任务，请保持页面打开。");
+      setStatus("正在重新连接选校后台生成任务...");
       await delay(SCHOOL_SELECTION_JOB_POLL_INTERVAL_MS);
       continue;
     }
@@ -160,9 +168,11 @@ async function waitForSchoolSelectionJob(jobId) {
       return job.result;
     }
     if (job.status === "failed") {
-      throw new Error(job.error || "选校方案生成失败，请稍后重试。");
+      const error = new Error(job.error || "选校方案生成失败，请稍后重试。");
+      error.final = true;
+      throw error;
     }
-    setStatus("DeepSeek 仍在后台生成选校方案，请保持页面打开。");
+    setStatus("DeepSeek 正在后台生成选校方案，可先切换页面；回到本页会自动接上。");
     await delay(SCHOOL_SELECTION_JOB_POLL_INTERVAL_MS);
   }
 
@@ -171,6 +181,58 @@ async function waitForSchoolSelectionJob(jobId) {
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function readPendingSchoolSelectionJob() {
+  try {
+    const raw = localStorage.getItem(SCHOOL_SELECTION_PENDING_JOB_KEY);
+    if (!raw) return null;
+    const record = JSON.parse(raw);
+    return record?.jobId ? record : null;
+  } catch {
+    return null;
+  }
+}
+
+function rememberPendingSchoolSelectionJob(jobId) {
+  if (!jobId) return;
+  localStorage.setItem(
+    SCHOOL_SELECTION_PENDING_JOB_KEY,
+    JSON.stringify({ jobId, createdAt: new Date().toISOString() }),
+  );
+}
+
+function clearPendingSchoolSelectionJob() {
+  localStorage.removeItem(SCHOOL_SELECTION_PENDING_JOB_KEY);
+}
+
+async function resumePendingSchoolSelectionJob() {
+  const pendingJob = readPendingSchoolSelectionJob();
+  if (!pendingJob || schoolSelectionJobPolling) return;
+
+  schoolSelectionJobPolling = true;
+  setWorking(true);
+  const startedAt = performance.now();
+  try {
+    setStatus("正在接回上次未完成的选校生成任务...");
+    const result = await waitForSchoolSelectionJob(pendingJob.jobId);
+    renderSchoolSelectionResults(result.selection);
+    trackSchoolSelectionUsageEvent("school_selection_generate_success", {
+      metrics: {
+        generatedActivityCount: countApplicationPlanSchools(result.selection?.rounds || {}),
+        durationMs: performance.now() - startedAt,
+      },
+      details: { resumed: true },
+    });
+    setStatus("选校方案已生成");
+    clearPendingSchoolSelectionJob();
+  } catch (error) {
+    if (error.final || /not found/i.test(error.message)) clearPendingSchoolSelectionJob();
+    setStatus(error.message, true);
+  } finally {
+    schoolSelectionJobPolling = false;
+    setWorking(false);
+  }
 }
 
 export function renderSchoolSelectionResults(selection = {}) {
@@ -896,3 +958,4 @@ schoolSelectionVersionList?.addEventListener("click", (event) => {
   deleteSchoolSelectionVersion(deleteButton.dataset.deleteSchoolSelectionVersion);
 });
 loadSchoolSelectionVersions();
+resumePendingSchoolSelectionJob();

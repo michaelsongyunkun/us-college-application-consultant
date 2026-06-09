@@ -284,7 +284,7 @@ assert.match(appJs, /export_svg/, "Main app should track SVG exports.");
 assert.match(appJs, /image\/svg\+xml;charset=utf-8/, "Main app should download SVG with the correct MIME type.");
 assert.match(appJs, /querySelector\("#generateDeepSeekButton"\)/, "Main app should bind DeepSeek generation.");
 assert.match(appJs, /querySelector\("#deepSeekWorkingIndicator"\)/, "Main app should bind the DeepSeek working indicator.");
-assert.match(appJs, /大约需要 3-4 分钟/, "Main app should keep the DeepSeek planning wait-time copy while generating.");
+assert.match(appJs, /后台生成任务/, "Main app should explain that DeepSeek planning runs as a background job.");
 assert.match(appJs, /querySelector\("#workspacePrimaryActionButton"\)/, "Main app should bind the workspace next-action button.");
 assert.match(appJs, /function getWorkspaceNextActionState/, "Main app should derive the recommended next action from workspace state.");
 assert.match(appJs, /function updateWorkspaceNextAction/, "Main app should render the recommended next action.");
@@ -300,7 +300,8 @@ assert.match(appJs, /scrollIntoView\(\{ behavior: "smooth"/, "Workspace next act
 assert.match(appJs, /window\.location\.href = "\.\/ask-deepseek\.html"/, "Workspace optimization action should route to Ask DeepSeek.");
 assert.match(appJs, /setDeepSeekWorking\(true\)/, "Main app should show the DeepSeek working indicator during generation.");
 assert.match(appJs, /setDeepSeekWorking\(false\)/, "Main app should hide the DeepSeek working indicator after generation.");
-assert.match(appJs, /"\/api\/deepseek-plan"/, "Main app should call the DeepSeek planning endpoint.");
+assert.match(appJs, /"\/api\/deepseek-plan-jobs"/, "Main app should create a background DeepSeek planning job.");
+assert.match(appJs, /resumePendingDeepSeekPlanJob/, "Main app should resume pending DeepSeek planning jobs.");
 assert.match(styles, /\.auth-status:empty\s*\{/, "An empty auth status should be visually hidden.");
 assert.doesNotMatch(styles, /\.agent-usage-note|\.codex-mode|\.codex-actions/, "Removed task package UI styles should not remain.");
 assert.match(styles, /\.deepseek-working\s*\{/, "DeepSeek working indicator should have panel styling.");

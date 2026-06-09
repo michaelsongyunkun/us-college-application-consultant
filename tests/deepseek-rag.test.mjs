@@ -159,7 +159,7 @@ try {
   assert.equal(sentPayload.messages[1].role, "user");
   const systemPrompt = sentPayload.messages[0].content;
   assert.match(systemPrompt, /问DeepSeek”申请规划智能体/);
-  assert.match(systemPrompt, /个人申请档案：选校计划、课外活动、竞赛、夏校、推荐信、GPA\/SAT\/AP/);
+  assert.match(systemPrompt, /个人申请档案：选校计划、课外活动、竞赛、夏校、推荐信、课程成绩\/SAT\/AP/);
   assert.match(systemPrompt, /当前资料不足以判断/);
   assert.match(systemPrompt, /不要做绝对化承诺/);
   assert.match(systemPrompt, /保证录取/);
@@ -210,6 +210,22 @@ try {
   assert.match(majorMatchSystemPrompt, /只有活动、竞赛、夏校、AP 课程四类全部为空/);
   assert.doesNotMatch(majorMatchSystemPrompt, /如果信息不足，请先输出“档案信息缺口”，再给出暂定匹配建议/);
   assert.doesNotMatch(majorMatchSystemPrompt, /问DeepSeek”申请规划智能体/);
+  const ragJobResponse = await post(
+    "/api/deepseek-rag-jobs",
+    {
+      question: "How should this Robotics Portfolio student prioritize MIT preparation?",
+      historySummary: "Robotics Portfolio context.",
+    },
+    cookie,
+  );
+  assert.equal(ragJobResponse.status, 202);
+  const createdRagJob = await ragJobResponse.json();
+  assert.match(createdRagJob.jobId, /^[a-f0-9-]{36}$/);
+  assert.equal(createdRagJob.status, "pending");
+  const completedRagJob = await waitForJob("/api/deepseek-rag-jobs", createdRagJob.jobId, cookie);
+  assert.equal(completedRagJob.status, "completed");
+  assert.equal(completedRagJob.result.answer, ragAnswer);
+  assert.ok(completedRagJob.result.sources.some((source) => source.type === "student-backup"));
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });
@@ -242,6 +258,17 @@ function jsonHeaders(cookie = "") {
     "Content-Type": "application/json",
     ...(cookie ? { Cookie: cookie } : {}),
   };
+}
+
+async function waitForJob(endpoint, jobId, cookie) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const response = await get(`${endpoint}/${encodeURIComponent(jobId)}`, cookie);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    if (body.status === "completed" || body.status === "failed") return body;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(`${endpoint} job did not finish in time.`);
 }
 
 function serverUrl() {

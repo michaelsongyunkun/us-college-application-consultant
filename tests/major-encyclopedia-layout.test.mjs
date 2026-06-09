@@ -45,7 +45,8 @@ for (const removed of [
 }
 
 assert.ok(script.includes('fetch("./data/majors.md")'), "Major page should load the local DOCX-derived RAG markdown.");
-assert.ok(script.includes('"/api/deepseek-rag"'), "DeepSeek major matching should use the existing RAG API.");
+assert.ok(script.includes('"/api/deepseek-rag-jobs"'), "DeepSeek major matching should create a background RAG job.");
+assert.ok(script.includes("resumePendingMajorMatchJob"), "DeepSeek major matching should resume pending jobs after navigation.");
 assert.ok(script.includes('assistantProfile: "major-match"'), "DeepSeek major matching should request the dedicated major-match system prompt.");
 assert.ok(script.includes("专业百科 RAG"), "DeepSeek prompt should explicitly ask for 专业百科 RAG.");
 assert.ok(script.includes("sanitizeDeepSeekMajorAnswer"), "DeepSeek major matching should sanitize hidden columns from model output.");

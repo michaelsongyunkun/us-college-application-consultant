@@ -60,13 +60,16 @@ const DEFAULT_RATE_LIMITS = {
   "/api/auth/reset-password": { maxRequests: 5, windowMs: 60_000 },
   "/api/feedback": { maxRequests: 10, windowMs: 60_000 },
   "/api/deepseek-plan": { maxRequests: 10, windowMs: 60_000 },
+  "/api/deepseek-plan-jobs": { maxRequests: 10, windowMs: 60_000 },
   "/api/deepseek-rag": { maxRequests: 20, windowMs: 60_000 },
+  "/api/deepseek-rag-jobs": { maxRequests: 20, windowMs: 60_000 },
   "/api/portfolio-capability-assessment": { maxRequests: 10, windowMs: 60_000 },
+  "/api/portfolio-capability-assessment-jobs": { maxRequests: 10, windowMs: 60_000 },
   "/api/school-selection": { maxRequests: 10, windowMs: 60_000 },
   "/api/school-selection-jobs": { maxRequests: 10, windowMs: 60_000 },
   "/api/analytics/usage-event": { maxRequests: 120, windowMs: 60_000 },
 };
-const SCHOOL_SELECTION_JOB_TTL_MS = 30 * 60_000;
+const GENERATION_JOB_TTL_MS = 30 * 60_000;
 const SECURITY_HEADERS = Object.freeze({
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
@@ -395,6 +398,70 @@ async function handleDeepSeekPlan(
   });
 }
 
+async function generateDeepSeekPlanResult(
+  payload,
+  { env = process.env, deepSeekFetch = fetch } = {},
+) {
+  const apiKey = resolveApiKey({
+    environmentApiKey: env.DEEPSEEK_API_KEY,
+    requestApiKey: "",
+  });
+  if (!apiKey) {
+    throw new RequestError("DeepSeek API 尚未配置。请在服务端配置 DEEPSEEK_API_KEY。", 400);
+  }
+
+  const systemPrompt = await readFile(promptPath, "utf8");
+  const model = normalizeDeepSeekModel(env.DEEPSEEK_PLAN_MODEL, "deepseek-v4-flash");
+  const maxTokens = normalizePositiveInteger(env.DEEPSEEK_PLAN_MAX_TOKENS, DEEPSEEK_PLAN_MAX_TOKENS);
+  let repairMessage = "";
+
+  for (let attempt = 1; attempt <= MAX_DEEPSEEK_PLAN_ATTEMPTS; attempt += 1) {
+    const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: buildUserMessage(payload, { repairMessage }) },
+        ],
+        thinking: { type: "disabled" },
+        stream: false,
+        temperature: attempt === 1 ? 0.4 : 0.2,
+        max_tokens: maxTokens,
+      }),
+    });
+
+    const data = await apiResponse.json().catch(() => ({}));
+    if (!apiResponse.ok) {
+      throw new RequestError(data.error?.message || "Agent 调用失败。", apiResponse.status);
+    }
+
+    const answer = extractDeepSeekResponseText(data);
+    if (!answer) {
+      repairMessage = "DeepSeek 未返回可解析的规划回答。";
+    } else {
+      const parsed = parseAgentOutput(answer);
+      repairMessage = validateParsedDeepSeekPlan(parsed);
+      if (!repairMessage) {
+        return {
+          answer,
+          parsed,
+          attempts: attempt,
+        };
+      }
+    }
+  }
+
+  throw new RequestError(
+    `${repairMessage || "DeepSeek 未返回完整规划回答。"} 请缩短超长输入后重试。`,
+    502,
+  );
+}
+
 function getAppBaseUrl(request, configuredBaseUrl) {
   if (configuredBaseUrl) return configuredBaseUrl.replace(/\/$/, "");
   const forwardedProto = request.headers["x-forwarded-proto"];
@@ -665,6 +732,93 @@ function startSchoolSelectionJob(job, { schoolSelection, user, payload, env, dee
     });
 }
 
+function serializeGenerationJob(job) {
+  const payload = {
+    jobId: job.id,
+    status: job.status,
+  };
+  if (job.status === "completed") payload.result = job.result;
+  if (job.status === "failed") {
+    payload.error = job.error || "Generation failed.";
+    payload.statusCode = job.statusCode || 500;
+  }
+  return payload;
+}
+
+function getGenerationJobError(error) {
+  if (
+    error instanceof RequestError ||
+    error instanceof ActivityPortfolioError ||
+    error instanceof PortfolioCapabilityAgentError ||
+    error instanceof DeepSeekRagError ||
+    error instanceof SchoolSelectionError
+  ) {
+    return {
+      error: error.message,
+      statusCode: error.statusCode,
+    };
+  }
+  console.error("Unexpected generation job error:", error);
+  return {
+    error: "Server error",
+    statusCode: 500,
+  };
+}
+
+function startGenerationJob(job, task) {
+  Promise.resolve()
+    .then(async () => {
+      job.status = "running";
+      job.updatedAt = Date.now();
+      job.result = await task();
+      job.status = "completed";
+      job.completedAt = Date.now();
+      job.updatedAt = job.completedAt;
+    })
+    .catch((error) => {
+      const normalizedError = getGenerationJobError(error);
+      job.status = "failed";
+      job.error = normalizedError.error;
+      job.statusCode = normalizedError.statusCode;
+      job.completedAt = Date.now();
+      job.updatedAt = job.completedAt;
+    });
+}
+
+function createGenerationJobStore({ ttlMs = GENERATION_JOB_TTL_MS } = {}) {
+  const jobs = new Map();
+
+  function pruneJobs() {
+    const expiredBefore = Date.now() - ttlMs;
+    for (const [jobId, job] of jobs) {
+      if (job.updatedAt < expiredBefore) jobs.delete(jobId);
+    }
+  }
+
+  function create(user, task) {
+    pruneJobs();
+    const now = Date.now();
+    const job = {
+      id: randomUUID(),
+      userId: user.id,
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    };
+    jobs.set(job.id, job);
+    startGenerationJob(job, task);
+    return job;
+  }
+
+  function get(user, jobId) {
+    pruneJobs();
+    const job = jobs.get(jobId);
+    return job?.userId === user.id ? job : null;
+  }
+
+  return { create, get, pruneJobs };
+}
+
 export function resolveDatabasePath(env = process.env) {
   return env.AUTH_DATABASE_PATH || env.DATABASE_PATH || defaultDatabasePath;
 }
@@ -689,10 +843,13 @@ export function createAppServer({
   const readJson = (request) => readRequestJson(request, maxRequestBodyBytes);
   const handleAuth = createAuthHandler(auth, { mailer, appBaseUrl, readJson });
   const getRateLimit = createRateLimiter(rateLimits);
+  const deepSeekPlanJobs = createGenerationJobStore();
+  const deepSeekRagJobs = createGenerationJobStore();
+  const portfolioCapabilityAssessmentJobs = createGenerationJobStore();
   const schoolSelectionJobs = new Map();
 
   function pruneSchoolSelectionJobs() {
-    const expiredBefore = Date.now() - SCHOOL_SELECTION_JOB_TTL_MS;
+    const expiredBefore = Date.now() - GENERATION_JOB_TTL_MS;
     for (const [jobId, job] of schoolSelectionJobs) {
       if (job.updatedAt < expiredBefore) schoolSelectionJobs.delete(jobId);
     }
@@ -748,6 +905,30 @@ export function createAppServer({
       if (request.method === "POST" && url.pathname === "/api/deepseek-plan") {
         if (!requireUser(request, response, auth)) return;
         await handleDeepSeekPlan(request, response, { readJson, env, deepSeekFetch });
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/deepseek-plan-jobs") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        const payload = await readJson(request);
+        const job = deepSeekPlanJobs.create(user, () =>
+          generateDeepSeekPlanResult(payload, { env, deepSeekFetch }),
+        );
+        sendJson(response, 202, { jobId: job.id, status: job.status });
+        return;
+      }
+
+      const deepSeekPlanJobMatch = url.pathname.match(/^\/api\/deepseek-plan-jobs\/([a-f0-9-]{36})$/);
+      if (request.method === "GET" && deepSeekPlanJobMatch) {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        const job = deepSeekPlanJobs.get(user, deepSeekPlanJobMatch[1]);
+        if (!job) {
+          sendJson(response, 404, { error: "DeepSeek plan job not found." });
+          return;
+        }
+        sendJson(response, 200, serializeGenerationJob(job));
         return;
       }
 
@@ -831,6 +1012,68 @@ export function createAppServer({
           env,
           deepSeekFetch,
         }));
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/portfolio-capability-assessment-jobs") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        const payload = await readJson(request);
+        const job = portfolioCapabilityAssessmentJobs.create(user, () =>
+          portfolioCapabilityAgent.generateAssessment({
+            user,
+            payload,
+            env,
+            deepSeekFetch,
+          }),
+        );
+        sendJson(response, 202, { jobId: job.id, status: job.status });
+        return;
+      }
+
+      const capabilityAssessmentJobMatch = url.pathname.match(
+        /^\/api\/portfolio-capability-assessment-jobs\/([a-f0-9-]{36})$/,
+      );
+      if (request.method === "GET" && capabilityAssessmentJobMatch) {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        const job = portfolioCapabilityAssessmentJobs.get(user, capabilityAssessmentJobMatch[1]);
+        if (!job) {
+          sendJson(response, 404, { error: "Portfolio capability assessment job not found." });
+          return;
+        }
+        sendJson(response, 200, serializeGenerationJob(job));
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/deepseek-rag-jobs") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        const payload = await readJson(request);
+        const job = deepSeekRagJobs.create(user, () =>
+          deepSeekRag.answerQuestion({
+            user,
+            question: payload.question,
+            historySummary: payload.historySummary,
+            assistantProfile: payload.assistantProfile,
+            env,
+            deepSeekFetch,
+          }),
+        );
+        sendJson(response, 202, { jobId: job.id, status: job.status });
+        return;
+      }
+
+      const deepSeekRagJobMatch = url.pathname.match(/^\/api\/deepseek-rag-jobs\/([a-f0-9-]{36})$/);
+      if (request.method === "GET" && deepSeekRagJobMatch) {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        const job = deepSeekRagJobs.get(user, deepSeekRagJobMatch[1]);
+        if (!job) {
+          sendJson(response, 404, { error: "DeepSeek RAG job not found." });
+          return;
+        }
+        sendJson(response, 200, serializeGenerationJob(job));
         return;
       }
 

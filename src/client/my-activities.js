@@ -11,7 +11,10 @@ import { buildWordDocument } from "../domain/word-export.mjs?v=20260601-word-exp
 import { insertEntryIntoFirstEmptySlot } from "./portfolio-entry-slots.mjs?v=20260601-activity-import-slot";
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
-const CAPABILITY_ASSESSMENT_ENDPOINT = "/api/portfolio-capability-assessment";
+const CAPABILITY_ASSESSMENT_JOB_ENDPOINT = "/api/portfolio-capability-assessment-jobs";
+const CAPABILITY_ASSESSMENT_PENDING_JOB_KEY = "portfolio-capability-assessment-pending-job";
+const CAPABILITY_ASSESSMENT_JOB_POLL_INTERVAL_MS = 3000;
+const CAPABILITY_ASSESSMENT_JOB_TIMEOUT_MS = 8 * 60 * 1000;
 const ACTIVITY_IMPORT_SOURCES_ENDPOINT = "/api/my-activities/import-sources";
 const APPLICATION_ROUND_SCHOOLS_ENDPOINT = "./data/application-round-schools.md";
 const APPLICATION_BACKUP_SCHOOLS_ENDPOINTS = [
@@ -176,6 +179,7 @@ const portfolioCompletionCards = {
 
 let isDirty = false;
 let isRendering = false;
+let capabilityAssessmentJobPolling = false;
 let currentPortfolio = emptyPortfolio();
 let applicationRoundSchools = [];
 let applicationRoundRowCounts = { ea: 1, uc: 1, rd: 1, multiCountry: 1 };
@@ -1211,24 +1215,66 @@ function confidenceLabel(confidence) {
 }
 
 async function generateCapabilityAssessment() {
+  if (capabilityAssessmentJobPolling) return;
+  capabilityAssessmentJobPolling = true;
   const portfolio = collectPortfolio();
   try {
     setButtonsDisabled(true);
-    setStatus("DeepSeek Agent 正在生成能力雷达图...");
-    setCapabilityAssessmentStatus("DeepSeek Agent 正在评估...");
-    const data = await requestJson(CAPABILITY_ASSESSMENT_ENDPOINT, {
+    setStatus("正在提交 DeepSeek Agent 后台评估任务...");
+    setCapabilityAssessmentStatus("正在提交 DeepSeek Agent 后台评估任务...");
+    const job = await requestJson(CAPABILITY_ASSESSMENT_JOB_ENDPOINT, {
       method: "POST",
       body: JSON.stringify(portfolio),
     });
+    rememberPendingCapabilityAssessmentJob(job.jobId);
+    setStatus("能力评估任务已提交，DeepSeek Agent 正在后台评估。");
+    setCapabilityAssessmentStatus("DeepSeek Agent 正在后台评估...");
+    const data = await waitForCapabilityAssessmentJob(job.jobId);
     renderPortfolio(data.portfolio || { ...portfolio, capabilityAssessment: data.capabilityAssessment || {} });
     isDirty = false;
     setStatus("能力评估已生成并保存");
     setCapabilityAssessmentStatus("DeepSeek Agent 已生成并保存");
+    clearPendingCapabilityAssessmentJob();
   } catch (error) {
+    if (error.final || /not found/i.test(error.message)) clearPendingCapabilityAssessmentJob();
     const message = error.message || "DeepSeek Agent 评估失败";
     setStatus(message, true);
     setCapabilityAssessmentStatus(message, true);
   } finally {
+    capabilityAssessmentJobPolling = false;
+    setButtonsDisabled(false);
+  }
+}
+
+async function resumePendingCapabilityAssessmentJob() {
+  const pendingJob = readPendingCapabilityAssessmentJob();
+  if (!pendingJob || capabilityAssessmentJobPolling) return;
+
+  capabilityAssessmentJobPolling = true;
+  try {
+    setButtonsDisabled(true);
+    setStatus("正在接回上次未完成的能力评估任务...");
+    setCapabilityAssessmentStatus("正在接回 DeepSeek Agent 后台评估任务...");
+    const data = await waitForCapabilityAssessmentJob(pendingJob.jobId);
+    if (data.portfolio || data.capabilityAssessment) {
+      renderPortfolio(data.portfolio || {
+        ...collectPortfolio(),
+        capabilityAssessment: data.capabilityAssessment || {},
+      });
+      isDirty = false;
+    } else {
+      await loadPortfolio();
+    }
+    setStatus("能力评估已生成并保存");
+    setCapabilityAssessmentStatus("DeepSeek Agent 已生成并保存");
+    clearPendingCapabilityAssessmentJob();
+  } catch (error) {
+    if (error.final || /not found/i.test(error.message)) clearPendingCapabilityAssessmentJob();
+    const message = error.message || "DeepSeek Agent 评估失败";
+    setStatus(message, true);
+    setCapabilityAssessmentStatus(message, true);
+  } finally {
+    capabilityAssessmentJobPolling = false;
     setButtonsDisabled(false);
   }
 }
@@ -2033,6 +2079,66 @@ async function requestJson(url, options = {}) {
   return data;
 }
 
+function delay(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function readPendingCapabilityAssessmentJob() {
+  try {
+    const raw = localStorage.getItem(CAPABILITY_ASSESSMENT_PENDING_JOB_KEY);
+    if (!raw) return null;
+    const record = JSON.parse(raw);
+    return record?.jobId ? record : null;
+  } catch {
+    return null;
+  }
+}
+
+function rememberPendingCapabilityAssessmentJob(jobId) {
+  if (!jobId) return;
+  localStorage.setItem(
+    CAPABILITY_ASSESSMENT_PENDING_JOB_KEY,
+    JSON.stringify({ jobId, createdAt: new Date().toISOString() }),
+  );
+}
+
+function clearPendingCapabilityAssessmentJob() {
+  localStorage.removeItem(CAPABILITY_ASSESSMENT_PENDING_JOB_KEY);
+}
+
+async function waitForCapabilityAssessmentJob(jobId) {
+  if (!jobId) throw new Error("能力评估任务创建失败，请刷新页面后重试。");
+  const deadline = performance.now() + CAPABILITY_ASSESSMENT_JOB_TIMEOUT_MS;
+  let consecutivePollFailures = 0;
+
+  while (performance.now() < deadline) {
+    let job;
+    try {
+      job = await requestJson(`${CAPABILITY_ASSESSMENT_JOB_ENDPOINT}/${encodeURIComponent(jobId)}`, {
+        method: "GET",
+      });
+      consecutivePollFailures = 0;
+    } catch (error) {
+      consecutivePollFailures += 1;
+      if (consecutivePollFailures >= 3) throw error;
+      setCapabilityAssessmentStatus("正在重新连接 DeepSeek Agent 后台评估任务...");
+      await delay(CAPABILITY_ASSESSMENT_JOB_POLL_INTERVAL_MS);
+      continue;
+    }
+
+    if (job.status === "completed") return job.result || {};
+    if (job.status === "failed") {
+      const error = new Error(job.error || "DeepSeek Agent 评估失败，请稍后重试。");
+      error.final = true;
+      throw error;
+    }
+    setCapabilityAssessmentStatus("DeepSeek Agent 正在后台评估，可先切换页面；回到本页会自动接上。");
+    await delay(CAPABILITY_ASSESSMENT_JOB_POLL_INTERVAL_MS);
+  }
+
+  throw new Error("DeepSeek Agent 评估耗时过长，请稍后回到本页查看，或重新生成。");
+}
+
 function addAcademicRecord(type) {
   const portfolio = collectPortfolio();
   portfolio.academicRecords = portfolio.academicRecords || emptyAcademicRecords();
@@ -2364,5 +2470,5 @@ window.addEventListener("beforeunload", (event) => {
 
 renderPortfolio();
 loadApplicationRoundSchools();
-loadPortfolio();
+loadPortfolio().then(resumePendingCapabilityAssessmentJob);
 loadActivityImportSources();

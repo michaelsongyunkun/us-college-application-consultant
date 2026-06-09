@@ -121,7 +121,8 @@ assert.ok(script.includes("请做院校匹配与差距分析"), "Ask DeepSeek sh
 assert.ok(script.includes("请进行成绩与课程规划诊断"), "Ask DeepSeek should prompt the academic plan workflow.");
 assert.ok(script.includes("请生成申请材料清单"), "Ask DeepSeek should prompt the material checklist workflow.");
 
-assert.ok(script.includes('"/api/deepseek-rag"'), "Ask DeepSeek should call the RAG API.");
+assert.ok(script.includes('"/api/deepseek-rag-jobs"'), "Ask DeepSeek should create a background RAG job.");
+assert.ok(script.includes("resumePendingDeepSeekRagJob"), "Ask DeepSeek should resume a pending RAG job after navigation.");
 assert.ok(
   script.includes("renderMarkdown"),
   "Ask DeepSeek should render DeepSeek markdown as visual HTML before showing answers.",

@@ -108,6 +108,7 @@ assert.ok(
 
 assert.ok(script.includes('"/api/school-selection-jobs"'), "School selection page should create a background generation job.");
 assert.ok(script.includes("waitForSchoolSelectionJob"), "School selection page should poll the background job for results.");
+assert.ok(script.includes("resumePendingSchoolSelectionJob"), "School selection page should resume pending jobs after navigation.");
 assert.ok(
   !script.includes('requestJson("/api/school-selection"'),
   "School selection generation should not depend on one long synchronous browser request.",

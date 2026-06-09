@@ -12,6 +12,10 @@ const chatLog = document.querySelector("#deepSeekChatLog");
 const workflowRegion = document.querySelector("#deepSeekWorkflows");
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
+const DEEPSEEK_RAG_JOB_ENDPOINT = "/api/deepseek-rag-jobs";
+const DEEPSEEK_RAG_PENDING_JOB_KEY = "deepseek-rag-pending-job";
+const DEEPSEEK_RAG_JOB_POLL_INTERVAL_MS = 3000;
+const DEEPSEEK_RAG_JOB_TIMEOUT_MS = 8 * 60 * 1000;
 const USER_AVATAR_SRC = "./assets/logo-mark.svg";
 const DEEPSEEK_AVATAR_SRC = "./assets/deepseek-avatar.svg";
 const THINKING_TEXT = "......";
@@ -160,6 +164,7 @@ const WORKFLOW_PROMPTS = {
 };
 
 let progressStatusTimer = null;
+let deepSeekRagJobPolling = false;
 let conversationSummary = "";
 const conversationTurns = [];
 const conversationArchive = [];
@@ -232,6 +237,72 @@ async function requestJson(url, options = {}) {
   }
   if (!response.ok) throw new Error(data.error || "请求失败");
   return data;
+}
+
+function delay(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function readPendingDeepSeekRagJob() {
+  try {
+    const raw = localStorage.getItem(DEEPSEEK_RAG_PENDING_JOB_KEY);
+    if (!raw) return null;
+    const record = JSON.parse(raw);
+    return record?.jobId && record?.question ? record : null;
+  } catch {
+    return null;
+  }
+}
+
+function rememberPendingDeepSeekRagJob(record) {
+  if (!record?.jobId || !record?.question) return;
+  localStorage.setItem(
+    DEEPSEEK_RAG_PENDING_JOB_KEY,
+    JSON.stringify({
+      jobId: record.jobId,
+      question: record.question,
+      displayQuestion: record.displayQuestion || record.question,
+      workflowKey: record.workflowKey || "",
+      createdAt: new Date().toISOString(),
+    }),
+  );
+}
+
+function clearPendingDeepSeekRagJob() {
+  localStorage.removeItem(DEEPSEEK_RAG_PENDING_JOB_KEY);
+}
+
+async function waitForDeepSeekRagJob(jobId) {
+  if (!jobId) throw new Error("DeepSeek 问答任务创建失败，请刷新页面后重试。");
+  const deadline = performance.now() + DEEPSEEK_RAG_JOB_TIMEOUT_MS;
+  let consecutivePollFailures = 0;
+
+  while (performance.now() < deadline) {
+    let job;
+    try {
+      job = await requestJson(`${DEEPSEEK_RAG_JOB_ENDPOINT}/${encodeURIComponent(jobId)}`, {
+        method: "GET",
+      });
+      consecutivePollFailures = 0;
+    } catch (error) {
+      consecutivePollFailures += 1;
+      if (consecutivePollFailures >= 3) throw error;
+      setStatus("正在重新连接 DeepSeek 后台问答任务...");
+      await delay(DEEPSEEK_RAG_JOB_POLL_INTERVAL_MS);
+      continue;
+    }
+
+    if (job.status === "completed") return job.result || {};
+    if (job.status === "failed") {
+      const error = new Error(job.error || "DeepSeek 问答失败，请稍后重试。");
+      error.final = true;
+      throw error;
+    }
+    setStatus("DeepSeek 正在后台生成回答，可先切换到其他页面；回到本页会自动接上。");
+    await delay(DEEPSEEK_RAG_JOB_POLL_INTERVAL_MS);
+  }
+
+  throw new Error("DeepSeek 问答耗时过长，请稍后回到本页查看，或重新提问。");
 }
 
 function renderPlainText(text) {
@@ -464,6 +535,8 @@ form.addEventListener("submit", async (event) => {
 });
 
 async function askDeepSeek({ question, displayQuestion = question, workflowKey = "" }) {
+  if (deepSeekRagJobPolling) return;
+  deepSeekRagJobPolling = true;
   appendMessage({ role: "user", content: displayQuestion });
   questionInput.value = "";
   const thinkingMessageId = renderThinkingMessage();
@@ -472,10 +545,18 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
   try {
     setWorking(true);
     startProgressStatus();
-    const data = await requestJson("/api/deepseek-rag", {
+    const job = await requestJson(DEEPSEEK_RAG_JOB_ENDPOINT, {
       method: "POST",
       body: JSON.stringify({ question, historySummary: conversationSummary }),
     });
+    rememberPendingDeepSeekRagJob({
+      jobId: job.jobId,
+      question,
+      displayQuestion,
+      workflowKey,
+    });
+    setStatus("问答任务已提交，DeepSeek 正在后台生成回答。");
+    const data = await waitForDeepSeekRagJob(job.jobId);
     const sources = data.sources || [];
     const answer = data.answer || "DeepSeek 暂无回答。";
     stopProgressStatus();
@@ -505,8 +586,10 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
         missingFieldCount: (data.missingFields || []).length,
       },
     });
+    clearPendingDeepSeekRagJob();
     setStatus(`已回复，附 ${sources.length} 条参考资料`);
   } catch (error) {
+    if (error.final || /not found/i.test(error.message)) clearPendingDeepSeekRagJob();
     stopProgressStatus();
     replaceMessage(thinkingMessageId, {
       role: "assistant",
@@ -519,6 +602,69 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
     });
     setStatus(error.message, true);
   } finally {
+    deepSeekRagJobPolling = false;
+    setWorking(false);
+    questionInput.focus();
+  }
+}
+
+async function resumePendingDeepSeekRagJob() {
+  const pendingJob = readPendingDeepSeekRagJob();
+  if (!pendingJob || deepSeekRagJobPolling) return;
+
+  deepSeekRagJobPolling = true;
+  appendMessage({ role: "user", content: pendingJob.displayQuestion || pendingJob.question });
+  const thinkingMessageId = renderThinkingMessage();
+  const startedAt = performance.now();
+
+  try {
+    setWorking(true);
+    startProgressStatus();
+    setStatus("正在接回上次未完成的 DeepSeek 问答任务...");
+    const data = await waitForDeepSeekRagJob(pendingJob.jobId);
+    const sources = data.sources || [];
+    const answer = data.answer || "DeepSeek 暂无回答。";
+    stopProgressStatus();
+    replaceMessage(thinkingMessageId, {
+      role: "assistant",
+      content: answer,
+      sources,
+      missingFields: data.missingFields || [],
+    });
+    updateConversationSummary({ question: pendingJob.displayQuestion || pendingJob.question, answer });
+    conversationArchive.push({
+      question: pendingJob.displayQuestion || pendingJob.question,
+      answer,
+      sources: sources.map((source) => source.title),
+      missingFields: data.missingFields || [],
+      createdAt: new Date().toISOString(),
+    });
+    trackDeepSeekUsageEvent("deepseek_rag_question_success", {
+      metrics: {
+        completionFields: 1,
+        generatedActivityCount: sources.length,
+        durationMs: performance.now() - startedAt,
+      },
+      details: {
+        workflowKey: pendingJob.workflowKey || "",
+        questionLength: pendingJob.question.length,
+        missingFieldCount: (data.missingFields || []).length,
+        resumed: true,
+      },
+    });
+    clearPendingDeepSeekRagJob();
+    setStatus(`已回复，附 ${sources.length} 条参考资料`);
+  } catch (error) {
+    if (error.final || /not found/i.test(error.message)) clearPendingDeepSeekRagJob();
+    stopProgressStatus();
+    replaceMessage(thinkingMessageId, {
+      role: "assistant",
+      content: error.message,
+      error: true,
+    });
+    setStatus(error.message, true);
+  } finally {
+    deepSeekRagJobPolling = false;
     setWorking(false);
     questionInput.focus();
   }
@@ -768,6 +914,7 @@ questionInput.addEventListener("keydown", (event) => {
 
 clearButton.addEventListener("click", () => {
   questionInput.value = "";
+  clearPendingDeepSeekRagJob();
   conversationSummary = "";
   conversationTurns.length = 0;
   conversationArchive.length = 0;
@@ -779,3 +926,4 @@ clearButton.addEventListener("click", () => {
 
 exportButton?.addEventListener("click", exportDeepSeekConversation);
 saveReviewButton?.addEventListener("click", saveDeepSeekReviewVersion);
+resumePendingDeepSeekRagJob();

@@ -19,11 +19,16 @@ const loadMoreMajorsButton = document.querySelector("#loadMoreMajors");
 const deepSeekMajorMatchButton = document.querySelector("#deepSeekMajorMatchButton");
 const deepSeekMajorStatus = document.querySelector("#deepSeekMajorStatus");
 const deepSeekMajorResult = document.querySelector("#deepSeekMajorResult");
+const DEEPSEEK_RAG_JOB_ENDPOINT = "/api/deepseek-rag-jobs";
+const MAJOR_MATCH_PENDING_JOB_KEY = "major-match-pending-job";
+const MAJOR_MATCH_JOB_POLL_INTERVAL_MS = 3000;
+const MAJOR_MATCH_JOB_TIMEOUT_MS = 8 * 60 * 1000;
 
 let majors = [];
 let activeCategory = "all";
 let visibleMajorLimit = DEFAULT_VISIBLE_RESULT_LIMIT;
 let matchingMajorCount = 0;
+let majorMatchJobPolling = false;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -95,6 +100,66 @@ async function requestJson(url, options = {}) {
   }
   if (!response.ok) throw new Error(data.error || "请求失败");
   return data;
+}
+
+function delay(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function readPendingMajorMatchJob() {
+  try {
+    const raw = localStorage.getItem(MAJOR_MATCH_PENDING_JOB_KEY);
+    if (!raw) return null;
+    const record = JSON.parse(raw);
+    return record?.jobId ? record : null;
+  } catch {
+    return null;
+  }
+}
+
+function rememberPendingMajorMatchJob(jobId) {
+  if (!jobId) return;
+  localStorage.setItem(
+    MAJOR_MATCH_PENDING_JOB_KEY,
+    JSON.stringify({ jobId, createdAt: new Date().toISOString() }),
+  );
+}
+
+function clearPendingMajorMatchJob() {
+  localStorage.removeItem(MAJOR_MATCH_PENDING_JOB_KEY);
+}
+
+async function waitForMajorMatchJob(jobId) {
+  if (!jobId) throw new Error("专业匹配任务创建失败，请刷新页面后重试。");
+  const deadline = performance.now() + MAJOR_MATCH_JOB_TIMEOUT_MS;
+  let consecutivePollFailures = 0;
+
+  while (performance.now() < deadline) {
+    let job;
+    try {
+      job = await requestJson(`${DEEPSEEK_RAG_JOB_ENDPOINT}/${encodeURIComponent(jobId)}`, {
+        method: "GET",
+      });
+      consecutivePollFailures = 0;
+    } catch (error) {
+      consecutivePollFailures += 1;
+      if (consecutivePollFailures >= 3) throw error;
+      setDeepSeekStatus("正在重新连接 DeepSeek 专业匹配任务...");
+      await delay(MAJOR_MATCH_JOB_POLL_INTERVAL_MS);
+      continue;
+    }
+
+    if (job.status === "completed") return job.result || {};
+    if (job.status === "failed") {
+      const error = new Error(job.error || "DeepSeek 专业匹配失败，请稍后重试。");
+      error.final = true;
+      throw error;
+    }
+    setDeepSeekStatus("DeepSeek 正在后台生成专业匹配，可先切换页面；回到本页会自动接上。");
+    await delay(MAJOR_MATCH_JOB_POLL_INTERVAL_MS);
+  }
+
+  throw new Error("DeepSeek 专业匹配耗时过长，请稍后回到本页查看，或重新生成。");
 }
 
 function renderMajorDetails(major) {
@@ -273,6 +338,8 @@ function sanitizeDeepSeekMajorAnswer(answer) {
 }
 
 async function runDeepSeekMajorMatch() {
+  if (majorMatchJobPolling) return;
+  majorMatchJobPolling = true;
   const prompt = [
     "请根据我的申请档案自动匹配适合探索的美国本科专业。",
     "必须优先使用专业百科 RAG 中的专业介绍、常见学习内容、就业方向、专业强校和录取难度。",
@@ -288,14 +355,17 @@ async function runDeepSeekMajorMatch() {
   ].join("\n");
 
   deepSeekMajorMatchButton.disabled = true;
-  setDeepSeekStatus("正在检索专业百科 RAG 与我的申请档案...");
+  setDeepSeekStatus("正在提交 DeepSeek 专业匹配后台任务...");
   deepSeekMajorResult.innerHTML = '<p class="resource-empty">DeepSeek 正在生成专业匹配建议...</p>';
   const startedAt = performance.now();
   try {
-    const data = await requestJson("/api/deepseek-rag", {
+    const job = await requestJson(DEEPSEEK_RAG_JOB_ENDPOINT, {
       method: "POST",
       body: JSON.stringify({ question: prompt, assistantProfile: "major-match" }),
     });
+    rememberPendingMajorMatchJob(job.jobId);
+    setDeepSeekStatus("专业匹配任务已提交，DeepSeek 正在后台生成。");
+    const data = await waitForMajorMatchJob(job.jobId);
     const answer = sanitizeDeepSeekMajorAnswer(data.answer || "");
     deepSeekMajorResult.innerHTML = `
       <div class="major-ai-answer">${renderMarkdown(answer)}</div>`;
@@ -303,7 +373,9 @@ async function runDeepSeekMajorMatch() {
       metrics: { durationMs: performance.now() - startedAt },
     });
     setDeepSeekStatus("已生成匹配");
+    clearPendingMajorMatchJob();
   } catch (error) {
+    if (error.final || /not found/i.test(error.message)) clearPendingMajorMatchJob();
     deepSeekMajorResult.innerHTML = `<p class="resource-empty">${escapeHtml(error.message)}</p>`;
     trackMajorUsageEvent("major_match_failure", {
       metrics: { generatedActivityCount: 0, durationMs: performance.now() - startedAt },
@@ -311,6 +383,37 @@ async function runDeepSeekMajorMatch() {
     });
     setDeepSeekStatus(error.message, true);
   } finally {
+    majorMatchJobPolling = false;
+    deepSeekMajorMatchButton.disabled = false;
+  }
+}
+
+async function resumePendingMajorMatchJob() {
+  const pendingJob = readPendingMajorMatchJob();
+  if (!pendingJob || majorMatchJobPolling) return;
+
+  majorMatchJobPolling = true;
+  deepSeekMajorMatchButton.disabled = true;
+  const startedAt = performance.now();
+  try {
+    setDeepSeekStatus("正在接回上次未完成的专业匹配任务...");
+    deepSeekMajorResult.innerHTML = '<p class="resource-empty">DeepSeek 正在生成专业匹配建议...</p>';
+    const data = await waitForMajorMatchJob(pendingJob.jobId);
+    const answer = sanitizeDeepSeekMajorAnswer(data.answer || "");
+    deepSeekMajorResult.innerHTML = `
+      <div class="major-ai-answer">${renderMarkdown(answer)}</div>`;
+    trackMajorUsageEvent("major_match_success", {
+      metrics: { durationMs: performance.now() - startedAt },
+      details: { resumed: true },
+    });
+    setDeepSeekStatus("已生成匹配");
+    clearPendingMajorMatchJob();
+  } catch (error) {
+    if (error.final || /not found/i.test(error.message)) clearPendingMajorMatchJob();
+    deepSeekMajorResult.innerHTML = `<p class="resource-empty">${escapeHtml(error.message)}</p>`;
+    setDeepSeekStatus(error.message, true);
+  } finally {
+    majorMatchJobPolling = false;
     deepSeekMajorMatchButton.disabled = false;
   }
 }
@@ -354,3 +457,4 @@ async function loadMajors() {
 }
 
 loadMajors();
+resumePendingMajorMatchJob();

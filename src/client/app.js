@@ -138,6 +138,10 @@ let plans = [];
 let currentPlan = null;
 let snapshots = [];
 let workspaceDirty = false;
+let deepSeekPlanJobPolling = false;
+const DEEPSEEK_PLAN_JOB_ENDPOINT = "/api/deepseek-plan-jobs";
+const DEEPSEEK_PLAN_JOB_POLL_INTERVAL_MS = 3000;
+const DEEPSEEK_PLAN_JOB_TIMEOUT_MS = 8 * 60 * 1000;
 const initialSearchParams = new URLSearchParams(window.location.search);
 const initialResetToken = initialSearchParams.get("resetToken");
 const initialAuthMode = initialSearchParams.get("auth");
@@ -778,6 +782,80 @@ function setDeepSeekWorking(isWorking) {
   generateDeepSeekButton?.setAttribute("aria-busy", isWorking ? "true" : "false");
 }
 
+function delay(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function getPendingDeepSeekPlanJobStorageKey() {
+  return currentUser ? `deepseek-plan-job:${currentUser.id}` : "deepseek-plan-job";
+}
+
+function readPendingDeepSeekPlanJob() {
+  try {
+    const raw = localStorage.getItem(getPendingDeepSeekPlanJobStorageKey());
+    if (!raw) return null;
+    const record = JSON.parse(raw);
+    if (!record?.jobId) return null;
+    if (record.userId && currentUser?.id && record.userId !== currentUser.id) return null;
+    return record;
+  } catch {
+    return null;
+  }
+}
+
+function rememberPendingDeepSeekPlanJob(jobId) {
+  if (!jobId) return;
+  localStorage.setItem(
+    getPendingDeepSeekPlanJobStorageKey(),
+    JSON.stringify({
+      jobId,
+      userId: currentUser?.id || null,
+      planId: currentPlan?.id || null,
+      createdAt: new Date().toISOString(),
+    }),
+  );
+}
+
+function clearPendingDeepSeekPlanJob() {
+  localStorage.removeItem(getPendingDeepSeekPlanJobStorageKey());
+}
+
+async function waitForDeepSeekPlanJob(jobId) {
+  if (!jobId) throw new Error("DeepSeek 生成任务创建失败，请刷新页面后重试。");
+  const deadline = performance.now() + DEEPSEEK_PLAN_JOB_TIMEOUT_MS;
+  let consecutivePollFailures = 0;
+
+  while (performance.now() < deadline) {
+    let job;
+    try {
+      job = await requestJson(`${DEEPSEEK_PLAN_JOB_ENDPOINT}/${encodeURIComponent(jobId)}`, {
+        method: "GET",
+      });
+      consecutivePollFailures = 0;
+    } catch (error) {
+      consecutivePollFailures += 1;
+      if (consecutivePollFailures >= 3) throw error;
+      deepSeekStatus.textContent = "正在重新连接 DeepSeek 后台生成任务...";
+      await delay(DEEPSEEK_PLAN_JOB_POLL_INTERVAL_MS);
+      continue;
+    }
+
+    if (job.status === "completed") {
+      if (!job.result?.parsed) throw new Error("DeepSeek 规划结果为空，请重新生成。");
+      return job.result;
+    }
+    if (job.status === "failed") {
+      const error = new Error(job.error || "DeepSeek 规划生成失败，请稍后重试。");
+      error.final = true;
+      throw error;
+    }
+    deepSeekStatus.textContent = "DeepSeek 正在后台生成规划，可先切换到其他页面；回到本页会自动接上。";
+    await delay(DEEPSEEK_PLAN_JOB_POLL_INTERVAL_MS);
+  }
+
+  throw new Error("DeepSeek 规划生成耗时过长，请稍后回到本页查看，或重新生成。");
+}
+
 function fillActivities(activities) {
   fillActivityTable(activityTable, activities);
 }
@@ -1201,23 +1279,28 @@ async function checkPrompt() {
 async function generateDeepSeekPlan() {
   const availability = updateDeepSeekAvailability(Boolean(fixedPrompt));
   if (!availability?.canGenerate) return;
+  if (deepSeekPlanJobPolling) return;
+  deepSeekPlanJobPolling = true;
 
   const originalButtonText = generateDeepSeekButton.textContent;
   generateDeepSeekButton.disabled = true;
   generateDeepSeekButton.textContent = "DeepSeek 生成中，约 3-4 分钟...";
-  deepSeekStatus.textContent = "DeepSeek 正在生成规划回答，大约需要 3-4 分钟，请保持页面打开。";
+  deepSeekStatus.textContent = "正在提交 DeepSeek 后台生成任务，提交后可切换页面。";
   deepSeekStatus.classList.remove("error");
   setDeepSeekWorking(true);
   const startedAt = performance.now();
 
   try {
-    const data = await requestJson("/api/deepseek-plan", {
+    const job = await requestJson(DEEPSEEK_PLAN_JOB_ENDPOINT, {
       method: "POST",
       body: JSON.stringify(buildPlanningGenerationPayload({
         profile: collectPlanningProfile(),
         activities: collectActivities(),
       })),
     });
+    rememberPendingDeepSeekPlanJob(job.jobId);
+    deepSeekStatus.textContent = "生成任务已提交，DeepSeek 正在后台生成规划。";
+    const data = await waitForDeepSeekPlanJob(job.jobId);
 
     rawAnswer.value = data.answer || "";
     fillActivities(data.parsed?.activities || []);
@@ -1234,7 +1317,9 @@ async function generateDeepSeekPlan() {
       },
     });
     await saveDraft();
+    clearPendingDeepSeekPlanJob();
   } catch (error) {
+    if (error.final || /not found/i.test(error.message)) clearPendingDeepSeekPlanJob();
     deepSeekStatus.textContent = error.message;
     deepSeekStatus.classList.add("error");
     agentStatus.textContent = error.message;
@@ -1244,6 +1329,71 @@ async function generateDeepSeekPlan() {
       details: { failureReason: error.message },
     });
   } finally {
+    deepSeekPlanJobPolling = false;
+    setDeepSeekWorking(false);
+    generateDeepSeekButton.textContent = originalButtonText;
+    const availability = getDeepSeekGenerationAvailability({
+      protocol: window.location.protocol,
+      promptLoaded: Boolean(fixedPrompt),
+      hasServerApiKey: serverHasDeepSeekApiKey,
+    });
+    generateDeepSeekButton.disabled = !availability.canGenerate;
+  }
+}
+
+async function resumePendingDeepSeekPlanJob() {
+  const pendingJob = readPendingDeepSeekPlanJob();
+  if (!pendingJob || deepSeekPlanJobPolling || !generateDeepSeekButton) return;
+
+  if (
+    pendingJob.planId &&
+    currentPlan?.id &&
+    Number(pendingJob.planId) !== Number(currentPlan.id)
+  ) {
+    const targetPlan = plans.find((plan) => Number(plan.id) === Number(pendingJob.planId));
+    if (!targetPlan) {
+      clearPendingDeepSeekPlanJob();
+      return;
+    }
+    await openPlan(targetPlan.id);
+  }
+
+  deepSeekPlanJobPolling = true;
+  const originalButtonText = generateDeepSeekButton.textContent;
+  const startedAt = performance.now();
+  generateDeepSeekButton.disabled = true;
+  generateDeepSeekButton.textContent = "正在接回 DeepSeek 生成结果...";
+  deepSeekStatus.textContent = "正在接回上次未完成的 DeepSeek 规划生成任务...";
+  deepSeekStatus.classList.remove("error");
+  setDeepSeekWorking(true);
+
+  try {
+    const data = await waitForDeepSeekPlanJob(pendingJob.jobId);
+    rawAnswer.value = data.answer || "";
+    fillActivities(data.parsed?.activities || []);
+    narrativeOutput.value = cleanNarrative(data.parsed?.narrative || "");
+    renderParseDiagnostics(parseDiagnostics, data.parsed?.diagnostics);
+    renderStudentDependentRecommendations();
+    deepSeekStatus.textContent = `DeepSeek 已生成，并写入 ${data.parsed?.activities?.length || 0} 项活动`;
+    agentStatus.textContent = deepSeekStatus.textContent;
+    agentStatus.classList.remove("error");
+    trackUsageEvent("generate_deepseek_plan_success", {
+      metrics: {
+        generatedActivityCount: data.parsed?.activities?.length || 0,
+        durationMs: performance.now() - startedAt,
+      },
+      details: { resumed: true },
+    });
+    await saveDraft();
+    clearPendingDeepSeekPlanJob();
+  } catch (error) {
+    if (error.final || /not found/i.test(error.message)) clearPendingDeepSeekPlanJob();
+    deepSeekStatus.textContent = error.message;
+    deepSeekStatus.classList.add("error");
+    agentStatus.textContent = error.message;
+    agentStatus.classList.add("error");
+  } finally {
+    deepSeekPlanJobPolling = false;
     setDeepSeekWorking(false);
     generateDeepSeekButton.textContent = originalButtonText;
     const availability = getDeepSeekGenerationAvailability({
@@ -1464,7 +1614,8 @@ async function initializeApp(user) {
   loadCompetitions();
   loadSummerSchools();
   loadAdmissionCases();
-  checkPrompt();
+  await checkPrompt();
+  resumePendingDeepSeekPlanJob();
 }
 
 if (initialResetToken) {

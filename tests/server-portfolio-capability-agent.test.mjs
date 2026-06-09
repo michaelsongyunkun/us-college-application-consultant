@@ -146,6 +146,39 @@ try {
   const reloadedPortfolio = await reloaded.json();
   assert.equal(reloadedPortfolio.capabilityAssessment.generatedBy, "deepseek-capability-agent");
   assert.equal(reloadedPortfolio.capabilityAssessment.overallSummary, body.capabilityAssessment.overallSummary);
+
+  const jobResponse = await post(
+    "/api/portfolio-capability-assessment-jobs",
+    {
+      academicRecords: {
+        courseSystem: "Other",
+        gpaScale: "4.0",
+        gpaRecords: [{ gradeLevel: "11", term: "Fall", gpa: "3.92" }],
+      },
+      activities: [
+        {
+          activityName: "Robotics Community Lab",
+          type: "Engineering",
+          description: "Prototype assistive navigation robot.",
+          outcome: "Completed demo and technical writeup.",
+        },
+      ],
+      competitions: [],
+      summerSchools: [],
+      recommendationLetters: {},
+    },
+    cookie,
+  );
+  assert.equal(jobResponse.status, 202);
+  const createdJob = await jobResponse.json();
+  assert.match(createdJob.jobId, /^[a-f0-9-]{36}$/);
+  const completedJob = await waitForJob(
+    "/api/portfolio-capability-assessment-jobs",
+    createdJob.jobId,
+    cookie,
+  );
+  assert.equal(completedJob.status, "completed");
+  assert.equal(completedJob.result.capabilityAssessment.generatedBy, "deepseek-capability-agent");
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });
@@ -172,6 +205,17 @@ function post(path, payload, cookie = "") {
 
 function get(path, cookie) {
   return fetch(`${serverUrl()}${path}`, { headers: { Cookie: cookie } });
+}
+
+async function waitForJob(endpoint, jobId, cookie) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const response = await get(`${endpoint}/${encodeURIComponent(jobId)}`, cookie);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    if (body.status === "completed" || body.status === "failed") return body;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(`${endpoint} job did not finish in time.`);
 }
 
 function jsonHeaders(cookie) {

@@ -129,8 +129,9 @@ for (const selector of [
   assert.ok(styles.includes(selector), `Stylesheet should define ${selector}.`);
 }
 for (const scriptNeedle of [
-  "CAPABILITY_ASSESSMENT_ENDPOINT",
-  "/api/portfolio-capability-assessment",
+  "CAPABILITY_ASSESSMENT_JOB_ENDPOINT",
+  "/api/portfolio-capability-assessment-jobs",
+  "resumePendingCapabilityAssessmentJob",
   "generateCapabilityAssessment",
   "renderCapabilityRadar",
   "capabilityAssessment",
