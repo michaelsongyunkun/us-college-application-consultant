@@ -27,7 +27,7 @@ const validSelection = {
       school("Duke University", "Economics", "medium"),
       school("Northwestern University", "Data Science", "medium"),
       school("Rice University", "Statistics", "medium"),
-      school("Boston University", "Business Analytics", "low"),
+      school("Kenyon College", "Creative Writing", "low"),
       school("Northeastern University", "Computer Science", "low"),
     ],
     uc: [
@@ -208,6 +208,22 @@ assert.equal(generated.selection.rounds.uc.length, 6);
 assert.equal(generated.selection.rounds.ea.length, 3);
 assert.equal(generated.selection.rounds.ed1[0].admissionProbability, "5%-8%");
 assert.match(generated.selection.rounds.ed1[0].gaps.join(" "), /录取友好度为 5\/10/);
+assert.equal(
+  generated.selection.rounds.ea.find((entry) => entry.school === "University of Illinois Urbana-Champaign").admissionProbability,
+  "21%-34%",
+);
+assert.equal(
+  generated.selection.rounds.uc.find((entry) => entry.school === "University of California, Irvine").admissionProbability,
+  "21%-34%",
+);
+assert.equal(
+  generated.selection.rounds.rd.find((entry) => entry.school === "Northeastern University").admissionProbability,
+  "40%-54%",
+);
+assert.equal(
+  generated.selection.rounds.rd.find((entry) => entry.school === "Kenyon College").admissionProbability,
+  "40%-54%",
+);
 assert.equal(generated.selectionVersion, "均衡版");
 assert.ok(generated.ragSources.some((source) => source.type === "school-encyclopedia"));
 assert.equal(JSON.stringify(generated).includes("school-selection-secret"), false);
@@ -255,6 +271,9 @@ assert.match(sentPayload.messages[0].content, /Top30 之后/);
 assert.match(sentPayload.messages[0].content, /不要把 Top30 的极低概率口径套用到所有学校/);
 assert.match(sentPayload.messages[0].content, /低估/);
 assert.match(sentPayload.messages[0].content, /概率应显著下调/);
+assert.match(sentPayload.messages[0].content, /15%-20% 上调/);
+assert.match(sentPayload.messages[0].content, /University of California, Santa Barbara/);
+assert.match(sentPayload.messages[0].content, /Union College/);
 
 function school(name, major, riskLevel) {
   return {

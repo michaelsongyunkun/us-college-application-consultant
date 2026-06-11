@@ -23,6 +23,9 @@ const SCHOOL_ENCYCLOPEDIA_FILES = [
 ];
 const LOW_FRIENDLINESS_SCORE = 5;
 const MEDIUM_FRIENDLINESS_SCORE = 6.5;
+const BOOST_ADMISSION_PROBABILITY_LOWER_MULTIPLIER = 1.15;
+const BOOST_ADMISSION_PROBABILITY_UPPER_MULTIPLIER = 1.2;
+const MAX_ADMISSION_PROBABILITY_PERCENT = 95;
 const SCHOOL_NAME_ALIASES = new Map(Object.entries({
   mit: "massachusettsinstituteoftechnology",
   yale: "yaleuniversity",
@@ -54,6 +57,7 @@ const SCHOOL_NAME_ALIASES = new Map(Object.entries({
   uiuc: "universityofillinoisurbana-champaign",
   uwmadison: "universityofwisconsinmadison",
   wisconsinmadison: "universityofwisconsinmadison",
+  rutgers: "rutgersuniversitynewbrunswick",
   uw: "universityofwashington",
   utaustin: "universityoftexasataustin",
   texasataustin: "universityoftexasataustin",
@@ -64,22 +68,34 @@ const SCHOOL_NAME_ALIASES = new Map(Object.entries({
   bu: "bostonuniversity",
   osu: "theohiostateuniversity",
   ohiostate: "theohiostateuniversity",
+  ohiostateuniversity: "theohiostateuniversity",
+  lehigh: "lehighuniversity",
   umd: "universityofmarylandcollegepark",
   maryland: "universityofmarylandcollegepark",
   uga: "universityofgeorgia",
   tamu: "texasamuniversity",
+  texasam: "texasamuniversity",
   wfu: "wakeforestuniversity",
+  brandeis: "brandeisuniversity",
   wm: "williamandmary",
   williammary: "williamandmary",
   cwru: "casewesternreserveuniversity",
   neu: "northeasternuniversity",
   northeastern: "northeasternuniversity",
+  tulane: "tulaneuniversity",
+  fsu: "floridastateuniversity",
+  floridastate: "floridastateuniversity",
+  pepperdine: "pepperdineuniversity",
   umassamherst: "universityofmassachusettsamherst",
   pennstate: "pennsylvaniastateuniversityuniversitypark",
+  pennstateuniversity: "pennsylvaniastateuniversityuniversitypark",
   pitt: "universityofpittsburgh",
   rpi: "rensselaerpolytechnicinstitute",
   uconn: "universityofconnecticut",
+  villanova: "villanovauniversity",
   gwu: "georgewashingtonuniversity",
+  stevens: "stevensinstituteoftechnology",
+  american: "americanuniversity",
   usna: "unitedstatesnavalacademy",
   cmc: "claremontmckennacollege",
   usma: "unitedstatesmilitaryacademyatwestpoint",
@@ -87,9 +103,86 @@ const SCHOOL_NAME_ALIASES = new Map(Object.entries({
   wlu: "washingtonandleeuniversity",
   usafa: "unitedstatesairforceacademy",
   soka: "sokauniversityofamerica",
+  kenyon: "kenyoncollege",
+  lafayette: "lafayettecollege",
+  occidental: "occidentalcollege",
+  trinity: "trinitycollege",
+  skidmore: "skidmorecollege",
+  pitzer: "pitzercollege",
+  bucknell: "bucknelluniversity",
+  spelman: "spelmancollege",
   sewanee: "theuniversityofthesouth",
+  sewaneetheuniversityofthesouth: "theuniversityofthesouth",
+  whitman: "whitmancollege",
+  berea: "bereacollege",
+  dickinson: "dickinsoncollege",
+  depauw: "depauwuniversity",
+  centre: "centrecollege",
+  furman: "furmanuniversity",
+  earlham: "earlhamcollege",
+  lawrence: "lawrenceuniversity",
   stjohns: "stjohnscollege",
+  stolaf: "stolafcollege",
+  union: "unioncollege",
 }));
+const ADMISSION_PROBABILITY_BOOST_SCHOOLS = [
+  "University of California, Santa Barbara",
+  "University of California, Davis",
+  "University of California, Irvine",
+  "University of Illinois Urbana-Champaign",
+  "University of Wisconsin--Madison",
+  "Rutgers University--New Brunswick",
+  "University of Washington",
+  "The Ohio State University",
+  "Lehigh University",
+  "University of Maryland, College Park",
+  "University of Georgia",
+  "Texas A&M University",
+  "Wake Forest University",
+  "Brandeis University",
+  "William & Mary",
+  "Case Western Reserve University",
+  "Northeastern University",
+  "Tulane University",
+  "Virginia Tech",
+  "Florida State University",
+  "Pepperdine University",
+  "University of Massachusetts Amherst",
+  "Pennsylvania State University--University Park",
+  "University of Pittsburgh",
+  "Rensselaer Polytechnic Institute",
+  "University of Connecticut",
+  "Villanova University",
+  "George Washington University",
+  "Stevens Institute of Technology",
+  "American University",
+  "Soka University of America",
+  "Kenyon College",
+  "Colorado College",
+  "Lafayette College",
+  "Occidental College",
+  "Trinity College",
+  "Skidmore College",
+  "Pitzer College",
+  "Connecticut College",
+  "Bucknell University",
+  "Spelman College",
+  "Sewanee--The University of the South",
+  "Whitman College",
+  "Berea College",
+  "Dickinson College",
+  "DePauw University",
+  "Centre College",
+  "Furman University",
+  "Earlham College",
+  "Lawrence University",
+  "St. John's College",
+  "St. Olaf College",
+  "Union College",
+];
+const ADMISSION_PROBABILITY_BOOST_SCHOOL_KEYS = new Set(
+  ADMISSION_PROBABILITY_BOOST_SCHOOLS.flatMap(buildFriendlinessSchoolKeys),
+);
 
 const SYSTEM_PROMPT = [
   "你是 US College Compass 的美本选校系统，服务对象是准备申请美国本科的学生和家长。",
@@ -124,6 +217,7 @@ const SYSTEM_PROMPT = [
   "- 对 Top30 之后且与学生档案明显匹配的 medium/low 学校，概率区间应体现更高把握度，避免系统性低估；低风险学校通常应明显高于匹配校，匹配校通常应明显高于冲刺校。",
   "- 必须充分使用院校百科中的“中国学生录取友好度”字段校准每所学校的 admissionProbability；友好度低的学校，即使学生背景较强，也要下调录取概率区间并避免标为过于乐观的风险等级。",
   "- 友好度 1.0-3.5 视为低友好，概率应显著下调；4.0-5.0 视为中低友好，概率应下调；5.5-6.5 视为中等友好，概率口径应略偏保守；7.0 以上不因该字段额外压低。",
+  `- 对以下指定学校，admissionProbability 应在综合判断后按 15%-20% 上调，且该上调优先于友好度下调：${ADMISSION_PROBABILITY_BOOST_SCHOOLS.join("、")}。`,
   "- 不要把官网整体录取率直接等同于该学生个人录取概率；官网录取率只能作为选择性参考，最终 admissionProbability 必须结合该学生档案竞争力和专业适配度给出区间。",
   "- 信息不足时用更宽的区间并在 gaps 中说明缺口，不要因为缺少信息就把 Top30 之后的学校全部压到极低概率。",
   "",
@@ -347,7 +441,6 @@ function parseFriendlinessText(value) {
 }
 
 function calibrateSelectionWithFriendliness(selection, friendlinessIndex) {
-  if (!friendlinessIndex?.entries?.length) return selection;
   return {
     ...selection,
     rounds: Object.fromEntries(
@@ -362,6 +455,13 @@ function calibrateSelectionWithFriendliness(selection, friendlinessIndex) {
 }
 
 function calibrateSchoolWithFriendliness(school, friendlinessIndex) {
+  if (isAdmissionProbabilityBoostSchool(school.school)) {
+    const probability = boostAdmissionProbability(school.admissionProbability);
+    return probability.changed ? { ...school, admissionProbability: probability.value } : school;
+  }
+
+  if (!friendlinessIndex?.entries?.length) return school;
+
   const friendliness = findFriendlinessRecord(school.school, friendlinessIndex);
   if (!friendliness || friendliness.score > MEDIUM_FRIENDLINESS_SCORE) return school;
 
@@ -399,6 +499,10 @@ function findFriendlinessRecord(schoolName, friendlinessIndex) {
   return bestMatch;
 }
 
+function isAdmissionProbabilityBoostSchool(schoolName) {
+  return buildFriendlinessSchoolKeys(schoolName).some((key) => ADMISSION_PROBABILITY_BOOST_SCHOOL_KEYS.has(key));
+}
+
 function friendlinessProbabilityMultiplier(score) {
   if (score <= 3.5) return 0.45;
   if (score <= LOW_FRIENDLINESS_SCORE) return 0.65;
@@ -414,11 +518,23 @@ function calibrateRiskLevelWithFriendliness(riskLevel, score) {
 }
 
 function scaleAdmissionProbability(value, multiplier) {
+  return scaleAdmissionProbabilityBounds(value, multiplier, multiplier);
+}
+
+function boostAdmissionProbability(value) {
+  return scaleAdmissionProbabilityBounds(
+    value,
+    BOOST_ADMISSION_PROBABILITY_LOWER_MULTIPLIER,
+    BOOST_ADMISSION_PROBABILITY_UPPER_MULTIPLIER,
+  );
+}
+
+function scaleAdmissionProbabilityBounds(value, lowerMultiplier, upperMultiplier) {
   const original = cleanString(value);
-  if (multiplier >= 1) return { value: original, changed: false };
+  if (lowerMultiplier === 1 && upperMultiplier === 1) return { value: original, changed: false };
 
   const match = original.match(/(\d+(?:\.\d+)?)\s*%?\s*(?:-|–|—|~|至|到)\s*(\d+(?:\.\d+)?)\s*%/u);
-  if (!match) return scaleSingleAdmissionProbability(original, multiplier);
+  if (!match) return scaleSingleAdmissionProbability(original, upperMultiplier);
 
   const lower = Number(match[1]);
   const upper = Number(match[2]);
@@ -428,8 +544,10 @@ function scaleAdmissionProbability(value, multiplier) {
 
   const sortedLower = Math.min(lower, upper);
   const sortedUpper = Math.max(lower, upper);
-  const adjustedLower = scalePercentValue(sortedLower, multiplier);
-  const adjustedUpper = Math.max(adjustedLower + 1, scalePercentValue(sortedUpper, multiplier));
+  const scaledLower = scalePercentValue(sortedLower, lowerMultiplier);
+  const scaledUpper = scalePercentValue(sortedUpper, upperMultiplier);
+  const adjustedUpper = Math.min(MAX_ADMISSION_PROBABILITY_PERCENT, Math.max(scaledLower + 1, scaledUpper));
+  const adjustedLower = Math.min(scaledLower, Math.max(1, adjustedUpper - 1));
   const adjusted = `${formatPercentValue(adjustedLower)}%-${formatPercentValue(adjustedUpper)}%`;
   return { value: adjusted, changed: adjusted !== original };
 }
@@ -448,7 +566,7 @@ function scaleSingleAdmissionProbability(value, multiplier) {
 
 function scalePercentValue(value, multiplier) {
   if (value <= 0) return 0;
-  return Math.max(1, Math.round(value * multiplier));
+  return Math.min(MAX_ADMISSION_PROBABILITY_PERCENT, Math.max(1, Math.round(value * multiplier)));
 }
 
 function formatPercentValue(value) {
