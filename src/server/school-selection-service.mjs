@@ -23,8 +23,10 @@ const SCHOOL_ENCYCLOPEDIA_FILES = [
 ];
 const LOW_FRIENDLINESS_SCORE = 5;
 const MEDIUM_FRIENDLINESS_SCORE = 6.5;
-const BOOST_ADMISSION_PROBABILITY_LOWER_MULTIPLIER = 1.15;
-const BOOST_ADMISSION_PROBABILITY_UPPER_MULTIPLIER = 1.2;
+const EXTRA_ADMISSION_PROBABILITY_BOOST_MULTIPLIER = 1.15;
+const BOOST_ADMISSION_PROBABILITY_LOWER_MULTIPLIER = 1.15 * EXTRA_ADMISSION_PROBABILITY_BOOST_MULTIPLIER;
+const BOOST_ADMISSION_PROBABILITY_UPPER_MULTIPLIER = 1.2 * EXTRA_ADMISSION_PROBABILITY_BOOST_MULTIPLIER;
+const UF_TOP30_PROBABILITY_MULTIPLIER = 0.75;
 const MAX_ADMISSION_PROBABILITY_PERCENT = 95;
 const SCHOOL_NAME_ALIASES = new Map(Object.entries({
   mit: "massachusettsinstituteoftechnology",
@@ -183,6 +185,7 @@ const ADMISSION_PROBABILITY_BOOST_SCHOOLS = [
 const ADMISSION_PROBABILITY_BOOST_SCHOOL_KEYS = new Set(
   ADMISSION_PROBABILITY_BOOST_SCHOOLS.flatMap(buildFriendlinessSchoolKeys),
 );
+const UF_TOP30_SCHOOL_KEYS = new Set(buildFriendlinessSchoolKeys("University of Florida"));
 
 const SYSTEM_PROMPT = [
   "你是 US College Compass 的美本选校系统，服务对象是准备申请美国本科的学生和家长。",
@@ -217,7 +220,8 @@ const SYSTEM_PROMPT = [
   "- 对 Top30 之后且与学生档案明显匹配的 medium/low 学校，概率区间应体现更高把握度，避免系统性低估；低风险学校通常应明显高于匹配校，匹配校通常应明显高于冲刺校。",
   "- 必须充分使用院校百科中的“中国学生录取友好度”字段校准每所学校的 admissionProbability；友好度低的学校，即使学生背景较强，也要下调录取概率区间并避免标为过于乐观的风险等级。",
   "- 友好度 1.0-3.5 视为低友好，概率应显著下调；4.0-5.0 视为中低友好，概率应下调；5.5-6.5 视为中等友好，概率口径应略偏保守；7.0 以上不因该字段额外压低。",
-  `- 对以下指定学校，admissionProbability 应在综合判断后按 15%-20% 上调，且该上调优先于友好度下调：${ADMISSION_PROBABILITY_BOOST_SCHOOLS.join("、")}。`,
+  "- University of Florida / UF 必须按 Top30 学校处理，即使院校百科友好度较高，也要使用更保守的录取概率区间，避免把 UF 当作普通 Top30 之后学校。",
+  `- 对以下指定学校，admissionProbability 应在此前 15%-20% 上调基础上再次上调 15%，且该上调优先于友好度下调：${ADMISSION_PROBABILITY_BOOST_SCHOOLS.join("、")}。`,
   "- 不要把官网整体录取率直接等同于该学生个人录取概率；官网录取率只能作为选择性参考，最终 admissionProbability 必须结合该学生档案竞争力和专业适配度给出区间。",
   "- 信息不足时用更宽的区间并在 gaps 中说明缺口，不要因为缺少信息就把 Top30 之后的学校全部压到极低概率。",
   "",
@@ -455,6 +459,19 @@ function calibrateSelectionWithFriendliness(selection, friendlinessIndex) {
 }
 
 function calibrateSchoolWithFriendliness(school, friendlinessIndex) {
+  if (isUfTop30School(school.school)) {
+    const probability = scaleAdmissionProbability(school.admissionProbability, UF_TOP30_PROBABILITY_MULTIPLIER);
+    const riskLevel = calibrateRiskLevelForUfTop30(school.riskLevel);
+    const changed = probability.changed || riskLevel !== school.riskLevel;
+    if (!changed) return school;
+    return {
+      ...school,
+      riskLevel,
+      admissionProbability: probability.value,
+      gaps: appendUfTop30CalibrationGap(school.gaps),
+    };
+  }
+
   if (isAdmissionProbabilityBoostSchool(school.school)) {
     const probability = boostAdmissionProbability(school.admissionProbability);
     return probability.changed ? { ...school, admissionProbability: probability.value } : school;
@@ -503,6 +520,10 @@ function isAdmissionProbabilityBoostSchool(schoolName) {
   return buildFriendlinessSchoolKeys(schoolName).some((key) => ADMISSION_PROBABILITY_BOOST_SCHOOL_KEYS.has(key));
 }
 
+function isUfTop30School(schoolName) {
+  return buildFriendlinessSchoolKeys(schoolName).some((key) => UF_TOP30_SCHOOL_KEYS.has(key));
+}
+
 function friendlinessProbabilityMultiplier(score) {
   if (score <= 3.5) return 0.45;
   if (score <= LOW_FRIENDLINESS_SCORE) return 0.65;
@@ -515,6 +536,11 @@ function calibrateRiskLevelWithFriendliness(riskLevel, score) {
   if (score <= 3.5) return "high";
   if (score <= LOW_FRIENDLINESS_SCORE && normalized === "low") return "medium";
   return normalized || "medium";
+}
+
+function calibrateRiskLevelForUfTop30(riskLevel) {
+  const normalized = cleanString(riskLevel).toLowerCase();
+  return normalized === "low" ? "medium" : normalized || "medium";
 }
 
 function scaleAdmissionProbability(value, multiplier) {
@@ -579,6 +605,13 @@ function appendFriendlinessCalibrationGap(gaps, friendliness) {
     friendliness.tier ? `（${friendliness.tier}）` : "",
     "，已据此下调录取概率区间。",
   ].join("");
+  const existing = normalizeStringList(gaps);
+  if (existing.includes(note)) return existing;
+  return [...existing.slice(0, 5), note];
+}
+
+function appendUfTop30CalibrationGap(gaps) {
+  const note = "UF 按 Top30 学校口径保守校准，已下调录取概率区间。";
   const existing = normalizeStringList(gaps);
   if (existing.includes(note)) return existing;
   return [...existing.slice(0, 5), note];

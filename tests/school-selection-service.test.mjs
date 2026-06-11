@@ -19,6 +19,7 @@ const validSelection = {
       school("University of Michigan--Ann Arbor", "Data Science", "medium"),
       school("Georgia Institute of Technology", "Computer Science", "medium"),
       school("University of Illinois Urbana-Champaign", "Statistics", "medium"),
+      school("University of Florida", "Data Science", "medium"),
     ],
     rd: [
       school("Harvard University", "Applied Math", "high"),
@@ -205,24 +206,32 @@ const generated = await service.generateSelection({
 });
 
 assert.equal(generated.selection.rounds.uc.length, 6);
-assert.equal(generated.selection.rounds.ea.length, 3);
+assert.equal(generated.selection.rounds.ea.length, 4);
 assert.equal(generated.selection.rounds.ed1[0].admissionProbability, "5%-8%");
 assert.match(generated.selection.rounds.ed1[0].gaps.join(" "), /录取友好度为 5\/10/);
 assert.equal(
   generated.selection.rounds.ea.find((entry) => entry.school === "University of Illinois Urbana-Champaign").admissionProbability,
-  "21%-34%",
+  "24%-39%",
+);
+assert.equal(
+  generated.selection.rounds.ea.find((entry) => entry.school === "University of Florida").admissionProbability,
+  "14%-21%",
+);
+assert.match(
+  generated.selection.rounds.ea.find((entry) => entry.school === "University of Florida").gaps.join(" "),
+  /UF 按 Top30 学校口径保守校准/,
 );
 assert.equal(
   generated.selection.rounds.uc.find((entry) => entry.school === "University of California, Irvine").admissionProbability,
-  "21%-34%",
+  "24%-39%",
 );
 assert.equal(
   generated.selection.rounds.rd.find((entry) => entry.school === "Northeastern University").admissionProbability,
-  "40%-54%",
+  "46%-62%",
 );
 assert.equal(
   generated.selection.rounds.rd.find((entry) => entry.school === "Kenyon College").admissionProbability,
-  "40%-54%",
+  "46%-62%",
 );
 assert.equal(generated.selectionVersion, "均衡版");
 assert.ok(generated.ragSources.some((source) => source.type === "school-encyclopedia"));
@@ -271,7 +280,9 @@ assert.match(sentPayload.messages[0].content, /Top30 之后/);
 assert.match(sentPayload.messages[0].content, /不要把 Top30 的极低概率口径套用到所有学校/);
 assert.match(sentPayload.messages[0].content, /低估/);
 assert.match(sentPayload.messages[0].content, /概率应显著下调/);
+assert.match(sentPayload.messages[0].content, /University of Florida \/ UF/);
 assert.match(sentPayload.messages[0].content, /15%-20% 上调/);
+assert.match(sentPayload.messages[0].content, /再次上调 15%/);
 assert.match(sentPayload.messages[0].content, /University of California, Santa Barbara/);
 assert.match(sentPayload.messages[0].content, /Union College/);
 
