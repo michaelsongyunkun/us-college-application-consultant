@@ -46,6 +46,14 @@ Before finishing:
 2. For frontend layout or interaction changes, also perform a browser smoke check on the affected page at desktop and mobile widths.
 3. Report any verification that could not be run and why.
 
+## Anti-Hang Rules
+
+- Prefer commands that exit on their own: targeted tests, `npm run check`, and `npm run verify`.
+- Do not run `node server.mjs`, `npm start`, or other long-lived local servers directly inside a synchronous shell command.
+- For page smoke checks, first use existing page/server tests and static structure checks. Start a browser only when visual layout or interaction truly requires it.
+- If a local server is unavoidable, split the work into separate start, ready-check, verification, and cleanup steps with explicit timeouts and pid cleanup.
+- After any interrupted or timed-out server attempt, check the specific port and pid before continuing. Never bulk-kill all `node` processes.
+
 ## Boundaries
 
 - Do not commit or expose `.env`, `.env.*`, API keys, SMTP credentials, logs, exported `.doc/.docx`, or local JSON exports.
