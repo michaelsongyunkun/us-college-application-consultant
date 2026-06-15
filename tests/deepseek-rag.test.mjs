@@ -159,7 +159,7 @@ try {
   assert.equal(sentPayload.messages[1].role, "user");
   const systemPrompt = sentPayload.messages[0].content;
   assert.match(systemPrompt, /问DeepSeek”申请规划智能体/);
-  assert.match(systemPrompt, /个人申请档案：选校计划、课外活动、竞赛、夏校、推荐信、课程成绩\/SAT\/AP/);
+  assert.match(systemPrompt, /个人申请档案：选校计划、课外活动、竞赛、夏校、推荐信、GPA\/SAT\/AP 等成绩档案/);
   assert.match(systemPrompt, /当前资料不足以判断/);
   assert.match(systemPrompt, /不要做绝对化承诺/);
   assert.match(systemPrompt, /保证录取/);
