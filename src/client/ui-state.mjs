@@ -1,8 +1,11 @@
+const backendDisconnectedMessage =
+  "未连接后端服务。不要直接双击 HTML；请用 npm start 打开 http://127.0.0.1:4177，或用 start-consultant.cmd 打开 http://127.0.0.1:4179。";
+
 export function getAgentAvailability({ protocol, promptLoaded }) {
   if (protocol === "file:") {
     return {
       canGenerate: false,
-      message: "未连接后端服务。请通过 http://127.0.0.1:4177 打开页面。",
+      message: backendDisconnectedMessage,
     };
   }
 
@@ -23,7 +26,7 @@ export function getDeepSeekGenerationAvailability({ protocol, promptLoaded, hasS
   if (protocol === "file:") {
     return {
       canGenerate: false,
-      message: "未连接后端服务。请通过 http://127.0.0.1:4177 打开页面。",
+      message: backendDisconnectedMessage,
     };
   }
 
