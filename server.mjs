@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import { createReadStream, existsSync } from "node:fs";
+import { readFile, stat } from "node:fs/promises";
+import { createReadStream } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -1260,7 +1260,22 @@ export function createAppServer({
       }
 
       const filePath = normalize(join(root, requestPath));
-      if (!filePath.startsWith(root) || !existsSync(filePath)) {
+      if (!filePath.startsWith(root)) {
+        response.writeHead(404, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
+        response.end("Not Found");
+        return;
+      }
+
+      let fileStats;
+      try {
+        fileStats = await stat(filePath);
+      } catch {
+        response.writeHead(404, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
+        response.end("Not Found");
+        return;
+      }
+
+      if (!fileStats.isFile()) {
         response.writeHead(404, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
         response.end("Not Found");
         return;

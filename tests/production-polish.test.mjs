@@ -149,6 +149,11 @@ try {
   assert.equal(legacyFaviconResponse.status, 200);
   assert.equal(legacyFaviconResponse.headers.get("content-type"), "image/svg+xml;charset=utf-8");
 
+  const directoryResponse = await fetch(`${baseUrl}/assets/`);
+  assert.equal(directoryResponse.status, 404);
+  assert.equal(directoryResponse.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(await directoryResponse.text(), "Not Found");
+
   const stylesheetResponse = await fetch(`${baseUrl}/styles.css`);
   assert.match(stylesheetResponse.headers.get("cache-control") || "", /public, max-age=86400/);
 
