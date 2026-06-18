@@ -1,21 +1,26 @@
 import { createServer } from "node:http";
-import { randomUUID } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { createReadStream } from "node:fs";
-import { extname, join, normalize } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  PLANNING_ACTIVITY_COUNT,
-  markdownToPlainText,
-  parseAgentOutput,
-} from "./src/domain/agent-output-parser.mjs";
-import { resolveApiKey } from "./src/server/api-key.mjs";
-import { createAuthDatabase } from "./src/server/auth-db.mjs";
+import { AUTH_DATABASE_MIGRATIONS, createAuthDatabase } from "./src/server/auth-db.mjs";
 import { AuthError, createAuthService } from "./src/server/auth-service.mjs";
+import { createAccountDataRightsService } from "./src/server/account-data-rights-service.mjs";
+import { createAdminOperationsService } from "./src/server/admin-operations-service.mjs";
+import {
+  createAuthHttpService,
+  getRequestMetadata,
+  getUserForRequest,
+  shouldUseSecureCookies,
+} from "./src/server/auth-http-service.mjs";
 import {
   ActivityPortfolioError,
   createActivityPortfolioService,
 } from "./src/server/activity-portfolio-service.mjs";
+import {
+  DeepSeekPlanError,
+  createDeepSeekPlanService,
+} from "./src/server/deepseek-plan-service.mjs";
 import {
   PortfolioCapabilityAgentError,
   createPortfolioCapabilityAgentService,
@@ -27,11 +32,35 @@ import {
 import { createMailerFromEnv } from "./src/server/mailer.mjs";
 import { PlanningError, createPlanningService } from "./src/server/planning-service.mjs";
 import {
+  createGenerationJobService,
+  serializeGenerationJob,
+} from "./src/server/generation-job-service.mjs";
+import {
+  buildDeniedAuditEvent,
+  evaluateRouteAccess,
+  getStaticRouteAccessPolicy,
+  normalizeStaticRequestPath,
+} from "./src/server/route-access-policy.mjs";
+import {
+  buildStaticResponseHeaders,
+  renderIndexForSession,
+  resolveStaticFilePath,
+} from "./src/server/static-file-service.mjs";
+import {
   ProgressPlannerError,
   createProgressPlannerService,
 } from "./src/server/progress-planner-service.mjs";
 import { loadEnvFile } from "./src/server/env-loader.mjs";
-import { normalizeDeepSeekModel } from "./src/server/deepseek-model.mjs";
+import {
+  RESPONSE_REQUEST_ID_HEADER,
+  buildStructuredEvent,
+  createConsoleStructuredLogger,
+  createMetricsStore,
+  getLatestBackupStatus,
+  getOrCreateRequestId,
+  monotonicNowMs,
+} from "./src/server/observability.mjs";
+import { getMigrationStatus } from "./src/server/sqlite-migrations.mjs";
 import {
   SchoolSelectionError,
   createSchoolSelectionService,
@@ -43,16 +72,7 @@ const promptPath = join(root, "prompts", "us-college-admissions-strategist-agent
 const defaultDatabasePath = join(root, "data", "auth.sqlite");
 const port = Number(process.env.PORT || 4177);
 const host = process.env.HOST || "0.0.0.0";
-const sessionCookieName = "consultant_session";
-const passwordResetSafeMessage = "如果邮箱已注册，重置邮件会发送到该邮箱。";
 const DEFAULT_MAX_REQUEST_BODY_BYTES = 256 * 1024;
-const MAX_DEEPSEEK_PLAN_ATTEMPTS = 2;
-const DEEPSEEK_PLAN_MAX_TOKENS = 6500;
-const PLANNING_PROFILE_FIELD_LIMIT = 800;
-const PLANNING_PROFILE_FIELD_COUNT_LIMIT = 24;
-const PLANNING_ACTIVITY_SHORT_FIELD_LIMIT = 120;
-const PLANNING_ACTIVITY_NAME_LIMIT = 240;
-const PLANNING_ACTIVITY_DESCRIPTION_LIMIT = 1200;
 const DEFAULT_RATE_LIMITS = {
   "/api/auth/register": { maxRequests: 5, windowMs: 60_000 },
   "/api/auth/login": { maxRequests: 10, windowMs: 60_000 },
@@ -69,13 +89,14 @@ const DEFAULT_RATE_LIMITS = {
   "/api/school-selection-jobs": { maxRequests: 10, windowMs: 60_000 },
   "/api/analytics/usage-event": { maxRequests: 120, windowMs: 60_000 },
 };
-const GENERATION_JOB_TTL_MS = 30 * 60_000;
 const SECURITY_HEADERS = Object.freeze({
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
 });
+
+export { shouldUseSecureCookies };
 
 class RequestError extends Error {
   constructor(message, statusCode) {
@@ -85,46 +106,128 @@ class RequestError extends Error {
   }
 }
 
-const contentTypes = {
-  ".html": "text/html;charset=utf-8",
-  ".css": "text/css;charset=utf-8",
-  ".svg": "image/svg+xml;charset=utf-8",
-  ".xml": "application/xml;charset=utf-8",
-  ".txt": "text/plain;charset=utf-8",
-  ".js": "text/javascript;charset=utf-8",
-  ".mjs": "text/javascript;charset=utf-8",
-  ".json": "application/json;charset=utf-8",
-  ".md": "text/markdown;charset=utf-8",
-};
-
-const staticCacheExtensions = new Set([".css", ".svg"]);
-const revalidatedCacheExtensions = new Set([".js", ".mjs"]);
-
-function cacheHeadersForPath(filePath) {
-  const extension = extname(filePath);
-  if (staticCacheExtensions.has(extension)) {
-    return { "Cache-Control": "public, max-age=86400" };
-  }
-  if (revalidatedCacheExtensions.has(extension)) {
-    return { "Cache-Control": "no-cache" };
-  }
-  if (extension === ".html") {
-    return { "Cache-Control": "no-cache" };
-  }
-  return {};
-}
-
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, withSecurityHeaders({ "Content-Type": "application/json;charset=utf-8" }));
   response.end(JSON.stringify(payload));
 }
 
-function sendAuthJson(response, statusCode, payload) {
-  sendJson(response, statusCode, payload);
-}
-
 function withSecurityHeaders(headers = {}) {
   return { ...SECURITY_HEADERS, ...headers };
+}
+
+function attachRequestObservability(request, response, { logger, metrics }) {
+  const requestId = getOrCreateRequestId(request);
+  request.requestId = requestId;
+  response.setHeader(RESPONSE_REQUEST_ID_HEADER, requestId);
+  const startedAt = monotonicNowMs();
+  const path = safeRequestPath(request);
+
+  response.on("finish", () => {
+    const durationMs = Math.round(monotonicNowMs() - startedAt);
+    const level = response.statusCode >= 500 ? "error" : response.statusCode >= 400 ? "warn" : "info";
+    metrics.recordHttpRequest({
+      method: request.method,
+      route: path,
+      statusCode: response.statusCode,
+      durationMs,
+    });
+    logger?.[level]?.(buildStructuredEvent({
+      level,
+      event: "http_request",
+      requestId,
+      details: {
+        method: request.method,
+        path,
+        statusCode: response.statusCode,
+        durationMs,
+      },
+    }));
+  });
+
+  return { requestId, path };
+}
+
+function logRequestError(logger, request, error, statusCode, path = safeRequestPath(request)) {
+  logger?.error?.(buildStructuredEvent({
+    level: "error",
+    event: "server_error",
+    requestId: request.requestId || "",
+    details: {
+      method: request.method,
+      path,
+      statusCode,
+      errorName: error?.name || "Error",
+      errorMessage: error?.message || "Unknown server error",
+    },
+  }));
+}
+
+function safeRequestPath(request) {
+  try {
+    return new URL(request.url || "/", "http://localhost").pathname;
+  } catch {
+    return "/";
+  }
+}
+
+function buildHealthPayload(requestId) {
+  return {
+    status: "ok",
+    requestId,
+    uptimeSeconds: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function buildReadinessPayload({ authDb }) {
+  try {
+    const probe = authDb.db.prepare("SELECT 1 AS ok").get();
+    const migrations = getMigrationStatus(authDb.db, AUTH_DATABASE_MIGRATIONS);
+    const ready = probe?.ok === 1 && migrations.pending.length === 0 && migrations.unknown.length === 0;
+    return {
+      status: ready ? "ready" : "not_ready",
+      database: {
+        ok: probe?.ok === 1,
+        migrations: {
+          appliedCount: migrations.applied.length,
+          pending: migrations.pending,
+          unknown: migrations.unknown,
+        },
+      },
+    };
+  } catch (error) {
+    return {
+      status: "not_ready",
+      database: {
+        ok: false,
+        error: error?.message || "Database readiness check failed.",
+      },
+    };
+  }
+}
+
+function instrumentDeepSeekFetch(deepSeekFetch, metrics, feature) {
+  return async function observedDeepSeekFetch(url, options) {
+    const startedAt = monotonicNowMs();
+    try {
+      const apiResponse = await deepSeekFetch(url, options);
+      metrics.recordAiCall({
+        feature,
+        ok: Boolean(apiResponse?.ok),
+        statusCode: apiResponse?.status || 0,
+        durationMs: monotonicNowMs() - startedAt,
+      });
+      return apiResponse;
+    } catch (error) {
+      metrics.recordAiCall({
+        feature,
+        ok: false,
+        statusCode: 0,
+        durationMs: monotonicNowMs() - startedAt,
+      });
+      throw error;
+    }
+  };
 }
 
 async function readRequestText(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_BYTES) {
@@ -148,511 +251,49 @@ async function readRequestJson(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_BYTE
   }
 }
 
-function getCookieValues(request, cookieName) {
-  const values = [];
-  const cookieHeader = request.headers.cookie || "";
-  for (const item of cookieHeader.split(";")) {
-    const [rawName, ...rawValue] = item.trim().split("=");
-    if (rawName !== cookieName) continue;
-    values.push(decodeURIComponent(rawValue.join("=")));
-  }
-  return values;
-}
-
-function buildSessionCookie(sessionToken, { expiresAt } = {}) {
-  const parts = [
-    `${sessionCookieName}=${encodeURIComponent(sessionToken)}`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-  ];
-  if (expiresAt) parts.push(`Expires=${new Date(expiresAt).toUTCString()}`);
-  if (shouldUseSecureCookies(process.env)) parts.push("Secure");
-  return parts.join("; ");
-}
-
-function buildClearSessionCookie({ domain } = {}) {
-  const parts = [
-    `${sessionCookieName}=`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-    "Max-Age=0",
-    "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
-  ];
-  if (domain) parts.push(`Domain=${domain}`);
-  if (shouldUseSecureCookies(process.env)) parts.push("Secure");
-  return parts.join("; ");
-}
-
-function buildClearSessionCookies(request) {
-  const host = (request.headers.host || "").split(":")[0].toLowerCase();
-  const cookies = [buildClearSessionCookie()];
-  const isIpAddress = /^(\d{1,3}\.){3}\d{1,3}$/u.test(host);
-  if (host && host !== "localhost" && host.includes(".") && !isIpAddress) {
-    cookies.push(buildClearSessionCookie({ domain: host }));
-  }
-  return cookies;
-}
-
-function wantsHtmlResponse(request) {
-  const accept = request.headers.accept || "";
-  return accept.includes("text/html") && !accept.includes("application/json");
-}
-
-async function readAuthPayload(request, readJson) {
-  const contentType = request.headers["content-type"] || "";
-  if (contentType.toLowerCase().includes("application/x-www-form-urlencoded")) {
-    return Object.fromEntries(new URLSearchParams(await readRequestText(request)));
-  }
-  return readJson(request);
-}
-
-export function shouldUseSecureCookies(env = process.env) {
-  if (env.COOKIE_SECURE === "true") return true;
-  if (env.COOKIE_SECURE === "false") return false;
-  return env.NODE_ENV === "production";
-}
-
-function getSessionTokens(request) {
-  return getCookieValues(request, sessionCookieName).filter(Boolean);
-}
-
-function getUserForRequest(request, auth) {
-  const sessionTokens = getSessionTokens(request);
-  for (let index = sessionTokens.length - 1; index >= 0; index -= 1) {
-    const user = auth.getUserForSession(sessionTokens[index]);
-    if (user) return user;
-  }
-  return null;
-}
-
-function getRequestMetadata(request) {
-  const forwardedFor = request.headers["x-forwarded-for"];
-  const ipAddress = Array.isArray(forwardedFor)
-    ? forwardedFor[0]
-    : forwardedFor?.split(",")[0]?.trim() || request.socket.remoteAddress || "";
-  return {
-    userAgent: request.headers["user-agent"] || "",
-    ipAddress,
-  };
-}
-
-function buildUserMessage(payload, { repairMessage = "" } = {}) {
-  const compactedPayload = compactDeepSeekPlanPayload(payload);
-  return [
-    "以下是用户提供的国际生背景信息。请基于固定Agent提示词完成规划，并严格按照提示词中的Expected Output Format输出。",
-    "",
-    "重要要求：",
-    `- 输出列表必须恰好${PLANNING_ACTIVITY_COUNT}项。`,
-    "- 最终回答中的表格将被系统解析并填入页面表格。",
-    "- 不要省略【活动叙事逻辑解读】。",
-    repairMessage
-      ? `- 上一次回答未通过解析校验：${repairMessage}。请补齐完整${PLANNING_ACTIVITY_COUNT}项表格和【活动叙事逻辑解读】。`
-      : "",
-    "",
-    "用户基础输入：",
-    JSON.stringify(compactedPayload.profile, null, 2),
-    "",
-    "用户当前已有课外活动表格草稿：",
-    JSON.stringify(compactedPayload.activities, null, 2),
-  ].join("\n");
-}
-
-function compactDeepSeekPlanPayload(payload = {}) {
-  return {
-    profile: compactDeepSeekPlanProfile(payload.profile),
-    activities: compactDeepSeekPlanActivities(payload.activities),
-  };
-}
-
-function compactDeepSeekPlanProfile(profile) {
-  if (!profile || typeof profile !== "object" || Array.isArray(profile)) return {};
-  return Object.fromEntries(
-    Object.entries(profile)
-      .slice(0, PLANNING_PROFILE_FIELD_COUNT_LIMIT)
-      .map(([key, value]) => [key, truncateDeepSeekPlanText(value, PLANNING_PROFILE_FIELD_LIMIT)])
-      .filter(([, value]) => value),
-  );
-}
-
-function compactDeepSeekPlanActivities(activities) {
-  if (!Array.isArray(activities)) return [];
-  return activities
-    .slice(0, PLANNING_ACTIVITY_COUNT)
-    .map((activity, index) => ({
-      id: Number(activity?.id) || index + 1,
-      type: truncateDeepSeekPlanText(activity?.type, PLANNING_ACTIVITY_SHORT_FIELD_LIMIT),
-      activityName: truncateDeepSeekPlanText(activity?.activityName, PLANNING_ACTIVITY_NAME_LIMIT),
-      executionDescription: truncateDeepSeekPlanText(
-        activity?.executionDescription,
-        PLANNING_ACTIVITY_DESCRIPTION_LIMIT,
-      ),
-      suggestedGrade: truncateDeepSeekPlanText(activity?.suggestedGrade, PLANNING_ACTIVITY_SHORT_FIELD_LIMIT),
-    }))
-    .filter((activity) =>
-      [activity.type, activity.activityName, activity.executionDescription, activity.suggestedGrade].some(Boolean),
-    );
-}
-
-function truncateDeepSeekPlanText(value, maxLength) {
-  const text = markdownToPlainText(formatDeepSeekPlanValue(value));
-  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
-}
-
-function formatDeepSeekPlanValue(value) {
-  if (Array.isArray(value)) return value.map(formatDeepSeekPlanValue).filter(Boolean).join("；");
-  if (value && typeof value === "object") return JSON.stringify(value);
-  return String(value ?? "");
-}
-
-function validateParsedDeepSeekPlan(parsed) {
-  const activityCount = parsed?.activities?.length || 0;
-  if (activityCount < PLANNING_ACTIVITY_COUNT) {
-    return `只识别到 ${activityCount} 项活动，少于要求的 ${PLANNING_ACTIVITY_COUNT} 项。`;
-  }
-  if (!parsed?.narrative) {
-    return "缺少【活动叙事逻辑解读】。";
-  }
-  return "";
-}
-
-function normalizePositiveInteger(value, fallback) {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function extractDeepSeekResponseText(data) {
-  return data?.choices?.[0]?.message?.content?.trim() || "";
-}
-
-async function handleDeepSeekPlan(
-  request,
-  response,
-  { readJson = readRequestJson, env = process.env, deepSeekFetch = fetch } = {},
-) {
-  const payload = await readJson(request);
-  const apiKey = resolveApiKey({
-    environmentApiKey: env.DEEPSEEK_API_KEY,
-    requestApiKey: "",
-  });
-  if (!apiKey) {
-    sendJson(response, 400, {
-      error: "DeepSeek API 尚未配置。请在服务端配置 DEEPSEEK_API_KEY。",
-    });
-    return;
-  }
-
-  const systemPrompt = await readFile(promptPath, "utf8");
-  const model = normalizeDeepSeekModel(env.DEEPSEEK_PLAN_MODEL, "deepseek-v4-flash");
-  const maxTokens = normalizePositiveInteger(env.DEEPSEEK_PLAN_MAX_TOKENS, DEEPSEEK_PLAN_MAX_TOKENS);
-  let repairMessage = "";
-
-  for (let attempt = 1; attempt <= MAX_DEEPSEEK_PLAN_ATTEMPTS; attempt += 1) {
-    const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: buildUserMessage(payload, { repairMessage }) },
-        ],
-        thinking: { type: "disabled" },
-        stream: false,
-        temperature: attempt === 1 ? 0.4 : 0.2,
-        max_tokens: maxTokens,
-      }),
-    });
-
-    const data = await apiResponse.json().catch(() => ({}));
-    if (!apiResponse.ok) {
-      sendJson(response, apiResponse.status, {
-        error: data.error?.message || "Agent调用失败。",
-      });
-      return;
-    }
-
-    const answer = extractDeepSeekResponseText(data);
-    if (!answer) {
-      repairMessage = "DeepSeek 未返回可解析的规划回答。";
-    } else {
-      const parsed = parseAgentOutput(answer);
-      repairMessage = validateParsedDeepSeekPlan(parsed);
-      if (!repairMessage) {
-        sendJson(response, 200, {
-          answer,
-          parsed,
-          attempts: attempt,
-        });
-        return;
-      }
-    }
-  }
-
-  sendJson(response, 502, {
-    error: `${repairMessage || "DeepSeek 未返回完整规划回答。"} 请缩短超长输入后重试。`,
-  });
-}
-
-async function generateDeepSeekPlanResult(
-  payload,
-  { env = process.env, deepSeekFetch = fetch } = {},
-) {
-  const apiKey = resolveApiKey({
-    environmentApiKey: env.DEEPSEEK_API_KEY,
-    requestApiKey: "",
-  });
-  if (!apiKey) {
-    throw new RequestError("DeepSeek API 尚未配置。请在服务端配置 DEEPSEEK_API_KEY。", 400);
-  }
-
-  const systemPrompt = await readFile(promptPath, "utf8");
-  const model = normalizeDeepSeekModel(env.DEEPSEEK_PLAN_MODEL, "deepseek-v4-flash");
-  const maxTokens = normalizePositiveInteger(env.DEEPSEEK_PLAN_MAX_TOKENS, DEEPSEEK_PLAN_MAX_TOKENS);
-  let repairMessage = "";
-
-  for (let attempt = 1; attempt <= MAX_DEEPSEEK_PLAN_ATTEMPTS; attempt += 1) {
-    const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: buildUserMessage(payload, { repairMessage }) },
-        ],
-        thinking: { type: "disabled" },
-        stream: false,
-        temperature: attempt === 1 ? 0.4 : 0.2,
-        max_tokens: maxTokens,
-      }),
-    });
-
-    const data = await apiResponse.json().catch(() => ({}));
-    if (!apiResponse.ok) {
-      throw new RequestError(data.error?.message || "Agent 调用失败。", apiResponse.status);
-    }
-
-    const answer = extractDeepSeekResponseText(data);
-    if (!answer) {
-      repairMessage = "DeepSeek 未返回可解析的规划回答。";
-    } else {
-      const parsed = parseAgentOutput(answer);
-      repairMessage = validateParsedDeepSeekPlan(parsed);
-      if (!repairMessage) {
-        return {
-          answer,
-          parsed,
-          attempts: attempt,
-        };
-      }
-    }
-  }
-
-  throw new RequestError(
-    `${repairMessage || "DeepSeek 未返回完整规划回答。"} 请缩短超长输入后重试。`,
-    502,
-  );
-}
-
-function getAppBaseUrl(request, configuredBaseUrl) {
-  if (configuredBaseUrl) return configuredBaseUrl.replace(/\/$/, "");
-  const forwardedProto = request.headers["x-forwarded-proto"];
-  const protocol = Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto || "http";
-  return `${protocol}://${request.headers.host}`;
-}
-
-function createAuthHandler(auth, { mailer, appBaseUrl, readJson = readRequestJson } = {}) {
-  return async function handleAuth(request, response, pathname) {
-    if (request.method === "GET" && pathname === "/api/auth/me") {
-      const user = getUserForRequest(request, auth);
-      if (!user) {
-        sendAuthJson(response, 401, { error: "Not authenticated" });
-        return true;
-      }
-      sendAuthJson(response, 200, { user });
-      return true;
-    }
-
-    if (request.method === "POST" && pathname === "/api/auth/register") {
-      const result = auth.register(await readAuthPayload(request, readJson), getRequestMetadata(request));
-      const headers = {
-        "Set-Cookie": buildSessionCookie(result.sessionToken, { expiresAt: result.expiresAt }),
-      };
-      if (wantsHtmlResponse(request)) {
-        response.writeHead(303, withSecurityHeaders({
-          ...headers,
-          Location: "/",
-        }));
-        response.end();
-        return true;
-      }
-      response.writeHead(200, withSecurityHeaders({
-        ...headers,
-        "Content-Type": "application/json;charset=utf-8",
-      }));
-      response.end(JSON.stringify({ user: result.user }));
-      return true;
-    }
-
-    if (request.method === "POST" && pathname === "/api/auth/login") {
-      const result = auth.login(await readAuthPayload(request, readJson), getRequestMetadata(request));
-      const headers = {
-        "Set-Cookie": buildSessionCookie(result.sessionToken, { expiresAt: result.expiresAt }),
-      };
-      if (wantsHtmlResponse(request)) {
-        response.writeHead(303, withSecurityHeaders({
-          ...headers,
-          Location: "/",
-        }));
-        response.end();
-        return true;
-      }
-      response.writeHead(200, withSecurityHeaders({
-        ...headers,
-        "Content-Type": "application/json;charset=utf-8",
-      }));
-      response.end(JSON.stringify({ user: result.user }));
-      return true;
-    }
-
-    if (request.method === "POST" && pathname === "/api/auth/logout") {
-      for (const sessionToken of getSessionTokens(request)) {
-        auth.logout(sessionToken);
-      }
-      const logoutHeaders = {
-        "Set-Cookie": buildClearSessionCookies(request),
-        "Clear-Site-Data": '"cookies"',
-      };
-      if (wantsHtmlResponse(request)) {
-        response.writeHead(303, withSecurityHeaders({
-          ...logoutHeaders,
-          Location: "/",
-        }));
-        response.end();
-        return true;
-      }
-      response.writeHead(200, withSecurityHeaders({
-        ...logoutHeaders,
-        "Content-Type": "application/json;charset=utf-8",
-      }));
-      response.end(JSON.stringify({ ok: true }));
-      return true;
-    }
-
-    if (request.method === "POST" && pathname === "/api/auth/request-password-reset") {
-      const payload = await readJson(request);
-      try {
-        const result = auth.createPasswordReset(payload.email);
-        if (result) {
-          const resetUrl = `${getAppBaseUrl(request, appBaseUrl)}/?resetToken=${encodeURIComponent(
-            result.resetToken,
-          )}`;
-          await mailer.sendPasswordResetEmail({
-            to: result.user.email,
-            name: result.user.name,
-            resetUrl,
-            expiresAt: result.expiresAt,
-          });
-        }
-      } catch (error) {
-        console.error("Password reset request failed:", error.message);
-      }
-      sendAuthJson(response, 200, { message: passwordResetSafeMessage });
-      return true;
-    }
-
-    if (request.method === "POST" && pathname === "/api/auth/reset-password") {
-      const payload = await readJson(request);
-      const user = auth.resetPassword({
-        resetToken: payload.token,
-        password: payload.password,
-      });
-      sendAuthJson(response, 200, { user });
-      return true;
-    }
-
-    return false;
-  };
-}
-
-function requireUser(request, response, auth) {
+function requireAccess(request, response, auth, {
+  role = "user",
+  redirectLocation = "",
+  audit = null,
+} = {}) {
   const user = getUserForRequest(request, auth);
-  if (user) return user;
-  sendAuthJson(response, 401, { error: "Not authenticated" });
-  return null;
-}
+  const decision = evaluateRouteAccess(user, { role, redirectLocation });
+  if (decision.allowed) return decision.user;
 
-function requirePageUser(request, response, auth, requestPath) {
-  const user = getUserForRequest(request, auth);
-  if (user) return user;
-  redirectToLogin(response, requestPath);
-  return null;
-}
+  recordDeniedAudit(auth, user, audit, request);
 
-function requireAdmin(request, response, auth, { redirect = false } = {}) {
-  const user = getUserForRequest(request, auth);
-  if (user?.role === "admin") return user;
-  if (redirect) {
-    response.writeHead(302, withSecurityHeaders({ Location: "/" }));
+  if (decision.redirectLocation) {
+    response.writeHead(302, withSecurityHeaders({ Location: decision.redirectLocation }));
     response.end();
     return null;
   }
-  sendAuthJson(response, user ? 403 : 401, {
-    error: user ? "Admin access required" : "Not authenticated",
-  });
+  sendJson(response, decision.statusCode, decision.payload);
   return null;
 }
 
-function redirectToLogin(response, requestPath = "/") {
-  response.writeHead(302, withSecurityHeaders({
-    Location: `/?next=${encodeURIComponent(requestPath)}`,
-  }));
-  response.end();
+function requireUser(request, response, auth) {
+  return requireAccess(request, response, auth, { role: "user" });
 }
 
-function renderIndexForAuthMode(html, authMode) {
-  if (authMode !== "login") return html;
-  return html
-    .replace(
-      '<form id="authForm" class="auth-form" method="post" action="/api/auth/register">',
-      '<form id="authForm" class="auth-form" method="post" action="/api/auth/login">',
-    )
-    .replace('<h2 id="auth-title">领取你的申请行动地图</h2>', '<h2 id="auth-title">登录</h2>')
-    .replace('<label id="authNameField">', '<label id="authNameField" class="is-hidden">')
-    .replace(
-      '<button id="authSubmitButton" type="submit">免费注册并生成规划</button>',
-      '<button id="authSubmitButton" type="submit">登录</button>',
-    )
-    .replace(
-      '<button id="forgotPasswordButton" type="button" class="quiet auth-mode-button is-hidden">忘记密码？</button>',
-      '<button id="forgotPasswordButton" type="button" class="quiet auth-mode-button">忘记密码？</button>',
-    )
-    .replace(
-      '<a id="authModeButton" href="/?auth=login" class="quiet auth-mode-button">已有账号？登录</a>',
-      '<a id="authModeButton" href="/?auth=register" class="quiet auth-mode-button">没有账号？注册</a>',
-    );
+function requireAdmin(request, response, auth, { redirect = false, audit = null } = {}) {
+  return requireAccess(request, response, auth, {
+    role: "admin",
+    redirectLocation: redirect ? "/" : "",
+    audit,
+  });
 }
 
-function renderIndexForSession(html, user, authMode = "register") {
-  const renderedHtml = renderIndexForAuthMode(html, authMode);
-  if (!user) return renderedHtml;
-  return renderedHtml
-    .replace(
-      '<section id="authShell" class="landing-shell" aria-labelledby="landing-title">',
-      '<section id="authShell" class="landing-shell is-hidden" aria-labelledby="landing-title">',
-    )
-    .replace(
-      '<main id="appShell" class="app-shell command-shell is-hidden">',
-      '<main id="appShell" class="app-shell command-shell">',
-    );
+function recordDeniedAudit(auth, user, audit, request) {
+  if (!audit || typeof auth.recordAuditEvent !== "function") return;
+  try {
+    auth.recordAuditEvent(buildDeniedAuditEvent({
+      user,
+      audit,
+      metadata: getRequestMetadata(request),
+    }));
+  } catch (error) {
+    console.error("Failed to record denied access audit event:", error);
+  }
 }
 
 function createRateLimiter(rateLimits) {
@@ -678,147 +319,6 @@ function createRateLimiter(rateLimits) {
   };
 }
 
-function serializeSchoolSelectionJob(job) {
-  const payload = {
-    jobId: job.id,
-    status: job.status,
-  };
-  if (job.status === "completed") {
-    payload.result = job.result;
-  }
-  if (job.status === "failed") {
-    payload.error = job.error || "School selection generation failed.";
-    payload.statusCode = job.statusCode || 500;
-  }
-  return payload;
-}
-
-function getSchoolSelectionJobError(error) {
-  if (error instanceof SchoolSelectionError || error instanceof RequestError) {
-    return {
-      error: error.message,
-      statusCode: error.statusCode,
-    };
-  }
-  console.error("Unexpected school selection job error:", error);
-  return {
-    error: "Server error",
-    statusCode: 500,
-  };
-}
-
-function startSchoolSelectionJob(job, { schoolSelection, user, payload, env, deepSeekFetch }) {
-  Promise.resolve()
-    .then(async () => {
-      job.status = "running";
-      job.updatedAt = Date.now();
-      job.result = await schoolSelection.generateSelection({
-        user,
-        payload,
-        env,
-        deepSeekFetch,
-      });
-      job.status = "completed";
-      job.completedAt = Date.now();
-      job.updatedAt = job.completedAt;
-    })
-    .catch((error) => {
-      const normalizedError = getSchoolSelectionJobError(error);
-      job.status = "failed";
-      job.error = normalizedError.error;
-      job.statusCode = normalizedError.statusCode;
-      job.completedAt = Date.now();
-      job.updatedAt = job.completedAt;
-    });
-}
-
-function serializeGenerationJob(job) {
-  const payload = {
-    jobId: job.id,
-    status: job.status,
-  };
-  if (job.status === "completed") payload.result = job.result;
-  if (job.status === "failed") {
-    payload.error = job.error || "Generation failed.";
-    payload.statusCode = job.statusCode || 500;
-  }
-  return payload;
-}
-
-function getGenerationJobError(error) {
-  if (
-    error instanceof RequestError ||
-    error instanceof ActivityPortfolioError ||
-    error instanceof PortfolioCapabilityAgentError ||
-    error instanceof DeepSeekRagError ||
-    error instanceof SchoolSelectionError
-  ) {
-    return {
-      error: error.message,
-      statusCode: error.statusCode,
-    };
-  }
-  console.error("Unexpected generation job error:", error);
-  return {
-    error: "Server error",
-    statusCode: 500,
-  };
-}
-
-function startGenerationJob(job, task) {
-  Promise.resolve()
-    .then(async () => {
-      job.status = "running";
-      job.updatedAt = Date.now();
-      job.result = await task();
-      job.status = "completed";
-      job.completedAt = Date.now();
-      job.updatedAt = job.completedAt;
-    })
-    .catch((error) => {
-      const normalizedError = getGenerationJobError(error);
-      job.status = "failed";
-      job.error = normalizedError.error;
-      job.statusCode = normalizedError.statusCode;
-      job.completedAt = Date.now();
-      job.updatedAt = job.completedAt;
-    });
-}
-
-function createGenerationJobStore({ ttlMs = GENERATION_JOB_TTL_MS } = {}) {
-  const jobs = new Map();
-
-  function pruneJobs() {
-    const expiredBefore = Date.now() - ttlMs;
-    for (const [jobId, job] of jobs) {
-      if (job.updatedAt < expiredBefore) jobs.delete(jobId);
-    }
-  }
-
-  function create(user, task) {
-    pruneJobs();
-    const now = Date.now();
-    const job = {
-      id: randomUUID(),
-      userId: user.id,
-      status: "pending",
-      createdAt: now,
-      updatedAt: now,
-    };
-    jobs.set(job.id, job);
-    startGenerationJob(job, task);
-    return job;
-  }
-
-  function get(user, jobId) {
-    pruneJobs();
-    const job = jobs.get(jobId);
-    return job?.userId === user.id ? job : null;
-  }
-
-  return { create, get, pruneJobs };
-}
-
 export function resolveDatabasePath(env = process.env) {
   return env.AUTH_DATABASE_PATH || env.DATABASE_PATH || defaultDatabasePath;
 }
@@ -831,48 +331,74 @@ export function createAppServer({
   planning = createPlanningService({ authDb }),
   progressPlanner = createProgressPlannerService({ authDb }),
   activityPortfolio = createActivityPortfolioService({ authDb }),
+  accountDataRights = createAccountDataRightsService({
+    auth,
+    planning,
+    activityPortfolio,
+    progressPlanner,
+  }),
+  metrics = createMetricsStore(),
+  adminOperations = createAdminOperationsService({
+    auth,
+    metrics,
+    getBackupStatus: () => getLatestBackupStatus({ root, env }),
+  }),
+  logger = null,
+  deepSeekPlan = createDeepSeekPlanService({ promptPath }),
   portfolioCapabilityAgent = createPortfolioCapabilityAgentService({ activityPortfolio }),
-  deepSeekRag = createDeepSeekRagService({ root, planning, activityPortfolio }),
+  deepSeekRag = createDeepSeekRagService({ root, planning, activityPortfolio, metrics }),
   schoolSelection = createSchoolSelectionService({ activityPortfolio, root }),
   mailer = createMailerFromEnv(env),
   appBaseUrl = env.APP_BASE_URL || "",
+  authHttp = null,
   deepSeekFetch = fetch,
   maxRequestBodyBytes = DEFAULT_MAX_REQUEST_BODY_BYTES,
   rateLimits = DEFAULT_RATE_LIMITS,
 } = {}) {
+  const readText = (request) => readRequestText(request, maxRequestBodyBytes);
   const readJson = (request) => readRequestJson(request, maxRequestBodyBytes);
-  const handleAuth = createAuthHandler(auth, { mailer, appBaseUrl, readJson });
+  const authHttpService = authHttp || createAuthHttpService({
+    auth,
+    mailer,
+    appBaseUrl,
+    readJson,
+    readText,
+    sendJson,
+    withSecurityHeaders,
+    env,
+  });
+  const handleAuth = authHttpService.handleAuth;
   const getRateLimit = createRateLimiter(rateLimits);
-  const deepSeekPlanJobs = createGenerationJobStore();
-  const deepSeekRagJobs = createGenerationJobStore();
-  const portfolioCapabilityAssessmentJobs = createGenerationJobStore();
-  const schoolSelectionJobs = new Map();
-
-  function pruneSchoolSelectionJobs() {
-    const expiredBefore = Date.now() - GENERATION_JOB_TTL_MS;
-    for (const [jobId, job] of schoolSelectionJobs) {
-      if (job.updatedAt < expiredBefore) schoolSelectionJobs.delete(jobId);
-    }
-  }
-
-  function createSchoolSelectionJob(user, payload) {
-    pruneSchoolSelectionJobs();
-    const now = Date.now();
-    const job = {
-      id: randomUUID(),
-      userId: user.id,
-      status: "pending",
-      createdAt: now,
-      updatedAt: now,
-    };
-    schoolSelectionJobs.set(job.id, job);
-    startSchoolSelectionJob(job, { schoolSelection, user, payload, env, deepSeekFetch });
-    return job;
-  }
+  const generationJobOptions = {
+    errorClasses: [
+      RequestError,
+      DeepSeekPlanError,
+      ActivityPortfolioError,
+      PortfolioCapabilityAgentError,
+      DeepSeekRagError,
+      SchoolSelectionError,
+    ],
+  };
+  const deepSeekPlanJobs = createGenerationJobService(generationJobOptions);
+  const deepSeekRagJobs = createGenerationJobService(generationJobOptions);
+  const portfolioCapabilityAssessmentJobs = createGenerationJobService(generationJobOptions);
+  const schoolSelectionJobs = createGenerationJobService(generationJobOptions);
 
   const server = createServer(async (request, response) => {
+    const observedRequest = attachRequestObservability(request, response, { logger, metrics });
     try {
       const url = new URL(request.url || "/", `http://${host}:${port}`);
+
+      if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/healthz") {
+        sendJson(response, 200, buildHealthPayload(observedRequest.requestId));
+        return;
+      }
+
+      if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/readyz") {
+        const readiness = buildReadinessPayload({ authDb });
+        sendJson(response, readiness.status === "ready" ? 200 : 503, readiness);
+        return;
+      }
 
       if (request.method === "POST") {
         const retryAfterSeconds = getRateLimit(request, url.pathname);
@@ -883,7 +409,41 @@ export function createAppServer({
         }
       }
 
+      if (!authHttpService.verifyCsrfRequest(request, response, url.pathname)) return;
+
       if (await handleAuth(request, response, url.pathname)) return;
+
+      if (request.method === "GET" && url.pathname === "/api/account/export") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        const exportData = accountDataRights.exportAccountData({
+          user,
+          metadata: getRequestMetadata(request),
+        });
+        response.writeHead(200, withSecurityHeaders({
+          "Content-Type": "application/json;charset=utf-8",
+          "Content-Disposition": `attachment; filename="consultant-account-export-${new Date().toISOString().slice(0, 10)}.json"`,
+        }));
+        response.end(JSON.stringify(exportData, null, 2));
+        return;
+      }
+
+      if (request.method === "DELETE" && url.pathname === "/api/account") {
+        const user = requireUser(request, response, auth);
+        if (!user) return;
+        const result = accountDataRights.deleteAccount({
+          user,
+          payload: await readJson(request),
+          metadata: getRequestMetadata(request),
+        });
+        response.writeHead(200, withSecurityHeaders({
+          "Content-Type": "application/json;charset=utf-8",
+          "Set-Cookie": authHttpService.buildClearSessionCookies(request),
+          "Clear-Site-Data": '"cookies"',
+        }));
+        response.end(JSON.stringify(result));
+        return;
+      }
 
       if (request.method === "POST" && url.pathname === "/api/feedback") {
         const feedback = auth.recordFeedback({
@@ -904,7 +464,12 @@ export function createAppServer({
 
       if (request.method === "POST" && url.pathname === "/api/deepseek-plan") {
         if (!requireUser(request, response, auth)) return;
-        await handleDeepSeekPlan(request, response, { readJson, env, deepSeekFetch });
+        const payload = await readJson(request);
+        sendJson(response, 200, await deepSeekPlan.generatePlan({
+          payload,
+          env,
+          deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "deepseek-plan"),
+        }));
         return;
       }
 
@@ -913,7 +478,11 @@ export function createAppServer({
         if (!user) return;
         const payload = await readJson(request);
         const job = deepSeekPlanJobs.create(user, () =>
-          generateDeepSeekPlanResult(payload, { env, deepSeekFetch }),
+          deepSeekPlan.generatePlan({
+            payload,
+            env,
+            deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "deepseek-plan"),
+          }),
         );
         sendJson(response, 202, { jobId: job.id, status: job.status });
         return;
@@ -942,7 +511,7 @@ export function createAppServer({
           historySummary: payload.historySummary,
           assistantProfile: payload.assistantProfile,
           env,
-          deepSeekFetch,
+          deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "deepseek-rag"),
         }));
         return;
       }
@@ -954,7 +523,7 @@ export function createAppServer({
           user,
           payload: await readJson(request),
           env,
-          deepSeekFetch,
+          deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "school-selection"),
         }));
         return;
       }
@@ -962,7 +531,15 @@ export function createAppServer({
       if (request.method === "POST" && url.pathname === "/api/school-selection-jobs") {
         const user = requireUser(request, response, auth);
         if (!user) return;
-        const job = createSchoolSelectionJob(user, await readJson(request));
+        const payload = await readJson(request);
+        const job = schoolSelectionJobs.create(user, () =>
+          schoolSelection.generateSelection({
+            user,
+            payload,
+            env,
+            deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "school-selection"),
+          }),
+        );
         sendJson(response, 202, { jobId: job.id, status: job.status });
         return;
       }
@@ -971,13 +548,14 @@ export function createAppServer({
       if (request.method === "GET" && schoolSelectionJobMatch) {
         const user = requireUser(request, response, auth);
         if (!user) return;
-        pruneSchoolSelectionJobs();
-        const job = schoolSelectionJobs.get(schoolSelectionJobMatch[1]);
-        if (!job || job.userId !== user.id) {
+        const job = schoolSelectionJobs.get(user, schoolSelectionJobMatch[1]);
+        if (!job) {
           sendJson(response, 404, { error: "School selection job not found." });
           return;
         }
-        sendJson(response, 200, serializeSchoolSelectionJob(job));
+        sendJson(response, 200, serializeGenerationJob(job, {
+          fallbackError: "School selection generation failed.",
+        }));
         return;
       }
 
@@ -1010,7 +588,7 @@ export function createAppServer({
           user,
           payload: await readJson(request),
           env,
-          deepSeekFetch,
+          deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "portfolio-capability-assessment"),
         }));
         return;
       }
@@ -1024,7 +602,11 @@ export function createAppServer({
             user,
             payload,
             env,
-            deepSeekFetch,
+            deepSeekFetch: instrumentDeepSeekFetch(
+              deepSeekFetch,
+              metrics,
+              "portfolio-capability-assessment",
+            ),
           }),
         );
         sendJson(response, 202, { jobId: job.id, status: job.status });
@@ -1057,7 +639,7 @@ export function createAppServer({
             historySummary: payload.historySummary,
             assistantProfile: payload.assistantProfile,
             env,
-            deepSeekFetch,
+            deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "deepseek-rag"),
           }),
         );
         sendJson(response, 202, { jobId: job.id, status: job.status });
@@ -1123,7 +705,16 @@ export function createAppServer({
       if (request.method === "DELETE" && snapshotMatch) {
         const user = requireUser(request, response, auth);
         if (!user) return;
-        sendJson(response, 200, planning.deleteSnapshot(user, snapshotMatch[1], snapshotMatch[2]));
+        const result = planning.deleteSnapshot(user, snapshotMatch[1], snapshotMatch[2]);
+        auth.recordAuditEvent({
+          actor: user,
+          action: "plan.snapshot.delete",
+          resourceType: "planning_snapshot",
+          resourceId: snapshotMatch[2],
+          details: { planId: snapshotMatch[1] },
+          metadata: getRequestMetadata(request),
+        });
+        sendJson(response, 200, result);
         return;
       }
 
@@ -1134,7 +725,16 @@ export function createAppServer({
         const user = requireUser(request, response, auth);
         if (!user) return;
         await readJson(request);
-        sendJson(response, 200, planning.restoreSnapshot(user, restoreMatch[1], restoreMatch[2]));
+        const restored = planning.restoreSnapshot(user, restoreMatch[1], restoreMatch[2]);
+        auth.recordAuditEvent({
+          actor: user,
+          action: "plan.snapshot.restore",
+          resourceType: "planning_snapshot",
+          resourceId: restoreMatch[2],
+          details: { planId: restoreMatch[1] },
+          metadata: getRequestMetadata(request),
+        });
+        sendJson(response, 200, restored);
         return;
       }
 
@@ -1176,7 +776,15 @@ export function createAppServer({
       if (request.method === "DELETE" && planMatch) {
         const user = requireUser(request, response, auth);
         if (!user) return;
-        sendJson(response, 200, planning.deletePlan(user, planMatch[1]));
+        const result = planning.deletePlan(user, planMatch[1]);
+        auth.recordAuditEvent({
+          actor: user,
+          action: "plan.delete",
+          resourceType: "planning_project",
+          resourceId: planMatch[1],
+          metadata: getRequestMetadata(request),
+        });
+        sendJson(response, 200, result);
         return;
       }
 
@@ -1197,30 +805,62 @@ export function createAppServer({
       }
 
       if (request.method === "GET" && url.pathname === "/api/admin/login-dashboard") {
-        const admin = requireAdmin(request, response, auth);
+        const admin = requireAdmin(request, response, auth, {
+          audit: { action: "admin.dashboard.view", resourceType: "admin_dashboard" },
+        });
         if (!admin) return;
-        const dashboard = auth.getLoginDashboard({
-          requester: admin,
-          filters: {
-            query: url.searchParams.get("query") || "",
-            status: url.searchParams.get("status") || "",
-            fromDate: url.searchParams.get("fromDate") || "",
-            toDate: url.searchParams.get("toDate") || "",
-            eventType: url.searchParams.get("eventType") || "",
-          },
+        const dashboard = adminOperations.getLoginDashboard({
+          admin,
+          searchParams: url.searchParams,
+          metadata: getRequestMetadata(request),
         });
         sendJson(response, 200, dashboard);
         return;
       }
 
+      if (request.method === "GET" && url.pathname === "/api/admin/ops/metrics") {
+        const admin = requireAdmin(request, response, auth, {
+          audit: { action: "admin.ops.metrics.view", resourceType: "admin_ops_metrics" },
+        });
+        if (!admin) return;
+        sendJson(response, 200, adminOperations.getOpsMetrics());
+        return;
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/admin/audit-log/export") {
+        const admin = requireAdmin(request, response, auth, {
+          audit: { action: "admin.audit_log.export", resourceType: "audit_log" },
+        });
+        if (!admin) return;
+        const auditExport = adminOperations.exportAuditLog({
+          admin,
+          searchParams: url.searchParams,
+          metadata: getRequestMetadata(request),
+        });
+        response.writeHead(200, withSecurityHeaders({
+          "Content-Type": "application/json;charset=utf-8",
+          "Content-Disposition": `attachment; filename="consultant-audit-log-${new Date().toISOString().slice(0, 10)}.json"`,
+        }));
+        response.end(JSON.stringify(auditExport, null, 2));
+        return;
+      }
+
       const adminFeedbackMatch = url.pathname.match(/^\/api\/admin\/feedback\/(\d+)$/);
       if (request.method === "PUT" && adminFeedbackMatch) {
-        const admin = requireAdmin(request, response, auth);
+        const admin = requireAdmin(request, response, auth, {
+          audit: {
+            action: "admin.feedback.update",
+            resourceType: "feedback_entry",
+            resourceId: adminFeedbackMatch[1],
+          },
+        });
         if (!admin) return;
-        const feedback = auth.updateFeedbackEntry({
-          requester: admin,
+        const payload = await readJson(request);
+        const feedback = adminOperations.updateFeedbackEntry({
+          admin,
           feedbackId: adminFeedbackMatch[1],
-          payload: await readJson(request),
+          payload,
+          metadata: getRequestMetadata(request),
         });
         sendJson(response, 200, { feedback });
         return;
@@ -1232,60 +872,20 @@ export function createAppServer({
         return;
       }
 
-      const requestPath =
-        url.pathname === "/"
-          ? "/index.html"
-          : url.pathname === "/favicon.ico"
-            ? "/favicon.svg"
-            : decodeURIComponent(url.pathname);
-      if (requestPath === "/admin.html" && !requireAdmin(request, response, auth, { redirect: true })) {
-        return;
-      }
-      if (
-        (requestPath === "/course-helper.html" ||
-          requestPath === "/gpa-calculator.html" ||
-          requestPath === "/my-activities.html" ||
-          requestPath === "/planning-tracker.html" ||
-          requestPath === "/school-selection.html" ||
-          requestPath === "/ask-deepseek.html" ||
-          requestPath === "/resource-library.html" ||
-          requestPath === "/school-encyclopedia.html" ||
-          requestPath === "/major-encyclopedia.html") &&
-        !requirePageUser(request, response, auth, requestPath)
-      ) {
-        return;
-      }
-      if (requestPath.startsWith("/data/") && !requireUser(request, response, auth)) {
+      const requestPath = normalizeStaticRequestPath(url.pathname);
+      const staticAccessPolicy = getStaticRouteAccessPolicy(requestPath);
+      if (staticAccessPolicy && !requireAccess(request, response, auth, staticAccessPolicy)) {
         return;
       }
 
-      const filePath = normalize(join(root, requestPath));
-      if (!filePath.startsWith(root)) {
+      const filePath = resolveStaticFilePath({ root, requestPath });
+      if (!filePath) {
         response.writeHead(404, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
         response.end("Not Found");
         return;
       }
 
-      let fileStats;
-      try {
-        fileStats = await stat(filePath);
-      } catch {
-        response.writeHead(404, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
-        response.end("Not Found");
-        return;
-      }
-
-      if (!fileStats.isFile()) {
-        response.writeHead(404, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
-        response.end("Not Found");
-        return;
-      }
-
-      response.writeHead(200, withSecurityHeaders({
-        "Content-Type": contentTypes[extname(filePath)] || "text/plain;charset=utf-8",
-        ...cacheHeadersForPath(filePath),
-        ...(requestPath === "/index.html" ? { Vary: "Cookie" } : {}),
-      }));
+      response.writeHead(200, withSecurityHeaders(buildStaticResponseHeaders({ filePath, requestPath })));
       if (request.method === "HEAD") {
         response.end();
         return;
@@ -1300,6 +900,7 @@ export function createAppServer({
       if (
         error instanceof AuthError ||
         error instanceof ActivityPortfolioError ||
+        error instanceof DeepSeekPlanError ||
         error instanceof PortfolioCapabilityAgentError ||
         error instanceof DeepSeekRagError ||
         error instanceof SchoolSelectionError ||
@@ -1307,10 +908,12 @@ export function createAppServer({
         error instanceof ProgressPlannerError ||
         error instanceof RequestError
       ) {
-        sendJson(response, error.statusCode, { error: error.message });
+        const statusCode = error.statusCode || 500;
+        logRequestError(logger, request, error, statusCode, observedRequest.path);
+        sendJson(response, statusCode, { error: error.message });
         return;
       }
-      console.error("Unexpected server error:", error);
+      logRequestError(logger, request, error, 500, observedRequest.path);
       sendJson(response, 500, { error: "Server error" });
     }
   });
@@ -1320,7 +923,7 @@ export function createAppServer({
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  createAppServer().listen(port, host, () => {
+  createAppServer({ logger: createConsoleStructuredLogger() }).listen(port, host, () => {
     console.log(`US college consultant running at http://${host}:${port}`);
     if (envFileStatus.loaded) {
       console.log(`Loaded .env with ${envFileStatus.keys.length} setting(s).`);

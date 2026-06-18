@@ -1,3 +1,5 @@
+import { csrfFetch } from "./csrf-token.mjs";
+
 const adminUserBadge = document.querySelector("#adminUserBadge");
 const adminLogoutButton = document.querySelector("#adminLogoutButton");
 const downloadExcelButton = document.querySelector("#downloadExcelButton");
@@ -7,12 +9,14 @@ const securityFilters = document.querySelector("#securityFilters");
 const dashboardStatus = document.querySelector("#dashboardStatus");
 const userSummaryBody = document.querySelector("#userSummaryBody");
 const loginEventsBody = document.querySelector("#loginEventsBody");
+const auditEventsBody = document.querySelector("#auditEventsBody");
 const dailyActivityList = document.querySelector("#dailyActivityList");
 const weeklyActivityList = document.querySelector("#weeklyActivityList");
 const usageCategorySummaryList = document.querySelector("#usageCategorySummaryList");
 const usageSummaryList = document.querySelector("#usageSummaryList");
 const usageEventsBody = document.querySelector("#usageEventsBody");
 const feedbackEntriesBody = document.querySelector("#feedbackEntriesBody");
+const downloadAuditJsonButton = document.querySelector("#downloadAuditJsonButton");
 const metricActiveUsers = document.querySelector("#metricActiveUsers");
 const metricAiActions = document.querySelector("#metricAiActions");
 const metricSaveActions = document.querySelector("#metricSaveActions");
@@ -66,7 +70,7 @@ const usageEventLabels = {
 const feedbackStatusOptions = ["未处理", "处理中", "已解决", "已忽略"];
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await csrfFetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -139,6 +143,46 @@ function renderEvents(events) {
           <td>${escapeHtml(event.userName || "-")}</td>
           <td>${escapeHtml(event.failureReason || "-")}</td>
           <td>${technicalDetails(event)}</td>
+        </tr>
+      `,
+    )
+    .join("");
+}
+
+function auditEventDetails(event) {
+  const details = event.details && typeof event.details === "object"
+    ? JSON.stringify(event.details, null, 2)
+    : "{}";
+  return `
+    <details class="technical-details">
+      <summary>查看</summary>
+      <p>浏览器 / IP：${escapeHtml(compactDevice(event.userAgent, event.ipAddress))}</p>
+      <pre class="audit-details-json">${escapeHtml(details)}</pre>
+    </details>
+  `;
+}
+
+function renderAuditEvents(events) {
+  if (!events.length) {
+    auditEventsBody.innerHTML = '<tr><td colspan="6">暂无审计事件</td></tr>';
+    return;
+  }
+  auditEventsBody.innerHTML = events
+    .map(
+      (event) => `
+        <tr>
+          <td>${formatDateTime(event.occurredAt)}</td>
+          <td><span class="status-pill ${event.outcome}">${event.outcome === "success" ? "成功" : "失败"}</span></td>
+          <td>
+            ${escapeHtml(event.actorUserName || "-")}
+            <p class="admin-table-note">${escapeHtml(event.actorRole || "-")}</p>
+          </td>
+          <td>${escapeHtml(event.action || "-")}</td>
+          <td>
+            ${escapeHtml(event.resourceType || "-")}
+            <p class="admin-table-note">${escapeHtml(event.resourceId || "-")}</p>
+          </td>
+          <td>${auditEventDetails(event)}</td>
         </tr>
       `,
     )
@@ -277,7 +321,7 @@ function renderOverview(dashboard) {
   metricFailureEvents.textContent = overview.failureEvents || 0;
 }
 
-function buildDashboardUrl() {
+function buildDashboardParams() {
   const params = new URLSearchParams(new FormData(dashboardFilters));
   for (const form of [behaviorFilters, securityFilters]) {
     for (const [key, value] of new FormData(form).entries()) {
@@ -287,7 +331,17 @@ function buildDashboardUrl() {
   for (const [key, value] of [...params.entries()]) {
     if (!value) params.delete(key);
   }
+  return params;
+}
+
+function buildDashboardUrl() {
+  const params = buildDashboardParams();
   return `/api/admin/login-dashboard?${params.toString()}`;
+}
+
+function buildAuditExportUrl() {
+  const params = buildDashboardParams();
+  return `/api/admin/audit-log/export?${params.toString()}`;
 }
 
 async function loadDashboard() {
@@ -303,6 +357,7 @@ async function loadDashboard() {
     renderUsageCategorySummary(dashboard.usageCategorySummary || []);
     renderUsageSummary(dashboard.usageSummary || []);
     renderUsageEvents(dashboard.usageEvents || []);
+    renderAuditEvents(dashboard.auditEvents || []);
     renderFeedbackEntries(dashboard.feedbackEntries || []);
     dashboardStatus.textContent = "已更新";
     dashboardStatus.classList.remove("error");
@@ -452,6 +507,13 @@ function downloadDashboardExcel() {
   URL.revokeObjectURL(url);
 }
 
+function downloadAuditJson() {
+  const link = document.createElement("a");
+  link.href = buildAuditExportUrl();
+  link.download = `审计日志-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+}
+
 async function loadCurrentAdmin() {
   try {
     const data = await requestJson("/api/auth/me");
@@ -495,6 +557,7 @@ adminLogoutButton.addEventListener("click", async () => {
   }
 });
 downloadExcelButton.addEventListener("click", downloadDashboardExcel);
+downloadAuditJsonButton?.addEventListener("click", downloadAuditJson);
 
 activateTab(activeTab);
 loadCurrentAdmin();

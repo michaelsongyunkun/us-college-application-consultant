@@ -4,6 +4,7 @@ import {
   normalizePlannerState,
   normalizeTask,
 } from "../domain/progress-planner.mjs?v=20260605-planning-tracker";
+import { csrfFetch } from "./csrf-token.mjs";
 
 const PROGRESS_PLANNER_ENDPOINT = "/api/progress-planner";
 
@@ -33,7 +34,7 @@ function escapeHtml(value) {
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await csrfFetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",

@@ -3,6 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
+import { AI_QUALITY_VERSIONS } from "../src/server/ai-quality.mjs";
+import { buildCookieHeader, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-deepseek-rag-"));
 const calls = [];
@@ -142,6 +144,17 @@ try {
     body.retrieval.sourceWeights["school-encyclopedia"] > body.retrieval.sourceWeights["resource-library"],
     "School questions should weight school encyclopedia above general resources.",
   );
+  assert.equal(body.quality.schemaVersion, AI_QUALITY_VERSIONS.schema);
+  assert.equal(body.quality.metadata.feature, "deepseek-rag");
+  assert.equal(body.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.ragPromptDefault);
+  assert.equal(body.quality.metadata.model, "deepseek-v4-pro");
+  assert.equal(body.quality.metadata.sourceSetVersion, AI_QUALITY_VERSIONS.ragSourceSet);
+  assert.equal(body.quality.metadata.parserVersion, AI_QUALITY_VERSIONS.ragParser);
+  assert.equal(body.quality.retrieval.retrievalHitRate, 1);
+  assert.deepEqual(body.quality.retrieval.missingSourceTypes, []);
+  assert.equal(body.quality.review.required, false);
+  assert.ok(body.quality.citations.some((citation) => citation.sourceType === "school-encyclopedia"));
+  assert.ok(body.quality.citations.every((citation) => citation.sourceId && citation.sourceTitle));
   assert.match(body.retrieval.intentReason, /MIT|院校|school/i);
   assert.ok(Array.isArray(body.missingFields), "Ask DeepSeek should return missing-field guidance.");
   assert.ok(body.missingFields.includes("推荐信准备"), "Missing fields should flag empty recommendation letter data.");
@@ -197,6 +210,8 @@ try {
     cookie,
   );
   assert.equal(majorMatchResponse.status, 200);
+  const majorMatchBody = await majorMatchResponse.json();
+  assert.equal(majorMatchBody.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.ragPromptMajorMatch);
   assert.equal(calls.length, 2);
   const majorMatchPayload = JSON.parse(calls[1].options.body);
   const majorMatchSystemPrompt = majorMatchPayload.messages[0].content;
@@ -226,6 +241,7 @@ try {
   assert.equal(completedRagJob.status, "completed");
   assert.equal(completedRagJob.result.answer, ragAnswer);
   assert.ok(completedRagJob.result.sources.some((source) => source.type === "student-backup"));
+  assert.equal(completedRagJob.result.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.ragPromptDefault);
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });
@@ -233,7 +249,7 @@ try {
 
 function get(path, cookie = "") {
   return fetch(`${serverUrl()}${path}`, {
-    headers: cookie ? { Cookie: cookie } : {},
+    headers: cookie ? { Cookie: buildCookieHeader(cookie) } : {},
   });
 }
 
@@ -251,13 +267,6 @@ function put(path, payload, cookie = "") {
     headers: jsonHeaders(cookie),
     body: JSON.stringify(payload),
   });
-}
-
-function jsonHeaders(cookie = "") {
-  return {
-    "Content-Type": "application/json",
-    ...(cookie ? { Cookie: cookie } : {}),
-  };
 }
 
 async function waitForJob(endpoint, jobId, cookie) {

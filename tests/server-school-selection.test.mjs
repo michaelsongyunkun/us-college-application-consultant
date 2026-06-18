@@ -3,6 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
+import { AI_QUALITY_VERSIONS } from "../src/server/ai-quality.mjs";
+import { buildCookieHeader, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-school-selection-"));
 const calls = [];
@@ -129,6 +131,12 @@ try {
   assert.equal(body.selection.rounds.uc.length, 6);
   assert.equal(JSON.stringify(body).includes("server-school-selection-secret"), false);
   assert.equal(JSON.stringify(body).includes("request-key-should-be-ignored"), false);
+  assert.equal(body.quality.metadata.feature, "school-selection");
+  assert.equal(body.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.schoolSelectionPrompt);
+  assert.equal(body.quality.metadata.model, "deepseek-v4-flash");
+  assert.equal(body.quality.metadata.sourceSetVersion, AI_QUALITY_VERSIONS.schoolSelectionSourceSet);
+  assert.equal(body.quality.metadata.parserVersion, AI_QUALITY_VERSIONS.schoolSelectionParser);
+  assert.ok(body.quality.citations.some((citation) => citation.sourceType === "school-encyclopedia"));
 
   const sentPayload = JSON.parse(calls[0].options.body);
   assert.equal(sentPayload.model, "deepseek-v4-flash");
@@ -162,6 +170,7 @@ try {
   assert.equal(completedJob.result.selection.rounds.ed1[0].school, "University of Chicago");
   assert.equal(completedJob.result.selection.rounds.ed1[0].admissionProbability, "12%-18%");
   assert.equal(completedJob.result.selection.rounds.uc.length, 6);
+  assert.equal(completedJob.result.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.schoolSelectionPrompt);
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });
@@ -181,14 +190,14 @@ function school(name) {
 
 function get(path, cookie = "") {
   return fetch(`${serverUrl()}${path}`, {
-    headers: cookie ? { Cookie: cookie } : {},
+    headers: cookie ? { Cookie: buildCookieHeader(cookie) } : {},
   });
 }
 
 function post(path, payload, cookie = "") {
   return fetch(`${serverUrl()}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) },
+    headers: jsonHeaders(cookie),
     body: JSON.stringify(payload),
   });
 }
@@ -196,7 +205,7 @@ function post(path, payload, cookie = "") {
 function put(path, payload, cookie = "") {
   return fetch(`${serverUrl()}${path}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) },
+    headers: jsonHeaders(cookie),
     body: JSON.stringify(payload),
   });
 }

@@ -207,6 +207,24 @@ export function createAuthService({
     db.prepare("DELETE FROM sessions WHERE token_hash = ?").run(hashSessionToken(sessionToken));
   }
 
+  function issueCsrfToken(sessionToken) {
+    const session = findValidSession(sessionToken);
+    if (!session) return null;
+    const csrfToken = randomBytes(32).toString("base64url");
+    db.prepare("UPDATE sessions SET csrf_token_hash = ? WHERE id = ?").run(
+      hashSessionToken(csrfToken),
+      session.id,
+    );
+    return csrfToken;
+  }
+
+  function verifyCsrfToken(sessionToken, csrfToken) {
+    if (!sessionToken || !csrfToken) return false;
+    const session = findValidSession(sessionToken);
+    if (!session?.csrf_token_hash) return false;
+    return safeEqual(hashSessionToken(csrfToken), session.csrf_token_hash);
+  }
+
   function createPasswordReset(email) {
     const normalizedEmail = normalizeEmail(email);
     const user = findUserByEmail(normalizedEmail);
@@ -284,11 +302,12 @@ export function createAuthService({
   function createLoginResult(user, metadata = {}) {
     cleanupExpiredSessions();
     const sessionToken = randomBytes(32).toString("base64url");
+    const csrfToken = randomBytes(32).toString("base64url");
     const timestamp = now().toISOString();
     const expiresAt = new Date(now().getTime() + sessionTtlMs).toISOString();
     const createSession = db.prepare(
-      `INSERT INTO sessions (user_id, token_hash, expires_at, created_at)
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO sessions (user_id, token_hash, csrf_token_hash, expires_at, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
     );
     const updateLoginStats = db.prepare(
       `UPDATE users
@@ -296,7 +315,13 @@ export function createAuthService({
        WHERE id = ?`,
     );
     const transaction = db.transaction(() => {
-      createSession.run(user.id, hashSessionToken(sessionToken), expiresAt, timestamp);
+      createSession.run(
+        user.id,
+        hashSessionToken(sessionToken),
+        hashSessionToken(csrfToken),
+        expiresAt,
+        timestamp,
+      );
       updateLoginStats.run(timestamp, timestamp, user.id);
       recordLoginEvent({ user, status: "success", metadata, occurredAt: timestamp });
     });
@@ -305,6 +330,7 @@ export function createAuthService({
     return {
       user: toPublicUser(findUserById(user.id)),
       sessionToken,
+      csrfToken,
       expiresAt,
     };
   }
@@ -506,16 +532,46 @@ export function createAuthService({
       )
       .all(feedbackFilters.params);
 
+    const auditFilters = buildAuditFilters(filters);
+    const auditEvents = db
+      .prepare(
+        `SELECT
+          id,
+          actor_user_id AS actorUserId,
+          actor_user_name AS actorUserName,
+          actor_user_email AS actorUserEmail,
+          actor_role AS actorRole,
+          action,
+          resource_type AS resourceType,
+          resource_id AS resourceId,
+          outcome,
+          details_json AS detailsJson,
+          occurred_at AS occurredAt,
+          event_date AS eventDate,
+          user_agent AS userAgent,
+          ip_address AS ipAddress
+        FROM audit_events
+        ${auditFilters.where}
+        ORDER BY occurred_at DESC
+        LIMIT 200`,
+      )
+      .all(auditFilters.params)
+      .map((event) => ({
+        ...event,
+        details: parseJsonObject(event.detailsJson),
+      }));
+
     return {
       overview,
-      users,
-      events,
+      users: users.map(redactUserSummary),
+      events: events.map(redactLoginEvent),
       dailyActivity,
       weeklyActivity,
       usageSummary,
       usageCategorySummary,
-      usageEvents,
-      feedbackEntries,
+      usageEvents: usageEvents.map(redactUsageEvent),
+      feedbackEntries: feedbackEntries.map(redactFeedbackEntry),
+      auditEvents: auditEvents.map(redactAuditEvent),
     };
 
     function countUsageEventsByTypes(eventTypes, activeFilters) {
@@ -606,7 +662,7 @@ export function createAuthService({
        WHERE id = ?`,
     ).run(feedbackStatus, adminNote, id);
 
-    return selectFeedbackEntryById(id);
+    return redactFeedbackEntry(selectFeedbackEntryById(id));
   }
 
   function recordUsageEvent({
@@ -662,6 +718,139 @@ export function createAuthService({
       metadata.userAgent || "",
       metadata.ipAddress || "",
     );
+  }
+
+  function recordAuditEvent({
+    actor = null,
+    action,
+    resourceType,
+    resourceId = "",
+    outcome = "success",
+    details = {},
+    metadata = {},
+  } = {}) {
+    const normalizedAction = normalizeLimitedLine(action, 100);
+    const normalizedResourceType = normalizeLimitedLine(resourceType, 80);
+    if (!normalizedAction || !normalizedResourceType) {
+      throw new AuthError("Invalid audit event", 400);
+    }
+    const normalizedOutcome = outcome === "failure" ? "failure" : "success";
+    const timestamp = now().toISOString();
+    db.prepare(
+      `INSERT INTO audit_events (
+        actor_user_id,
+        actor_user_name,
+        actor_user_email,
+        actor_role,
+        action,
+        resource_type,
+        resource_id,
+        outcome,
+        details_json,
+        occurred_at,
+        event_date,
+        user_agent,
+        ip_address
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      actor?.id || null,
+      actor?.name || "",
+      actor?.email || "",
+      actor?.role || "",
+      normalizedAction,
+      normalizedResourceType,
+      normalizeLimitedLine(resourceId, 120),
+      normalizedOutcome,
+      JSON.stringify(normalizeAuditDetails(details)),
+      timestamp,
+      timestamp.slice(0, 10),
+      metadata.userAgent || "",
+      metadata.ipAddress || "",
+    );
+  }
+
+  function exportAccountData({
+    user,
+    planning,
+    portfolio,
+    progressPlanner,
+  } = {}) {
+    const account = findRequiredUser(user);
+    return {
+      exportedAt: now().toISOString(),
+      account: {
+        id: Number(account.id),
+        email: account.email,
+        name: account.name,
+        role: account.role,
+        createdAt: account.created_at,
+        updatedAt: account.updated_at,
+        lastLoginAt: account.last_login_at || null,
+        loginCount: Number(account.login_count || 0),
+      },
+      planning,
+      portfolio,
+      progressPlanner,
+    };
+  }
+
+  function deleteAccount({ user, confirmation, metadata = {} } = {}) {
+    const account = findRequiredUser(user);
+    const normalizedConfirmation = normalizeEmail(confirmation);
+    if (normalizedConfirmation !== account.email) {
+      throw new AuthError("Account deletion confirmation must match the account email", 400);
+    }
+
+    const timestamp = now().toISOString();
+    const deleteAccountTransaction = db.transaction(() => {
+      db.prepare(
+        "UPDATE login_events SET user_id = NULL, user_name = 'Deleted user', user_email = '' WHERE user_id = ?",
+      ).run(account.id);
+      db.prepare("DELETE FROM feedback_entries WHERE user_id = ?").run(account.id);
+      db.prepare(
+        `UPDATE audit_events
+         SET actor_user_id = NULL,
+             actor_user_name = 'Deleted user',
+             actor_user_email = '',
+             actor_role = '',
+             resource_id = CASE WHEN resource_type = 'user_account' THEN 'deleted' ELSE resource_id END
+         WHERE actor_user_id = ?`,
+      ).run(account.id);
+      db.prepare("DELETE FROM users WHERE id = ?").run(account.id);
+      db.prepare(
+        `INSERT INTO audit_events (
+          actor_user_id,
+          actor_user_name,
+          actor_user_email,
+          actor_role,
+          action,
+          resource_type,
+          resource_id,
+          outcome,
+          details_json,
+          occurred_at,
+          event_date,
+          user_agent,
+          ip_address
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        null,
+        "Deleted user",
+        "",
+        "",
+        "account.delete",
+        "user_account",
+        "deleted",
+        "success",
+        JSON.stringify({ scope: "self_service" }),
+        timestamp,
+        timestamp.slice(0, 10),
+        metadata.userAgent || "",
+        metadata.ipAddress || "",
+      );
+    });
+    deleteAccountTransaction();
+    return { ok: true, deletedAt: timestamp };
   }
 
   function buildEventFilters(filters, { includeStatus = true } = {}) {
@@ -737,6 +926,29 @@ export function createAuthService({
     };
   }
 
+  function buildAuditFilters(filters) {
+    const conditions = [];
+    const params = {};
+    if (filters.query) {
+      conditions.push(
+        "(actor_user_name LIKE @auditQuery OR actor_user_email LIKE @auditQuery OR action LIKE @auditQuery OR resource_type LIKE @auditQuery OR resource_id LIKE @auditQuery)",
+      );
+      params.auditQuery = `%${filters.query}%`;
+    }
+    if (filters.fromDate) {
+      conditions.push("event_date >= @auditFromDate");
+      params.auditFromDate = filters.fromDate;
+    }
+    if (filters.toDate) {
+      conditions.push("event_date <= @auditToDate");
+      params.auditToDate = filters.toDate;
+    }
+    return {
+      where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
+      params,
+    };
+  }
+
   function selectFeedbackEntryById(feedbackId) {
     return db
       .prepare(
@@ -774,10 +986,33 @@ export function createAuthService({
     return db.prepare("SELECT * FROM users WHERE id = ?").get(id);
   }
 
+  function findRequiredUser(user) {
+    const id = Number(user?.id);
+    if (!Number.isInteger(id) || id <= 0) throw new AuthError("Not authenticated", 401);
+    const account = findUserById(id);
+    if (!account) throw new AuthError("Not authenticated", 401);
+    return account;
+  }
+
+  function findValidSession(sessionToken) {
+    if (!sessionToken) return null;
+    const session = db
+      .prepare("SELECT * FROM sessions WHERE token_hash = ?")
+      .get(hashSessionToken(sessionToken));
+    if (!session) return null;
+    if (new Date(session.expires_at).getTime() <= now().getTime()) {
+      logout(sessionToken);
+      return null;
+    }
+    return session;
+  }
+
   return {
     register,
     login,
     logout,
+    issueCsrfToken,
+    verifyCsrfToken,
     getUserForSession,
     createPasswordReset,
     resetPassword,
@@ -785,6 +1020,9 @@ export function createAuthService({
     recordFeedback,
     updateFeedbackEntry,
     recordUsageEvent,
+    recordAuditEvent,
+    exportAccountData,
+    deleteAccount,
     cleanupExpiredSessions,
   };
 }
@@ -813,7 +1051,7 @@ function assertPassword(password) {
   }
 }
 
-function hashPassword(password) {
+export function hashPassword(password) {
   const salt = randomBytes(16).toString("base64url");
   const key = scryptSync(password, salt, 32).toString("base64url");
   return `scrypt:${salt}:${key}`;
@@ -829,6 +1067,12 @@ function verifyPassword(password, storedHash) {
 
 function hashSessionToken(sessionToken) {
   return createHash("sha256").update(sessionToken).digest("base64url");
+}
+
+function safeEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left || ""));
+  const rightBuffer = Buffer.from(String(right || ""));
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 function toPublicUser(user) {
@@ -880,4 +1124,109 @@ function normalizeLimitedText(value, maxLength) {
     .replace(/\r\n?/g, "\n")
     .trim()
     .slice(0, maxLength);
+}
+
+function redactUserSummary(user) {
+  return {
+    ...user,
+    email: maskEmail(user.email),
+  };
+}
+
+function redactLoginEvent(event) {
+  return {
+    ...event,
+    userEmail: maskEmail(event.userEmail),
+    ipAddress: maskIpAddress(event.ipAddress),
+    userAgent: summarizeUserAgent(event.userAgent),
+  };
+}
+
+function redactUsageEvent(event) {
+  return {
+    ...event,
+    userEmail: maskEmail(event.userEmail),
+    detailsJson: "",
+    ipAddress: maskIpAddress(event.ipAddress),
+    userAgent: summarizeUserAgent(event.userAgent),
+  };
+}
+
+function redactFeedbackEntry(entry) {
+  return {
+    ...entry,
+    userEmail: maskEmail(entry.userEmail),
+    contact: entry.contact ? "[redacted]" : "",
+    ipAddress: maskIpAddress(entry.ipAddress),
+    userAgent: summarizeUserAgent(entry.userAgent),
+  };
+}
+
+function redactAuditEvent(event) {
+  return {
+    ...event,
+    actorUserEmail: maskEmail(event.actorUserEmail),
+    ipAddress: maskIpAddress(event.ipAddress),
+    userAgent: summarizeUserAgent(event.userAgent),
+  };
+}
+
+function maskEmail(value) {
+  const email = String(value || "").trim();
+  if (!email || !email.includes("@")) return email;
+  const [localPart, domain] = email.split("@");
+  const visible = localPart.slice(0, 1) || "*";
+  return `${visible}***@${domain}`;
+}
+
+function maskIpAddress(value) {
+  const ipAddress = String(value || "").trim();
+  if (!ipAddress) return "";
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(ipAddress)) {
+    const parts = ipAddress.split(".");
+    return `${parts[0]}.${parts[1]}.${parts[2]}.0`;
+  }
+  if (ipAddress.includes(":")) {
+    return `${ipAddress.split(":").slice(0, 2).join(":")}::`;
+  }
+  return "[redacted]";
+}
+
+function summarizeUserAgent(value) {
+  return normalizeLimitedLine(value, 120);
+}
+
+function normalizeAuditDetails(details) {
+  const normalized = {};
+  for (const [rawKey, rawValue] of Object.entries(details || {})) {
+    const key = normalizeLimitedLine(rawKey, 60);
+    if (!key) continue;
+    if (/password|token|secret|api.?key|csrf|session/i.test(key)) {
+      normalized[key] = "[redacted]";
+      continue;
+    }
+    if (rawValue === null || typeof rawValue === "boolean" || typeof rawValue === "number") {
+      normalized[key] = rawValue;
+      continue;
+    }
+    if (Array.isArray(rawValue)) {
+      normalized[key] = rawValue.slice(0, 10).map((item) => normalizeLimitedLine(item, 120));
+      continue;
+    }
+    if (typeof rawValue === "object") {
+      normalized[key] = "[object]";
+      continue;
+    }
+    normalized[key] = normalizeLimitedLine(rawValue, 200);
+  }
+  return normalized;
+}
+
+function parseJsonObject(value) {
+  try {
+    const parsed = JSON.parse(value || "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
 }

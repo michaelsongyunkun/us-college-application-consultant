@@ -1,6 +1,19 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database from "better-sqlite3";
+import {
+  applyPendingMigrations,
+  recordMigrationAppliedIfMissing,
+} from "./sqlite-migrations.mjs";
+
+const AUTH_SCHEMA_BASELINE_MIGRATION = {
+  id: "0001_auth_sqlite_baseline",
+  description: "Current SQLite auth, planning, portfolio, analytics, and feedback schema.",
+  up() {},
+  down: dropAuthSchema,
+};
+
+export const AUTH_DATABASE_MIGRATIONS = [AUTH_SCHEMA_BASELINE_MIGRATION];
 
 const USAGE_EVENT_TYPES = [
   "parse_codex_answer",
@@ -68,6 +81,7 @@ export function createAuthDatabase({ databasePath }) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       token_hash TEXT NOT NULL UNIQUE,
+      csrf_token_hash TEXT,
       expires_at TEXT NOT NULL,
       created_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -122,6 +136,24 @@ export function createAuthDatabase({ databasePath }) {
       user_agent TEXT,
       ip_address TEXT,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actor_user_id INTEGER,
+      actor_user_name TEXT NOT NULL DEFAULT '',
+      actor_user_email TEXT NOT NULL DEFAULT '',
+      actor_role TEXT NOT NULL DEFAULT '',
+      action TEXT NOT NULL,
+      resource_type TEXT NOT NULL,
+      resource_id TEXT NOT NULL DEFAULT '',
+      outcome TEXT NOT NULL CHECK (outcome IN ('success', 'failure')),
+      details_json TEXT NOT NULL DEFAULT '{}',
+      occurred_at TEXT NOT NULL,
+      event_date TEXT NOT NULL,
+      user_agent TEXT,
+      ip_address TEXT,
+      FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS student_profiles (
@@ -212,6 +244,9 @@ export function createAuthDatabase({ databasePath }) {
     CREATE INDEX IF NOT EXISTS idx_usage_events_user_id ON usage_events(user_id);
     CREATE INDEX IF NOT EXISTS idx_usage_events_event_type ON usage_events(event_type);
     CREATE INDEX IF NOT EXISTS idx_usage_events_occurred_at ON usage_events(occurred_at);
+    CREATE INDEX IF NOT EXISTS idx_audit_events_actor_user_id ON audit_events(actor_user_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_events_action ON audit_events(action);
+    CREATE INDEX IF NOT EXISTS idx_audit_events_occurred_at ON audit_events(occurred_at);
     CREATE INDEX IF NOT EXISTS idx_feedback_entries_user_id ON feedback_entries(user_id);
     CREATE INDEX IF NOT EXISTS idx_feedback_entries_created_at ON feedback_entries(created_at);
     CREATE INDEX IF NOT EXISTS idx_feedback_entries_feedback_date ON feedback_entries(feedback_date);
@@ -226,6 +261,7 @@ export function createAuthDatabase({ databasePath }) {
 
   ensureColumn(db, "users", "login_count", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "users", "last_login_at", "TEXT");
+  ensureColumn(db, "sessions", "csrf_token_hash", "TEXT");
   ensureColumn(db, "usage_events", "completion_fields", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "usage_events", "filled_activity_count", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "usage_events", "generated_activity_count", "INTEGER NOT NULL DEFAULT 0");
@@ -271,12 +307,31 @@ export function createAuthDatabase({ databasePath }) {
     "TEXT NOT NULL DEFAULT '{}'",
   );
   migrateUsageEventsConstraint(db);
+  recordMigrationAppliedIfMissing(db, AUTH_SCHEMA_BASELINE_MIGRATION);
+  applyPendingMigrations(db, AUTH_DATABASE_MIGRATIONS);
   return {
     db,
     close() {
       db.close();
     },
   };
+}
+
+function dropAuthSchema(db) {
+  db.exec(`
+    DROP TABLE IF EXISTS planning_snapshots;
+    DROP TABLE IF EXISTS planning_projects;
+    DROP TABLE IF EXISTS student_progress_planners;
+    DROP TABLE IF EXISTS student_activity_portfolios;
+    DROP TABLE IF EXISTS feedback_entries;
+    DROP TABLE IF EXISTS student_profiles;
+    DROP TABLE IF EXISTS audit_events;
+    DROP TABLE IF EXISTS usage_events;
+    DROP TABLE IF EXISTS login_events;
+    DROP TABLE IF EXISTS password_reset_tokens;
+    DROP TABLE IF EXISTS sessions;
+    DROP TABLE IF EXISTS users;
+  `);
 }
 
 function migrateUsageEventsConstraint(db) {

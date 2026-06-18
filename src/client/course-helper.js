@@ -3,6 +3,7 @@ import {
   parseApCoursesMarkdown,
   recommendApCoursePlan,
 } from "../domain/ap-course-recommender.mjs?v=20260605-ap-balance-fit";
+import { csrfFetch } from "./csrf-token.mjs";
 
 const form = document.querySelector("#courseHelperForm");
 const apCourseGrid = document.querySelector("#apCourseGrid");
@@ -18,7 +19,7 @@ let latestApRecommendationCount = 0;
 
 function trackCourseUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
   const input = collectCourseHelperInput();
-  fetch("/api/analytics/usage-event", {
+  csrfFetch("/api/analytics/usage-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

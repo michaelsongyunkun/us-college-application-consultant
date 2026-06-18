@@ -1,5 +1,6 @@
 import { escapeHtml } from "./html-utils.mjs";
 import { renderMarkdown } from "../domain/markdown-renderer.mjs?v=20260531-deepseek-markdown";
+import { csrfFetch } from "./csrf-token.mjs";
 
 const form = document.querySelector("#deepSeekQuestionForm");
 const questionInput = document.querySelector("#deepSeekQuestion");
@@ -171,7 +172,7 @@ const conversationArchive = [];
 const assistantMessages = new Map();
 
 function trackDeepSeekUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
-  fetch("/api/analytics/usage-event", {
+  csrfFetch("/api/analytics/usage-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -223,7 +224,7 @@ function setWorking(isWorking) {
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await csrfFetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",

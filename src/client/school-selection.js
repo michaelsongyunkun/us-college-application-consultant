@@ -1,5 +1,6 @@
 import { escapeHtml } from "./html-utils.mjs";
 import { getRequestErrorMessage } from "./auth-client-errors.mjs";
+import { csrfFetch } from "./csrf-token.mjs";
 
 const schoolSelectionForm = document.querySelector("#schoolSelectionForm");
 const selectionNationality = document.querySelector("#selectionNationality");
@@ -71,7 +72,7 @@ function countCompletedSelectionFields() {
 }
 
 function trackSchoolSelectionUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
-  fetch("/api/analytics/usage-event", {
+  csrfFetch("/api/analytics/usage-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -900,7 +901,7 @@ function downloadTextFile(filename, content, mimeType) {
 async function requestJson(url, options = {}) {
   let response;
   try {
-    response = await fetch(url, {
+    response = await csrfFetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",

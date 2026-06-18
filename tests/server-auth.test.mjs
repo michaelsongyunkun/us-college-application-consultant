@@ -4,6 +4,12 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
 import { createAuthDatabase } from "../src/server/auth-db.mjs";
+import {
+  buildCookieHeader,
+  csrfHeaders,
+  getCsrfTokenFromCookies,
+  jsonHeaders,
+} from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-server-auth-"));
 const databasePath = join(tempDir, "auth.sqlite");
@@ -79,27 +85,30 @@ try {
 
   const cookie = registrationResponse.headers.get("set-cookie");
   assert.match(cookie, /consultant_session=/);
+  assert.match(cookie, /consultant_csrf=/);
   assert.match(cookie, /HttpOnly/);
   assert.match(cookie, /SameSite=Lax/);
 
   const registration = await registrationResponse.json();
   assert.equal(registration.user.email, "student@example.com");
   assert.equal(registration.user.role, "user");
+  assert.equal(registration.csrfToken, getCsrfTokenFromCookies(cookie));
 
   const forbiddenDashboardResponse = await fetch(`${baseUrl}/api/admin/login-dashboard`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(forbiddenDashboardResponse.status, 403);
 
   const meResponse = await fetch(`${baseUrl}/api/auth/me`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(meResponse.status, 200);
   const me = await meResponse.json();
   assert.equal(me.user.email, "student@example.com");
+  assert.equal(me.csrfToken, getCsrfTokenFromCookies(cookie));
 
   const authenticatedHomeResponse = await fetch(`${baseUrl}/`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(authenticatedHomeResponse.status, 200);
   assert.match(authenticatedHomeResponse.headers.get("vary") || "", /Cookie/i);
@@ -117,7 +126,7 @@ try {
     "Authenticated home should render the command center shell immediately.",
   );
   const authenticatedIndexResponse = await fetch(`${baseUrl}/index.html`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(authenticatedIndexResponse.status, 200);
   const authenticatedIndexHtml = await authenticatedIndexResponse.text();
@@ -133,45 +142,57 @@ try {
   );
 
   const promptResponse = await fetch(`${baseUrl}/api/prompt`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(promptResponse.status, 200);
 
   const resourceLibraryResponse = await fetch(`${baseUrl}/resource-library.html`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(resourceLibraryResponse.status, 200);
   assert.equal(resourceLibraryResponse.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
 
   const schoolEncyclopediaResponse = await fetch(`${baseUrl}/school-encyclopedia.html`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(schoolEncyclopediaResponse.status, 200);
 
   const majorEncyclopediaResponse = await fetch(`${baseUrl}/major-encyclopedia.html`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(majorEncyclopediaResponse.status, 200);
 
   const schoolDatasetResponse = await fetch(`${baseUrl}/data/schools.md`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(schoolDatasetResponse.status, 200);
 
   const internationalSchoolDatasetResponse = await fetch(`${baseUrl}/data/international-schools.md`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(internationalSchoolDatasetResponse.status, 200);
 
   const otherRegionSchoolDatasetResponse = await fetch(`${baseUrl}/data/other-region-schools.md`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(otherRegionSchoolDatasetResponse.status, 200);
 
   const majorDatasetResponse = await fetch(`${baseUrl}/data/majors.md`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(majorDatasetResponse.status, 200);
+
+  const missingCsrfTrackResponse = await fetch(`${baseUrl}/api/analytics/usage-event`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: buildCookieHeader(cookie) },
+    body: JSON.stringify({
+      eventType: "save_draft",
+      profile: {},
+      metrics: {},
+      details: {},
+    }),
+  });
+  assert.equal(missingCsrfTrackResponse.status, 403);
 
   for (const eventType of [
     "parse_codex_answer",
@@ -213,7 +234,7 @@ try {
   ]) {
     const trackResponse = await fetch(`${baseUrl}/api/analytics/usage-event`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Cookie: cookie },
+      headers: jsonHeaders(cookie),
       body: JSON.stringify({
         eventType,
         profile: {
@@ -256,8 +277,11 @@ try {
     }),
   });
   assert.equal(duplicateFirstLoginResponse.status, 200);
-  const duplicateFirstToken = getSessionTokenFromSetCookie(duplicateFirstLoginResponse.headers.get("set-cookie"));
+  const duplicateFirstCookies = duplicateFirstLoginResponse.headers.get("set-cookie");
+  const duplicateFirstToken = getSessionTokenFromSetCookie(duplicateFirstCookies);
+  const duplicateFirstCsrfToken = getCsrfTokenFromCookies(duplicateFirstCookies);
   assert.ok(duplicateFirstToken);
+  assert.ok(duplicateFirstCsrfToken);
 
   const duplicateSecondLoginResponse = await fetch(`${baseUrl}/api/auth/login`, {
     method: "POST",
@@ -268,14 +292,17 @@ try {
     }),
   });
   assert.equal(duplicateSecondLoginResponse.status, 200);
-  const duplicateSecondToken = getSessionTokenFromSetCookie(duplicateSecondLoginResponse.headers.get("set-cookie"));
+  const duplicateSecondCookies = duplicateSecondLoginResponse.headers.get("set-cookie");
+  const duplicateSecondToken = getSessionTokenFromSetCookie(duplicateSecondCookies);
+  const duplicateSecondCsrfToken = getCsrfTokenFromCookies(duplicateSecondCookies);
   assert.ok(duplicateSecondToken);
+  assert.ok(duplicateSecondCsrfToken);
 
   const staleFirstLogoutResponse = await fetch(`${baseUrl}/api/auth/logout`, {
     method: "POST",
-    headers: {
-      Cookie: `consultant_session=${duplicateFirstToken}`,
-    },
+    headers: csrfHeaders(
+      `consultant_session=${duplicateFirstToken}; consultant_csrf=${duplicateFirstCsrfToken}`,
+    ),
   });
   assert.equal(staleFirstLogoutResponse.status, 200);
 
@@ -289,11 +316,14 @@ try {
     200,
     "A stale duplicate session cookie should not block a valid current session.",
   );
+  const duplicateSecondActiveCsrfToken =
+    getCsrfTokenFromCookies(mixedCookieMeResponse.headers.get("set-cookie")) || duplicateSecondCsrfToken;
 
   const duplicateLogoutResponse = await fetch(`${baseUrl}/api/auth/logout`, {
     method: "POST",
     headers: {
-      Cookie: `consultant_session=${duplicateFirstToken}; consultant_session=${duplicateSecondToken}`,
+      Cookie: `consultant_session=${duplicateFirstToken}; consultant_session=${duplicateSecondToken}; consultant_csrf=${duplicateSecondActiveCsrfToken}`,
+      "X-CSRF-Token": duplicateSecondActiveCsrfToken,
     },
   });
   assert.equal(duplicateLogoutResponse.status, 200);
@@ -320,15 +350,13 @@ try {
     }),
   });
   assert.equal(formLoginResponse.status, 200);
-  const formSessionToken = getSessionTokenFromSetCookie(formLoginResponse.headers.get("set-cookie"));
+  const formCookies = formLoginResponse.headers.get("set-cookie");
+  const formSessionToken = getSessionTokenFromSetCookie(formCookies);
   assert.ok(formSessionToken);
 
   const formLogoutResponse = await fetch(`${baseUrl}/api/auth/logout`, {
     method: "POST",
-    headers: {
-      Accept: "text/html",
-      Cookie: `consultant_session=${formSessionToken}`,
-    },
+    headers: csrfHeaders(formCookies, { Accept: "text/html" }),
     redirect: "manual",
   });
   assert.equal(formLogoutResponse.status, 303);
@@ -343,14 +371,14 @@ try {
 
   const logoutResponse = await fetch(`${baseUrl}/api/auth/logout`, {
     method: "POST",
-    headers: { Cookie: cookie },
+    headers: csrfHeaders(cookie),
   });
   assert.equal(logoutResponse.status, 200);
   assert.match(logoutResponse.headers.get("set-cookie"), /Max-Age=0/);
   assert.equal(logoutResponse.headers.get("clear-site-data"), '"cookies"');
 
   const loggedOutMeResponse = await fetch(`${baseUrl}/api/auth/me`, {
-    headers: { Cookie: cookie },
+    headers: { Cookie: buildCookieHeader(cookie) },
   });
   assert.equal(loggedOutMeResponse.status, 401);
 
@@ -409,7 +437,7 @@ try {
   assert.equal(adminRegistration.user.role, "user");
 
   const impersonatedAdminDashboardResponse = await fetch(`${baseUrl}/api/admin/login-dashboard`, {
-    headers: { Cookie: adminRegistrationResponse.headers.get("set-cookie") },
+    headers: { Cookie: buildCookieHeader(adminRegistrationResponse.headers.get("set-cookie")) },
   });
   assert.equal(impersonatedAdminDashboardResponse.status, 403);
 
@@ -425,7 +453,7 @@ try {
   assert.equal(adminLoginResponse.status, 200);
 
   const dashboardResponse = await fetch(`${baseUrl}/api/admin/login-dashboard?status=success`, {
-    headers: { Cookie: adminLoginResponse.headers.get("set-cookie") },
+    headers: { Cookie: buildCookieHeader(adminLoginResponse.headers.get("set-cookie")) },
   });
   assert.equal(dashboardResponse.status, 200);
   const dashboard = await dashboardResponse.json();
@@ -444,6 +472,17 @@ try {
   assert.ok(dashboard.usageEvents.some((event) => event.filledActivityCount === 3));
   assert.ok(dashboard.usageEvents.some((event) => event.generatedActivityCount === 10));
   assert.ok(dashboard.usageEvents.some((event) => event.failureReason === "test failure"));
+  assert.ok(dashboard.auditEvents.some(
+    (event) =>
+      event.action === "auth.password_reset.complete" &&
+      event.actorUserEmail === "s***@example.com",
+  ));
+  assert.ok(dashboard.auditEvents.some(
+    (event) =>
+      event.action === "admin.dashboard.view" &&
+      event.outcome === "success" &&
+      event.actorUserEmail === "a***@example.com",
+  ));
   assert.ok(
     dashboard.usageCategorySummary.some(
       (item) => item.category === "导出与下载" && item.count >= 3,
@@ -457,7 +496,7 @@ try {
   assert.equal(dashboard.overview.failureEvents, 6);
 
   const exportedReportResponse = await fetch(`${baseUrl}/api/admin/login-dashboard?eventType=export_svg`, {
-    headers: { Cookie: adminLoginResponse.headers.get("set-cookie") },
+    headers: { Cookie: buildCookieHeader(adminLoginResponse.headers.get("set-cookie")) },
   });
   assert.equal(exportedReportResponse.status, 200);
   const exportedReportDashboard = await exportedReportResponse.json();
@@ -508,7 +547,7 @@ try {
   assert.match(nativeLoginResponse.headers.get("set-cookie"), /consultant_session=/);
 
   const nativeLoginMeResponse = await fetch(`${baseUrl}/api/auth/me`, {
-    headers: { Cookie: nativeLoginResponse.headers.get("set-cookie") },
+    headers: { Cookie: buildCookieHeader(nativeLoginResponse.headers.get("set-cookie")) },
   });
   assert.equal(nativeLoginMeResponse.status, 200);
 } finally {

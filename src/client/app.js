@@ -26,6 +26,7 @@ import { buildSvgDocument } from "../domain/svg-export.mjs?v=20260531-svg-wrap";
 import { buildWordDocument } from "../domain/word-export.mjs?v=20260601-word-export";
 import { getRequestErrorMessage } from "./auth-client-errors.mjs";
 import { escapeHtml } from "./html-utils.mjs";
+import { csrfFetch } from "./csrf-token.mjs";
 import {
   applyProfileFields,
   buildPlanningGenerationPayload,
@@ -232,7 +233,7 @@ function showAppView(user) {
 
 async function requestJson(url, options = {}) {
   try {
-    const response = await fetch(url, {
+    const response = await csrfFetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
@@ -411,7 +412,7 @@ function buildAnalyticsMetrics(extra = {}) {
 }
 
 function trackUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
-  fetch("/api/analytics/usage-event", {
+  csrfFetch("/api/analytics/usage-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

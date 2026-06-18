@@ -1,4 +1,5 @@
 import { calculateGpa } from "../domain/gpa-calculator.mjs";
+import { csrfFetch } from "./csrf-token.mjs";
 
 const form = document.querySelector("#gpaForm");
 const scaleSelect = document.querySelector("#gpaScale");
@@ -38,7 +39,7 @@ function getPortfolioScaleLabel(scale) {
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await csrfFetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -55,7 +56,7 @@ async function requestJson(url, options = {}) {
 }
 
 function trackGpaUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
-  fetch("/api/analytics/usage-event", {
+  csrfFetch("/api/analytics/usage-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

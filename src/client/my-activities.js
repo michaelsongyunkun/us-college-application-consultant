@@ -9,6 +9,7 @@ import { markdownToPlainText } from "../domain/agent-output-parser.mjs?v=2026053
 import { buildSvgDocument } from "../domain/svg-export.mjs?v=20260531-svg-wrap";
 import { buildWordDocument } from "../domain/word-export.mjs?v=20260601-word-export";
 import { insertEntryIntoFirstEmptySlot } from "./portfolio-entry-slots.mjs?v=20260601-activity-import-slot";
+import { csrfFetch } from "./csrf-token.mjs";
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const CAPABILITY_ASSESSMENT_JOB_ENDPOINT = "/api/portfolio-capability-assessment-jobs";
@@ -1905,7 +1906,7 @@ function buildPortfolioExportPayload() {
 
 function trackPortfolioUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
   const portfolio = collectPortfolio();
-  fetch("/api/analytics/usage-event", {
+  csrfFetch("/api/analytics/usage-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -2063,7 +2064,7 @@ async function savePortfolio() {
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await csrfFetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",

@@ -15,6 +15,7 @@ server.out.log
 server.err.log
 spawn.out.log
 spawn.err.log
+backups/
 
 # Local exports and drafts
 output/

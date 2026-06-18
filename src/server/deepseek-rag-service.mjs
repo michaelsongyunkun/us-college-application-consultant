@@ -1,7 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { resolveApiKey } from "./api-key.mjs";
+import {
+  AI_QUALITY_VERSIONS,
+  evaluateAiAnswerQuality,
+  getExpectedRagSourceTypes,
+  getRagPromptVersion,
+} from "./ai-quality.mjs";
 import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
+import { monotonicNowMs } from "./observability.mjs";
 
 const MAX_QUESTION_LENGTH = 1200;
 const MAX_HISTORY_SUMMARY_LENGTH = 1800;
@@ -119,7 +126,7 @@ export class DeepSeekRagError extends Error {
   }
 }
 
-export function createDeepSeekRagService({ root, planning, activityPortfolio }) {
+export function createDeepSeekRagService({ root, planning, activityPortfolio, metrics = null }) {
   async function answerQuestion({
     user,
     question,
@@ -141,6 +148,7 @@ export function createDeepSeekRagService({ root, planning, activityPortfolio }) 
     const profile = planning.getProfile(user);
     const portfolio = activityPortfolio.getPortfolio(user);
     const missingFields = buildMissingFieldChecklist({ profile, portfolio });
+    const retrievalStartedAt = monotonicNowMs();
     const documents = await buildRagDocuments({
       root,
       user,
@@ -152,6 +160,13 @@ export function createDeepSeekRagService({ root, planning, activityPortfolio }) 
     const intentProfile = analyzeQuestionIntent(normalizedQuestion);
     const weightedSelected = selectRelevantDocuments(documents, normalizedQuestion, intentProfile);
     const context = buildContext(weightedSelected);
+    const retrievalMs = Math.round(monotonicNowMs() - retrievalStartedAt);
+    metrics?.recordRagRetrieval?.({
+      intent: intentProfile.intent,
+      durationMs: retrievalMs,
+      selectedDocuments: weightedSelected.length,
+      totalDocuments: documents.length,
+    });
     const model = normalizeDeepSeekModel(env.DEEPSEEK_RAG_MODEL || env.DEEPSEEK_MODEL);
 
     const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
@@ -189,9 +204,10 @@ export function createDeepSeekRagService({ root, planning, activityPortfolio }) 
     const answer = extractDeepSeekResponseText(data);
     if (!answer) throw new DeepSeekRagError("DeepSeek 未返回可解析的问答内容。", 502);
 
+    const serializedSources = weightedSelected.map(serializeSource);
     return {
       answer,
-      sources: weightedSelected.map(serializeSource),
+      sources: serializedSources,
       missingFields,
       retrieval: {
         totalDocuments: documents.length,
@@ -199,7 +215,20 @@ export function createDeepSeekRagService({ root, planning, activityPortfolio }) 
         intent: intentProfile.intent,
         intentReason: intentProfile.reason,
         sourceWeights: intentProfile.sourceWeights,
+        retrievalMs,
       },
+      quality: evaluateAiAnswerQuality({
+        answer,
+        sources: serializedSources,
+        expectedSourceTypes: getExpectedRagSourceTypes(intentProfile.intent),
+        metadata: {
+          feature: "deepseek-rag",
+          promptVersion: getRagPromptVersion(assistantProfile),
+          model,
+          sourceSetVersion: AI_QUALITY_VERSIONS.ragSourceSet,
+          parserVersion: AI_QUALITY_VERSIONS.ragParser,
+        },
+      }),
     };
   }
 

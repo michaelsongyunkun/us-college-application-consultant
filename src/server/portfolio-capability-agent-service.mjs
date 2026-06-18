@@ -1,4 +1,5 @@
 import { resolveApiKey } from "./api-key.mjs";
+import { AI_QUALITY_VERSIONS, buildAiRequestQuality } from "./ai-quality.mjs";
 import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
 
 const DEEPSEEK_CAPABILITY_MAX_TOKENS = 4200;
@@ -130,6 +131,13 @@ export function createPortfolioCapabilityAgentService({
         return {
           capabilityAssessment: savedPortfolio.capabilityAssessment,
           portfolio: savedPortfolio,
+          quality: buildAiRequestQuality({
+            feature: "portfolio-capability-assessment",
+            promptVersion: AI_QUALITY_VERSIONS.portfolioCapabilityPrompt,
+            model,
+            sourceSetVersion: AI_QUALITY_VERSIONS.noSourceSet,
+            parserVersion: AI_QUALITY_VERSIONS.portfolioCapabilityParser,
+          }),
         };
       } catch (error) {
         repairMessage = error.message || "DeepSeek 返回的能力评估 JSON 未通过校验。";

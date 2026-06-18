@@ -3,6 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
+import { AI_QUALITY_VERSIONS } from "../src/server/ai-quality.mjs";
+import { buildCookieHeader, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-capability-agent-"));
 const calls = [];
@@ -124,6 +126,10 @@ try {
   assert.equal(body.portfolio.capabilityAssessment.generatedBy, "deepseek-capability-agent");
   assert.equal(body.portfolio.capabilityAssessment.radarScores.length, 7);
   assert.equal(body.portfolio.applicationPlan.ed1[0].school, "Forbidden School Needle");
+  assert.equal(body.quality.metadata.feature, "portfolio-capability-assessment");
+  assert.equal(body.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.portfolioCapabilityPrompt);
+  assert.equal(body.quality.metadata.model, "deepseek-v4-flash");
+  assert.equal(body.quality.metadata.parserVersion, AI_QUALITY_VERSIONS.portfolioCapabilityParser);
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, "https://api.deepseek.com/chat/completions");
@@ -179,6 +185,10 @@ try {
   );
   assert.equal(completedJob.status, "completed");
   assert.equal(completedJob.result.capabilityAssessment.generatedBy, "deepseek-capability-agent");
+  assert.equal(
+    completedJob.result.quality.metadata.promptVersion,
+    AI_QUALITY_VERSIONS.portfolioCapabilityPrompt,
+  );
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });
@@ -204,7 +214,7 @@ function post(path, payload, cookie = "") {
 }
 
 function get(path, cookie) {
-  return fetch(`${serverUrl()}${path}`, { headers: { Cookie: cookie } });
+  return fetch(`${serverUrl()}${path}`, { headers: { Cookie: buildCookieHeader(cookie) } });
 }
 
 async function waitForJob(endpoint, jobId, cookie) {
@@ -216,10 +226,6 @@ async function waitForJob(endpoint, jobId, cookie) {
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
   throw new Error(`${endpoint} job did not finish in time.`);
-}
-
-function jsonHeaders(cookie) {
-  return { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) };
 }
 
 function serverUrl() {

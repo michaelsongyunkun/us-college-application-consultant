@@ -217,16 +217,19 @@
               <h2 id="security-title">登录与风险排查</h2>
               <p>技术字段仅在排查时展开，减少主视图干扰。</p>
             </div>
-            <form id="securityFilters" class="inline-filter">
-              <label>
-                <span>登录状态</span>
-                <select id="securityStatusFilter" name="status">
-                  <option value="">全部状态</option>
-                  <option value="success">成功</option>
-                  <option value="failure">失败</option>
-                </select>
-              </label>
-            </form>
+            <div class="security-actions">
+              <form id="securityFilters" class="inline-filter">
+                <label>
+                  <span>登录状态</span>
+                  <select id="securityStatusFilter" name="status">
+                    <option value="">全部状态</option>
+                    <option value="success">成功</option>
+                    <option value="failure">失败</option>
+                  </select>
+                </label>
+              </form>
+              <button id="downloadAuditJsonButton" type="button" class="quiet">导出审计 JSON</button>
+            </div>
           </div>
           <div class="admin-grid security-trends">
             <div>
@@ -250,6 +253,27 @@
                 </tr>
               </thead>
               <tbody id="loginEventsBody"></tbody>
+            </table>
+          </div>
+          <div class="section-heading admin-subsection-heading">
+            <div>
+              <h3>审计事件</h3>
+              <p>管理员访问、权限拒绝、反馈处理、密码重置和删除类事件，默认展示已脱敏字段。</p>
+            </div>
+          </div>
+          <div class="table-wrap focused-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>结果</th>
+                  <th>操作者</th>
+                  <th>动作</th>
+                  <th>资源</th>
+                  <th>详情</th>
+                </tr>
+              </thead>
+              <tbody id="auditEventsBody"></tbody>
             </table>
           </div>
         </section>

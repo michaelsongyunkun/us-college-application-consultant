@@ -23,6 +23,14 @@ try {
   assert.equal(registration.user.name, "Student User");
   assert.equal(registration.user.role, "user");
   assert.ok(registration.sessionToken);
+  assert.ok(registration.csrfToken);
+  assert.equal(auth.verifyCsrfToken(registration.sessionToken, registration.csrfToken), true);
+  assert.equal(auth.verifyCsrfToken(registration.sessionToken, "wrong-token"), false);
+  const rotatedCsrfToken = auth.issueCsrfToken(registration.sessionToken);
+  assert.ok(rotatedCsrfToken);
+  assert.equal(auth.verifyCsrfToken(registration.sessionToken, registration.csrfToken), false);
+  assert.equal(auth.verifyCsrfToken(registration.sessionToken, rotatedCsrfToken), true);
+  assert.equal(auth.issueCsrfToken("missing-session"), null);
   assert.equal(registration.user.password_hash, undefined);
 
   assert.throws(
@@ -41,6 +49,8 @@ try {
   });
   assert.equal(login.user.id, registration.user.id);
   assert.ok(login.sessionToken);
+  assert.ok(login.csrfToken);
+  assert.equal(auth.verifyCsrfToken(login.sessionToken, login.csrfToken), true);
 
   assert.throws(
     () =>
@@ -128,6 +138,15 @@ try {
     password: "password123",
   });
   assert.equal(adminLogin.user.role, "admin");
+  auth.recordAuditEvent({
+    actor: adminLogin.user,
+    action: "admin.dashboard.view",
+    resourceType: "admin_dashboard",
+    details: {
+      status: "success",
+      secretToken: "raw-secret-should-not-be-stored",
+    },
+  });
 
   assert.throws(
     () =>
@@ -176,14 +195,20 @@ try {
   const dashboard = auth.getLoginDashboard({
     requester: adminLogin.user,
   });
-  const studentSummary = dashboard.users.find((user) => user.email === "student@example.com");
+  const studentSummary = dashboard.users.find((user) => user.name === "Student User");
   assert.ok(studentSummary);
+  assert.equal(studentSummary.email, "s***@example.com");
   assert.equal(studentSummary.loginCount, 4);
   assert.ok(studentSummary.lastLoginAt);
   assert.ok(dashboard.events.some((event) => event.status === "failure"));
   assert.ok(dashboard.events.some((event) => event.userAgent === "Failed Browser"));
   assert.ok(dashboard.dailyActivity.length >= 1);
   assert.ok(dashboard.weeklyActivity.length >= 1);
+  const serviceAuditEvent = dashboard.auditEvents.find((event) => event.action === "admin.dashboard.view");
+  assert.ok(serviceAuditEvent);
+  assert.equal(serviceAuditEvent.actorUserEmail, "a***@example.com");
+  assert.equal(serviceAuditEvent.details.status, "success");
+  assert.equal(serviceAuditEvent.details.secretToken, "[redacted]");
   assert.deepEqual(dashboard.overview, {
     activeUsers: 1,
     aiActions: 2,

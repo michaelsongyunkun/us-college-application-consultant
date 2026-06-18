@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
 import { createAuthDatabase } from "../src/server/auth-db.mjs";
+import { buildCookieHeader, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-feedback-admin-"));
 const authDb = createAuthDatabase({ databasePath: join(tempDir, "auth.sqlite") });
@@ -51,9 +52,13 @@ try {
   assert.equal(shortFeedbackResponse.status, 400);
 
   const forbiddenDashboardResponse = await fetch(`${baseUrl}/api/admin/login-dashboard`, {
-    headers: { Cookie: studentCookie },
+    headers: { Cookie: buildCookieHeader(studentCookie) },
   });
   assert.equal(forbiddenDashboardResponse.status, 403);
+  const forbiddenAuditExportResponse = await fetch(`${baseUrl}/api/admin/audit-log/export`, {
+    headers: { Cookie: buildCookieHeader(studentCookie) },
+  });
+  assert.equal(forbiddenAuditExportResponse.status, 403);
 
   const adminRegistration = await post("/api/auth/register", {
     email: "feedback-admin@example.com",
@@ -70,7 +75,7 @@ try {
   const adminCookie = adminLogin.headers.get("set-cookie");
 
   const dashboardResponse = await fetch(`${baseUrl}/api/admin/login-dashboard`, {
-    headers: { Cookie: adminCookie },
+    headers: { Cookie: buildCookieHeader(adminCookie) },
   });
   assert.equal(dashboardResponse.status, 200);
   const dashboard = await dashboardResponse.json();
@@ -80,11 +85,31 @@ try {
   assert.equal(dashboard.feedbackEntries[0].pageName, "生成规划");
   assert.equal(dashboard.feedbackEntries[0].description, "点击生成规划后页面一直显示加载中，没有出现结果。");
   assert.equal(dashboard.feedbackEntries[0].steps, "登录后填写背景信息，点击生成规划按钮。");
-  assert.equal(dashboard.feedbackEntries[0].contact, "student-wechat");
+  assert.equal(dashboard.feedbackEntries[0].contact, "[redacted]");
   assert.equal(dashboard.feedbackEntries[0].userName, "Feedback Student");
-  assert.equal(dashboard.feedbackEntries[0].userEmail, "feedback-student@example.com");
+  assert.equal(dashboard.feedbackEntries[0].userEmail, "f***@example.com");
   assert.equal(dashboard.feedbackEntries[0].feedbackStatus, "未处理");
   assert.equal(dashboard.feedbackEntries[0].adminNote, "");
+  assert.ok(dashboard.auditEvents.some(
+    (event) =>
+      event.action === "admin.dashboard.view" &&
+      event.outcome === "success" &&
+      event.actorUserName === "Yunkun Song",
+  ));
+  assert.ok(dashboard.auditEvents.some(
+    (event) =>
+      event.action === "admin.dashboard.view" &&
+      event.outcome === "failure" &&
+      event.actorUserName === "Feedback Student" &&
+      event.details.reason === "forbidden",
+  ));
+  assert.ok(dashboard.auditEvents.some(
+    (event) =>
+      event.action === "admin.audit_log.export" &&
+      event.outcome === "failure" &&
+      event.actorUserName === "Feedback Student" &&
+      event.details.reason === "forbidden",
+  ));
 
   const forbiddenStatusUpdate = await put(
     `/api/admin/feedback/${dashboard.feedbackEntries[0].id}`,
@@ -109,6 +134,51 @@ try {
   assert.equal(statusUpdate.feedback.feedbackStatus, "处理中");
   assert.equal(statusUpdate.feedback.adminNote, "学生已补充截图，排查生成流程。");
 
+  const auditDashboardResponse = await fetch(`${baseUrl}/api/admin/login-dashboard`, {
+    headers: { Cookie: buildCookieHeader(adminCookie) },
+  });
+  assert.equal(auditDashboardResponse.status, 200);
+  const auditDashboard = await auditDashboardResponse.json();
+  const feedbackAudit = auditDashboard.auditEvents.find(
+    (event) =>
+      event.action === "admin.feedback.update" &&
+      event.outcome === "success" &&
+      event.resourceId === String(dashboard.feedbackEntries[0].id),
+  );
+  assert.ok(feedbackAudit);
+  assert.equal(feedbackAudit.details.feedbackStatus, statusUpdate.feedback.feedbackStatus);
+  assert.equal(feedbackAudit.details.adminNoteChanged, true);
+  assert.equal(JSON.stringify(feedbackAudit).includes(statusUpdate.feedback.adminNote), false);
+
+  const auditExportResponse = await fetch(`${baseUrl}/api/admin/audit-log/export?query=admin.dashboard.view`, {
+    headers: { Cookie: buildCookieHeader(adminCookie) },
+  });
+  assert.equal(auditExportResponse.status, 200);
+  assert.match(auditExportResponse.headers.get("content-type"), /application\/json/);
+  assert.match(auditExportResponse.headers.get("content-disposition"), /consultant-audit-log-\d{4}-\d{2}-\d{2}\.json/);
+  const auditExport = await auditExportResponse.json();
+  assert.equal(auditExport.retentionPolicy.policyVersion, "audit-log-retention-v1");
+  assert.equal(auditExport.retentionPolicy.retentionDays, 365);
+  assert.equal(auditExport.retentionPolicy.exportFormat, "json");
+  assert.equal(auditExport.filters.query, "admin.dashboard.view");
+  assert.equal(auditExport.eventCount, auditExport.auditEvents.length);
+  assert.ok(auditExport.auditEvents.length >= 2);
+  assert.ok(auditExport.auditEvents.every((event) => event.action === "admin.dashboard.view"));
+  assert.equal(JSON.stringify(auditExport).includes("password123"), false);
+
+  const postExportDashboardResponse = await fetch(`${baseUrl}/api/admin/login-dashboard`, {
+    headers: { Cookie: buildCookieHeader(adminCookie) },
+  });
+  assert.equal(postExportDashboardResponse.status, 200);
+  const postExportDashboard = await postExportDashboardResponse.json();
+  assert.ok(postExportDashboard.auditEvents.some(
+    (event) =>
+      event.action === "admin.audit_log.export" &&
+      event.outcome === "success" &&
+      event.actorUserName === "Yunkun Song" &&
+      event.details.eventCount === auditExport.eventCount,
+  ));
+
   const invalidStatusUpdate = await put(
     `/api/admin/feedback/${dashboard.feedbackEntries[0].id}`,
     {
@@ -119,7 +189,7 @@ try {
   assert.equal(invalidStatusUpdate.status, 400);
 
   const filteredDashboardResponse = await fetch(`${baseUrl}/api/admin/login-dashboard?query=生成规划`, {
-    headers: { Cookie: adminCookie },
+    headers: { Cookie: buildCookieHeader(adminCookie) },
   });
   assert.equal(filteredDashboardResponse.status, 200);
   const filteredDashboard = await filteredDashboardResponse.json();
@@ -128,7 +198,7 @@ try {
   assert.equal(filteredDashboard.feedbackEntries[0].adminNote, "学生已补充截图，排查生成流程。");
 
   const emptyFilteredDashboardResponse = await fetch(`${baseUrl}/api/admin/login-dashboard?query=不存在`, {
-    headers: { Cookie: adminCookie },
+    headers: { Cookie: buildCookieHeader(adminCookie) },
   });
   assert.equal(emptyFilteredDashboardResponse.status, 200);
   const emptyFilteredDashboard = await emptyFilteredDashboardResponse.json();
@@ -142,10 +212,7 @@ try {
 function post(path, payload, cookie = "") {
   return fetch(`${serverUrl()}${path}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(cookie ? { Cookie: cookie } : {}),
-    },
+    headers: jsonHeaders(cookie),
     body: JSON.stringify(payload),
   });
 }
@@ -153,10 +220,7 @@ function post(path, payload, cookie = "") {
 function put(path, payload, cookie = "") {
   return fetch(`${serverUrl()}${path}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...(cookie ? { Cookie: cookie } : {}),
-    },
+    headers: jsonHeaders(cookie),
     body: JSON.stringify(payload),
   });
 }

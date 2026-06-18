@@ -4,6 +4,7 @@ import {
   expandVisibleResultLimit,
   getVisibleResultPage,
 } from "./visible-results.mjs";
+import { csrfFetch } from "./csrf-token.mjs";
 
 const status = document.querySelector("#schoolStatus");
 const searchInput = document.querySelector("#schoolSearch");
@@ -48,7 +49,7 @@ function categoryLabel(category) {
 }
 
 function trackSchoolUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
-  fetch("/api/analytics/usage-event", {
+  csrfFetch("/api/analytics/usage-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

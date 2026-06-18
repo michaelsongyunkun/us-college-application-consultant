@@ -18,6 +18,7 @@ import {
   expandVisibleResultLimit,
   getVisibleResultPage,
 } from "./visible-results.mjs";
+import { csrfFetch } from "./csrf-token.mjs";
 
 const status = document.querySelector("#resourceStatus");
 const searchInput = document.querySelector("#resourceSearch");
@@ -295,7 +296,7 @@ function getActiveFilterLabels() {
 
 function trackResourceUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
   const activeFilters = getActiveFilterLabels();
-  fetch("/api/analytics/usage-event", {
+  csrfFetch("/api/analytics/usage-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

@@ -1833,6 +1833,14 @@ textarea {
   justify-content: space-between;
 }
 
+.security-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+  justify-content: flex-end;
+}
+
 .inline-filter select {
   min-width: 190px;
 }
@@ -1858,6 +1866,10 @@ textarea {
   min-width: 700px;
 }
 
+.admin-subsection-heading {
+  margin-top: 18px;
+}
+
 .technical-details summary {
   color: var(--accent);
   cursor: pointer;
@@ -1868,6 +1880,16 @@ textarea {
   margin: 8px 0 0;
   color: var(--muted);
   white-space: nowrap;
+}
+
+.audit-details-json {
+  max-width: 420px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .admin-table-note {
@@ -8733,5 +8755,661 @@ button:disabled,
   .school-selection-actions button,
   .resource-filter-actions button {
     width: 100%;
+  }
+}
+
+/* Figma systems pass: shared tokens, component states, and responsive density */
+:root {
+  --canvas: #f7f6ef;
+  --surface-subtle: #f8faf6;
+  --surface-muted: #f3f5ef;
+  --surface-elevated: #ffffff;
+  --line-strong: #d8ded7;
+  --focus-ring: rgba(47, 125, 88, 0.3);
+  --focus-ring-outer: rgba(217, 119, 6, 0.18);
+  --shadow-lift: 0 10px 22px rgba(16, 24, 39, 0.08);
+  --motion-fast: 160ms ease;
+  --motion-base: 220ms ease;
+  --control-height: 42px;
+}
+
+body {
+  background: var(--canvas);
+}
+
+::selection {
+  background: rgba(217, 119, 6, 0.2);
+  color: var(--ink-strong);
+}
+
+button,
+.button-link,
+.quiet-link,
+.command-sidebar-nav a,
+.command-mobile-toggle,
+.portfolio-section-tab,
+.dashboard-task-card,
+.portfolio-completion-card,
+.workflow-button,
+.resource-tab,
+.resource-combobox-toggle,
+.application-school-combobox-trigger,
+.action-menu summary {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:disabled,
+.button-link[aria-disabled="true"],
+.button-link.is-loading,
+.resource-combobox-toggle:disabled {
+  cursor: not-allowed;
+}
+
+button,
+.button-link,
+.quiet-link,
+.command-sidebar-nav a,
+.portfolio-section-tab,
+.dashboard-task-card,
+.portfolio-completion-card,
+.workflow-button,
+.resource-tab {
+  transition:
+    border-color var(--motion-fast),
+    background var(--motion-fast),
+    color var(--motion-fast),
+    box-shadow var(--motion-fast),
+    transform var(--motion-fast);
+}
+
+button:focus-visible,
+.button-link:focus-visible,
+.quiet-link:focus-visible,
+.command-sidebar-nav a:focus-visible,
+.action-menu summary:focus-visible,
+.portfolio-section-tab:focus-visible,
+.workflow-button:focus-visible,
+.chat-followup-button:focus-visible,
+.resource-tab:focus-visible,
+.resource-combobox-toggle:focus-visible,
+.application-school-combobox-trigger:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--focus-ring-outer);
+}
+
+input,
+select,
+textarea {
+  min-height: var(--control-height);
+  border-color: #d8ddd4;
+  background: var(--surface-elevated);
+  color: var(--ink);
+  font-size: 15px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--brand-green);
+  box-shadow: 0 0 0 4px rgba(47, 125, 88, 0.12);
+}
+
+label > span,
+fieldset legend {
+  color: #334155;
+  font-weight: 760;
+}
+
+.command-sidebar {
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-panel);
+}
+
+.command-sidebar-brand {
+  padding-bottom: 14px;
+}
+
+.landing-nav a {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+}
+
+.command-sidebar-nav a {
+  position: relative;
+  isolation: isolate;
+}
+
+.command-sidebar-nav a:hover,
+.command-sidebar-nav a[aria-current="page"] {
+  background: #f2faf5;
+  transform: translateX(1px);
+}
+
+.command-sidebar-nav a[aria-current="page"] {
+  border-color: #bcd9ca;
+  color: #124b36;
+}
+
+.command-sidebar-nav a[aria-current="page"]::after {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: -1px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--state-action);
+  content: "";
+}
+
+.command-nav-section-label {
+  color: #6d7567;
+}
+
+.command-shell .topbar,
+.command-page-summary,
+.command-shell .panel,
+.portfolio-completion-panel,
+.portfolio-capability-panel,
+.next-action-panel,
+.resource-results-console,
+.resource-filter {
+  border-color: var(--line-strong);
+}
+
+.command-shell .topbar,
+.command-page-summary,
+.command-shell .panel,
+.portfolio-completion-panel,
+.portfolio-capability-panel,
+.next-action-panel {
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-panel);
+}
+
+.command-page-summary,
+.dashboard-overview,
+.command-focus-overview {
+  align-items: stretch;
+}
+
+.command-summary-metrics span,
+.command-focus-metrics div,
+.portfolio-completion-card,
+.dashboard-task-card,
+.portfolio-card,
+.academic-record-block,
+.application-round-card,
+.activity-import-card,
+.resource-card,
+.school-card,
+.case-card,
+.competition-card,
+.summer-card,
+.recommendation-letter-card {
+  border-color: var(--line-strong);
+  background: var(--surface-elevated);
+}
+
+.dashboard-task-card:hover,
+.dashboard-task-card:focus-visible,
+.portfolio-completion-card:hover,
+.portfolio-completion-card:focus-visible,
+.portfolio-section-tab:hover,
+.portfolio-section-tab:focus-visible,
+.workflow-button:hover:not(:disabled),
+.workflow-button:focus-visible {
+  border-color: #afd0bf;
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-1px);
+}
+
+.dashboard-task-card.is-primary,
+.portfolio-section-tab.is-primary,
+.portfolio-completion-card:hover span {
+  border-color: #e3c58d;
+}
+
+.status {
+  border-color: #cfe1d8;
+  background: var(--surface-green);
+  color: var(--accent-strong);
+}
+
+.status.error {
+  border-color: #f0c9c5;
+  background: var(--surface-red);
+  color: var(--state-danger);
+}
+
+.table-wrap {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-card);
+  background: var(--surface-elevated);
+}
+
+table {
+  background: var(--surface-elevated);
+}
+
+thead th {
+  background: var(--surface-muted);
+  color: var(--ink-strong);
+  box-shadow: inset 0 -1px 0 var(--line-strong);
+}
+
+tbody tr:hover th,
+tbody tr:hover td {
+  background: #fbfdf8;
+}
+
+tbody th {
+  background: var(--surface-subtle);
+}
+
+.portfolio-save-bar {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(10px);
+}
+
+.auth-preview-row.is-active,
+.workflow-button::before,
+.resource-rating {
+  background: var(--state-info);
+}
+
+.auth-preview-row.is-active {
+  color: #ffffff;
+}
+
+.auth-preview-row.is-active small,
+.auth-preview-row.is-active strong {
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .command-focus-metrics,
+  .command-summary-metrics {
+    display: flex;
+    gap: 8px;
+    margin: 0 -2px;
+    overflow-x: auto;
+    padding: 2px 2px 6px;
+    scrollbar-width: none;
+  }
+
+  .command-focus-metrics::-webkit-scrollbar,
+  .command-summary-metrics::-webkit-scrollbar {
+    display: none;
+  }
+
+  .command-focus-metrics div,
+  .command-summary-metrics span {
+    flex: 0 0 116px;
+  }
+
+  .table-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .table-heading .inline-actions,
+  .table-heading .status {
+    align-self: flex-start;
+  }
+}
+
+/* Site design system rollout: color, action hierarchy, and page accents */
+:root {
+  --color-canvas: #f8f7f1;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f5f7f2;
+  --color-surface-muted: #eef2ea;
+  --color-surface-green: #eef7f1;
+  --color-surface-warm: #fff7e8;
+  --color-surface-blue: #eef5fc;
+  --color-surface-red: #fff1f0;
+  --color-text: #132033;
+  --color-text-strong: #0f172a;
+  --color-text-muted: #5f6b7a;
+  --color-border: #dde4dc;
+  --color-border-strong: #c7d2ca;
+  --color-brand: var(--brand-green);
+  --color-brand-strong: var(--brand-orange-strong);
+  --color-brand-deep: #1f5f43;
+  --color-action: var(--brand-orange-strong);
+  --color-action-soft: #fff3dc;
+  --color-info: var(--state-info);
+  --color-info-soft: var(--surface-blue);
+  --color-danger: var(--state-danger);
+  --color-danger-soft: var(--surface-red);
+  --bg: var(--color-canvas);
+  --surface: var(--color-canvas);
+  --panel: var(--color-surface);
+  --surface-card: var(--color-surface);
+  --ink: var(--color-text);
+  --ink-strong: var(--color-text-strong);
+  --muted: var(--color-text-muted);
+  --line: var(--color-border);
+  --border-subtle: var(--color-border);
+  --accent: var(--color-brand);
+  --accent-strong: var(--color-brand-deep);
+  --state-success: var(--color-brand);
+  --state-action: var(--color-action);
+  --surface-warm: var(--color-surface-warm);
+  --surface-green: var(--color-surface-green);
+  --surface-blue: var(--color-surface-blue);
+  --surface-red: var(--color-surface-red);
+}
+
+body {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.64), rgba(248, 247, 241, 0) 240px),
+    var(--color-canvas);
+  color: var(--color-text);
+}
+
+.landing-shell {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(248, 247, 241, 0) 42%),
+    var(--color-canvas);
+}
+
+.landing-header,
+.command-shell .topbar,
+.command-page-summary,
+.command-shell .panel,
+.portfolio-completion-panel,
+.portfolio-capability-panel,
+.next-action-panel,
+.auth-card {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.command-sidebar,
+.command-mobile-drawer {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.command-sidebar-note,
+.auth-preview-map,
+.resource-filter,
+.deepseek-chat-log,
+.deepseek-workflows {
+  border-color: var(--color-border);
+  background: var(--color-surface-subtle);
+}
+
+.hero-copy h1,
+.command-shell .topbar h1,
+.command-page-summary h2,
+.command-focus-copy h2,
+.section-heading h2,
+.landing-section-heading h2,
+.auth-card h2 {
+  color: var(--color-text-strong);
+}
+
+.hero-description,
+.command-page-summary p:last-child,
+.command-focus-copy p:last-child,
+.portfolio-subtitle,
+.auth-copy,
+.section-heading p,
+.landing-section-heading p {
+  color: var(--color-text-muted);
+}
+
+.brand-prefix,
+.hero-copy h1 span,
+.command-summary-metrics strong,
+.command-focus-metrics dt,
+.command-sidebar-note strong {
+  color: var(--color-brand-deep);
+}
+
+#heroStartButton,
+.auth-form button[type="submit"],
+.command-primary-action,
+.workspace-primary-action,
+#workspacePrimaryActionButton,
+#generateSchoolSelectionButton,
+#deepSeekAskButton,
+#generateCapabilityAssessmentButton {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: #ffffff;
+}
+
+#heroStartButton:hover,
+.auth-form button[type="submit"]:hover,
+.command-primary-action:hover,
+.workspace-primary-action:hover,
+#workspacePrimaryActionButton:hover,
+#generateSchoolSelectionButton:hover,
+#deepSeekAskButton:hover,
+#generateCapabilityAssessmentButton:hover {
+  border-color: #92400e;
+  background: #92400e;
+  color: #ffffff;
+}
+
+button,
+.button-link {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: #ffffff;
+}
+
+button:hover,
+.button-link:hover {
+  border-color: var(--color-brand-deep);
+  background: var(--color-brand-deep);
+  color: #ffffff;
+}
+
+button.secondary,
+button.quiet,
+.quiet-link,
+.action-menu summary,
+.command-secondary-action,
+.resource-combobox-toggle,
+.application-school-combobox-trigger {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-brand-deep);
+}
+
+button.secondary:hover,
+button.quiet:hover,
+.quiet-link:hover,
+.action-menu summary:hover,
+.command-secondary-action:hover,
+.resource-combobox-toggle:hover,
+.application-school-combobox-trigger:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-green);
+  color: var(--color-brand-deep);
+}
+
+button.danger,
+.danger {
+  border-color: #efc9c5;
+  background: var(--color-surface);
+  color: var(--color-danger);
+}
+
+button.danger:hover,
+.danger:hover {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.dashboard-overview,
+.command-focus-overview {
+  background:
+    linear-gradient(135deg, rgba(238, 247, 241, 0.92), rgba(255, 247, 232, 0.72)),
+    var(--color-surface);
+}
+
+.command-page-summary {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 242, 0.94)),
+    var(--color-surface);
+}
+
+.command-summary-metrics span,
+.command-focus-metrics div,
+.dashboard-task-card,
+.portfolio-completion-card,
+.portfolio-section-tab,
+.workflow-button,
+.resource-card,
+.school-card,
+.case-card,
+.competition-card,
+.summer-card,
+.recommendation-letter-card,
+.portfolio-card,
+.academic-record-block,
+.application-round-card,
+.activity-import-card {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.dashboard-task-card.is-primary,
+.portfolio-section-tab.is-primary,
+.workspace-next-action,
+.next-action-panel {
+  border-color: #e8c98d;
+  background: var(--color-action-soft);
+}
+
+.dashboard-task-card.is-primary span,
+.workspace-next-eyebrow,
+.portfolio-section-tab.is-primary {
+  color: var(--color-action);
+}
+
+.dashboard-task-card span,
+.portfolio-completion-card span,
+.resource-filter-pill,
+.ap-plan-tag {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+
+.status,
+.resource-filter-pill:not(.is-empty) {
+  border-color: #c8dfd2;
+  background: var(--color-surface-green);
+  color: var(--color-brand-deep);
+}
+
+.status.error,
+.portfolio-empty.error {
+  border-color: #efc9c5;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.ask-deepseek-shell .command-page-summary,
+.ask-deepseek-shell .workflow-button,
+.resource-results-console,
+.resource-toolbar {
+  border-color: #d2e3f2;
+  background:
+    linear-gradient(180deg, rgba(238, 245, 252, 0.9), rgba(255, 255, 255, 0.96)),
+    var(--color-surface);
+}
+
+.ask-deepseek-shell .command-summary-metrics strong,
+.ask-deepseek-shell .workflow-button::before,
+.resource-tab:hover,
+.resource-tab.is-active,
+.resource-rating {
+  background: var(--color-info);
+  color: #ffffff;
+}
+
+.resource-tab {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-info);
+}
+
+.school-selection-shell .command-page-summary {
+  border-color: #e6c88e;
+  background:
+    linear-gradient(135deg, rgba(255, 247, 232, 0.92), rgba(238, 247, 241, 0.72)),
+    var(--color-surface);
+}
+
+.school-selection-shell .command-summary-metrics strong {
+  color: var(--color-action);
+}
+
+.contact-panel,
+.disclaimer-panel,
+.feedback-panel {
+  background: var(--color-surface);
+}
+
+input,
+select,
+textarea,
+.resource-combobox-toggle,
+.application-school-combobox-trigger {
+  border-color: var(--color-border);
+  background: #fffefa;
+  color: var(--color-text);
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.resource-combobox-toggle:focus-visible,
+.application-school-combobox-trigger:focus-visible {
+  border-color: var(--color-brand);
+}
+
+thead th,
+tbody th {
+  background: var(--color-surface-muted);
+  color: var(--color-text-strong);
+}
+
+tbody tr:hover th,
+tbody tr:hover td {
+  background: var(--color-surface-subtle);
+}
+
+@media (max-width: 560px) {
+  .command-page-summary,
+  .dashboard-overview,
+  .command-focus-overview {
+    background: var(--color-surface);
   }
 }

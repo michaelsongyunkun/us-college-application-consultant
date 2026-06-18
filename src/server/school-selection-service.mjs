@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs";
 import { resolveApiKey } from "./api-key.mjs";
+import { AI_QUALITY_VERSIONS, evaluateAiAnswerQuality } from "./ai-quality.mjs";
 import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
 
 const ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "rd", "uc"];
@@ -354,11 +355,24 @@ export function createSchoolSelectionService({ activityPortfolio, root = process
 
       try {
         const validatedSelection = validateSchoolSelectionResult(parseSelectionJson(answer));
+        const serializedRagSources = ragSources.map(serializeRagSource);
         return {
           selection: calibrateSelectionWithFriendliness(validatedSelection, friendlinessIndex),
           selectionVersion: input.strategyMode,
-          ragSources: ragSources.map(serializeRagSource),
+          ragSources: serializedRagSources,
           attempts: attempt,
+          quality: evaluateAiAnswerQuality({
+            answer,
+            sources: serializedRagSources,
+            expectedSourceTypes: ["school-encyclopedia"],
+            metadata: {
+              feature: "school-selection",
+              promptVersion: AI_QUALITY_VERSIONS.schoolSelectionPrompt,
+              model,
+              sourceSetVersion: AI_QUALITY_VERSIONS.schoolSelectionSourceSet,
+              parserVersion: AI_QUALITY_VERSIONS.schoolSelectionParser,
+            },
+          }),
         };
       } catch (error) {
         if (!(error instanceof SchoolSelectionError) || attempt === MAX_SELECTION_ATTEMPTS) {

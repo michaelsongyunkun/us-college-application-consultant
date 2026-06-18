@@ -271,6 +271,53 @@ export function createPlanningService({ authDb, now = () => new Date() }) {
     return [...currentPlans, ...snapshots];
   }
 
+  function exportUserData(user) {
+    const userId = requireUserId(user);
+    const plans = db
+      .prepare(`
+        SELECT id, name, current_draft_json, created_at AS createdAt, updated_at AS updatedAt
+        FROM planning_projects
+        WHERE user_id = ?
+        ORDER BY updated_at DESC, id DESC
+      `)
+      .all(userId)
+      .map((plan) => ({
+        ...serializePlan({
+          id: plan.id,
+          name: plan.name,
+          current_draft_json: plan.current_draft_json,
+          created_at: plan.createdAt,
+          updated_at: plan.updatedAt,
+        }),
+        snapshots: db
+          .prepare(`
+            SELECT id, note, snapshot_json, created_at AS createdAt
+            FROM planning_snapshots
+            WHERE project_id = ? AND user_id = ?
+            ORDER BY created_at DESC, id DESC
+          `)
+          .all(plan.id, userId)
+          .map((snapshot) => {
+            const snapshotData = parseObject(snapshot.snapshot_json);
+            return {
+              id: snapshot.id,
+              note: snapshot.note,
+              createdAt: snapshot.createdAt,
+              profile:
+                snapshotData.profile && typeof snapshotData.profile === "object" && !Array.isArray(snapshotData.profile)
+                  ? snapshotData.profile
+                  : {},
+              draft: normalizeDraft(snapshotData.draft || {}),
+            };
+          }),
+      }));
+
+    return {
+      profile: getProfile(user),
+      plans,
+    };
+  }
+
   function ensureDefaultPlan(userId) {
     const existing = db
       .prepare("SELECT id FROM planning_projects WHERE user_id = ? LIMIT 1")
@@ -307,6 +354,7 @@ export function createPlanningService({ authDb, now = () => new Date() }) {
     deleteSnapshot,
     listActivityImportSources,
     listRagBackups,
+    exportUserData,
   };
 }
 

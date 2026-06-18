@@ -3,6 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
+import { AI_QUALITY_VERSIONS } from "../src/server/ai-quality.mjs";
+import { buildCookieHeader, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-deepseek-plan-"));
 const calls = [];
@@ -63,6 +65,10 @@ try {
   assert.equal(body.parsed.activities.length, 15);
   assert.equal(body.parsed.activities[0].activityName, "AI教育公益研究 1");
   assert.equal(JSON.stringify(body).includes("env-deepseek-secret"), false);
+  assert.equal(body.quality.metadata.feature, "deepseek-plan");
+  assert.equal(body.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.deepseekPlanPrompt);
+  assert.equal(body.quality.metadata.model, "deepseek-v4-flash");
+  assert.equal(body.quality.metadata.parserVersion, AI_QUALITY_VERSIONS.deepseekPlanParser);
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, "https://api.deepseek.com/chat/completions");
@@ -95,6 +101,7 @@ try {
   assert.equal(completedJob.status, "completed");
   assert.equal(completedJob.result.answer, deepSeekAnswer);
   assert.equal(completedJob.result.parsed.activities.length, 15);
+  assert.equal(completedJob.result.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.deepseekPlanPrompt);
 
   const longResponse = await post(
     "/api/deepseek-plan",
@@ -150,7 +157,7 @@ try {
     const retryCookie = retryRegistration.headers.get("set-cookie");
     const retryResponse = await fetch(`${serverUrl(retryServer)}/api/deepseek-plan`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Cookie: retryCookie },
+      headers: jsonHeaders(retryCookie),
       body: JSON.stringify({
         profile: { grade: "10年级", majorDirection: "AI教育" },
         activities: [],
@@ -194,7 +201,7 @@ try {
     const proCookie = proRegistration.headers.get("set-cookie");
     const proResponse = await fetch(`${serverUrl(proOverrideServer)}/api/deepseek-plan`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Cookie: proCookie },
+      headers: jsonHeaders(proCookie),
       body: JSON.stringify({
         profile: { grade: "10年级", majorDirection: "AI教育" },
         activities: [],
@@ -227,7 +234,7 @@ try {
     const requestOnlyCookie = registrationWithoutEnvKey.headers.get("set-cookie");
     const requestKeyResponse = await fetch(`${serverUrl(requestKeyOnlyServer)}/api/deepseek-plan`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Cookie: requestOnlyCookie },
+      headers: jsonHeaders(requestOnlyCookie),
       body: JSON.stringify({
         profile: { grade: "10年级" },
         activities: [],
@@ -247,14 +254,14 @@ try {
 function post(path, payload, cookie = "") {
   return fetch(`${serverUrl()}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) },
+    headers: jsonHeaders(cookie),
     body: JSON.stringify(payload),
   });
 }
 
 function get(path, cookie = "") {
   return fetch(`${serverUrl()}${path}`, {
-    headers: cookie ? { Cookie: cookie } : {},
+    headers: cookie ? { Cookie: buildCookieHeader(cookie) } : {},
   });
 }
 

@@ -7,7 +7,16 @@
     "start": "node server.mjs",
     "test": "node scripts/run-tests.mjs",
     "check": "node scripts/check-syntax.mjs",
-    "verify": "npm run check && npm test"
+    "lint": "node scripts/check-syntax.mjs",
+    "eval:ai": "node scripts/evaluate-ai-quality.mjs",
+    "ci": "npm run verify",
+    "verify": "npm run check && npm test",
+    "db:status": "node scripts/db.mjs status",
+    "db:migrate": "node scripts/db.mjs migrate",
+    "db:rollback": "node scripts/db.mjs rollback",
+    "db:backup": "node scripts/db.mjs backup",
+    "db:restore": "node scripts/db.mjs restore",
+    "db:seed-admin": "node scripts/db.mjs seed-admin"
   },
   "engines": {
     "node": ">=20"

@@ -9,6 +9,7 @@ import {
   expandVisibleResultLimit,
   getVisibleResultPage,
 } from "./visible-results.mjs";
+import { csrfFetch } from "./csrf-token.mjs";
 
 const status = document.querySelector("#majorStatus");
 const categoryTabs = document.querySelector("#majorCategoryTabs");
@@ -62,7 +63,7 @@ function setDeepSeekStatus(message, isError = false) {
 }
 
 function trackMajorUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
-  fetch("/api/analytics/usage-event", {
+  csrfFetch("/api/analytics/usage-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -86,7 +87,7 @@ function trackMajorUsageEvent(eventType, { metrics = {}, details = {} } = {}) {
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await csrfFetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",

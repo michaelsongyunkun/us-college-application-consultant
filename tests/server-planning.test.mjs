@@ -3,9 +3,12 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
+import { createAuthDatabase } from "../src/server/auth-db.mjs";
+import { buildCookieHeader, csrfHeaders, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-server-planning-"));
-const server = createAppServer({ databasePath: join(tempDir, "planning.sqlite") });
+const authDb = createAuthDatabase({ databasePath: join(tempDir, "planning.sqlite") });
+const server = createAppServer({ authDb });
 
 try {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -104,8 +107,28 @@ try {
   const secondCookie = secondRegistration.headers.get("set-cookie");
   const hiddenPlan = await get(`/api/plans/${plans[0].id}`, secondCookie);
   assert.equal(hiddenPlan.status, 404);
+
+  const auditEvents = authDb.db
+    .prepare(
+      `SELECT action, resource_type AS resourceType, resource_id AS resourceId, details_json AS detailsJson
+       FROM audit_events
+       ORDER BY id`,
+    )
+    .all();
+  assert.ok(auditEvents.some(
+    (event) => event.action === "plan.snapshot.restore" && event.resourceId === String(snapshot.id),
+  ));
+  assert.ok(auditEvents.some(
+    (event) => event.action === "plan.snapshot.delete" && event.resourceId === String(snapshot.id),
+  ));
+  assert.ok(auditEvents.some(
+    (event) => event.action === "plan.delete" && event.resourceId === String(extraPlan.id),
+  ));
+  const restoreAudit = auditEvents.find((event) => event.action === "plan.snapshot.restore");
+  assert.equal(JSON.parse(restoreAudit.detailsJson).planId, String(plans[0].id));
 } finally {
   await new Promise((resolve) => server.close(resolve));
+  authDb.close();
   await rm(tempDir, { recursive: true, force: true });
 }
 
@@ -126,15 +149,11 @@ function put(path, payload, cookie) {
 }
 
 function get(path, cookie) {
-  return fetch(`${serverUrl()}${path}`, { headers: { Cookie: cookie } });
+  return fetch(`${serverUrl()}${path}`, { headers: { Cookie: buildCookieHeader(cookie) } });
 }
 
 function remove(path, cookie) {
-  return fetch(`${serverUrl()}${path}`, { method: "DELETE", headers: { Cookie: cookie } });
-}
-
-function jsonHeaders(cookie) {
-  return { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) };
+  return fetch(`${serverUrl()}${path}`, { method: "DELETE", headers: csrfHeaders(cookie) });
 }
 
 function serverUrl() {

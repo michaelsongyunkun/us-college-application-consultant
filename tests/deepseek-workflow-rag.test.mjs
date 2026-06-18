@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createAppServer } from "../server.mjs";
+import { jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-deepseek-workflow-rag-"));
 const calls = [];
@@ -138,13 +139,6 @@ function put(path, payload, cookie = "") {
     headers: jsonHeaders(cookie),
     body: JSON.stringify(payload),
   });
-}
-
-function jsonHeaders(cookie = "") {
-  return {
-    "Content-Type": "application/json",
-    ...(cookie ? { Cookie: cookie } : {}),
-  };
 }
 
 function serverUrl() {

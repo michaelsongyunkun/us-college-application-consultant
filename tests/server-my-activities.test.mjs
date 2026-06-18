@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
+import { buildCookieHeader, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-server-my-activities-"));
 const server = createAppServer({ databasePath: join(tempDir, "my-activities.sqlite") });
@@ -376,11 +377,7 @@ function put(path, payload, cookie) {
 }
 
 function get(path, cookie) {
-  return fetch(`${serverUrl()}${path}`, { headers: { Cookie: cookie } });
-}
-
-function jsonHeaders(cookie) {
-  return { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) };
+  return fetch(`${serverUrl()}${path}`, { headers: { Cookie: buildCookieHeader(cookie) } });
 }
 
 function serverUrl() {
