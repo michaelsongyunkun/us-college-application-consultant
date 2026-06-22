@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>我的世界大学排名</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./data/universities.js" defer></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow" id="datasetEyebrow">QS 2023-2027 · 5年均值</p>
+        <h1>我的世界大学排名</h1>
+      </div>
+      <dl class="data-summary" aria-label="数据概览">
+        <div>
+          <dt>大学</dt>
+          <dd id="summaryUniversityCount">263</dd>
+        </div>
+        <div>
+          <dt>指标</dt>
+          <dd id="summaryIndicatorCount">9</dd>
+        </div>
+        <div>
+          <dt>权重</dt>
+          <dd id="summaryWeightTotal">100%</dd>
+        </div>
+      </dl>
+    </header>
+
+    <nav class="ranker-tabs" aria-label="榜单分页" id="rankerTabs"></nav>
+
+    <main class="app-shell">
+      <section class="weight-panel" aria-labelledby="weightsTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">权重设置</p>
+            <h2 id="weightsTitle">指标占比</h2>
+          </div>
+          <div class="weight-total" id="weightTotalBadge" data-state="valid">合计 100%</div>
+        </div>
+
+        <form id="weightForm" class="weights-grid" novalidate></form>
+        <div id="homeSaveStatus" class="home-save-status" hidden></div>
+
+        <div class="action-bar">
+          <p id="weightStatus" class="status-text" role="status" aria-live="polite">权重有效，可以生成完整排名。</p>
+          <div class="action-buttons">
+            <button type="button" class="secondary-button" id="resetWeightsButton">恢复默认</button>
+            <button type="button" class="primary-button" id="generateRankingButton">生成完整排名</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="result-panel" aria-labelledby="resultTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">排名结果</p>
+            <h2 id="resultTitle">QS完整排名</h2>
+          </div>
+          <div class="result-actions">
+            <button type="button" class="secondary-button" id="saveHomeButton" disabled>更新并保存到我的主页</button>
+            <button type="button" class="secondary-button" id="exportSvgButton" disabled>导出筛选SVG</button>
+          </div>
+        </div>
+
+        <div id="rankingWorkspace" class="ranking-workspace" hidden>
+          <div class="ranking-meta" id="rankingMeta" aria-live="polite"></div>
+
+          <div class="filters" aria-label="筛选和排序">
+            <label class="field-label" for="searchInput">
+              搜索
+              <input id="searchInput" type="search" placeholder="大学、国家、城市" autocomplete="off" />
+            </label>
+            <label class="field-label" for="countryFilter">
+              国家/地区
+              <select id="countryFilter"></select>
+            </label>
+            <label class="field-label" for="regionFilter">
+              区域
+              <select id="regionFilter"></select>
+            </label>
+            <label class="field-label" for="sortSelect">
+              排序
+              <select id="sortSelect">
+                <option value="rank">自定义名次</option>
+                <option value="score">自定义分数</option>
+                <option value="avgRank" id="avgRankSortOption">原榜5年平均名次</option>
+                <option value="official" id="referenceSortOption">原榜基准分</option>
+                <option value="country">国家/地区</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="table-wrap">
+            <table class="ranking-table">
+              <caption>
+                用户权重生成的完整大学排名
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">自定义名次</th>
+                  <th scope="col">大学 / 指标</th>
+                  <th scope="col">国家/地区</th>
+                  <th scope="col">自定义分数</th>
+                  <th scope="col" id="avgRankHeader">原榜5年均名次</th>
+                  <th scope="col" id="referenceScoreHeader">原榜基准分</th>
+                  <th scope="col">链接</th>
+                </tr>
+              </thead>
+              <tbody id="rankingBody"></tbody>
+            </table>
+          </div>
+
+          <div class="pagination-bar" aria-label="结果分页">
+            <div class="pagination-info" id="paginationInfo"></div>
+            <div class="pagination-controls">
+              <label class="page-size-label" for="pageSizeSelect">
+                每页
+                <select id="pageSizeSelect">
+                  <option value="25">25</option>
+                  <option value="50" selected>50</option>
+                  <option value="100">100</option>
+                  <option value="all">全部</option>
+                </select>
+              </label>
+              <button type="button" class="secondary-button compact-button" id="prevPageButton">上一页</button>
+              <button type="button" class="secondary-button compact-button" id="nextPageButton">下一页</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span id="sourceLabel">Source: TopUniversities QS World University Rankings 2023-2027</span>
+      <span id="generatedAt"></span>
+    </footer>
+  </body>
+</html>

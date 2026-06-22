@@ -67,6 +67,8 @@ import {
 } from "./src/server/school-selection-service.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
+const worldRankingRoot = join(root, "world-ranking");
+const worldRankingHostname = "rankings.us-application-consultant.com";
 const envFileStatus = loadEnvFile(join(root, ".env"));
 const promptPath = join(root, "prompts", "us-college-admissions-strategist-agent.md");
 const defaultDatabasePath = join(root, "data", "auth.sqlite");
@@ -113,6 +115,22 @@ function sendJson(response, statusCode, payload) {
 
 function withSecurityHeaders(headers = {}) {
   return { ...SECURITY_HEADERS, ...headers };
+}
+
+function getHeaderValue(headers, name) {
+  const value = headers[name];
+  if (Array.isArray(value)) return value[0] || "";
+  return value || "";
+}
+
+function getRequestHostname(request) {
+  const forwardedHost = getHeaderValue(request.headers, "x-forwarded-host");
+  const hostHeader = forwardedHost || getHeaderValue(request.headers, "host");
+  return hostHeader.split(",")[0].trim().split(":")[0].toLowerCase();
+}
+
+function isWorldRankingHost(request) {
+  return getRequestHostname(request) === worldRankingHostname;
 }
 
 function attachRequestObservability(request, response, { logger, metrics }) {
@@ -397,6 +415,30 @@ export function createAppServer({
       if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/readyz") {
         const readiness = buildReadinessPayload({ authDb });
         sendJson(response, readiness.status === "ready" ? 200 : 503, readiness);
+        return;
+      }
+
+      if (isWorldRankingHost(request)) {
+        if (request.method !== "GET" && request.method !== "HEAD") {
+          response.writeHead(405, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
+          response.end("Method Not Allowed");
+          return;
+        }
+
+        const requestPath = normalizeStaticRequestPath(url.pathname);
+        const filePath = resolveStaticFilePath({ root: worldRankingRoot, requestPath });
+        if (!filePath) {
+          response.writeHead(404, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
+          response.end("Not Found");
+          return;
+        }
+
+        response.writeHead(200, withSecurityHeaders(buildStaticResponseHeaders({ filePath, requestPath })));
+        if (request.method === "HEAD") {
+          response.end();
+          return;
+        }
+        createReadStream(filePath).pipe(response);
         return;
       }
 
