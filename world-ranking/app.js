@@ -141,6 +141,7 @@
       const saved = state.savedRankings[dataset.id];
       if (!saved) continue;
 
+      const savedTotal = saved.rows.length;
       for (const row of saved.rows) {
         const key = normalizeUniversityKey(row.university);
         if (!byUniversity.has(key)) {
@@ -159,12 +160,15 @@
         }
 
         const record = byUniversity.get(key);
-        record.indicatorScores[dataset.id] = row.customScore;
-        record.sourceRanks[dataset.shortName] = `#${row.customRank} / ${formatNumber(row.customScore)}`;
+        const rankIndex = Number.isFinite(row.rankIndex) ? row.rankIndex : rankToIndex(row.customRank, savedTotal);
+        record.indicatorScores[dataset.id] = rankIndex;
+        record.sourceRanks[dataset.shortName] =
+          `#${row.customRank} / ${formatNumber(row.customScore)} / 指数 ${formatNumber(rankIndex)}`;
         record.savedRecords[dataset.id] = {
           shortName: dataset.shortName,
           customRank: row.customRank,
           customScore: row.customScore,
+          rankIndex,
           savedAt: saved.savedAt,
         };
       }
@@ -236,6 +240,13 @@
   function formatWeight(value) {
     if (!Number.isFinite(value)) return "0";
     return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+  }
+
+  function rankToIndex(rank, total) {
+    if (!Number.isFinite(rank) || !Number.isFinite(total) || total <= 0) return 0;
+    if (total <= 1) return 100;
+    const index = 100 * (1 - (rank - 1) / (total - 1));
+    return Math.round(Math.max(0, Math.min(100, index)) * 100) / 100;
   }
 
   function weightsKey(weights) {
@@ -608,6 +619,7 @@
       rows: entry.ranking.map((row) => ({
         customRank: row.customRank,
         customScore: row.customScore,
+        rankIndex: rankToIndex(row.customRank, entry.ranking.length),
         university: {
           university: row.university.university,
           officialChineseName: row.university.officialChineseName,
