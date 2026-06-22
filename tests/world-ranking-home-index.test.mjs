@@ -48,6 +48,30 @@ function rankedRows(dataset) {
     }));
 }
 
+function homeCompositeScore(savedRankings, datasetIds, weights, universityName) {
+  const byUniversity = new Map();
+
+  for (const datasetId of datasetIds) {
+    const saved = savedRankings[datasetId];
+    const savedTotal = saved.rows.length;
+    for (const row of saved.rows) {
+      if (!byUniversity.has(row.university.university)) {
+        byUniversity.set(row.university.university, { indicatorScores: {} });
+      }
+
+      const record = byUniversity.get(row.university.university);
+      record.indicatorScores[datasetId] = Number.isFinite(row.rankIndex)
+        ? row.rankIndex
+        : rankToIndex(row.customRank, savedTotal);
+    }
+  }
+
+  const record = byUniversity.get(universityName);
+  return datasetIds.reduce((sum, datasetId, index) => {
+    return sum + record.indicatorScores[datasetId] * (weights[index] / 100);
+  }, 0);
+}
+
 for (const dataset of data.datasets) {
   const rows = rankedRows(dataset);
   assert.equal(rows[0].rankIndex, 100, `${dataset.id}: top saved row should have 100 rank index`);
@@ -65,3 +89,28 @@ for (const dataset of data.datasets) {
     `${dataset.id}: home index should not reuse the raw custom score`,
   );
 }
+
+const sampleUniversity = { university: "Sample University" };
+const syntheticSavedRankings = {
+  qs: {
+    rows: [
+      { university: { university: "QS Leader" }, customRank: 1, customScore: 98 },
+      { university: sampleUniversity, customRank: 2, customScore: 56.83 },
+      { university: { university: "QS Trailer" }, customRank: 3, customScore: 40 },
+    ],
+  },
+  arwu: {
+    rows: [
+      { university: { university: "ARWU Leader" }, customRank: 1, customScore: 60 },
+      { university: sampleUniversity, customRank: 2, customScore: 22.87 },
+      { university: { university: "ARWU Trailer" }, customRank: 3, customScore: 5 },
+    ],
+  },
+};
+
+assert.equal(
+  homeCompositeScore(syntheticSavedRankings, ["qs", "arwu"], [50, 50], sampleUniversity.university),
+  50,
+  "home composite score should weight per-list rank indexes instead of raw custom score distributions",
+);
+assert.equal(rankToIndex(1, 1), 100, "a one-row saved ranking should normalize to a 100 index");
