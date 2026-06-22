@@ -7,7 +7,7 @@ const script = readFileSync("src/client/major-encyclopedia.js", "utf8");
 const styles = readFileSync("styles.css", "utf8");
 const commandNavigation = indexHtml.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";
 
-assert.match(pageHtml, /class="[^"]*brand-page-header[^"]*"/, "Major page should use the shared brand header.");
+assert.doesNotMatch(pageHtml, /class="[^"]*brand-page-header[^"]*"/, "Major page should not render the removed top brand header.");
 assert.ok(pageHtml.includes('href="./index.html"'), "Major page must retain access to the planning workspace.");
 assert.ok(pageHtml.includes('aria-current="page">专业百科</a>'), "Major page should mark 专业百科 as active.");
 assert.ok(

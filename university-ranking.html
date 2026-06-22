@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>大学排名</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css?v=20260622-ranking-polish" />
+  </head>
+  <body>
+    <main class="app-shell command-shell university-ranking-shell">
+      <aside class="command-sidebar" aria-label="Application Planning Center">
+        <a class="command-sidebar-brand" href="./index.html" data-safe-nav>
+          <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+          <span><strong>US College Compass</strong><small>Application Planning Center</small></span>
+        </a>
+        <nav class="command-sidebar-nav" aria-label="登录后功能导航">
+            <div class="command-nav-section" data-nav-section="core">
+              <p class="command-nav-section-label">核心工作流</p>
+              <a href="./index.html" data-safe-nav>申请规划中心</a>
+              <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
+              <a href="./planning-tracker.html" data-safe-nav>计划与进度</a>
+              <a href="./school-selection.html" data-safe-nav>美本选校系统</a>
+              <a href="./ask-deepseek.html" data-safe-nav>问DeepSeek</a>
+            </div>
+            <div class="command-nav-section" data-nav-section="reference">
+              <p class="command-nav-section-label">资料检索</p>
+              <a href="./resource-library.html" data-safe-nav>资源库</a>
+              <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+              <a href="./university-ranking.html" data-safe-nav aria-current="page">大学排名</a>
+              <a href="./major-encyclopedia.html" data-safe-nav>专业百科</a>
+            </div>
+            <div class="command-nav-section" data-nav-section="academic">
+              <p class="command-nav-section-label">学术工具</p>
+              <a href="./course-helper.html" data-safe-nav>选课辅助器</a>
+              <a href="./gpa-calculator.html" data-safe-nav>GPA / AP 工具</a>
+            </div>
+            <div class="command-nav-section" data-nav-section="support">
+              <p class="command-nav-section-label">支持与边界</p>
+              <a href="./disclaimer.html" data-safe-nav>免责声明</a>
+              <a href="./feedback.html" data-safe-nav>反馈与支持</a>
+              <a href="./contact.html" data-safe-nav>联系我们</a>
+              <a href="./admin.html" data-safe-nav class="is-hidden" data-admin-dashboard-link aria-hidden="true">数据看板</a>
+            </div>
+        </nav>
+        <div class="command-sidebar-note">
+          <strong>排名使用边界</strong>
+          <span>自定义榜单用于比较优先级，不替代院校官网、项目要求或顾问判断。</span>
+        </div>
+      </aside>
+
+      <div class="command-main">
+
+      <section class="command-page-summary ranking-summary" aria-label="大学排名数据概览">
+        <div>
+          <p class="eyebrow">Custom Ranking</p>
+          <h2>按你的权重生成世界大学榜单</h2>
+          <p>把 QS、THE、ARWU 和 U.S. News 的指标拆开重算，保留每个榜单的原始参考名次和分项表现。</p>
+        </div>
+        <div class="command-summary-metrics">
+          <span><strong id="summaryUniversityCount">--</strong>当前院校</span>
+          <span><strong id="summaryIndicatorCount">--</strong>当前指标</span>
+          <span><strong id="summaryDatasetCount">--</strong>榜单来源</span>
+        </div>
+      </section>
+
+      <section class="panel ranking-board-panel" aria-labelledby="ranking-controls-title">
+        <div class="section-heading table-heading ranking-board-heading">
+          <div>
+            <h2 id="ranking-controls-title">榜单与权重</h2>
+            <p>权重合计为 100% 后可生成完整排名。</p>
+          </div>
+          <span id="rankingWeightTotal" class="status ranking-weight-total" data-state="valid">合计 100%</span>
+        </div>
+
+        <div id="rankingDatasetTabs" class="resource-tabs ranking-tabs" role="tablist" aria-label="榜单来源"></div>
+
+        <div class="ranking-workbench">
+          <form id="rankingWeightForm" class="ranking-weight-form" novalidate></form>
+          <div class="ranking-control-footer">
+            <p id="rankingWeightStatus" class="status" role="status" aria-live="polite">等待数据加载</p>
+            <div class="inline-actions">
+              <button id="resetRankingWeightsButton" class="secondary" type="button">恢复默认</button>
+              <button id="generateRankingButton" type="button">生成完整排名</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="rankingHomeSaveStatus" class="ranking-save-status" hidden></div>
+      </section>
+
+      <section class="panel ranking-results-panel" aria-labelledby="rankingResultTitle">
+        <div class="section-heading table-heading ranking-result-heading">
+          <div>
+            <h2 id="rankingResultTitle">完整排名</h2>
+            <p id="rankingMeta">先生成排名后查看结果。</p>
+          </div>
+          <div class="inline-actions">
+            <button id="saveRankingHomeButton" class="secondary" type="button" disabled>保存到我的主页</button>
+            <button id="exportRankingSvgButton" class="secondary" type="button" disabled>导出筛选 SVG</button>
+          </div>
+        </div>
+
+        <div id="rankingWorkspace" class="ranking-result-workspace" hidden>
+          <div class="ranking-filter-grid" aria-label="排名筛选和排序">
+            <label>
+              <span>搜索</span>
+              <input id="rankingSearchInput" type="search" placeholder="大学、国家、城市" autocomplete="off" />
+            </label>
+            <label>
+              <span>国家/地区</span>
+              <select id="rankingCountryFilter"></select>
+            </label>
+            <label>
+              <span>区域</span>
+              <select id="rankingRegionFilter"></select>
+            </label>
+            <label>
+              <span>排序</span>
+              <select id="rankingSortSelect">
+                <option value="rank">自定义名次</option>
+                <option value="score">自定义分数</option>
+                <option value="avgRank" id="avgRankSortOption">原榜平均名次</option>
+                <option value="official" id="referenceSortOption">原榜基准分</option>
+                <option value="country">国家/地区</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="table-wrap ranking-table-wrap">
+            <table class="ranking-table">
+              <caption>用户权重生成的大学排名</caption>
+              <thead>
+                <tr>
+                  <th scope="col">自定义名次</th>
+                  <th scope="col">大学 / 指标</th>
+                  <th scope="col">国家/地区</th>
+                  <th scope="col">自定义分数</th>
+                  <th scope="col" id="avgRankHeader">原榜平均名次</th>
+                  <th scope="col" id="referenceScoreHeader">原榜基准分</th>
+                  <th scope="col">来源</th>
+                </tr>
+              </thead>
+              <tbody id="rankingTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="ranking-pagination" aria-label="排名分页">
+            <div id="rankingPaginationInfo" class="resource-count"></div>
+            <div class="ranking-pagination-controls">
+              <label>
+                <span>每页</span>
+                <select id="rankingPageSizeSelect">
+                  <option value="25">25</option>
+                  <option value="50" selected>50</option>
+                  <option value="100">100</option>
+                  <option value="all">全部</option>
+                </select>
+              </label>
+              <button id="rankingPrevPageButton" class="secondary" type="button">上一页</button>
+              <button id="rankingNextPageButton" class="secondary" type="button">下一页</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+      </div>
+    </main>
+    <script src="./data/university-ranking-data.js?v=20260622-university-ranking"></script>
+    <script type="module" src="./src/client/admin-nav.js?v=20260602-mobile-drawer"></script>
+    <script type="module" src="./src/client/safe-navigation.mjs?v=20260602-mobile-drawer"></script>
+    <script type="module" src="./src/client/university-ranking.js?v=20260622-ranking-remove-header"></script>
+  </body>
+</html>

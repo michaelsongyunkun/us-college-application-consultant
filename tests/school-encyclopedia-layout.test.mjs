@@ -6,7 +6,7 @@ const pageHtml = readFileSync("school-encyclopedia.html", "utf8");
 const script = readFileSync("src/client/school-encyclopedia.js", "utf8");
 const commandNavigation = indexHtml.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";
 
-assert.match(pageHtml, /class="[^"]*brand-page-header[^"]*"/, "School page should use the shared brand header.");
+assert.doesNotMatch(pageHtml, /class="[^"]*brand-page-header[^"]*"/, "School page should not render the removed top brand header.");
 assert.ok(pageHtml.includes('href="./index.html"'), "School page must retain access to the planning workspace.");
 assert.ok(
   commandNavigation.indexOf("resource-library.html") < commandNavigation.indexOf("school-encyclopedia.html")

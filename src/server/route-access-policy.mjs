@@ -7,6 +7,7 @@ export const protectedUserPagePaths = Object.freeze([
   "/ask-deepseek.html",
   "/resource-library.html",
   "/school-encyclopedia.html",
+  "/university-ranking.html",
   "/major-encyclopedia.html",
 ]);
 

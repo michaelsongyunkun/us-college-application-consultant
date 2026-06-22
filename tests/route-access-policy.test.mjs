@@ -24,6 +24,7 @@ for (const pagePath of [
   "/ask-deepseek.html",
   "/resource-library.html",
   "/school-encyclopedia.html",
+  "/university-ranking.html",
   "/major-encyclopedia.html",
 ]) {
   assert.ok(protectedUserPagePaths.includes(pagePath), `${pagePath} should stay in the protected page policy.`);

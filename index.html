@@ -254,6 +254,7 @@
               <p class="command-nav-section-label">资料检索</p>
               <a href="./resource-library.html" data-safe-nav>资源库</a>
               <a href="./school-encyclopedia.html" data-safe-nav>院校百科</a>
+              <a href="./university-ranking.html" data-safe-nav>大学排名</a>
               <a href="./major-encyclopedia.html" data-safe-nav>专业百科</a>
             </div>
             <div class="command-nav-section" data-nav-section="academic">
@@ -276,25 +277,12 @@
       </aside>
 
       <div class="command-main">
-      <header class="topbar brand-page-header logged-in-header">
-        <div class="brand-page-identity logged-in-identity">
-          <a class="brand-mark" href="./index.html" data-safe-nav>
-            <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="44" height="44" alt="" aria-hidden="true" />
-            <span class="brand-mark-text"><span class="brand-prefix">US</span> College Compass</span>
-          </a>
-          <p class="eyebrow">Admissions Planning Workspace</p>
-          <h1>申请规划中心</h1>
-        </div>
-
-        <div class="logged-in-nav-area">
-          <div class="account-actions" aria-label="账号操作">
-            <span id="currentUserBadge" class="user-badge"></span>
-            <form id="logoutForm" action="/api/auth/logout" method="post">
-              <button id="logoutButton" class="secondary" type="submit">退出</button>
-            </form>
-          </div>
-        </div>
-      </header>
+      <div class="dashboard-account-actions account-actions" aria-label="账号操作">
+        <span id="currentUserBadge" class="user-badge"></span>
+        <form id="logoutForm" action="/api/auth/logout" method="post">
+          <button id="logoutButton" class="secondary" type="submit">退出</button>
+        </form>
+      </div>
 
       <section id="dashboardOverview" class="command-page-summary dashboard-overview command-focus-overview" aria-label="登录后任务驾驶舱">
         <div id="commandFocusBar" class="dashboard-command-bar" aria-label="今日优先行动">

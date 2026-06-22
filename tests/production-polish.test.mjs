@@ -120,6 +120,7 @@ try {
     "/school-selection.html",
     "/resource-library.html",
     "/school-encyclopedia.html",
+    "/university-ranking.html",
     "/major-encyclopedia.html",
   ]) {
     const response = await fetch(`${baseUrl}${protectedPath}`, { redirect: "manual" });
@@ -136,6 +137,7 @@ try {
     "/data/schools.md",
     "/data/international-schools.md",
     "/data/other-region-schools.md",
+    "/data/university-ranking-data.js",
     "/data/majors.md",
   ]) {
     const response = await fetch(`${baseUrl}${protectedPath}`);

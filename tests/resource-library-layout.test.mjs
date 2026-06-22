@@ -7,7 +7,7 @@ const styles = readFileSync("styles.css", "utf8");
 const filterForm = html.match(/<form id="resourceEligibilityForm"[\s\S]*?<\/form>/)?.[0] || "";
 const toolbar = html.match(/<div class="resource-toolbar">[\s\S]*?<\/div>\s*<\/div>/)?.[0] || "";
 
-assert.match(html, /class="[^"]*brand-page-header[^"]*"/, "Resource page should use the shared brand header.");
+assert.doesNotMatch(html, /class="[^"]*brand-page-header[^"]*"/, "Resource page should not render the removed top brand header.");
 assert.ok(html.includes('href="./index.html"'), "Resource page must retain access to the planning workspace.");
 assert.ok(filterForm.includes('id="resourceSearch"'), "搜索输入框应位于我的可参与条件区域中。");
 assert.ok(filterForm.includes('id="resourceSearchField"'), "资源库应提供跨标签通用搜索框。");

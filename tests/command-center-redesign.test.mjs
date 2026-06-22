@@ -30,7 +30,7 @@ const authShell = indexHtml.match(/<section id="authShell"[\s\S]*?<\/section>\s*
 assert.ok(authShell.includes("landing-shell"), "Public landing shell should remain the public landing design.");
 assert.ok(!authShell.includes("command-sidebar"), "Public landing shell should not receive the logged-in command sidebar.");
 assert.ok(indexHtml.includes('<main id="appShell" class="app-shell command-shell is-hidden">'));
-assert.ok(indexHtml.includes("<h1>申请规划中心</h1>"), "Logged-in home title should be 申请规划中心.");
+assert.ok(indexHtml.includes('href="./index.html" data-safe-nav aria-current="page"'), "Logged-in home should mark the planning center nav item as current.");
 assert.ok(!indexHtml.includes("美本申请规划 Agent"), "Logged-in home should not use the old Agent title.");
 assert.ok(!indexHtml.includes("Automation Status"), "Logged-in home should not show the removed automation status board.");
 assert.ok(!indexHtml.includes('class="command-center-hero"'), "Logged-in home should not render the removed automation status board.");
@@ -108,6 +108,7 @@ for (const [file, activeLabel] of pages) {
   assert.match(html, /<main[^>]*class="[^"]*\bapp-shell\b[^"]*\bcommand-shell\b/, `${file} should use command shell layout.`);
   assert.ok(html.includes('class="command-sidebar"'), `${file} should include the command sidebar.`);
   assert.ok(html.includes('class="command-main"'), `${file} should wrap page content in command-main.`);
+  assert.ok(!html.includes("brand-page-header"), `${file} should not render the removed top brand header.`);
   assert.ok(html.includes("./assets/logo-mark.svg"), `${file} should preserve the current logo mark.`);
   assert.match(
     html,
@@ -160,9 +161,8 @@ for (const [file, activeLabel] of pages) {
   );
 }
 
-const loggedInHeader = indexHtml.match(/<header class="topbar brand-page-header logged-in-header"[\s\S]*?<\/header>/)?.[0] || "";
-assert.ok(!loggedInHeader.includes("title-link-group"), "Logged-in home header should not repeat navigation buttons.");
-assert.ok(!loggedInHeader.includes("GPA计算器"), "Logged-in home header should not show utility navigation buttons.");
+assert.ok(indexHtml.includes('class="dashboard-account-actions account-actions"'), "Logged-in home should keep account actions outside the removed top brand header.");
+assert.ok(indexHtml.includes('id="logoutButton"'), "Logged-in home should retain logout after removing the top brand header.");
 
 const adminNavScript = readFileSync("src/client/admin-nav.js", "utf8");
 assert.match(adminNavScript, /\/api\/auth\/me/, "Admin nav script should check the authenticated user.");
