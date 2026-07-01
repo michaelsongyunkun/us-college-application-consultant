@@ -38,6 +38,7 @@ assert.ok(script.includes("A-Level / AL"), "英港澳加详情应展示 A-Level 
 assert.ok(script.includes("AP / 美高"), "英港澳加详情应展示 AP / 美高要求。");
 assert.ok(script.includes("<dt>IB</dt>"), "英港澳加详情应展示 IB 要求。");
 assert.ok(script.includes("<dt>标化政策</dt>"), "美国院校详情应展示本科申请 SAT/ACT 标化政策。");
+assert.ok(script.includes("<dt>27Fall申请轮次</dt>"), "美国院校详情应展示 27Fall 申请轮次。");
 assert.ok(script.includes("<dt>地理位置</dt>"), "院校详情应展示地理位置字段。");
 assert.ok(script.includes("安全评分"), "美国院校详情应展示安全评分字段。");
 assert.ok(script.includes("中国学生录取友好度"), "美国院校详情应展示中国学生录取友好度字段。");

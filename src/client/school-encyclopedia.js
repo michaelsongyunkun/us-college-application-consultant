@@ -1,4 +1,4 @@
-import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260608-school-friendliness";
+import { filterSchools, parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs?v=20260701-fall2027-rounds";
 import {
   DEFAULT_VISIBLE_RESULT_LIMIT,
   expandVisibleResultLimit,
@@ -127,6 +127,7 @@ function renderDomesticDetails(school) {
     ${chinaApplicantFriendlinessDetail}
     <div><dt>申请与文书</dt><dd>${escapeHtml(displayValue(school.applicationAndEssays))}</dd></div>
     <div><dt>标化政策</dt><dd>${escapeHtml(displayValue(school.standardizedTesting))}</dd></div>
+    <div><dt>27Fall申请轮次</dt><dd>${escapeHtml(displayValue(school.fall2027ApplicationRounds))}</dd></div>
     <div><dt>学校特色</dt><dd>${escapeHtml(displayValue(school.schoolFeatures))}</dd></div>
     <div><dt>录取偏好</dt><dd>${escapeHtml(displayValue(school.admissionPreferences))}</dd></div>
     <div><dt>推荐信要求</dt><dd>${escapeHtml(displayValue(school.recommendationRequirements))}</dd></div>`;

@@ -41,8 +41,11 @@ assert.deepEqual(schools[0], {
     "1 升学顾问 + 2 任课老师（建议 1 STEM + 1 人文）；可再加 1 选交 Other Recommender。",
   standardizedTesting:
     "Test-optional：Fall 2026 / Fall 2027 入学仍可不提交 SAT/ACT；Fall 2028 起恢复 SAT/ACT 必交。若提交，需由考试机构官方送分；AP/IB 可自报作补充。",
+  fall2027ApplicationRounds:
+    "开放：2026-08-01；EA/REA：November 1, 2026；RD：January 1, 2027；提交前以申请年度官网/Common App/UC portal核验。",
 });
 assert.equal(schools.filter((school) => school.chinaApplicantFriendliness).length, 112);
+assert.equal(schools.filter((school) => school.fall2027ApplicationRounds).length, 120);
 assert.equal(filterSchools(schools, { category: "university", query: "Maker" })[0].name, "麻省理工 MIT");
 assert.equal(
   filterSchools(schools, { category: "university", query: "顶尖校国际池极拥挤" })[0].name,
@@ -52,6 +55,10 @@ assert.equal(filterSchools(schools, { category: "liberal-arts", query: "Williams
 assert.equal(
   filterSchools(schools, { category: "university", query: "Fall 2028 起恢复" })[0].name,
   "普林斯顿大学 Princeton",
+);
+assert.equal(
+  filterSchools(schools, { category: "university", query: "January 2, 2027" })[0].name,
+  "耶鲁 Yale",
 );
 assert.match(
   filterSchools(schools, { category: "university", query: "School of Computer Science" })[0].standardizedTesting,
