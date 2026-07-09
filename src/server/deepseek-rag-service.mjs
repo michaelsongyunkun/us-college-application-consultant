@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { Document } from "@langchain/core/documents";
 import { resolveApiKey } from "./api-key.mjs";
 import {
   AI_QUALITY_VERSIONS,
@@ -8,6 +9,14 @@ import {
   getRagPromptVersion,
 } from "./ai-quality.mjs";
 import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
+import {
+  RAG_ANSWER_GRAPH_VERSION,
+  createRagAnswerGraph,
+} from "./langgraph-rag-workflow.mjs";
+import {
+  LangChainLlmError,
+  createLangChainDeepSeekClient,
+} from "./langchain-llm-client.mjs";
 import { monotonicNowMs } from "./observability.mjs";
 
 const MAX_QUESTION_LENGTH = 1200;
@@ -126,14 +135,29 @@ export class DeepSeekRagError extends Error {
   }
 }
 
-export function createDeepSeekRagService({ root, planning, activityPortfolio, metrics = null }) {
+export function createDeepSeekRagService({
+  root,
+  planning,
+  activityPortfolio,
+  llmClient = createLangChainDeepSeekClient(),
+  metrics = null,
+  retriever = createRagRetriever({ root, planning, activityPortfolio, metrics }),
+  ragAnswerGraph = null,
+}) {
+  const answerGraph = ragAnswerGraph || createRagAnswerGraph({
+    retrieveSources: ({ user, question, historySummary, assistantProfile }) =>
+      retriever.retrieve({ user, question, historySummary, assistantProfile }),
+    draftAnswer: (state) => draftDeepSeekRagAnswer({ ...state, llmClient, metrics }),
+    evaluateQuality: evaluateRagGraphQuality,
+    metrics,
+  });
+
   async function answerQuestion({
     user,
     question,
     historySummary = "",
     assistantProfile = "",
     env = process.env,
-    deepSeekFetch = fetch,
   }) {
     const normalizedQuestion = normalizeQuestion(question);
     const normalizedHistorySummary = normalizeHistorySummary(historySummary);
@@ -144,6 +168,144 @@ export function createDeepSeekRagService({ root, planning, activityPortfolio, me
     if (!apiKey) {
       throw new DeepSeekRagError("DeepSeek API 尚未配置。请在服务端配置 DEEPSEEK_API_KEY。", 400);
     }
+
+    const model = normalizeDeepSeekModel(env.DEEPSEEK_RAG_MODEL || env.DEEPSEEK_MODEL);
+    return answerGraph.invoke({
+      user,
+      question: normalizedQuestion,
+      historySummary: normalizedHistorySummary,
+      assistantProfile,
+      env,
+      model,
+    });
+  }
+
+  return {
+    answerQuestion,
+  };
+}
+
+async function draftDeepSeekRagAnswer({
+  question,
+  historySummary = "",
+  assistantProfile = "",
+  retrievalResult = {},
+  model,
+  env = process.env,
+  llmClient,
+  metrics = null,
+}) {
+  const retrieval = retrievalResult.retrieval || {};
+  const intentProfile = {
+    intent: retrieval.intent,
+    reason: retrieval.intentReason,
+    sourceWeights: retrieval.sourceWeights,
+  };
+
+  const llmResult = await invokeRagLlm({
+    llmClient,
+    metrics,
+    env,
+    model,
+    temperature: 0.25,
+    messages: [
+      { role: "system", content: selectSystemPrompt(assistantProfile) },
+      {
+        role: "user",
+        content: buildUserMessage(
+          question,
+          retrievalResult.context,
+          historySummary,
+          retrievalResult.missingFields || [],
+          intentProfile,
+        ),
+      },
+    ],
+  });
+
+  const answer = String(llmResult?.content || "").trim();
+  if (!answer) throw new DeepSeekRagError("DeepSeek 未返回可解析的问答内容。", 502);
+  return answer;
+}
+
+async function invokeRagLlm({
+  llmClient,
+  metrics,
+  env,
+  model,
+  temperature,
+  messages,
+  signal,
+}) {
+  const startedAt = monotonicNowMs();
+  try {
+    const result = await llmClient.invoke({
+      env,
+      model,
+      temperature,
+      messages,
+      signal,
+    });
+    metrics?.recordAiCall?.({
+      feature: "deepseek-rag",
+      ok: true,
+      statusCode: 200,
+      durationMs: monotonicNowMs() - startedAt,
+    });
+    return result;
+  } catch (error) {
+    const mappedError = mapRagLlmError(error);
+    metrics?.recordAiCall?.({
+      feature: "deepseek-rag",
+      ok: false,
+      statusCode: mappedError.statusCode || 0,
+      durationMs: monotonicNowMs() - startedAt,
+    });
+    throw mappedError;
+  }
+}
+
+function mapRagLlmError(error) {
+  if (error instanceof DeepSeekRagError) return error;
+  if (error instanceof LangChainLlmError) {
+    return new DeepSeekRagError(error.message, error.statusCode || 502);
+  }
+  return new DeepSeekRagError(error?.message || "DeepSeek RAG 调用失败。", error?.statusCode || 502);
+}
+
+function evaluateRagGraphQuality({
+  answer,
+  assistantProfile = "",
+  retrievalResult = {},
+  model,
+  workflowVersion = RAG_ANSWER_GRAPH_VERSION,
+}) {
+  const retrieval = retrievalResult.retrieval || {};
+  return evaluateAiAnswerQuality({
+    answer,
+    sources: retrievalResult.sources || [],
+    expectedSourceTypes: getExpectedRagSourceTypes(retrieval.intent),
+    metadata: {
+      feature: "deepseek-rag",
+      promptVersion: getRagPromptVersion(assistantProfile),
+      model,
+      sourceSetVersion: AI_QUALITY_VERSIONS.ragSourceSet,
+      parserVersion: AI_QUALITY_VERSIONS.ragParser,
+      extraMetadata: {
+        workflowVersion,
+      },
+    },
+  });
+}
+
+export function createRagRetriever({ root, planning, activityPortfolio, metrics = null }) {
+  async function retrieve({
+    user,
+    question,
+    historySummary = "",
+    assistantProfile = "",
+  } = {}) {
+    const normalizedQuestion = normalizeQuestion(question);
 
     const profile = planning.getProfile(user);
     const portfolio = activityPortfolio.getPortfolio(user);
@@ -161,80 +323,30 @@ export function createDeepSeekRagService({ root, planning, activityPortfolio, me
     const weightedSelected = selectRelevantDocuments(documents, normalizedQuestion, intentProfile);
     const context = buildContext(weightedSelected);
     const retrievalMs = Math.round(monotonicNowMs() - retrievalStartedAt);
+    const retrieval = {
+      totalDocuments: documents.length,
+      selectedDocuments: weightedSelected.length,
+      intent: intentProfile.intent,
+      intentReason: intentProfile.reason,
+      sourceWeights: intentProfile.sourceWeights,
+      retrievalMs,
+    };
     metrics?.recordRagRetrieval?.({
       intent: intentProfile.intent,
       durationMs: retrievalMs,
       selectedDocuments: weightedSelected.length,
       totalDocuments: documents.length,
     });
-    const model = normalizeDeepSeekModel(env.DEEPSEEK_RAG_MODEL || env.DEEPSEEK_MODEL);
 
-    const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: selectSystemPrompt(assistantProfile) },
-          {
-            role: "user",
-            content: buildUserMessage(
-              normalizedQuestion,
-              context,
-              normalizedHistorySummary,
-              missingFields,
-              intentProfile,
-            ),
-          },
-        ],
-        thinking: { type: "disabled" },
-        stream: false,
-        temperature: 0.25,
-      }),
-    });
-
-    const data = await apiResponse.json().catch(() => ({}));
-    if (!apiResponse.ok) {
-      throw new DeepSeekRagError(data.error?.message || "DeepSeek RAG 调用失败。", apiResponse.status);
-    }
-
-    const answer = extractDeepSeekResponseText(data);
-    if (!answer) throw new DeepSeekRagError("DeepSeek 未返回可解析的问答内容。", 502);
-
-    const serializedSources = weightedSelected.map(serializeSource);
     return {
-      answer,
-      sources: serializedSources,
+      context,
+      sources: weightedSelected.map(serializeRagSource),
+      retrieval,
       missingFields,
-      retrieval: {
-        totalDocuments: documents.length,
-        selectedDocuments: weightedSelected.length,
-        intent: intentProfile.intent,
-        intentReason: intentProfile.reason,
-        sourceWeights: intentProfile.sourceWeights,
-        retrievalMs,
-      },
-      quality: evaluateAiAnswerQuality({
-        answer,
-        sources: serializedSources,
-        expectedSourceTypes: getExpectedRagSourceTypes(intentProfile.intent),
-        metadata: {
-          feature: "deepseek-rag",
-          promptVersion: getRagPromptVersion(assistantProfile),
-          model,
-          sourceSetVersion: AI_QUALITY_VERSIONS.ragSourceSet,
-          parserVersion: AI_QUALITY_VERSIONS.ragParser,
-        },
-      }),
     };
   }
 
-  return {
-    answerQuestion,
-  };
+  return { retrieve };
 }
 
 async function buildRagDocuments({
@@ -250,7 +362,21 @@ async function buildRagDocuments({
     ...(await buildMarkdownDocuments(root, RESOURCE_LIBRARY_FILES, "resource-library")),
     ...(await buildMarkdownDocuments(root, SCHOOL_ENCYCLOPEDIA_FILES, "school-encyclopedia")),
     ...(await buildMarkdownDocuments(root, MAJOR_ENCYCLOPEDIA_FILES, "major-encyclopedia")),
-  ].filter((document) => document.text.trim());
+  ]
+    .filter((document) => document.text.trim())
+    .map(toLangChainRagDocument);
+}
+
+export function toLangChainRagDocument(source = {}) {
+  const metadata = {
+    id: String(source.id || source.metadata?.id || "").trim(),
+    type: String(source.type || source.metadata?.type || "").trim(),
+    title: String(source.title || source.metadata?.title || "").trim(),
+  };
+  return new Document({
+    pageContent: getRagDocumentText(source),
+    metadata,
+  });
 }
 
 function buildStudentDocuments({ user, planning, profile, portfolio }) {
@@ -490,7 +616,7 @@ async function buildMarkdownDocuments(root, files, type) {
   return documents;
 }
 
-function splitMarkdownIntoChunks(text) {
+export function splitMarkdownIntoChunks(text) {
   const sections = text
     .replace(/\r\n/g, "\n")
     .split(/\n(?=#{2,4}\s+)/)
@@ -594,18 +720,18 @@ function selectRelevantDocuments(documents, question, intentProfile = analyzeQue
 
   const selected = new Map();
   for (const document of ensureBaselineContext(documents, scored, intentProfile)) {
-    selected.set(document.id, document);
+    selected.set(getRagDocumentId(document), document);
   }
   for (const document of scored) {
     if (selected.size >= MAX_SELECTED_CHUNKS) break;
-    selected.set(document.id, document);
+    selected.set(getRagDocumentId(document), document);
   }
 
   const selectedDocuments = [...selected.values()];
   if (isPortfolioLedQuestion(question)) {
     return selectedDocuments
       .sort((left, right) =>
-        portfolioLedSourcePriority(left.type) - portfolioLedSourcePriority(right.type)
+        portfolioLedSourcePriority(getRagDocumentType(left)) - portfolioLedSourcePriority(getRagDocumentType(right))
         || right.score - left.score
         || left.index - right.index)
       .slice(0, MAX_SELECTED_CHUNKS);
@@ -614,51 +740,54 @@ function selectRelevantDocuments(documents, question, intentProfile = analyzeQue
   return selectedDocuments
     .sort((left, right) =>
       right.score - left.score
-      || sourcePriority(left.type, intentProfile) - sourcePriority(right.type, intentProfile))
+      || sourcePriority(getRagDocumentType(left), intentProfile) - sourcePriority(getRagDocumentType(right), intentProfile))
     .slice(0, MAX_SELECTED_CHUNKS);
 }
 
 function ensureBaselineContext(documents, scored, intentProfile) {
   const portfolio =
-    scored.find((document) => document.type === "application-portfolio")
+    scored.find((document) => getRagDocumentType(document) === "application-portfolio")
     || documents
-      .filter((document) => document.type === "application-portfolio")
+      .filter((document) => getRagDocumentType(document) === "application-portfolio")
       .map((document) => ({ ...document, score: 0.3 }))[0];
-  const studentScored = scored.filter((document) => document.type === "student-backup");
+  const studentScored = scored.filter((document) => getRagDocumentType(document) === "student-backup");
   const studentDocuments = studentScored.length
     ? studentScored.slice(0, 3)
     : documents
-        .filter((document) => document.type === "student-backup")
+        .filter((document) => getRagDocumentType(document) === "student-backup")
         .slice(0, 2)
         .map((document) => ({ ...document, score: 0.1 }));
   const school =
-    scored.find((document) => document.type === "school-encyclopedia")
+    scored.find((document) => getRagDocumentType(document) === "school-encyclopedia")
     || documents
-      .filter((document) => document.type === "school-encyclopedia")
+      .filter((document) => getRagDocumentType(document) === "school-encyclopedia")
       .map((document) => ({ ...document, score: 0.1 }))[0];
   const resource =
-    scored.find((document) => document.type === "resource-library")
+    scored.find((document) => getRagDocumentType(document) === "resource-library")
     || documents
-      .filter((document) => document.type === "resource-library")
+      .filter((document) => getRagDocumentType(document) === "resource-library")
       .map((document) => ({ ...document, score: intentProfile.sourceWeights["resource-library"] || 0.1 }))[0];
   const major =
-    scored.find((document) => document.type === "major-encyclopedia")
+    scored.find((document) => getRagDocumentType(document) === "major-encyclopedia")
     || documents
-      .filter((document) => document.type === "major-encyclopedia")
+      .filter((document) => getRagDocumentType(document) === "major-encyclopedia")
       .map((document) => ({ ...document, score: intentProfile.sourceWeights["major-encyclopedia"] || 0.1 }))[0];
   const baselines = [portfolio, ...studentDocuments, school, resource, major].filter(Boolean);
-  return baselines.sort((left, right) => sourcePriority(left.type, intentProfile) - sourcePriority(right.type, intentProfile));
+  return baselines.sort((left, right) =>
+    sourcePriority(getRagDocumentType(left), intentProfile) - sourcePriority(getRagDocumentType(right), intentProfile));
 }
 
 function scoreDocument(document, queryTokens, question, intentProfile) {
-  const searchable = normalizeSearchText(`${document.title}\n${document.text}`);
-  const title = normalizeSearchText(document.title);
-  const sourceWeight = intentProfile.sourceWeights[document.type] || 1;
+  const title = getRagDocumentTitle(document);
+  const type = getRagDocumentType(document);
+  const searchable = normalizeSearchText(`${title}\n${getRagDocumentText(document)}`);
+  const normalizedTitle = normalizeSearchText(title);
+  const sourceWeight = intentProfile.sourceWeights[type] || 1;
   let score = sourceWeight;
   for (const token of queryTokens) {
     if (!token) continue;
     if (searchable.includes(token)) score += (token.length >= 4 ? 3 : 1) * sourceWeight;
-    if (title.includes(token)) score += 2 * sourceWeight;
+    if (normalizedTitle.includes(token)) score += 2 * sourceWeight;
   }
   const normalizedQuestion = normalizeSearchText(question);
   if (normalizedQuestion && searchable.includes(normalizedQuestion)) score += 8;
@@ -709,9 +838,10 @@ function buildContext(selected) {
   const sections = [];
   let totalChars = 0;
   for (const [index, source] of selected.entries()) {
+    const type = getRagDocumentType(source);
     const block = [
-      `[${index + 1}] ${SOURCE_TYPE_LABELS[source.type]} | ${source.title}`,
-      source.text.trim(),
+      `[${index + 1}] ${SOURCE_TYPE_LABELS[type]} | ${getRagDocumentTitle(source)}`,
+      getRagDocumentText(source).trim(),
     ].join("\n");
     if (totalChars + block.length > MAX_CONTEXT_CHARS) break;
     sections.push(block);
@@ -746,14 +876,31 @@ function selectSystemPrompt(assistantProfile = "") {
   return assistantProfile === "major-match" ? MAJOR_MATCH_SYSTEM_PROMPT : SYSTEM_PROMPT;
 }
 
-function serializeSource(source) {
+export function serializeRagSource(source) {
+  const type = getRagDocumentType(source);
   return {
-    id: source.id,
-    type: source.type,
-    typeLabel: SOURCE_TYPE_LABELS[source.type] || source.type,
-    title: source.title,
-    snippet: formatSourceSnippet(source.text),
+    id: getRagDocumentId(source),
+    type,
+    typeLabel: SOURCE_TYPE_LABELS[type] || type,
+    title: getRagDocumentTitle(source),
+    snippet: formatSourceSnippet(getRagDocumentText(source)),
   };
+}
+
+function getRagDocumentId(document = {}) {
+  return String(document.id || document.metadata?.id || "").trim();
+}
+
+function getRagDocumentType(document = {}) {
+  return String(document.type || document.metadata?.type || "").trim();
+}
+
+function getRagDocumentTitle(document = {}) {
+  return String(document.title || document.metadata?.title || "").trim();
+}
+
+function getRagDocumentText(document = {}) {
+  return String(document.text || document.pageContent || "").trim();
 }
 
 function formatSourceSnippet(text) {
@@ -777,10 +924,6 @@ function normalizeQuestion(value) {
 
 function normalizeHistorySummary(value) {
   return String(value ?? "").trim().slice(0, MAX_HISTORY_SUMMARY_LENGTH);
-}
-
-function extractDeepSeekResponseText(data) {
-  return data?.choices?.[0]?.message?.content?.trim() || "";
 }
 
 function stringifyForRag(data) {

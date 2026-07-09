@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
 import { createAuthDatabase } from "../src/server/auth-db.mjs";
+import { LangChainLlmError } from "../src/server/langchain-llm-client.mjs";
+import { RAG_ANSWER_GRAPH_VERSION } from "../src/server/langgraph-rag-workflow.mjs";
 import { buildCookieHeader, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-observability-"));
@@ -30,19 +32,26 @@ const server = createAppServer({
     DEEPSEEK_API_KEY: "observability-secret",
     DATABASE_BACKUP_DIR: join(tempDir, "backups"),
   },
-  deepSeekFetch: async () => {
-    if (deepSeekMode === "failure") {
-      return new Response(JSON.stringify({ error: { message: "DeepSeek unavailable" } }), {
-        status: 503,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    return new Response(
-      JSON.stringify({
-        choices: [{ message: { content: "Use the retrieved sources and avoid absolute admissions claims." } }],
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
+  deepSeekPlanLlmClient: {
+    async invoke() {
+      if (deepSeekMode === "failure") {
+        throw new LangChainLlmError("DeepSeek unavailable", 503);
+      }
+      return {
+        content: "### 输出列表（严格按表格填写）\n\n### 【活动叙事逻辑解读】\nObservability fallback.",
+      };
+    },
+  },
+  deepSeekRagLlmClient: {
+    async invoke() {
+      if (deepSeekMode === "failure") {
+        throw new LangChainLlmError("DeepSeek unavailable", 503);
+      }
+      return {
+        content: "Use the retrieved sources and avoid absolute admissions claims.",
+        model: "deepseek-v4-pro",
+      };
+    },
   },
 });
 
@@ -122,6 +131,35 @@ try {
   assert.equal(metrics.ai.byFeature["deepseek-rag"].totalCalls, 1);
   assert.equal(metrics.rag.retrievalCount, 1);
   assert.ok(metrics.rag.averageRetrievalMs >= 0);
+  assert.equal(metrics.graph.totalRuns, 1);
+  assert.equal(metrics.graph.failedRuns, 0);
+  assert.equal(metrics.graph.reviewRequiredRuns, Number(Boolean(ragBody.quality.review.required)));
+  assert.equal(metrics.graph.totalNodeCalls, 4);
+  assert.equal(metrics.graph.failedNodeCalls, 0);
+  assert.equal(metrics.graph.byWorkflow[RAG_ANSWER_GRAPH_VERSION].totalRuns, 1);
+  assert.equal(metrics.graph.byWorkflow[RAG_ANSWER_GRAPH_VERSION].failedRuns, 0);
+  assert.equal(
+    metrics.graph.byWorkflow[RAG_ANSWER_GRAPH_VERSION].reviewRequiredRuns,
+    Number(Boolean(ragBody.quality.review.required)),
+  );
+  assert.deepEqual(
+    Object.fromEntries(
+      Object.entries(metrics.graph.byWorkflow[RAG_ANSWER_GRAPH_VERSION].byNode)
+        .map(([node, value]) => [node, [value.totalCalls, value.failedCalls]]),
+    ),
+    {
+      retrieveSources: [1, 0],
+      draftAnswer: [1, 0],
+      evaluateQuality: [1, 0],
+      finalizeResponse: [1, 0],
+    },
+  );
+  assert.equal(JSON.stringify(metrics.graph).includes("observability-secret"), false);
+  assert.equal(
+    JSON.stringify(metrics.graph).includes("How should this student compare MIT and robotics resources?"),
+    false,
+  );
+  assert.equal(JSON.stringify(metrics.graph).includes("Use the retrieved sources"), false);
   assert.equal(metrics.backup.exists, false);
   assert.ok(metrics.alerts.some((alert) => alert.code === "backup_missing"));
 

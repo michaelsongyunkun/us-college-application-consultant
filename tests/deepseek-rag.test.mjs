@@ -16,15 +16,7 @@ const server = createAppServer({
     DEEPSEEK_API_KEY: "env-rag-secret",
     DEEPSEEK_MODEL: "Deepseek V4 pro",
   },
-  deepSeekFetch: async (url, options) => {
-    calls.push({ url, options });
-    return new Response(
-      JSON.stringify({
-        choices: [{ message: { content: ragAnswer } }],
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
-  },
+  deepSeekRagLlmClient: createMockRagLlmClient(calls),
 });
 
 try {
@@ -150,6 +142,7 @@ try {
   assert.equal(body.quality.metadata.model, "deepseek-v4-pro");
   assert.equal(body.quality.metadata.sourceSetVersion, AI_QUALITY_VERSIONS.ragSourceSet);
   assert.equal(body.quality.metadata.parserVersion, AI_QUALITY_VERSIONS.ragParser);
+  assert.equal(body.quality.metadata.workflowVersion, "rag-answer-graph@2026-07-02");
   assert.equal(body.quality.retrieval.retrievalHitRate, 1);
   assert.deepEqual(body.quality.retrieval.missingSourceTypes, []);
   assert.equal(body.quality.review.required, false);
@@ -163,11 +156,9 @@ try {
   assert.match(activitySource.snippet, /\n-\s+\*\*活动内容\*\*/);
 
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, "https://api.deepseek.com/chat/completions");
-  assert.equal(calls[0].options.headers.Authorization, "Bearer env-rag-secret");
-  const sentPayload = JSON.parse(calls[0].options.body);
+  const sentPayload = calls[0];
   assert.equal(sentPayload.model, "deepseek-v4-pro");
-  assert.equal(sentPayload.stream, false);
+  assert.equal(sentPayload.temperature, 0.25);
   assert.equal(sentPayload.messages[0].role, "system");
   assert.equal(sentPayload.messages[1].role, "user");
   const systemPrompt = sentPayload.messages[0].content;
@@ -213,7 +204,7 @@ try {
   const majorMatchBody = await majorMatchResponse.json();
   assert.equal(majorMatchBody.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.ragPromptMajorMatch);
   assert.equal(calls.length, 2);
-  const majorMatchPayload = JSON.parse(calls[1].options.body);
+  const majorMatchPayload = calls[1];
   const majorMatchSystemPrompt = majorMatchPayload.messages[0].content;
   assert.match(majorMatchSystemPrompt, /美本本科专业匹配顾问/);
   assert.match(majorMatchSystemPrompt, /推荐专业优先级表/);
@@ -278,6 +269,25 @@ async function waitForJob(endpoint, jobId, cookie) {
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
   throw new Error(`${endpoint} job did not finish in time.`);
+}
+
+function createMockRagLlmClient(callLog, getContent = () => ragAnswer) {
+  return {
+    async invoke(options) {
+      callLog.push({
+        model: options.model,
+        temperature: options.temperature,
+        messages: options.messages,
+        signal: options.signal,
+      });
+      const content = getContent(callLog.length, options);
+      if (content instanceof Error) throw content;
+      return {
+        content,
+        model: options.model,
+      };
+    },
+  };
 }
 
 function serverUrl() {

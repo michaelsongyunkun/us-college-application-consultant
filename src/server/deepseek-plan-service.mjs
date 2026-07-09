@@ -7,6 +7,11 @@ import {
 import { resolveApiKey } from "./api-key.mjs";
 import { AI_QUALITY_VERSIONS, buildAiRequestQuality } from "./ai-quality.mjs";
 import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
+import {
+  LangChainLlmError,
+  createLangChainDeepSeekClient,
+} from "./langchain-llm-client.mjs";
+import { monotonicNowMs } from "./observability.mjs";
 
 const MAX_DEEPSEEK_PLAN_ATTEMPTS = 2;
 const DEEPSEEK_PLAN_MAX_TOKENS = 6500;
@@ -24,8 +29,13 @@ export class DeepSeekPlanError extends Error {
   }
 }
 
-export function createDeepSeekPlanService({ promptPath, readPrompt = readFile } = {}) {
-  async function generatePlan({ payload = {}, env = process.env, deepSeekFetch = fetch } = {}) {
+export function createDeepSeekPlanService({
+  promptPath,
+  readPrompt = readFile,
+  llmClient = createLangChainDeepSeekClient(),
+  metrics = null,
+} = {}) {
+  async function generatePlan({ payload = {}, env = process.env, signal } = {}) {
     const apiKey = resolveApiKey({
       environmentApiKey: env.DEEPSEEK_API_KEY,
       requestApiKey: "",
@@ -40,31 +50,20 @@ export function createDeepSeekPlanService({ promptPath, readPrompt = readFile } 
     let repairMessage = "";
 
     for (let attempt = 1; attempt <= MAX_DEEPSEEK_PLAN_ATTEMPTS; attempt += 1) {
-      const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: buildDeepSeekPlanUserMessage(payload, { repairMessage }) },
-          ],
-          thinking: { type: "disabled" },
-          stream: false,
-          temperature: attempt === 1 ? 0.4 : 0.2,
-          max_tokens: maxTokens,
-        }),
+      const llmResult = await invokePlanLlm({
+        llmClient,
+        metrics,
+        env,
+        model,
+        maxTokens,
+        signal,
+        temperature: attempt === 1 ? 0.4 : 0.2,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: buildDeepSeekPlanUserMessage(payload, { repairMessage }) },
+        ],
       });
-
-      const data = await apiResponse.json().catch(() => ({}));
-      if (!apiResponse.ok) {
-        throw new DeepSeekPlanError(data.error?.message || "Agent调用失败。", apiResponse.status);
-      }
-
-      const answer = extractDeepSeekResponseText(data);
+      const answer = String(llmResult?.content || "").trim();
       if (!answer) {
         repairMessage = "DeepSeek 未返回可解析的规划回答。";
       } else {
@@ -88,6 +87,53 @@ export function createDeepSeekPlanService({ promptPath, readPrompt = readFile } 
   }
 
   return { generatePlan };
+}
+
+async function invokePlanLlm({
+  llmClient,
+  metrics,
+  env,
+  model,
+  maxTokens,
+  temperature,
+  messages,
+  signal,
+}) {
+  const startedAt = monotonicNowMs();
+  try {
+    const result = await llmClient.invoke({
+      env,
+      model,
+      temperature,
+      maxTokens,
+      messages,
+      signal,
+    });
+    metrics?.recordAiCall?.({
+      feature: "deepseek-plan",
+      ok: true,
+      statusCode: 200,
+      durationMs: monotonicNowMs() - startedAt,
+    });
+    return result;
+  } catch (error) {
+    const mappedError = mapPlanLlmError(error);
+    metrics?.recordAiCall?.({
+      feature: "deepseek-plan",
+      ok: false,
+      statusCode: mappedError.statusCode || 0,
+      durationMs: monotonicNowMs() - startedAt,
+    });
+    throw mappedError;
+  }
+}
+
+function mapPlanLlmError(error) {
+  if (error instanceof DeepSeekPlanError) return error;
+  if (error instanceof LangChainLlmError) {
+    return new DeepSeekPlanError(error.message, error.statusCode || 502);
+  }
+  return new DeepSeekPlanError(error?.message || "Agent调用失败。", error?.statusCode || 502);
 }
 
 export function buildDeepSeekPlanUserMessage(payload, { repairMessage = "" } = {}) {
@@ -172,10 +218,6 @@ export function validateParsedDeepSeekPlan(parsed) {
 function normalizePositiveInteger(value, fallback) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function extractDeepSeekResponseText(data) {
-  return data?.choices?.[0]?.message?.content?.trim() || "";
 }
 
 function buildDeepSeekPlanQuality(model) {

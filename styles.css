@@ -3811,6 +3811,69 @@ button.danger:hover {
   font-weight: 800;
 }
 
+.chat-quality-review {
+  display: grid;
+  gap: 8px;
+  max-width: 100%;
+  border: 1px solid #d6e3ef;
+  border-radius: 8px;
+  background: #f7fbff;
+  padding: 12px 14px;
+}
+
+.chat-quality-review.needs-review {
+  border-color: #efcfaa;
+  background: #fff8ef;
+}
+
+.chat-quality-review div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chat-quality-review span,
+.chat-quality-review strong {
+  color: #26445d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.chat-quality-review.needs-review span,
+.chat-quality-review.needs-review strong {
+  color: #7a4d12;
+}
+
+.chat-quality-review p {
+  margin: 0;
+  color: #445365;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.chat-quality-review ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-quality-review li {
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 5px 9px;
+  color: #34495d;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chat-quality-review.needs-review li {
+  color: #684111;
+}
+
 .chat-followup-button {
   min-height: 32px;
   border: 1px solid #cfe2d8;

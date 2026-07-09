@@ -4,10 +4,13 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
 import { AI_QUALITY_VERSIONS } from "../src/server/ai-quality.mjs";
+import { PORTFOLIO_CAPABILITY_GRAPH_VERSION } from "../src/server/langgraph-portfolio-capability-workflow.mjs";
+import { createMetricsStore } from "../src/server/observability.mjs";
 import { buildCookieHeader, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-capability-agent-"));
 const calls = [];
+const metrics = createMetricsStore();
 const agentAssessment = {
   overallSummary: "档案主线已经初步形成，下一步应补强成果证据和推荐信素材。",
   radarScores: [
@@ -26,17 +29,12 @@ const agentAssessment = {
 
 const server = createAppServer({
   databasePath: join(tempDir, "capability-agent.sqlite"),
+  metrics,
   env: {
     DEEPSEEK_API_KEY: "capability-agent-secret",
     DEEPSEEK_CAPABILITY_ASSESSMENT_MODEL: "Deepseek V4 Flash",
   },
-  deepSeekFetch: async (url, options) => {
-    calls.push({ url, options });
-    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(agentAssessment) } }] }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  },
+  deepSeekPortfolioCapabilityLlmClient: createMockPortfolioCapabilityLlmClient(calls),
 });
 
 try {
@@ -130,11 +128,13 @@ try {
   assert.equal(body.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.portfolioCapabilityPrompt);
   assert.equal(body.quality.metadata.model, "deepseek-v4-flash");
   assert.equal(body.quality.metadata.parserVersion, AI_QUALITY_VERSIONS.portfolioCapabilityParser);
+  assert.equal(body.quality.metadata.workflowVersion, PORTFOLIO_CAPABILITY_GRAPH_VERSION);
 
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, "https://api.deepseek.com/chat/completions");
-  const sentPayload = JSON.parse(calls[0].options.body);
+  const sentPayload = calls[0];
   assert.equal(sentPayload.model, "deepseek-v4-flash");
+  assert.equal(sentPayload.maxTokens, 4200);
+  assert.equal(sentPayload.temperature, 0.25);
   assert.equal(sentPayload.messages[0].role, "system");
   assert.match(sentPayload.messages[0].content, /严禁输出院校推荐/);
   assert.match(sentPayload.messages[0].content, /score 表示该维度“可验证申请证据的充分度”/);
@@ -145,8 +145,23 @@ try {
   assert.match(sentPayload.messages[1].content, /Physics Bowl/);
   assert.equal(sentPayload.messages[1].content.includes("Forbidden School Needle"), false);
   assert.equal(sentPayload.messages[1].content.includes("Forbidden Selection Version Needle"), false);
-  assert.equal(String(calls[0].options.headers.Authorization).includes("capability-agent-secret"), true);
   assert.equal(JSON.stringify(body).includes("capability-agent-secret"), false);
+  const metricsAfterDirect = metrics.snapshot();
+  assert.equal(metricsAfterDirect.ai.byFeature["portfolio-capability-assessment"].totalCalls, 1);
+  assert.equal(metricsAfterDirect.graph.byWorkflow[PORTFOLIO_CAPABILITY_GRAPH_VERSION].totalRuns, 1);
+  assert.deepEqual(
+    Object.fromEntries(
+      Object.entries(metricsAfterDirect.graph.byWorkflow[PORTFOLIO_CAPABILITY_GRAPH_VERSION].byNode)
+        .map(([node, value]) => [node, [value.totalCalls, value.failedCalls]]),
+    ),
+    {
+      loadPortfolio: [1, 0],
+      assessDimensions: [1, 0],
+      validateNoSchoolAdvice: [1, 0],
+      saveAssessment: [1, 0],
+      finalizeResponse: [1, 0],
+    },
+  );
 
   const reloaded = await get("/api/my-activities", cookie);
   const reloadedPortfolio = await reloaded.json();
@@ -189,6 +204,13 @@ try {
     completedJob.result.quality.metadata.promptVersion,
     AI_QUALITY_VERSIONS.portfolioCapabilityPrompt,
   );
+  assert.equal(
+    completedJob.result.quality.metadata.workflowVersion,
+    PORTFOLIO_CAPABILITY_GRAPH_VERSION,
+  );
+  const metricsAfterJob = metrics.snapshot();
+  assert.equal(metricsAfterJob.ai.byFeature["portfolio-capability-assessment"].totalCalls, 2);
+  assert.equal(metricsAfterJob.graph.byWorkflow[PORTFOLIO_CAPABILITY_GRAPH_VERSION].totalRuns, 2);
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });
@@ -202,6 +224,24 @@ function dimension(key, score, evidence) {
     evidence: [evidence],
     missing: ["需要补充更多证明材料"],
     nextAction: "补齐可验证的成果证据。",
+  };
+}
+
+function createMockPortfolioCapabilityLlmClient(callLog) {
+  return {
+    async invoke(options) {
+      callLog.push({
+        model: options.model,
+        maxTokens: options.maxTokens,
+        temperature: options.temperature,
+        messages: options.messages,
+        signal: options.signal,
+      });
+      return {
+        content: JSON.stringify(agentAssessment),
+        model: options.model,
+      };
+    },
   };
 }
 

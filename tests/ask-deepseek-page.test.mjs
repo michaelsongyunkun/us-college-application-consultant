@@ -149,7 +149,7 @@ assert.match(
   "Ask DeepSeek script should be cache-busted.",
 );
 assert.ok(
-  pageHtml.includes("styles.css?v=20260605-ui"),
+  pageHtml.includes("styles.css?v=20260702-ai-quality-review"),
   "Ask DeepSeek page should refresh the stylesheet cache after workflow quality fixes.",
 );
 assert.match(styles, /\.deepseek-chat-log\s*\{/, "Ask DeepSeek should style the chat log.");
@@ -190,6 +190,11 @@ assert.ok(script.includes("deepseek_review_export"), "Ask DeepSeek should track 
 assert.ok(script.includes("deepseek_review_save"), "Ask DeepSeek should track saved review versions.");
 assert.ok(script.includes("deepseek_answer_save"), "Ask DeepSeek should track saved answer excerpts.");
 assert.ok(script.includes("renderMissingFieldChecklist"), "Ask DeepSeek should render missing-field guidance.");
+assert.ok(script.includes("renderQualityReview"), "Ask DeepSeek should render AI quality review guidance.");
+assert.ok(script.includes("QUALITY_REVIEW_REASON_LABELS"), "Ask DeepSeek should label AI quality review reasons.");
+assert.ok(script.includes("quality.review"), "Ask DeepSeek should read review metadata from RAG quality results.");
+assert.ok(script.includes("chat-quality-review"), "Ask DeepSeek quality review should use a styled container.");
+assert.ok(script.includes("需要人工复核"), "Ask DeepSeek should warn when AI quality review requires human checking.");
 assert.ok(script.includes("data-deepseek-save-actions"), "Ask DeepSeek should save answers as action checklists.");
 assert.ok(script.includes("data-deepseek-save-note"), "Ask DeepSeek should save answers into the application portfolio notes.");
 assert.ok(script.includes('"/api/my-activities"'), "Ask DeepSeek should save useful answers into my application portfolio.");
@@ -209,3 +214,5 @@ assert.match(styles, /\.chat-followups\s*\{/, "Ask DeepSeek should style answer 
 assert.match(styles, /\.chat-followup-button\s*\{/, "Ask DeepSeek should style follow-up buttons.");
 assert.match(styles, /\.chat-source-type-chip\s*\{/, "Ask DeepSeek should style source type chips.");
 assert.match(styles, /\.chat-source-snippet\s*\{/, "Ask DeepSeek should style visual source snippets.");
+assert.match(styles, /\.chat-quality-review\s*\{/, "Ask DeepSeek should style AI quality review guidance.");
+assert.match(styles, /\.chat-quality-review\.needs-review\s*\{/, "Ask DeepSeek should style required review states.");

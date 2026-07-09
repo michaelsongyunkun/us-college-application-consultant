@@ -49,6 +49,12 @@ const FOLLOW_UP_ACTIONS = [
     prompt: "请基于我的个人申请档案、活动证据和推荐信记录，把可用于推荐信沟通的素材整理成推荐人视角的要点清单。",
   },
 ];
+const QUALITY_REVIEW_REASON_LABELS = {
+  no_sources: "没有可核验来源",
+  low_retrieval_hit_rate: "来源覆盖不足",
+  unsupported_citations: "引用编号需要核验",
+  high_risk_claims: "高风险录取表述",
+};
 const WORKFLOW_PROMPTS = {
   "profile-audit": {
     label: "申请档案体检",
@@ -389,6 +395,37 @@ function renderMissingFieldChecklist(missingFields = []) {
     </section>`;
 }
 
+function renderQualityReview(quality = null) {
+  if (!quality || typeof quality !== "object") return "";
+  const review = quality.review || {};
+  const retrieval = quality.retrieval || {};
+  const reasons = Array.isArray(review.reasons) ? review.reasons.filter(Boolean) : [];
+  const requiresReview = Boolean(review.required);
+  const sourceCount = Number(retrieval.sourceCount) || 0;
+  const hitRate = Number(retrieval.retrievalHitRate);
+  const coverageText = Number.isFinite(hitRate)
+    ? `${Math.round(hitRate * 100)}% 来源覆盖`
+    : `${sourceCount} 条来源`;
+  const reasonList = reasons.length
+    ? `<ul>${reasons
+        .map((reason) => `<li>${escapeHtml(QUALITY_REVIEW_REASON_LABELS[reason] || reason)}</li>`)
+        .join("")}</ul>`
+    : "";
+  const message = requiresReview
+    ? review.fallback?.message || "当前回答需要人工复核，请先核验参考资料后再用于申请决策。"
+    : "质量检查通过，仍建议展开参考资料核验关键事实。";
+
+  return `
+    <section class="chat-quality-review ${requiresReview ? "needs-review" : "is-clear"}" aria-label="AI 质量复核">
+      <div>
+        <span>${requiresReview ? "需要人工复核" : "质量检查通过"}</span>
+        <strong>${escapeHtml(coverageText)}</strong>
+      </div>
+      <p>${escapeHtml(message)}</p>
+      ${reasonList}
+    </section>`;
+}
+
 function renderFollowUpActions() {
   const actions = FOLLOW_UP_ACTIONS.map(
     (action, index) => `
@@ -432,6 +469,7 @@ function renderMessage({
   showReferences = true,
   showFollowUps = true,
   showPortfolioActions = true,
+  quality = null,
 }) {
   const isUser = role === "user";
   const avatarSrc = isUser ? USER_AVATAR_SRC : DEEPSEEK_AVATAR_SRC;
@@ -445,6 +483,9 @@ function renderMessage({
   const missingFieldContent = !isUser && !thinking && !error
     ? renderMissingFieldChecklist(missingFields)
     : "";
+  const qualityContent = !isUser && !thinking && !error
+    ? renderQualityReview(quality)
+    : "";
   const portfolioActionContent = !isUser && !thinking && !error && showPortfolioActions
     ? renderPortfolioSaveActions(id)
     : "";
@@ -457,6 +498,7 @@ function renderMessage({
         <p class="chat-speaker">${escapeHtml(speaker)}</p>
         <div class="chat-bubble">${bubbleContent}</div>
         ${missingFieldContent}
+        ${qualityContent}
         ${referenceContent}
         ${followUpContent}
         ${portfolioActionContent}
@@ -490,6 +532,7 @@ function rememberAssistantMessage(messageId, message) {
     content: String(message.content || ""),
     sources: message.sources || [],
     missingFields: message.missingFields || [],
+    quality: message.quality || null,
   });
 }
 
@@ -566,6 +609,7 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
       content: answer,
       sources,
       missingFields: data.missingFields || [],
+      quality: data.quality || null,
     });
     updateConversationSummary({ question: displayQuestion, answer });
     conversationArchive.push({
@@ -631,6 +675,7 @@ async function resumePendingDeepSeekRagJob() {
       content: answer,
       sources,
       missingFields: data.missingFields || [],
+      quality: data.quality || null,
     });
     updateConversationSummary({ question: pendingJob.displayQuestion || pendingJob.question, answer });
     conversationArchive.push({

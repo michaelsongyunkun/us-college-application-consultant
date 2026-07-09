@@ -30,15 +30,7 @@ const server = createAppServer({
     DEEPSEEK_API_KEY: "env-deepseek-secret",
     DEEPSEEK_MODEL: "Deepseek V4 pro",
   },
-  deepSeekFetch: async (url, options) => {
-    calls.push({ url, options });
-    return new Response(
-      JSON.stringify({
-        choices: [{ message: { content: deepSeekAnswer } }],
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
-  },
+  deepSeekPlanLlmClient: createMockPlanLlmClient(calls),
 });
 
 try {
@@ -71,15 +63,10 @@ try {
   assert.equal(body.quality.metadata.parserVersion, AI_QUALITY_VERSIONS.deepseekPlanParser);
 
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, "https://api.deepseek.com/chat/completions");
-  assert.equal(calls[0].options.method, "POST");
-  assert.equal(calls[0].options.headers.Authorization, "Bearer env-deepseek-secret");
-
-  const sentPayload = JSON.parse(calls[0].options.body);
+  const sentPayload = calls[0];
   assert.equal(sentPayload.model, "deepseek-v4-flash");
-  assert.equal(sentPayload.stream, false);
-  assert.deepEqual(sentPayload.thinking, { type: "disabled" });
-  assert.equal(sentPayload.max_tokens, 6500);
+  assert.equal(sentPayload.temperature, 0.4);
+  assert.equal(sentPayload.maxTokens, 6500);
   assert.equal(sentPayload.messages[0].role, "system");
   assert.equal(sentPayload.messages[1].role, "user");
   assert.match(sentPayload.messages[1].content, /恰好15项/);
@@ -122,7 +109,7 @@ try {
     cookie,
   );
   assert.equal(longResponse.status, 200);
-  const longPayload = JSON.parse(calls.at(-1).options.body);
+  const longPayload = calls.at(-1);
   assert.ok(longPayload.messages[1].content.length < 35_000);
   assert.doesNotMatch(longPayload.messages[1].content, /D{2000}|I{2000}|N{1000}/);
 
@@ -132,16 +119,10 @@ try {
     env: {
       DEEPSEEK_API_KEY: "env-deepseek-secret",
     },
-    deepSeekFetch: async (url, options) => {
-      retryCalls.push({ url, options });
-      const content = retryCalls.length === 1 ? buildPlanAnswer(1) : buildPlanAnswer(15);
-      return new Response(
-        JSON.stringify({
-          choices: [{ message: { content } }],
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      );
-    },
+    deepSeekPlanLlmClient: createMockPlanLlmClient(
+      retryCalls,
+      (callNumber) => (callNumber === 1 ? buildPlanAnswer(1) : buildPlanAnswer(15)),
+    ),
   });
   try {
     await new Promise((resolve) => retryServer.listen(0, "127.0.0.1", resolve));
@@ -166,26 +147,21 @@ try {
     assert.equal(retryResponse.status, 200);
     assert.equal((await retryResponse.json()).parsed.activities.length, 15);
     assert.equal(retryCalls.length, 2);
-    assert.match(JSON.parse(retryCalls[1].options.body).messages[1].content, /未通过解析校验/);
+    assert.equal(retryCalls[0].temperature, 0.4);
+    assert.equal(retryCalls[1].temperature, 0.2);
+    assert.match(retryCalls[1].messages[1].content, /未通过解析校验/);
   } finally {
     await new Promise((resolve) => retryServer.close(resolve));
   }
 
+  const proCalls = [];
   const proOverrideServer = createAppServer({
     databasePath: join(tempDir, "deepseek-plan-override.sqlite"),
     env: {
       DEEPSEEK_API_KEY: "env-deepseek-secret",
       DEEPSEEK_PLAN_MODEL: "Deepseek V4 pro",
     },
-    deepSeekFetch: async (url, options) => {
-      calls.push({ url, options });
-      return new Response(
-        JSON.stringify({
-          choices: [{ message: { content: deepSeekAnswer } }],
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      );
-    },
+    deepSeekPlanLlmClient: createMockPlanLlmClient(proCalls),
   });
   try {
     await new Promise((resolve) => proOverrideServer.listen(0, "127.0.0.1", resolve));
@@ -208,17 +184,16 @@ try {
       }),
     });
     assert.equal(proResponse.status, 200);
-    assert.equal(JSON.parse(calls.at(-1).options.body).model, "deepseek-v4-pro");
+    assert.equal(proCalls.at(-1).model, "deepseek-v4-pro");
   } finally {
     await new Promise((resolve) => proOverrideServer.close(resolve));
   }
 
+  const requestKeyOnlyCalls = [];
   const requestKeyOnlyServer = createAppServer({
     databasePath: join(tempDir, "request-key-only.sqlite"),
     env: {},
-    deepSeekFetch: async () => {
-      throw new Error("DeepSeek should not be called with a user-provided request key");
-    },
+    deepSeekPlanLlmClient: createMockPlanLlmClient(requestKeyOnlyCalls),
   });
   try {
     await new Promise((resolve) => requestKeyOnlyServer.listen(0, "127.0.0.1", resolve));
@@ -243,6 +218,7 @@ try {
     });
     assert.equal(requestKeyResponse.status, 400);
     assert.match((await requestKeyResponse.json()).error, /服务端配置 DEEPSEEK_API_KEY/);
+    assert.equal(requestKeyOnlyCalls.length, 0);
   } finally {
     await new Promise((resolve) => requestKeyOnlyServer.close(resolve));
   }
@@ -274,6 +250,27 @@ async function waitForJob(endpoint, jobId, cookie) {
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
   throw new Error(`${endpoint} job did not finish in time.`);
+}
+
+function createMockPlanLlmClient(callLog, getContent = () => deepSeekAnswer) {
+  return {
+    async invoke(options) {
+      const call = {
+        model: options.model,
+        temperature: options.temperature,
+        maxTokens: options.maxTokens,
+        messages: options.messages,
+        signal: options.signal,
+      };
+      callLog.push(call);
+      const content = getContent(callLog.length, options);
+      if (content instanceof Error) throw content;
+      return {
+        content,
+        model: options.model,
+      };
+    },
+  };
 }
 
 function serverUrl(targetServer = server) {

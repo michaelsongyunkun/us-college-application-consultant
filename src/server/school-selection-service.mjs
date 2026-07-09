@@ -4,6 +4,15 @@ import { parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs";
 import { resolveApiKey } from "./api-key.mjs";
 import { AI_QUALITY_VERSIONS, evaluateAiAnswerQuality } from "./ai-quality.mjs";
 import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
+import {
+  LangChainLlmError,
+  createLangChainDeepSeekClient,
+} from "./langchain-llm-client.mjs";
+import {
+  SCHOOL_SELECTION_GRAPH_VERSION,
+  createSchoolSelectionGraph,
+} from "./langgraph-school-selection-workflow.mjs";
+import { monotonicNowMs } from "./observability.mjs";
 
 const ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "rd", "uc"];
 const MAX_SELECTION_ATTEMPTS = 2;
@@ -288,12 +297,29 @@ export class SchoolSelectionError extends Error {
   }
 }
 
-export function createSchoolSelectionService({ activityPortfolio, root = process.cwd() }) {
+export function createSchoolSelectionService({
+  activityPortfolio,
+  root = process.cwd(),
+  llmClient = createLangChainDeepSeekClient(),
+  metrics = null,
+  selectionGraph = null,
+} = {}) {
+  const graph = selectionGraph || createSchoolSelectionGraph({
+    loadContext: ({ user, input }) =>
+      loadSchoolSelectionContext({ root, activityPortfolio, user, input }),
+    draftSelection: (state) =>
+      draftSchoolSelection({ ...state, llmClient, metrics }),
+    calibrateSelection: ({ validatedSelection, friendlinessIndex }) =>
+      calibrateSelectionWithFriendliness(validatedSelection, friendlinessIndex),
+    evaluateQuality: evaluateSchoolSelectionQuality,
+    buildResponse: buildSchoolSelectionResponse,
+    metrics,
+  });
+
   async function generateSelection({
     user,
     payload = {},
     env = process.env,
-    deepSeekFetch = fetch,
   }) {
     const input = normalizeInput(payload);
     const apiKey = resolveApiKey({
@@ -304,87 +330,175 @@ export function createSchoolSelectionService({ activityPortfolio, root = process
       throw new SchoolSelectionError("DeepSeek API 尚未配置。请在服务端配置 DEEPSEEK_API_KEY。", 400);
     }
 
-    const portfolio = activityPortfolio.getPortfolio(user);
-    const ragSources = await buildSchoolSelectionRagSources({ root, input, portfolio });
-    const friendlinessIndex = await buildSchoolFriendlinessIndex(root);
-    const ragContext = buildRagContext(ragSources);
     const model = normalizeDeepSeekModel(env.DEEPSEEK_SCHOOL_SELECTION_MODEL, "deepseek-v4-flash");
     const maxTokens = normalizePositiveInteger(
       env.DEEPSEEK_SCHOOL_SELECTION_MAX_TOKENS,
       DEEPSEEK_SCHOOL_SELECTION_MAX_TOKENS,
     );
-    let lastValidationError = null;
-    for (let attempt = 1; attempt <= MAX_SELECTION_ATTEMPTS; attempt += 1) {
-      const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            {
-              role: "user",
-              content: buildUserMessage({
-                input,
-                portfolio,
-                ragContext,
-                repairMessage: lastValidationError?.message || "",
-              }),
-            },
-          ],
-          thinking: { type: "disabled" },
-          stream: false,
-          temperature: attempt === 1 ? 0.2 : 0.1,
-          max_tokens: maxTokens,
-        }),
-      });
 
-      const data = await apiResponse.json().catch(() => ({}));
-      if (!apiResponse.ok) {
-        throw new SchoolSelectionError(data.error?.message || "DeepSeek 选校调用失败。", apiResponse.status);
-      }
-
-      const answer = extractDeepSeekResponseText(data);
-      if (!answer) {
-        lastValidationError = new SchoolSelectionError("DeepSeek 未返回可解析的选校内容。", 502);
-        continue;
-      }
-
-      try {
-        const validatedSelection = validateSchoolSelectionResult(parseSelectionJson(answer));
-        const serializedRagSources = ragSources.map(serializeRagSource);
-        return {
-          selection: calibrateSelectionWithFriendliness(validatedSelection, friendlinessIndex),
-          selectionVersion: input.strategyMode,
-          ragSources: serializedRagSources,
-          attempts: attempt,
-          quality: evaluateAiAnswerQuality({
-            answer,
-            sources: serializedRagSources,
-            expectedSourceTypes: ["school-encyclopedia"],
-            metadata: {
-              feature: "school-selection",
-              promptVersion: AI_QUALITY_VERSIONS.schoolSelectionPrompt,
-              model,
-              sourceSetVersion: AI_QUALITY_VERSIONS.schoolSelectionSourceSet,
-              parserVersion: AI_QUALITY_VERSIONS.schoolSelectionParser,
-            },
-          }),
-        };
-      } catch (error) {
-        if (!(error instanceof SchoolSelectionError) || attempt === MAX_SELECTION_ATTEMPTS) {
-          throw error;
-        }
-        lastValidationError = error;
-      }
-    }
-    throw lastValidationError || new SchoolSelectionError("DeepSeek 选校结果未通过二次校验。", 502);
+    return graph.invoke({
+      user,
+      input,
+      env,
+      model,
+      maxTokens,
+    });
   }
 
   return { generateSelection };
+}
+
+async function loadSchoolSelectionContext({ root, activityPortfolio, user, input }) {
+  const portfolio = activityPortfolio.getPortfolio(user);
+  const ragSources = await buildSchoolSelectionRagSources({ root, input, portfolio });
+  const friendlinessIndex = await buildSchoolFriendlinessIndex(root);
+  return {
+    portfolio,
+    ragSources,
+    friendlinessIndex,
+    ragContext: buildRagContext(ragSources),
+  };
+}
+
+async function draftSchoolSelection({
+  llmClient,
+  metrics,
+  env,
+  model,
+  maxTokens,
+  input,
+  portfolio,
+  ragContext,
+}) {
+  let lastValidationError = null;
+  for (let attempt = 1; attempt <= MAX_SELECTION_ATTEMPTS; attempt += 1) {
+    const llmResult = await invokeSchoolSelectionLlm({
+      llmClient,
+      metrics,
+      env,
+      model,
+      maxTokens,
+      temperature: attempt === 1 ? 0.2 : 0.1,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: buildUserMessage({
+            input,
+            portfolio,
+            ragContext,
+            repairMessage: lastValidationError?.message || "",
+          }),
+        },
+      ],
+    });
+
+    const answer = String(llmResult?.content || "").trim();
+    if (!answer) {
+      lastValidationError = new SchoolSelectionError("DeepSeek 未返回可解析的选校内容。", 502);
+      continue;
+    }
+
+    try {
+      return {
+        answer,
+        validatedSelection: validateSchoolSelectionResult(parseSelectionJson(answer)),
+        attempts: attempt,
+      };
+    } catch (error) {
+      if (!(error instanceof SchoolSelectionError) || attempt === MAX_SELECTION_ATTEMPTS) {
+        throw error;
+      }
+      lastValidationError = error;
+    }
+  }
+  throw lastValidationError || new SchoolSelectionError("DeepSeek 选校结果未通过二次校验。", 502);
+}
+
+function evaluateSchoolSelectionQuality({
+  answer,
+  ragSources = [],
+  model,
+  workflowVersion = SCHOOL_SELECTION_GRAPH_VERSION,
+}) {
+  return evaluateAiAnswerQuality({
+    answer,
+    sources: ragSources.map(serializeRagSource),
+    expectedSourceTypes: ["school-encyclopedia"],
+    metadata: {
+      feature: "school-selection",
+      promptVersion: AI_QUALITY_VERSIONS.schoolSelectionPrompt,
+      model,
+      sourceSetVersion: AI_QUALITY_VERSIONS.schoolSelectionSourceSet,
+      parserVersion: AI_QUALITY_VERSIONS.schoolSelectionParser,
+      extraMetadata: {
+        workflowVersion,
+      },
+    },
+  });
+}
+
+function buildSchoolSelectionResponse({
+  selection,
+  input,
+  ragSources = [],
+  attempts,
+  quality,
+}) {
+  return {
+    selection,
+    selectionVersion: input.strategyMode,
+    ragSources: ragSources.map(serializeRagSource),
+    attempts,
+    quality,
+  };
+}
+
+async function invokeSchoolSelectionLlm({
+  llmClient,
+  metrics,
+  env,
+  model,
+  maxTokens,
+  temperature,
+  messages,
+  signal,
+}) {
+  const startedAt = monotonicNowMs();
+  try {
+    const result = await llmClient.invoke({
+      env,
+      model,
+      temperature,
+      maxTokens,
+      messages,
+      signal,
+    });
+    metrics?.recordAiCall?.({
+      feature: "school-selection",
+      ok: true,
+      statusCode: 200,
+      durationMs: monotonicNowMs() - startedAt,
+    });
+    return result;
+  } catch (error) {
+    const mappedError = mapSchoolSelectionLlmError(error);
+    metrics?.recordAiCall?.({
+      feature: "school-selection",
+      ok: false,
+      statusCode: mappedError.statusCode || 0,
+      durationMs: monotonicNowMs() - startedAt,
+    });
+    throw mappedError;
+  }
+}
+
+function mapSchoolSelectionLlmError(error) {
+  if (error instanceof SchoolSelectionError) return error;
+  if (error instanceof LangChainLlmError) {
+    return new SchoolSelectionError(error.message, error.statusCode || 502);
+  }
+  return new SchoolSelectionError(error?.message || "DeepSeek 选校调用失败。", error?.statusCode || 502);
 }
 
 export function validateSchoolSelectionResult(value) {
@@ -1085,10 +1199,6 @@ function normalizeObject(value, label) {
     throw new SchoolSelectionError(`${label} must be an object`, 400);
   }
   return value;
-}
-
-function extractDeepSeekResponseText(data) {
-  return data?.choices?.[0]?.message?.content?.trim() || "";
 }
 
 function cleanString(value) {

@@ -3,6 +3,7 @@ import {
   createSchoolSelectionService,
   validateSchoolSelectionResult,
 } from "../src/server/school-selection-service.mjs";
+import { SCHOOL_SELECTION_GRAPH_VERSION } from "../src/server/langgraph-school-selection-workflow.mjs";
 
 const validSelection = {
   summary: "该学生适合以工程与应用数学为主线，早申选择控制风险。",
@@ -171,6 +172,16 @@ const service = createSchoolSelectionService({
       };
     },
   },
+  llmClient: createMockSchoolSelectionLlmClient(
+    calls,
+    (callNumber) => {
+      const brokenSelection = {
+        ...validSelection,
+        rounds: { ...validSelection.rounds, ea: validSelection.rounds.ea.slice(0, 2) },
+      };
+      return JSON.stringify(callNumber === 1 ? brokenSelection : validSelection);
+    },
+  ),
 });
 
 const generated = await service.generateSelection({
@@ -190,18 +201,6 @@ const generated = await service.generateSelection({
   env: {
     DEEPSEEK_API_KEY: "school-selection-secret",
     DEEPSEEK_MODEL: "Deepseek V4 pro",
-  },
-  deepSeekFetch: async (url, options) => {
-    calls.push({ url, options });
-    const brokenSelection = {
-      ...validSelection,
-      rounds: { ...validSelection.rounds, ea: validSelection.rounds.ea.slice(0, 2) },
-    };
-    const content = calls.length === 1 ? JSON.stringify(brokenSelection) : JSON.stringify(validSelection);
-    return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
   },
 });
 
@@ -234,16 +233,15 @@ assert.equal(
   "46%-62%",
 );
 assert.equal(generated.selectionVersion, "均衡版");
+assert.equal(generated.quality.metadata.workflowVersion, SCHOOL_SELECTION_GRAPH_VERSION);
 assert.ok(generated.ragSources.some((source) => source.type === "school-encyclopedia"));
 assert.equal(JSON.stringify(generated).includes("school-selection-secret"), false);
 
 assert.equal(calls.length, 2, "School selection should retry once when the first JSON fails strict validation.");
-assert.equal(calls[0].url, "https://api.deepseek.com/chat/completions");
-assert.equal(calls[0].options.headers.Authorization, "Bearer school-selection-secret");
-const sentPayload = JSON.parse(calls[0].options.body);
+const sentPayload = calls[0];
 assert.equal(sentPayload.model, "deepseek-v4-flash");
-assert.equal(sentPayload.stream, false);
-assert.deepEqual(sentPayload.thinking, { type: "disabled" });
+assert.equal(sentPayload.maxTokens, 9000);
+assert.equal(sentPayload.temperature, 0.2);
 assert.match(sentPayload.messages[0].content, /美本选校系统/);
 assert.match(sentPayload.messages[0].content, /REA \/ ED1/);
 assert.match(sentPayload.messages[0].content, /UC.*6/);
@@ -271,7 +269,8 @@ assert.match(sentPayload.messages[1].content, /院校百科 RAG 参考/);
 assert.match(sentPayload.messages[1].content, /University of California|UC/);
 assert.match(sentPayload.messages[1].content, /先判断学生整体竞争力/);
 assert.match(sentPayload.messages[1].content, /如果信息不足，明确写入 gaps/);
-const retryPayload = JSON.parse(calls[1].options.body);
+const retryPayload = calls[1];
+assert.equal(retryPayload.temperature, 0.1);
 assert.match(retryPayload.messages[1].content, /上一次输出未通过二次校验/);
 assert.match(retryPayload.messages[1].content, /EA 需要 3-5 所/);
 
@@ -295,5 +294,25 @@ function school(name, major, riskLevel) {
     matchReason: `${name} 与当前档案方向匹配。`,
     gaps: ["核验截止日期", "补充官网要求"],
     nextAction: "核验官网并完善材料清单。",
+  };
+}
+
+function createMockSchoolSelectionLlmClient(callLog, getContent) {
+  return {
+    async invoke(options) {
+      callLog.push({
+        model: options.model,
+        maxTokens: options.maxTokens,
+        temperature: options.temperature,
+        messages: options.messages,
+        signal: options.signal,
+      });
+      const content = getContent(callLog.length, options);
+      if (content instanceof Error) throw content;
+      return {
+        content,
+        model: options.model,
+      };
+    },
   };
 }

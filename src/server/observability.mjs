@@ -49,6 +49,7 @@ export function createMetricsStore({
   const http = createHttpMetrics();
   const ai = createAiMetrics();
   const rag = createRagMetrics();
+  const graph = createGraphMetrics();
   const alerts = {
     aiFailureRate: Number(alertConfig.aiFailureRate ?? DEFAULT_AI_FAILURE_RATE_ALERT),
     apiAverageLatencyMs: Number(alertConfig.apiAverageLatencyMs ?? DEFAULT_API_AVERAGE_LATENCY_ALERT_MS),
@@ -102,11 +103,58 @@ export function createMetricsStore({
     increment(rag.byIntent, intent || "unknown");
   }
 
+  function recordGraphWorkflow({
+    workflow = "unknown",
+    ok = true,
+    reviewRequired = false,
+    durationMs = 0,
+  } = {}) {
+    const name = normalizeMetricKey(workflow);
+    const roundedDurationMs = roundDuration(durationMs);
+    graph.totalRuns += 1;
+    graph.totalDurationMs += roundedDurationMs;
+    graph.maxDurationMs = Math.max(graph.maxDurationMs, roundedDurationMs);
+    if (!ok) graph.failures += 1;
+    if (reviewRequired) graph.reviewRequired += 1;
+
+    const bucket = graph.byWorkflow[name] || createGraphWorkflowMetrics();
+    bucket.total += 1;
+    bucket.totalDurationMs += roundedDurationMs;
+    bucket.maxDurationMs = Math.max(bucket.maxDurationMs, roundedDurationMs);
+    if (!ok) bucket.failures += 1;
+    if (reviewRequired) bucket.reviewRequired += 1;
+    graph.byWorkflow[name] = bucket;
+  }
+
+  function recordGraphNode({
+    workflow = "unknown",
+    node = "unknown",
+    ok = true,
+    durationMs = 0,
+  } = {}) {
+    const workflowName = normalizeMetricKey(workflow);
+    const nodeName = normalizeMetricKey(node);
+    const roundedDurationMs = roundDuration(durationMs);
+    graph.totalNodeCalls += 1;
+    if (!ok) graph.nodeFailures += 1;
+
+    const workflowBucket = graph.byWorkflow[workflowName] || createGraphWorkflowMetrics();
+    const nodeBucket = workflowBucket.byNode[nodeName] || createGraphNodeMetrics();
+    nodeBucket.total += 1;
+    nodeBucket.totalDurationMs += roundedDurationMs;
+    nodeBucket.maxDurationMs = Math.max(nodeBucket.maxDurationMs, roundedDurationMs);
+    if (!ok) nodeBucket.failures += 1;
+    workflowBucket.byNode[nodeName] = nodeBucket;
+    graph.byWorkflow[workflowName] = workflowBucket;
+  }
+
   function snapshot({ backupStatus = null } = {}) {
     const httpAverageLatencyMs = average(http.totalDurationMs, http.total);
     const aiAverageLatencyMs = average(ai.totalDurationMs, ai.total);
     const aiFailureRate = average(ai.failures, ai.total);
     const ragAverageRetrievalMs = average(rag.totalDurationMs, rag.total);
+    const graphFailureRate = average(graph.failures, graph.totalRuns);
+    const graphReviewRequiredRate = average(graph.reviewRequired, graph.totalRuns);
     return {
       startedAt,
       generatedAt: now().toISOString(),
@@ -146,6 +194,43 @@ export function createMetricsStore({
         averageTotalDocuments: average(rag.totalDocuments, rag.total),
         byIntent: { ...rag.byIntent },
       },
+      graph: {
+        totalRuns: graph.totalRuns,
+        failedRuns: graph.failures,
+        failureRate: graphFailureRate,
+        reviewRequiredRuns: graph.reviewRequired,
+        reviewRequiredRate: graphReviewRequiredRate,
+        averageRunMs: average(graph.totalDurationMs, graph.totalRuns),
+        maxRunMs: graph.maxDurationMs,
+        totalNodeCalls: graph.totalNodeCalls,
+        failedNodeCalls: graph.nodeFailures,
+        byWorkflow: Object.fromEntries(
+          Object.entries(graph.byWorkflow).map(([workflow, value]) => [
+            workflow,
+            {
+              totalRuns: value.total,
+              failedRuns: value.failures,
+              failureRate: average(value.failures, value.total),
+              reviewRequiredRuns: value.reviewRequired,
+              reviewRequiredRate: average(value.reviewRequired, value.total),
+              averageRunMs: average(value.totalDurationMs, value.total),
+              maxRunMs: value.maxDurationMs,
+              byNode: Object.fromEntries(
+                Object.entries(value.byNode).map(([node, nodeValue]) => [
+                  node,
+                  {
+                    totalCalls: nodeValue.total,
+                    failedCalls: nodeValue.failures,
+                    failureRate: average(nodeValue.failures, nodeValue.total),
+                    averageLatencyMs: average(nodeValue.totalDurationMs, nodeValue.total),
+                    maxLatencyMs: nodeValue.maxDurationMs,
+                  },
+                ]),
+              ),
+            },
+          ]),
+        ),
+      },
       backup: backupStatus,
       alerts: buildAlerts({
         aiFailureRate,
@@ -161,6 +246,8 @@ export function createMetricsStore({
     recordHttpRequest,
     recordAiCall,
     recordRagRetrieval,
+    recordGraphWorkflow,
+    recordGraphNode,
     snapshot,
   };
 }
@@ -279,8 +366,46 @@ function createRagMetrics() {
   };
 }
 
+function createGraphMetrics() {
+  return {
+    totalRuns: 0,
+    failures: 0,
+    reviewRequired: 0,
+    totalDurationMs: 0,
+    maxDurationMs: 0,
+    totalNodeCalls: 0,
+    nodeFailures: 0,
+    byWorkflow: {},
+  };
+}
+
+function createGraphWorkflowMetrics() {
+  return {
+    total: 0,
+    failures: 0,
+    reviewRequired: 0,
+    totalDurationMs: 0,
+    maxDurationMs: 0,
+    byNode: {},
+  };
+}
+
+function createGraphNodeMetrics() {
+  return {
+    total: 0,
+    failures: 0,
+    totalDurationMs: 0,
+    maxDurationMs: 0,
+  };
+}
+
 function increment(target, key) {
   target[key] = (target[key] || 0) + 1;
+}
+
+function normalizeMetricKey(value) {
+  const text = String(value || "").trim();
+  return text || "unknown";
 }
 
 function average(total, count) {

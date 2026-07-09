@@ -4,10 +4,13 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
 import { AI_QUALITY_VERSIONS } from "../src/server/ai-quality.mjs";
+import { SCHOOL_SELECTION_GRAPH_VERSION } from "../src/server/langgraph-school-selection-workflow.mjs";
+import { createMetricsStore } from "../src/server/observability.mjs";
 import { buildCookieHeader, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-school-selection-"));
 const calls = [];
+const metrics = createMetricsStore();
 const selection = {
   summary: "选校组合以 ED1 稳定主线，EA 与 RD 分层覆盖。",
   strategy: {
@@ -49,17 +52,12 @@ const selection = {
 
 const server = createAppServer({
   databasePath: join(tempDir, "school-selection.sqlite"),
+  metrics,
   env: {
     DEEPSEEK_API_KEY: "server-school-selection-secret",
     DEEPSEEK_MODEL: "deepseek-v4-pro",
   },
-  deepSeekFetch: async (url, options) => {
-    calls.push({ url, options });
-    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(selection) } }] }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  },
+  deepSeekSchoolSelectionLlmClient: createMockSchoolSelectionLlmClient(calls),
 });
 
 try {
@@ -136,11 +134,29 @@ try {
   assert.equal(body.quality.metadata.model, "deepseek-v4-flash");
   assert.equal(body.quality.metadata.sourceSetVersion, AI_QUALITY_VERSIONS.schoolSelectionSourceSet);
   assert.equal(body.quality.metadata.parserVersion, AI_QUALITY_VERSIONS.schoolSelectionParser);
+  assert.equal(body.quality.metadata.workflowVersion, SCHOOL_SELECTION_GRAPH_VERSION);
   assert.ok(body.quality.citations.some((citation) => citation.sourceType === "school-encyclopedia"));
+  const metricsAfterDirect = metrics.snapshot();
+  assert.equal(metricsAfterDirect.ai.byFeature["school-selection"].totalCalls, 1);
+  assert.equal(metricsAfterDirect.graph.byWorkflow[SCHOOL_SELECTION_GRAPH_VERSION].totalRuns, 1);
+  assert.deepEqual(
+    Object.fromEntries(
+      Object.entries(metricsAfterDirect.graph.byWorkflow[SCHOOL_SELECTION_GRAPH_VERSION].byNode)
+        .map(([node, value]) => [node, [value.totalCalls, value.failedCalls]]),
+    ),
+    {
+      loadContext: [1, 0],
+      draftSelection: [1, 0],
+      calibrateSelection: [1, 0],
+      evaluateQuality: [1, 0],
+      finalizeResponse: [1, 0],
+    },
+  );
 
-  const sentPayload = JSON.parse(calls[0].options.body);
+  const sentPayload = calls[0];
   assert.equal(sentPayload.model, "deepseek-v4-flash");
-  assert.equal(sentPayload.max_tokens, 9000);
+  assert.equal(sentPayload.maxTokens, 9000);
+  assert.equal(sentPayload.temperature, 0.2);
   assert.match(sentPayload.messages[1].content, /中国大陆高中/);
   assert.match(sentPayload.messages[1].content, /Data Science/);
   assert.match(sentPayload.messages[1].content, /预算敏感度/);
@@ -171,6 +187,10 @@ try {
   assert.equal(completedJob.result.selection.rounds.ed1[0].admissionProbability, "12%-18%");
   assert.equal(completedJob.result.selection.rounds.uc.length, 6);
   assert.equal(completedJob.result.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.schoolSelectionPrompt);
+  assert.equal(completedJob.result.quality.metadata.workflowVersion, SCHOOL_SELECTION_GRAPH_VERSION);
+  const metricsAfterJob = metrics.snapshot();
+  assert.equal(metricsAfterJob.ai.byFeature["school-selection"].totalCalls, 2);
+  assert.equal(metricsAfterJob.graph.byWorkflow[SCHOOL_SELECTION_GRAPH_VERSION].totalRuns, 2);
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });
@@ -185,6 +205,24 @@ function school(name) {
     matchReason: `${name} matches the portfolio.`,
     gaps: ["核验要求"],
     nextAction: "检查官网。",
+  };
+}
+
+function createMockSchoolSelectionLlmClient(callLog) {
+  return {
+    async invoke(options) {
+      callLog.push({
+        model: options.model,
+        maxTokens: options.maxTokens,
+        temperature: options.temperature,
+        messages: options.messages,
+        signal: options.signal,
+      });
+      return {
+        content: JSON.stringify(selection),
+        model: options.model,
+      };
+    },
   };
 }
 

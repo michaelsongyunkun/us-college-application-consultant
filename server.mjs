@@ -224,30 +224,6 @@ function buildReadinessPayload({ authDb }) {
   }
 }
 
-function instrumentDeepSeekFetch(deepSeekFetch, metrics, feature) {
-  return async function observedDeepSeekFetch(url, options) {
-    const startedAt = monotonicNowMs();
-    try {
-      const apiResponse = await deepSeekFetch(url, options);
-      metrics.recordAiCall({
-        feature,
-        ok: Boolean(apiResponse?.ok),
-        statusCode: apiResponse?.status || 0,
-        durationMs: monotonicNowMs() - startedAt,
-      });
-      return apiResponse;
-    } catch (error) {
-      metrics.recordAiCall({
-        feature,
-        ok: false,
-        statusCode: 0,
-        durationMs: monotonicNowMs() - startedAt,
-      });
-      throw error;
-    }
-  };
-}
-
 async function readRequestText(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_BYTES) {
   const chunks = [];
   let size = 0;
@@ -362,14 +338,36 @@ export function createAppServer({
     getBackupStatus: () => getLatestBackupStatus({ root, env }),
   }),
   logger = null,
-  deepSeekPlan = createDeepSeekPlanService({ promptPath }),
-  portfolioCapabilityAgent = createPortfolioCapabilityAgentService({ activityPortfolio }),
-  deepSeekRag = createDeepSeekRagService({ root, planning, activityPortfolio, metrics }),
-  schoolSelection = createSchoolSelectionService({ activityPortfolio, root }),
+  deepSeekPlanLlmClient = null,
+  deepSeekPlan = createDeepSeekPlanService({
+    promptPath,
+    metrics,
+    ...(deepSeekPlanLlmClient ? { llmClient: deepSeekPlanLlmClient } : {}),
+  }),
+  deepSeekPortfolioCapabilityLlmClient = null,
+  portfolioCapabilityAgent = createPortfolioCapabilityAgentService({
+    activityPortfolio,
+    metrics,
+    ...(deepSeekPortfolioCapabilityLlmClient ? { llmClient: deepSeekPortfolioCapabilityLlmClient } : {}),
+  }),
+  deepSeekRagLlmClient = null,
+  deepSeekRag = createDeepSeekRagService({
+    root,
+    planning,
+    activityPortfolio,
+    metrics,
+    ...(deepSeekRagLlmClient ? { llmClient: deepSeekRagLlmClient } : {}),
+  }),
+  deepSeekSchoolSelectionLlmClient = null,
+  schoolSelection = createSchoolSelectionService({
+    activityPortfolio,
+    root,
+    metrics,
+    ...(deepSeekSchoolSelectionLlmClient ? { llmClient: deepSeekSchoolSelectionLlmClient } : {}),
+  }),
   mailer = createMailerFromEnv(env),
   appBaseUrl = env.APP_BASE_URL || "",
   authHttp = null,
-  deepSeekFetch = fetch,
   maxRequestBodyBytes = DEFAULT_MAX_REQUEST_BODY_BYTES,
   rateLimits = DEFAULT_RATE_LIMITS,
 } = {}) {
@@ -510,7 +508,6 @@ export function createAppServer({
         sendJson(response, 200, await deepSeekPlan.generatePlan({
           payload,
           env,
-          deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "deepseek-plan"),
         }));
         return;
       }
@@ -523,7 +520,6 @@ export function createAppServer({
           deepSeekPlan.generatePlan({
             payload,
             env,
-            deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "deepseek-plan"),
           }),
         );
         sendJson(response, 202, { jobId: job.id, status: job.status });
@@ -553,7 +549,6 @@ export function createAppServer({
           historySummary: payload.historySummary,
           assistantProfile: payload.assistantProfile,
           env,
-          deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "deepseek-rag"),
         }));
         return;
       }
@@ -565,7 +560,6 @@ export function createAppServer({
           user,
           payload: await readJson(request),
           env,
-          deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "school-selection"),
         }));
         return;
       }
@@ -579,7 +573,6 @@ export function createAppServer({
             user,
             payload,
             env,
-            deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "school-selection"),
           }),
         );
         sendJson(response, 202, { jobId: job.id, status: job.status });
@@ -630,7 +623,6 @@ export function createAppServer({
           user,
           payload: await readJson(request),
           env,
-          deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "portfolio-capability-assessment"),
         }));
         return;
       }
@@ -644,11 +636,6 @@ export function createAppServer({
             user,
             payload,
             env,
-            deepSeekFetch: instrumentDeepSeekFetch(
-              deepSeekFetch,
-              metrics,
-              "portfolio-capability-assessment",
-            ),
           }),
         );
         sendJson(response, 202, { jobId: job.id, status: job.status });
@@ -681,7 +668,6 @@ export function createAppServer({
             historySummary: payload.historySummary,
             assistantProfile: payload.assistantProfile,
             env,
-            deepSeekFetch: instrumentDeepSeekFetch(deepSeekFetch, metrics, "deepseek-rag"),
           }),
         );
         sendJson(response, 202, { jobId: job.id, status: job.status });

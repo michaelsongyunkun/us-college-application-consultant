@@ -15,15 +15,7 @@ const server = createAppServer({
     DEEPSEEK_API_KEY: "workflow-rag-secret",
     DEEPSEEK_MODEL: "deepseek-v4-pro",
   },
-  deepSeekFetch: async (url, options) => {
-    calls.push({ url, options });
-    return new Response(
-      JSON.stringify({
-        choices: [{ message: { content: "ok" } }],
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
-  },
+  deepSeekRagLlmClient: createMockRagLlmClient(calls),
 });
 
 try {
@@ -108,7 +100,7 @@ try {
     "The visible RAG sources should include saved application portfolio details.",
   );
 
-  const sentPayload = JSON.parse(calls[0].options.body);
+  const sentPayload = calls[0];
   const userPrompt = sentPayload.messages[1].content;
   const contextStart = userPrompt.indexOf("检索到的资料片段");
   const retrievedContext = contextStart >= 0 ? userPrompt.slice(contextStart) : userPrompt;
@@ -139,6 +131,22 @@ function put(path, payload, cookie = "") {
     headers: jsonHeaders(cookie),
     body: JSON.stringify(payload),
   });
+}
+
+function createMockRagLlmClient(callLog) {
+  return {
+    async invoke(options) {
+      callLog.push({
+        model: options.model,
+        temperature: options.temperature,
+        messages: options.messages,
+      });
+      return {
+        content: "ok",
+        model: options.model,
+      };
+    },
+  };
 }
 
 function serverUrl() {

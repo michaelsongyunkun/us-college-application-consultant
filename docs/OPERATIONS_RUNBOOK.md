@@ -107,7 +107,7 @@ Before any manual audit-log cleanup, create a database backup and preserve the e
 - [ ] `/readyz` returns `status: ready` and no pending or unknown migrations.
 - [ ] `npm run db:status` shows only known migrations.
 - [ ] `npm run db:backup` completed for any environment with real user data.
-- [ ] Admin `/api/admin/ops/metrics` has no unexpected AI failure-rate, API-latency, RAG-latency, or backup alerts.
+- [ ] Admin `/api/admin/ops/metrics` has no unexpected AI failure-rate, graph failure/review-required rate, API-latency, RAG-latency, or backup alerts.
 - [ ] Audit-log export works for the release window if security-relevant behavior changed.
 - [ ] Release notes mention schema, AI, security, and user-facing changes.
 - [ ] Rollback path is documented for the specific release.
@@ -140,12 +140,12 @@ Admin metrics:
 curl -b cookies.txt http://localhost:4177/api/admin/ops/metrics
 ```
 
-The metrics response includes HTTP latency/status counters, DeepSeek call failure rate, RAG retrieval timing, latest backup age, and alert flags.
+The metrics response includes HTTP latency/status counters, LangChain-mediated DeepSeek call failure rate, RAG retrieval timing, LangGraph workflow/node counters, latest backup age, and alert flags. Graph counters are aggregate operational metadata only; they do not include raw prompts, retrieved context, draft answers, essays, notes, or API keys.
 
 ## Incident Checklist
 
 - [ ] Capture request id, timestamp, route, user impact, and deployment version.
 - [ ] Check application logs for structured errors.
 - [ ] Check database readiness and migration status.
-- [ ] Check DeepSeek API failures and RAG latency if AI paths are affected.
+- [ ] Check DeepSeek API failures, graph workflow/node failures, review-required rate, and RAG latency if AI paths are affected.
 - [ ] Restore from the most recent verified backup only after preserving the current database.

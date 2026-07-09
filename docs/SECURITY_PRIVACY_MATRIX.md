@@ -12,6 +12,8 @@ Created: 2026-06-18
 | Planning drafts and snapshots | Sensitive student data | AI-generated plans, activities, backups | User-owned, snapshot restore/delete scoped by owner |
 | Portfolio and academics | Highly sensitive student data | GPA, SAT/AP, activities, recommendation letters, school list | User-owned, minimize admin exposure |
 | AI prompts and answers | Sensitive derived data | DeepSeek plan, RAG answers, saved AI notes | User-owned, source/citation tracking required in Phase 4 |
+| LangGraph transient graph state | Sensitive derived runtime data | RAG workflow node state, portfolio capability workflow state, school selection workflow state, retrieved context, draft answer before response serialization | Process memory only; no checkpoint/store persistence enabled |
+| LangGraph operational counters | Admin operational data | Workflow run counts, node failure counts, review-required rates, aggregate latencies | Admin metrics only; no raw prompts, retrieved context, essays, notes, answers, or API keys |
 | Operational analytics | Admin operational data | login events, usage events, feedback | Admin only, redact where practical |
 | Security audit events | Admin security data | admin access, feedback moderation, password reset completion, destructive plan actions | Admin only, structured metadata, no raw secrets or full student payloads, JSON export uses masked fields |
 | Secrets | Secret | API keys, SMTP password, session tokens, reset tokens | Environment only, hash stored tokens |
@@ -72,6 +74,7 @@ Created: 2026-06-18
 - Password reset regression tests verify raw reset tokens are not stored, used tokens cannot be replayed, expired tokens cannot reset passwords, and successful resets clear existing sessions.
 - Session cookie is `HttpOnly` and `SameSite=Lax`; `Secure` is enabled in production unless overridden.
 - Auth and AI endpoints have rate limits.
+- LangChain and LangGraph packages stay server-only; browser modules continue to call existing first-party API routes.
 - Mutating authenticated API calls require CSRF protection.
 - Route authorization goes through a central permission helper for user/admin checks.
 - Cross-user authorization regression tests cover profile, plans, snapshots, portfolio, progress planner, and admin APIs.
@@ -79,6 +82,9 @@ Created: 2026-06-18
 - Admins can view audit events in the security dashboard and export filtered JSON audit logs with a documented 365-day retention policy.
 - Self-service account export and account deletion are available through authenticated APIs.
 - Admin dashboard payloads mask direct identifiers such as email, contact, and IP fields by default.
+- LangGraph RAG workflow state is transient and is not persisted to checkpoints or long-term memory stores.
+- LangGraph operational metrics record aggregate workflow/node counters only and intentionally exclude raw graph state.
+- Graph outputs require explicit user save/apply actions before becoming portfolio notes, planning actions, or other user-owned records.
 - SQL uses parameterized `better-sqlite3` statements.
 - Static and API responses include basic security headers.
 

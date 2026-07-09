@@ -1,6 +1,15 @@
 import { resolveApiKey } from "./api-key.mjs";
 import { AI_QUALITY_VERSIONS, buildAiRequestQuality } from "./ai-quality.mjs";
 import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
+import {
+  LangChainLlmError,
+  createLangChainDeepSeekClient,
+} from "./langchain-llm-client.mjs";
+import {
+  PORTFOLIO_CAPABILITY_GRAPH_VERSION,
+  createPortfolioCapabilityGraph,
+} from "./langgraph-portfolio-capability-workflow.mjs";
+import { monotonicNowMs } from "./observability.mjs";
 
 const DEEPSEEK_CAPABILITY_MAX_TOKENS = 4200;
 const MAX_AGENT_ATTEMPTS = 2;
@@ -56,16 +65,37 @@ export class PortfolioCapabilityAgentError extends Error {
 export function createPortfolioCapabilityAgentService({
   activityPortfolio,
   now = () => new Date(),
+  llmClient = createLangChainDeepSeekClient(),
+  metrics = null,
+  capabilityGraph = null,
 } = {}) {
   if (!activityPortfolio) {
     throw new PortfolioCapabilityAgentError("Activity portfolio service is required.", 500);
   }
 
+  const assessmentGraph = capabilityGraph || createPortfolioCapabilityGraph({
+    loadPortfolio: ({ user, payload }) =>
+      loadPortfolioForAssessment({ activityPortfolio, user, payload }),
+    assessDimensions: (state) =>
+      assessPortfolioCapabilityDimensions({ ...state, llmClient, metrics, now }),
+    validateNoSchoolAdvice: ({ capabilityAssessment }) => {
+      assertAssessmentBoundary(capabilityAssessment);
+      return capabilityAssessment;
+    },
+    saveAssessment: ({ user, candidatePortfolio, capabilityAssessment }) =>
+      activityPortfolio.savePortfolio(user, {
+        ...candidatePortfolio,
+        capabilityAssessment,
+      }),
+    buildResponse: ({ portfolio, model, workflowVersion }) =>
+      buildCapabilityAssessmentResponse({ portfolio, model, workflowVersion }),
+    metrics,
+  });
+
   async function generateAssessment({
     user,
     payload = {},
     env = process.env,
-    deepSeekFetch = fetch,
   } = {}) {
     const apiKey = resolveApiKey({
       environmentApiKey: env.DEEPSEEK_API_KEY,
@@ -78,12 +108,6 @@ export function createPortfolioCapabilityAgentService({
       );
     }
 
-    const currentPortfolio = activityPortfolio.getPortfolio(user);
-    const candidatePortfolio = isPlainObject(payload) && Object.keys(payload).length
-      ? { ...currentPortfolio, ...payload }
-      : currentPortfolio;
-    const assessmentInput = buildAssessmentInput(candidatePortfolio);
-    const baseline = buildRuleBaseline(assessmentInput);
     const model = normalizeDeepSeekModel(
       env.DEEPSEEK_CAPABILITY_ASSESSMENT_MODEL || env.DEEPSEEK_MODEL,
       "deepseek-v4-flash",
@@ -93,64 +117,140 @@ export function createPortfolioCapabilityAgentService({
       DEEPSEEK_CAPABILITY_MAX_TOKENS,
     );
 
-    let repairMessage = "";
-    for (let attempt = 1; attempt <= MAX_AGENT_ATTEMPTS; attempt += 1) {
-      const apiResponse = await deepSeekFetch("https://api.deepseek.com/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: buildSystemPrompt() },
-            { role: "user", content: buildUserPrompt({ assessmentInput, baseline, repairMessage }) },
-          ],
-          thinking: { type: "disabled" },
-          stream: false,
-          temperature: attempt === 1 ? 0.25 : 0.1,
-          max_tokens: maxTokens,
-        }),
-      });
-      const data = await apiResponse.json().catch(() => ({}));
-      if (!apiResponse.ok) {
-        throw new PortfolioCapabilityAgentError(
-          data.error?.message || "DeepSeek 能力评估调用失败。",
-          apiResponse.status,
-        );
-      }
-
-      try {
-        const parsed = parseAgentJson(extractDeepSeekResponseText(data));
-        const capabilityAssessment = normalizeAgentAssessment(parsed, baseline, now);
-        const savedPortfolio = activityPortfolio.savePortfolio(user, {
-          ...candidatePortfolio,
-          capabilityAssessment,
-        });
-        return {
-          capabilityAssessment: savedPortfolio.capabilityAssessment,
-          portfolio: savedPortfolio,
-          quality: buildAiRequestQuality({
-            feature: "portfolio-capability-assessment",
-            promptVersion: AI_QUALITY_VERSIONS.portfolioCapabilityPrompt,
-            model,
-            sourceSetVersion: AI_QUALITY_VERSIONS.noSourceSet,
-            parserVersion: AI_QUALITY_VERSIONS.portfolioCapabilityParser,
-          }),
-        };
-      } catch (error) {
-        repairMessage = error.message || "DeepSeek 返回的能力评估 JSON 未通过校验。";
-      }
-    }
-
-    throw new PortfolioCapabilityAgentError(
-      `${repairMessage || "DeepSeek 能力评估结果未通过校验。"} 请稍后重试。`,
-      502,
-    );
+    return assessmentGraph.invoke({
+      user,
+      payload,
+      env,
+      model,
+      maxTokens,
+    });
   }
 
   return { generateAssessment };
+}
+
+function loadPortfolioForAssessment({ activityPortfolio, user, payload = {} }) {
+  const currentPortfolio = activityPortfolio.getPortfolio(user);
+  const candidatePortfolio = isPlainObject(payload) && Object.keys(payload).length
+    ? { ...currentPortfolio, ...payload }
+    : currentPortfolio;
+  const assessmentInput = buildAssessmentInput(candidatePortfolio);
+  const baseline = buildRuleBaseline(assessmentInput);
+  return {
+    candidatePortfolio,
+    assessmentInput,
+    baseline,
+  };
+}
+
+async function assessPortfolioCapabilityDimensions({
+  llmClient,
+  metrics,
+  env,
+  model,
+  maxTokens,
+  assessmentInput,
+  baseline,
+  now,
+}) {
+  let repairMessage = "";
+  for (let attempt = 1; attempt <= MAX_AGENT_ATTEMPTS; attempt += 1) {
+    const llmResult = await invokePortfolioCapabilityLlm({
+      llmClient,
+      metrics,
+      env,
+      model,
+      maxTokens,
+      temperature: attempt === 1 ? 0.25 : 0.1,
+      messages: [
+        { role: "system", content: buildSystemPrompt() },
+        { role: "user", content: buildUserPrompt({ assessmentInput, baseline, repairMessage }) },
+      ],
+    });
+
+    try {
+      const parsed = parseAgentJson(llmResult?.content || "");
+      return normalizeAgentAssessment(parsed, baseline, now);
+    } catch (error) {
+      repairMessage = error.message || "DeepSeek 返回的能力评估 JSON 未通过校验。";
+    }
+  }
+
+  throw new PortfolioCapabilityAgentError(
+    `${repairMessage || "DeepSeek 能力评估结果未通过校验。"} 请稍后重试。`,
+    502,
+  );
+}
+
+function buildCapabilityAssessmentResponse({
+  portfolio,
+  model,
+  workflowVersion = PORTFOLIO_CAPABILITY_GRAPH_VERSION,
+}) {
+  return {
+    capabilityAssessment: portfolio.capabilityAssessment,
+    portfolio,
+    quality: buildAiRequestQuality({
+      feature: "portfolio-capability-assessment",
+      promptVersion: AI_QUALITY_VERSIONS.portfolioCapabilityPrompt,
+      model,
+      sourceSetVersion: AI_QUALITY_VERSIONS.noSourceSet,
+      parserVersion: AI_QUALITY_VERSIONS.portfolioCapabilityParser,
+      extraMetadata: {
+        workflowVersion,
+      },
+    }),
+  };
+}
+
+async function invokePortfolioCapabilityLlm({
+  llmClient,
+  metrics,
+  env,
+  model,
+  maxTokens,
+  temperature,
+  messages,
+  signal,
+}) {
+  const startedAt = monotonicNowMs();
+  try {
+    const result = await llmClient.invoke({
+      env,
+      model,
+      temperature,
+      maxTokens,
+      messages,
+      signal,
+    });
+    metrics?.recordAiCall?.({
+      feature: "portfolio-capability-assessment",
+      ok: true,
+      statusCode: 200,
+      durationMs: monotonicNowMs() - startedAt,
+    });
+    return result;
+  } catch (error) {
+    const mappedError = mapPortfolioCapabilityLlmError(error);
+    metrics?.recordAiCall?.({
+      feature: "portfolio-capability-assessment",
+      ok: false,
+      statusCode: mappedError.statusCode || 0,
+      durationMs: monotonicNowMs() - startedAt,
+    });
+    throw mappedError;
+  }
+}
+
+function mapPortfolioCapabilityLlmError(error) {
+  if (error instanceof PortfolioCapabilityAgentError) return error;
+  if (error instanceof LangChainLlmError) {
+    return new PortfolioCapabilityAgentError(error.message, error.statusCode || 502);
+  }
+  return new PortfolioCapabilityAgentError(
+    error?.message || "DeepSeek 能力评估调用失败。",
+    error?.statusCode || 502,
+  );
 }
 
 function buildSystemPrompt() {
@@ -506,10 +606,6 @@ function parseAgentJson(text) {
   } catch {
     throw new PortfolioCapabilityAgentError("DeepSeek 返回的能力评估 JSON 无法解析。", 502);
   }
-}
-
-function extractDeepSeekResponseText(data) {
-  return data?.choices?.[0]?.message?.content?.trim() || "";
 }
 
 function sanitizeRecords(value, fields, limit) {
