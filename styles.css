@@ -9924,12 +9924,10 @@ tbody tr:hover td {
   }
 }
 
-/* University ranking visual polish */
+/* University ranking alignment with the shared command workspace */
 .university-ranking-shell .ranking-summary {
   border-color: var(--color-border);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 242, 0.94)),
-    var(--color-surface);
+  background: var(--color-surface);
 }
 
 .university-ranking-shell .command-summary-metrics span {
@@ -9937,7 +9935,7 @@ tbody tr:hover td {
 }
 
 .university-ranking-shell .command-summary-metrics strong {
-  color: var(--color-info);
+  color: var(--color-brand-deep);
 }
 
 .ranking-board-panel,
@@ -9957,25 +9955,26 @@ tbody tr:hover td {
   color: var(--color-brand-deep);
 }
 
-.ranking-tabs {
+.university-ranking-shell .ranking-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px;
+  gap: 4px;
+  padding: 4px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  background: var(--color-surface-subtle);
+  background: #fbfcfe;
 }
 
-.resource-tab.ranking-tab {
+.university-ranking-shell .resource-tab.ranking-tab {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 38px;
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 1 1 150px;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   text-align: left;
 }
 
@@ -10035,12 +10034,11 @@ tbody tr:hover td {
 }
 
 .ranking-weight-number {
-  min-height: 36px;
+  min-height: 42px;
 }
 
 .ranking-control-footer {
-  position: sticky;
-  top: 12px;
+  position: static;
   z-index: 10;
   grid-area: controls;
   display: grid;
@@ -10050,8 +10048,8 @@ tbody tr:hover td {
   padding: 12px 14px;
   border-color: var(--color-border);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: var(--shadow-panel);
+  background: var(--color-surface-subtle);
+  box-shadow: none;
 }
 
 .ranking-control-footer .status {
@@ -10068,20 +10066,20 @@ tbody tr:hover td {
   gap: 8px;
 }
 
-.ranking-control-footer button {
+.university-ranking-shell .ranking-control-footer button {
   width: auto;
-  min-height: 38px;
+  min-height: 42px;
 }
 
-.ranking-control-footer #generateRankingButton {
-  border-color: var(--color-action);
-  background: var(--color-action);
+.university-ranking-shell .ranking-control-footer #generateRankingButton {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
   color: #ffffff;
 }
 
-.ranking-control-footer #generateRankingButton:hover:not(:disabled) {
-  border-color: #92400e;
-  background: #92400e;
+.university-ranking-shell .ranking-control-footer #generateRankingButton:hover:not(:disabled) {
+  border-color: var(--color-brand-deep);
+  background: var(--color-brand-deep);
 }
 
 .ranking-save-status {
@@ -10096,6 +10094,14 @@ tbody tr:hover td {
 
 .ranking-result-workspace {
   gap: 12px;
+}
+
+.university-ranking-shell .ranking-result-workspace[hidden] {
+  display: none;
+}
+
+.university-ranking-shell .ranking-save-status[hidden] {
+  display: none;
 }
 
 .ranking-filter-grid {
@@ -10196,14 +10202,21 @@ tbody tr:hover td {
 }
 
 @media (max-width: 560px) {
-  .ranking-tabs {
+  .university-ranking-shell .ranking-tabs {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .resource-tab.ranking-tab {
+  .university-ranking-shell .resource-tab.ranking-tab:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .university-ranking-shell .resource-tab.ranking-tab {
     justify-content: space-between;
-    border-radius: 10px;
+  }
+
+  .university-ranking-shell .ranking-tab:not(:first-child) span {
+    display: none;
   }
 
   .ranking-pagination-controls label {

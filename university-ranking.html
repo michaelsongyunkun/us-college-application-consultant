@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>大学排名</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260622-ranking-polish" />
+    <link rel="stylesheet" href="./styles.css?v=20260710-ranking-design-alignment" />
   </head>
   <body>
     <main class="app-shell command-shell university-ranking-shell">
@@ -76,7 +76,6 @@
         <div id="rankingDatasetTabs" class="resource-tabs ranking-tabs" role="tablist" aria-label="榜单来源"></div>
 
         <div class="ranking-workbench">
-          <form id="rankingWeightForm" class="ranking-weight-form" novalidate></form>
           <div class="ranking-control-footer">
             <p id="rankingWeightStatus" class="status" role="status" aria-live="polite">等待数据加载</p>
             <div class="inline-actions">
@@ -84,6 +83,7 @@
               <button id="generateRankingButton" type="button">生成完整排名</button>
             </div>
           </div>
+          <form id="rankingWeightForm" class="ranking-weight-form" novalidate></form>
         </div>
 
         <div id="rankingHomeSaveStatus" class="ranking-save-status" hidden></div>
@@ -169,6 +169,6 @@
     <script src="./data/university-ranking-data.js?v=20260622-university-ranking"></script>
     <script type="module" src="./src/client/admin-nav.js?v=20260602-mobile-drawer"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260602-mobile-drawer"></script>
-    <script type="module" src="./src/client/university-ranking.js?v=20260622-ranking-remove-header"></script>
+    <script type="module" src="./src/client/university-ranking.js?v=20260710-ranking-design-alignment"></script>
   </body>
 </html>

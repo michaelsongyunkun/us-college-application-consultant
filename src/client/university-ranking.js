@@ -159,7 +159,7 @@ function init() {
     entry.generatedWeightsKey = "";
     entry.page = 1;
     elements.tableBody.innerHTML = "";
-    elements.meta.textContent = "";
+    elements.meta.textContent = "完成权重设置并生成排名后，在这里查看完整结果。";
     elements.paginationInfo.textContent = "";
     setRankingVisibility(false);
   }
@@ -187,9 +187,10 @@ function init() {
       return result;
     }
 
+    elements.weightTotal.dataset.state = "valid";
+
     if (dataset.isHome && !homeIsReady(datasets, state.savedRankings)) {
       const missing = missingSavedDatasets(datasets, state.savedRankings).map((item) => item.shortName).join("、");
-      elements.weightTotal.dataset.state = "invalid";
       elements.weightStatus.textContent = `还需要先保存：${missing}`;
       elements.weightStatus.classList.add("error");
       elements.generateButton.disabled = true;
@@ -197,7 +198,6 @@ function init() {
       return { ...result, valid: false };
     }
 
-    elements.weightTotal.dataset.state = "valid";
     elements.weightStatus.classList.remove("error");
     const currentKey = weightsKey(result.weights);
     const isStale = entry.ranking && currentKey !== entry.generatedWeightsKey;
