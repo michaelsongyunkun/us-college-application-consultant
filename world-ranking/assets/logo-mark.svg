@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="US College Compass">
-  <rect width="96" height="96" rx="22" fill="#fbfaf5"/>
-  <path d="M48 10 78 25v24c0 19.4-12 32.8-30 39-18-6.2-30-19.6-30-39V25L48 10Z" fill="#287250"/>
-  <path d="M48 22 68 31.5V48c0 12.8-7.8 22.1-20 27-12.2-4.9-20-14.2-20-27V31.5L48 22Z" fill="#fffaf0"/>
-  <path d="M39 58.5 50.5 34 58 55.5l-19 3Z" fill="#a86400"/>
-  <circle cx="48" cy="50.5" r="4" fill="#287250"/>
-  <path d="M36.5 66h23" stroke="#287250" stroke-width="5" stroke-linecap="round"/>
-</svg>
