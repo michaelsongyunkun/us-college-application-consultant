@@ -61,6 +61,9 @@ assert.deepEqual(calls[0].options, {
   model: "deepseek-v4-flash",
   temperature: 0.3,
   streaming: false,
+  modelKwargs: {
+    thinking: { type: "disabled" },
+  },
   maxTokens: 1200,
 });
 assert.equal(calls[0].callOptions.signal, "mock-signal");
@@ -106,3 +109,46 @@ assert.throws(
   () => normalizeLangChainMessages([{ role: "tool", content: "Unsupported for now" }]),
   /不支持的 LangChain 消息角色/,
 );
+
+const originalFetch = globalThis.fetch;
+let sdkRequestBody = null;
+try {
+  globalThis.fetch = async (_url, options = {}) => {
+    sdkRequestBody = JSON.parse(String(options.body || "{}"));
+    return new Response(
+      JSON.stringify({
+        id: "mock-deepseek-response",
+        object: "chat.completion",
+        created: 1,
+        model: sdkRequestBody.model,
+        choices: [
+          {
+            index: 0,
+            finish_reason: "stop",
+            message: { role: "assistant", content: "{\"ok\":true}" },
+          },
+        ],
+        usage: { prompt_tokens: 3, completion_tokens: 4, total_tokens: 7 },
+      }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+  };
+
+  const sdkClient = createLangChainDeepSeekClient();
+  await sdkClient.invoke({
+    env: { DEEPSEEK_API_KEY: "sdk-boundary-secret" },
+    model: "deepseek-v4-flash",
+    messages: [["user", "Return JSON"]],
+    temperature: 0.2,
+    maxTokens: 9000,
+  });
+
+  assert.equal(sdkRequestBody.temperature, 0.2);
+  assert.deepEqual(
+    sdkRequestBody.thinking,
+    { type: "disabled" },
+    "DeepSeek V4 requests with temperature must explicitly disable thinking mode.",
+  );
+} finally {
+  globalThis.fetch = originalFetch;
+}

@@ -37,6 +37,9 @@ export function createLangChainDeepSeekClient({
       model: selectedModel,
       temperature: normalizeTemperature(temperature),
       streaming: false,
+      modelKwargs: {
+        thinking: { type: "disabled" },
+      },
     };
     const normalizedMaxTokens = normalizePositiveInteger(maxTokens);
     if (normalizedMaxTokens) chatModelOptions.maxTokens = normalizedMaxTokens;
