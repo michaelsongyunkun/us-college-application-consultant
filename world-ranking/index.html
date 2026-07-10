@@ -4,15 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>我的世界大学排名</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260710-brand-alignment-v3" />
     <script src="./data/universities.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
   <body>
     <header class="app-header">
-      <div>
-        <p class="eyebrow" id="datasetEyebrow">QS 2023-2027 · 5年均值</p>
-        <h1>我的世界大学排名</h1>
+      <div class="ranking-header-copy">
+        <div class="ranking-brand">
+          <img src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
+          <span>
+            <strong>US College Compass</strong>
+            <small>University Ranking Lab</small>
+          </span>
+        </div>
+        <div class="ranking-title-block">
+          <p class="eyebrow" id="datasetEyebrow">QS 2023-2027 · 5年均值</p>
+          <h1>我的世界大学排名</h1>
+          <p class="header-description">按你的权重重算四大榜单，用于辅助比较，不替代院校官网、项目要求或顾问判断。</p>
+        </div>
       </div>
       <dl class="data-summary" aria-label="数据概览">
         <div>
@@ -42,9 +52,6 @@
           <div class="weight-total" id="weightTotalBadge" data-state="valid">合计 100%</div>
         </div>
 
-        <form id="weightForm" class="weights-grid" novalidate></form>
-        <div id="homeSaveStatus" class="home-save-status" hidden></div>
-
         <div class="action-bar">
           <p id="weightStatus" class="status-text" role="status" aria-live="polite">权重有效，可以生成完整排名。</p>
           <div class="action-buttons">
@@ -52,6 +59,9 @@
             <button type="button" class="primary-button" id="generateRankingButton">生成完整排名</button>
           </div>
         </div>
+
+        <form id="weightForm" class="weights-grid" novalidate></form>
+        <div id="homeSaveStatus" class="home-save-status" hidden></div>
       </section>
 
       <section class="result-panel" aria-labelledby="resultTitle">
