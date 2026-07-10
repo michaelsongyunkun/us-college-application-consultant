@@ -10,14 +10,23 @@ const commandNavigation = indexHtml.match(/<nav class="command-sidebar-nav"[\s\S
 
 assert.match(html, /<title>大学排名<\/title>/);
 assert.match(html, /class="[^"]*university-ranking-shell[^"]*"/);
-assert.ok(html.includes('styles.css?v=20260710-ranking-design-alignment'));
+assert.ok(html.includes('styles.css?v=20260710-ranking-structure-v2'));
 assert.ok(html.includes('href="./university-ranking.html" data-safe-nav aria-current="page"'));
 assert.ok(html.includes('src="./data/university-ranking-data.js?v=20260622-university-ranking"'));
-assert.ok(html.includes('src="./src/client/university-ranking.js?v=20260710-ranking-design-alignment"'));
+assert.ok(html.includes('src="./src/client/university-ranking.js?v=20260710-ranking-structure-v2"'));
 assert.ok(html.includes('id="rankingWeightForm"'));
 assert.ok(html.includes('id="rankingDatasetTabs"'));
 assert.ok(html.includes('id="rankingTableBody"'));
 assert.ok(html.includes('id="exportRankingSvgButton"'));
+assert.ok(html.includes('class="ranking-workspace-layout"'));
+assert.ok(html.includes('id="rankingEmptyState"'));
+assert.ok(html.includes('id="rankingEmptyStateTitle"'));
+assert.ok(html.includes('id="rankingEmptyStateCopy"'));
+assert.ok(
+  html.indexOf('class="ranking-workspace-layout"') < html.indexOf('class="panel ranking-board-panel"')
+    && html.indexOf('class="panel ranking-board-panel"') < html.indexOf('class="panel ranking-results-panel"'),
+  "The ranking page should expose one strategy-and-results workspace instead of unrelated stacked panels.",
+);
 assert.ok(
   html.indexOf('class="ranking-control-footer"') < html.indexOf('id="rankingWeightForm"'),
   "The visible ranking action bar should precede the weight editor in DOM and keyboard order.",
@@ -96,4 +105,35 @@ assert.match(
 assert.ok(
   script.includes('elements.meta.textContent = "完成权重设置并生成排名后，在这里查看完整结果。";'),
   "The empty result panel should retain a useful next-step message.",
+);
+assert.ok(
+  script.includes("elements.emptyState.hidden = isVisible;"),
+  "The preview empty state should trade places with generated ranking results.",
+);
+assert.ok(script.includes('class="ranking-save-summary"'));
+assert.ok(!script.includes('class="ranking-save-status-row"'));
+assert.match(
+  styles,
+  /\.ranking-save-status\s*\{[^}]*display:\s*block/,
+  "The consolidated home-save progress should occupy the full strategy-panel width.",
+);
+assert.match(
+  styles,
+  /\.ranking-workspace-layout\s*\{[\s\S]*?grid-template-columns:\s*minmax\(330px, 0\.82fr\) minmax\(0, 1\.6fr\)/,
+  "Desktop ranking should use a strategy sidebar and a wider result workspace.",
+);
+assert.match(
+  styles,
+  /\.ranking-workspace-layout \.ranking-board-panel\s*\{[\s\S]*?position:\s*sticky;[\s\S]*?max-height:\s*calc\(100vh - 36px\)/,
+  "The strategy panel should remain available while scanning long rankings.",
+);
+assert.match(
+  styles,
+  /\.ranking-empty-state\s*\{[\s\S]*?min-height:\s*520px/,
+  "The result side should provide a substantial task-oriented preview state before generation.",
+);
+assert.match(
+  styles,
+  /@media \(max-width: 1180px\)[\s\S]*?\.ranking-workspace-layout\s*\{[\s\S]*?grid-template-columns:\s*1fr/,
+  "The two-pane workspace should return to one column on narrower screens.",
 );

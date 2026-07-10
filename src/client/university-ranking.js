@@ -33,6 +33,9 @@ const elements = {
   saveHomeButton: document.querySelector("#saveRankingHomeButton"),
   exportSvgButton: document.querySelector("#exportRankingSvgButton"),
   homeSaveStatus: document.querySelector("#rankingHomeSaveStatus"),
+  emptyState: document.querySelector("#rankingEmptyState"),
+  emptyStateTitle: document.querySelector("#rankingEmptyStateTitle"),
+  emptyStateCopy: document.querySelector("#rankingEmptyStateCopy"),
   workspace: document.querySelector("#rankingWorkspace"),
   meta: document.querySelector("#rankingMeta"),
   searchInput: document.querySelector("#rankingSearchInput"),
@@ -149,6 +152,7 @@ function init() {
 
   function setRankingVisibility(isVisible) {
     elements.workspace.hidden = !isVisible;
+    elements.emptyState.hidden = isVisible;
     elements.exportSvgButton.disabled = !isVisible;
     updateSaveButtonState();
   }
@@ -438,17 +442,24 @@ function init() {
       elements.homeSaveStatus.innerHTML = "";
       return;
     }
+    const savedIds = savedDatasetIds(datasets, state.savedRankings);
+    const missing = missingSavedDatasets(datasets, state.savedRankings);
+    const isComplete = missing.length === 0;
+    const progress = Math.round((savedIds.length / datasets.length) * 100);
+    const detail = isComplete
+      ? "四个榜单均已保存，可以生成我的主页综合排名。"
+      : `还需保存：${missing.map((item) => item.shortName).join("、")}`;
     elements.homeSaveStatus.hidden = false;
-    elements.homeSaveStatus.innerHTML = datasets
-      .map((item) => {
-        const saved = state.savedRankings[item.id];
-        const status = saved ? `已保存 ${new Date(saved.savedAt).toLocaleString("zh-CN")}` : "未保存";
-        return `<div class="ranking-save-status-row" data-state="${saved ? "saved" : "missing"}">
-          <strong>${escapeHtml(item.shortName)}</strong>
-          <span>${escapeHtml(status)}</span>
-        </div>`;
-      })
-      .join("");
+    elements.homeSaveStatus.innerHTML = `<div class="ranking-save-summary" data-state="${isComplete ? "complete" : "pending"}">
+      <div class="ranking-save-summary-heading">
+        <span>合成进度</span>
+        <strong>已保存 ${savedIds.length}/${datasets.length}</strong>
+      </div>
+      <div class="ranking-save-progress" role="progressbar" aria-label="主页榜单保存进度" aria-valuemin="0" aria-valuemax="${datasets.length}" aria-valuenow="${savedIds.length}">
+        <span style="width: ${progress}%"></span>
+      </div>
+      <p>${escapeHtml(detail)}</p>
+    </div>`;
   }
 
   function updateDatasetChrome() {
@@ -459,6 +470,14 @@ function init() {
     elements.summaryDatasetCount.textContent = String(datasets.length);
     elements.resetButton.textContent = dataset.resetLabel;
     elements.resultTitle.textContent = `${dataset.shortName}完整排名`;
+    if (dataset.isHome) {
+      const savedCount = savedDatasetIds(datasets, state.savedRankings).length;
+      elements.emptyStateTitle.textContent = "合成你的跨榜单排名";
+      elements.emptyStateCopy.textContent = `先在四个榜单中分别生成并保存排名；完成 ${savedCount}/${datasets.length} 后即可在这里合成。`;
+    } else {
+      elements.emptyStateTitle.textContent = `生成 ${dataset.shortName} 自定义排名`;
+      elements.emptyStateCopy.textContent = `调整左侧 ${dataset.indicators.length} 项指标的权重，合计 100% 后生成完整结果。`;
+    }
     elements.avgRankHeader.textContent = dataset.avgRankLabel;
     elements.referenceScoreHeader.textContent = dataset.referenceScoreLabel;
     elements.avgRankSortOption.textContent = dataset.avgRankLabel;

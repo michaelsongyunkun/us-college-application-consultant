@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>大学排名</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260710-ranking-design-alignment" />
+    <link rel="stylesheet" href="./styles.css?v=20260710-ranking-structure-v2" />
   </head>
   <body>
     <main class="app-shell command-shell university-ranking-shell">
@@ -64,7 +64,8 @@
         </div>
       </section>
 
-      <section class="panel ranking-board-panel" aria-labelledby="ranking-controls-title">
+      <div class="ranking-workspace-layout">
+        <section class="panel ranking-board-panel" aria-labelledby="ranking-controls-title">
         <div class="section-heading table-heading ranking-board-heading">
           <div>
             <h2 id="ranking-controls-title">榜单与权重</h2>
@@ -87,9 +88,9 @@
         </div>
 
         <div id="rankingHomeSaveStatus" class="ranking-save-status" hidden></div>
-      </section>
+        </section>
 
-      <section class="panel ranking-results-panel" aria-labelledby="rankingResultTitle">
+        <section class="panel ranking-results-panel" aria-labelledby="rankingResultTitle">
         <div class="section-heading table-heading ranking-result-heading">
           <div>
             <h2 id="rankingResultTitle">完整排名</h2>
@@ -99,6 +100,22 @@
             <button id="saveRankingHomeButton" class="secondary" type="button" disabled>保存到我的主页</button>
             <button id="exportRankingSvgButton" class="secondary" type="button" disabled>导出筛选 SVG</button>
           </div>
+        </div>
+
+        <div id="rankingEmptyState" class="ranking-empty-state" role="status" aria-live="polite">
+          <div class="ranking-empty-mark" aria-hidden="true">
+            <span>1</span>
+            <span>2</span>
+            <span>3</span>
+          </div>
+          <p class="eyebrow">Ranking Preview</p>
+          <h3 id="rankingEmptyStateTitle">先完成权重策略</h3>
+          <p id="rankingEmptyStateCopy">选择一个榜单并调整权重，生成后即可在这里筛选和查看完整排名。</p>
+          <ol class="ranking-empty-steps">
+            <li><span>1</span><strong>选择榜单</strong></li>
+            <li><span>2</span><strong>调整权重</strong></li>
+            <li><span>3</span><strong>生成排名</strong></li>
+          </ol>
         </div>
 
         <div id="rankingWorkspace" class="ranking-result-workspace" hidden>
@@ -163,12 +180,13 @@
           </div>
         </div>
 
-      </section>
+        </section>
+      </div>
       </div>
     </main>
     <script src="./data/university-ranking-data.js?v=20260622-university-ranking"></script>
     <script type="module" src="./src/client/admin-nav.js?v=20260602-mobile-drawer"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260602-mobile-drawer"></script>
-    <script type="module" src="./src/client/university-ranking.js?v=20260710-ranking-design-alignment"></script>
+    <script type="module" src="./src/client/university-ranking.js?v=20260710-ranking-structure-v2"></script>
   </body>
 </html>
