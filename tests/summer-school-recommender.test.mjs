@@ -231,3 +231,27 @@ const eligibilityBatch = recommendSummerSchools({
 assert.ok(eligibilityBatch.items.every((item) => item.id !== "us-high-school-only"));
 assert.ok(eligibilityBatch.items.some((item) => item.id === "international-ai"));
 assert.ok(eligibilityBatch.notice.includes("排除 1 个"));
+
+const trackSpecificSummerSchools = parseSummerSchoolsMarkdown(`
+# 🤖 AI 计算机科学方向
+## 1. CMU SAMS (Summer Academy for Math + Science)
+- **形式 & 官网**：线下(CMU)
+  官网：[cmu.edu/pre-college/sams](https://cmu.edu/pre-college/sams)
+- **简介**：商业版 6 周 paid track 对国际生开放，免费 track 面向美国学生。
+- **含金量**：A(免费 track 为 A+)
+- **录取率**：约 10%–15%(免费 track)
+- **申请要求**：
+  - 升 12
+  - 免费 track 限美国公民 / 永久居民
+- **举办时间**：6 月底 – 8 月初
+- **申请时间**：1 月底截止(免费 track)
+`);
+const internationalTrackBatch = recommendSummerSchools({
+  studentProfile: eligibilityStudentProfile,
+  summerSchools: trackSpecificSummerSchools,
+});
+assert.equal(internationalTrackBatch.items.length, 1);
+assert.match(internationalTrackBatch.items[0].eligibilityNote, /国际生.*付费 track/u);
+assert.doesNotMatch(internationalTrackBatch.items[0].admissionRate, /10%.*15%/u);
+assert.doesNotMatch(internationalTrackBatch.items[0].applicationTime, /1 月底/u);
+assert.match(internationalTrackBatch.items[0].admissionRate, /付费 track.*未.*披露/u);

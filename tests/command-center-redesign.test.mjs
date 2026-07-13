@@ -52,12 +52,12 @@ assert.ok(
 );
 assert.match(
   courseHelperHtml,
-  /src="\.\/src\/client\/course-helper\.js\?v=20260605-ap-balance-fit"/,
+  /src="\.\/src\/client\/course-helper\.js\?v=20260713-quality-calibration"/,
   "Course helper page should cache-bust AP balance-fit planning updates.",
 );
 assert.match(
   courseHelperScript,
-  /from "\.\.\/domain\/ap-course-recommender\.mjs\?v=20260605-ap-balance-fit"/,
+  /from "\.\.\/domain\/ap-course-recommender\.mjs\?v=20260713-quality-calibration"/,
   "Course helper should cache-bust the AP recommender module after balance-fit rule updates.",
 );
 for (const expected of [
@@ -69,11 +69,16 @@ for (const expected of [
   "ap-balance-summary",
   "ap-plan-tags",
   "ap-plan-tag",
-  "专业相关",
   "文理结构",
 ]) {
   assert.ok(courseHelperScript.includes(expected), `Course helper should render AP fit/balance field: ${expected}`);
 }
+assert.match(
+  courseHelperScript,
+  /<strong>\$\{escapeHtml\(course\.fitType \|\| "课程适配"\)\}<\/strong>/u,
+  "Course helper should label the detail with the actual fit type instead of calling every course major-related.",
+);
+assert.doesNotMatch(courseHelperScript, /<strong>专业相关<\/strong>/u);
 for (const selector of [".ap-balance-summary", ".ap-plan-tags", ".ap-plan-tag", ".ap-plan-reason-grid"]) {
   assert.ok(styles.includes(selector), `Stylesheet should define AP fit/balance UI selector ${selector}.`);
 }

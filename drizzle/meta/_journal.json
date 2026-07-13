@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1783843335710,
+      "tag": "0000_production_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783843351969,
+      "tag": "0001_pgvector_hybrid_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783929600000,
+      "tag": "0002_chinese_keyword_search",
+      "breakpoints": true
+    }
+  ]
+}

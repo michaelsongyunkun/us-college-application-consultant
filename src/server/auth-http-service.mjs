@@ -21,18 +21,19 @@ export function createAuthHttpService({
   const sessionCookieName = cookieNames.session || DEFAULT_SESSION_COOKIE_NAME;
   const csrfCookieName = cookieNames.csrf || DEFAULT_CSRF_COOKIE_NAME;
   const cookieOptions = { env, sessionCookieName, csrfCookieName };
+  const metadataOptions = { trustProxy: env.TRUST_PROXY === "true" };
 
   async function handleAuth(request, response, pathname) {
     if (request.method === "GET" && pathname === "/api/auth/me") {
-      const session = getAuthenticatedSession(request, auth, { sessionCookieName });
+      const session = await getAuthenticatedSession(request, auth, { sessionCookieName });
       if (!session) {
         sendJson(response, 401, { error: "Not authenticated" });
         return true;
       }
       const csrfCookieToken = getCsrfCookieToken(request, { csrfCookieName });
-      const csrfToken = auth.verifyCsrfToken(session.sessionToken, csrfCookieToken)
+      const csrfToken = await auth.verifyCsrfToken(session.sessionToken, csrfCookieToken)
         ? csrfCookieToken
-        : auth.issueCsrfToken(session.sessionToken);
+        : await auth.issueCsrfToken(session.sessionToken);
       response.writeHead(200, withSecurityHeaders({
         ...(csrfToken ? { "Set-Cookie": buildCsrfCookie(csrfToken, cookieOptions) } : {}),
         "Content-Type": "application/json;charset=utf-8",
@@ -42,20 +43,20 @@ export function createAuthHttpService({
     }
 
     if (request.method === "POST" && pathname === "/api/auth/register") {
-      const result = auth.register(await readAuthPayload(request, { readJson, readText }), getRequestMetadata(request));
+      const result = await auth.register(await readAuthPayload(request, { readJson, readText }), getRequestMetadata(request, metadataOptions));
       sendAuthSessionResponse(request, response, result, { withSecurityHeaders, cookieOptions });
       return true;
     }
 
     if (request.method === "POST" && pathname === "/api/auth/login") {
-      const result = auth.login(await readAuthPayload(request, { readJson, readText }), getRequestMetadata(request));
+      const result = await auth.login(await readAuthPayload(request, { readJson, readText }), getRequestMetadata(request, metadataOptions));
       sendAuthSessionResponse(request, response, result, { withSecurityHeaders, cookieOptions });
       return true;
     }
 
     if (request.method === "POST" && pathname === "/api/auth/logout") {
       for (const sessionToken of getSessionTokens(request, { sessionCookieName })) {
-        auth.logout(sessionToken);
+        await auth.logout(sessionToken);
       }
       const logoutHeaders = {
         "Set-Cookie": buildClearSessionCookies(request, cookieOptions),
@@ -80,12 +81,13 @@ export function createAuthHttpService({
     if (request.method === "POST" && pathname === "/api/auth/request-password-reset") {
       const payload = await readJson(request);
       try {
-        const result = auth.createPasswordReset(payload.email);
+        const result = await auth.createPasswordReset(payload.email);
         if (result) {
           const resetUrl = `${getAppBaseUrl(request, appBaseUrl)}/?resetToken=${encodeURIComponent(
             result.resetToken,
           )}`;
           await mailer.sendPasswordResetEmail({
+            ...(result.user.id ? { userId: result.user.id } : {}),
             to: result.user.email,
             name: result.user.name,
             resetUrl,
@@ -101,16 +103,16 @@ export function createAuthHttpService({
 
     if (request.method === "POST" && pathname === "/api/auth/reset-password") {
       const payload = await readJson(request);
-      const user = auth.resetPassword({
+      const user = await auth.resetPassword({
         resetToken: payload.token,
         password: payload.password,
       });
-      auth.recordAuditEvent({
+      await auth.recordAuditEvent({
         actor: user,
         action: "auth.password_reset.complete",
         resourceType: "user_account",
         resourceId: user.id,
-        metadata: getRequestMetadata(request),
+        metadata: getRequestMetadata(request, metadataOptions),
       });
       sendJson(response, 200, { user });
       return true;
@@ -237,23 +239,29 @@ export function getCsrfCookieToken(request, {
 
 export function getAuthenticatedSession(request, auth, options = {}) {
   const sessionTokens = getSessionTokens(request, options);
-  for (let index = sessionTokens.length - 1; index >= 0; index -= 1) {
+  return findSession(sessionTokens.length - 1);
+
+  function findSession(index) {
+    if (index < 0) return null;
     const sessionToken = sessionTokens[index];
     const user = auth.getUserForSession(sessionToken);
-    if (user) return { user, sessionToken };
+    if (isPromiseLike(user)) {
+      return user.then((resolved) => resolved ? { user: resolved, sessionToken } : findSession(index - 1));
+    }
+    return user ? { user, sessionToken } : findSession(index - 1);
   }
-  return null;
 }
 
 export function getUserForRequest(request, auth, options = {}) {
-  return getAuthenticatedSession(request, auth, options)?.user || null;
+  const session = getAuthenticatedSession(request, auth, options);
+  return isPromiseLike(session) ? session.then((resolved) => resolved?.user || null) : session?.user || null;
 }
 
-export function getRequestMetadata(request) {
-  const forwardedFor = request.headers["x-forwarded-for"];
-  const ipAddress = Array.isArray(forwardedFor)
+export function getRequestMetadata(request, { trustProxy = request.trustProxy === true } = {}) {
+  const forwardedFor = trustProxy ? request.headers["x-forwarded-for"] : "";
+  const ipAddress = (Array.isArray(forwardedFor)
     ? forwardedFor[0]
-    : forwardedFor?.split(",")[0]?.trim() || request.socket?.remoteAddress || "";
+    : forwardedFor?.split(",")[0]?.trim()) || request.socket?.remoteAddress || "";
   return {
     userAgent: request.headers["user-agent"] || "",
     ipAddress,
@@ -310,26 +318,34 @@ export function verifyCsrfRequest(request, response, auth, pathname, {
     return true;
   }
 
-  let hasValidSession = false;
   const headerToken = String(request.headers[csrfHeaderName] || request.headers[csrfHeaderName.toLowerCase()] || "");
   const cookieToken = getCsrfCookieToken(request, { csrfCookieName });
-  for (const sessionToken of [...getSessionTokens(request, { sessionCookieName })].reverse()) {
-    const user = auth.getUserForSession(sessionToken);
-    if (!user) continue;
-    hasValidSession = true;
-    if (
-      headerToken &&
-      cookieToken &&
-      headerToken === cookieToken &&
-      auth.verifyCsrfToken(sessionToken, headerToken)
-    ) {
-      return true;
+  const tokens = [...getSessionTokens(request, { sessionCookieName })].reverse();
+  return inspect(0, false);
+
+  function inspect(index, hasValidSession) {
+    if (index >= tokens.length) {
+      if (!hasValidSession) return true;
+      sendJson(response, 403, { error: "Invalid CSRF token" });
+      return false;
     }
+    const sessionToken = tokens[index];
+    const user = auth.getUserForSession(sessionToken);
+    if (isPromiseLike(user)) return user.then((resolved) => inspectUser(resolved, index, hasValidSession, sessionToken));
+    return inspectUser(user, index, hasValidSession, sessionToken);
   }
 
-  if (!hasValidSession) return true;
-  sendJson(response, 403, { error: "Invalid CSRF token" });
-  return false;
+  function inspectUser(user, index, hasValidSession, sessionToken) {
+    if (!user) return inspect(index + 1, hasValidSession);
+    if (!(headerToken && cookieToken && headerToken === cookieToken)) return inspect(index + 1, true);
+    const verified = auth.verifyCsrfToken(sessionToken, headerToken);
+    if (isPromiseLike(verified)) return verified.then((valid) => valid ? true : inspect(index + 1, true));
+    return verified ? true : inspect(index + 1, true);
+  }
+}
+
+function isPromiseLike(value) {
+  return value && typeof value.then === "function";
 }
 
 function sendAuthSessionResponse(request, response, result, { withSecurityHeaders, cookieOptions }) {

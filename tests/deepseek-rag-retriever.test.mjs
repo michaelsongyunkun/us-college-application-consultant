@@ -1,13 +1,22 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  buildContextSelection,
   createRagRetriever,
   serializeRagSource,
   splitMarkdownIntoChunks,
   toLangChainRagDocument,
 } from "../src/server/deepseek-rag-service.mjs";
+
+const contextSelection = buildContextSelection([
+  { id: "included", type: "resource-library", title: "Included source", text: "short content" },
+  { id: "excluded", type: "resource-library", title: "Excluded source", text: "x".repeat(200) },
+], 100);
+assert.match(contextSelection.context, /Included source/u);
+assert.doesNotMatch(contextSelection.context, /Excluded source/u);
+assert.deepEqual(contextSelection.included.map((source) => source.id), ["included"]);
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-rag-retriever-"));
 
@@ -16,8 +25,13 @@ try {
   await writeRagDataFiles(tempDir);
 
   const retrievalMetrics = [];
+  let markdownReadCount = 0;
   const retriever = createRagRetriever({
     root: tempDir,
+    readMarkdownFile: async (...args) => {
+      markdownReadCount += 1;
+      return readFile(...args);
+    },
     planning: {
       getProfile() {
         return {
@@ -92,6 +106,59 @@ try {
   assert.equal(retrievalMetrics.length, 1);
   assert.equal(retrievalMetrics[0].intent, "school");
   assert.equal(retrievalMetrics[0].selectedDocuments, result.retrieval.selectedDocuments);
+  assert.equal(markdownReadCount, 9);
+
+  await retriever.retrieve({
+    user: { id: "student-1" },
+    question: "Which robotics resources should I prioritize next?",
+  });
+  assert.equal(markdownReadCount, 9, "Static Markdown documents should be read once per retriever lifecycle.");
+
+  const longPlanRetriever = createRagRetriever({
+    root: tempDir,
+    planning: {
+      getProfile() {
+        return {
+          grade: "10",
+          majorDirection: "Computer Science / Education Technology",
+          interests: "Accessible learning tools",
+        };
+      },
+      listRagBackups() {
+        return [
+          {
+            sourceType: "current_plan",
+            planName: "CS + Education Technology plan",
+            draft: {
+              targetSchool: "MIT",
+              rawAnswer: "Long planning narrative. ".repeat(1_200),
+              activities: Array.from({ length: 15 }, (_, index) => ({
+                title: `Learning technology project ${index + 1}`,
+                executionDescription: "Build and evaluate an accessible Computer Science learning prototype. ".repeat(80),
+              })),
+            },
+          },
+        ];
+      },
+    },
+    activityPortfolio: {
+      getPortfolio() {
+        return {};
+      },
+    },
+  });
+
+  const longPlanResult = await longPlanRetriever.retrieve({
+    user: { id: "student-long-plan" },
+    question: "请根据我的申请档案，用 Computer Science 与 Education Technology 方向比较 MIT。",
+  });
+  assert.ok(longPlanResult.sources.length > 0, "An oversized current plan must not empty the RAG context.");
+  assert.match(longPlanResult.context, /CS \+ Education Technology plan/u);
+  assert.match(longPlanResult.context, /Computer Science \/ Education Technology/u);
+  assert.match(longPlanResult.context, /MIT review should emphasize STEM depth/u);
+  assert.ok(longPlanResult.context.length <= 18_000);
+  assert.ok(longPlanResult.sources.some((source) => source.type === "student-backup"));
+  assert.ok(longPlanResult.sources.some((source) => source.type === "school-encyclopedia" && /MIT/u.test(source.title)));
 
   const chunks = splitMarkdownIntoChunks("## Alpha\nfirst\n\n## Beta\nsecond");
   assert.deepEqual(chunks, ["## Alpha\nfirst", "## Beta\nsecond"]);

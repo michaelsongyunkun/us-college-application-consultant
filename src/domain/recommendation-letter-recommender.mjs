@@ -157,7 +157,7 @@ export function buildRecommendationLetterStrategy({ profile, activities, narrati
       recommenderType: "Counselor / 升学指导老师",
       priority: "必备",
       recommendationFocus: "负责统一呈现学生的课程选择、年级定位、校内成长轨迹和申请主线，帮助招生官理解学生整体背景。",
-      evidence: `建议提前提供用户背景中的年级、目标方向、已有活动，以及规划表中的 ${activityEvidence} 等主线材料。`,
+      evidence: `规划候选（需核验）：建议提前提供用户背景中的年级、目标方向、已确认活动；规划表中的 ${activityEvidence} 仅在核验实际参与和成果后才能作为推荐信证据。`,
       preparationAdvice: "准备一页 brag sheet，突出长期成长、校内贡献、性格特质和规划表中的核心活动逻辑。",
     },
     {
@@ -165,7 +165,7 @@ export function buildRecommendationLetterStrategy({ profile, activities, narrati
       recommenderType: majorSubject,
       priority: "必备",
       recommendationFocus: "重点证明学生在目标专业方向上的课堂表现、学术潜力、问题意识和持续投入。",
-      evidence: `推荐老师应能呼应规划表中的 ${activityEvidence}，并补充学生在课堂讨论、作业、项目或研究中的具体细节。`,
+      evidence: `规划候选（需核验）：${activityEvidence} 仅可作为与老师沟通的候选线索；推荐老师应以亲自观察到的课堂讨论、作业、项目或研究细节为事实证据。`,
       preparationAdvice: "优先选择熟悉学生学术过程、能写出具体例子的老师，而不只看课程成绩高低。",
     },
     {
@@ -178,7 +178,7 @@ export function buildRecommendationLetterStrategy({ profile, activities, narrati
           : type === "humanities_arts"
             ? "用于补充学生的定量能力、科学素养、逻辑推理或技术执行力，增强跨学科可信度。"
             : "用于证明学生不仅在主方向上有潜力，也具备跨学科适应力和稳定学习能力。",
-      evidence: `建议结合规划表中的 ${activityEvidence}，选择能从另一类学科视角证明学生能力的老师。`,
+      evidence: `规划候选（需核验）：可用 ${activityEvidence} 帮助寻找互补视角，但推荐信只能采用老师亲自观察或已核验完成的经历。`,
       preparationAdvice: "给老师提供 2-3 个具体课堂或项目例子，让推荐信形成“主方向 + 互补能力”的结构。",
     },
   ];
@@ -189,7 +189,7 @@ export function buildRecommendationLetterStrategy({ profile, activities, narrati
       recommenderType: "专业方向高校教授 / 科研导师 / 项目导师",
       priority: "视学校政策选择提交",
       recommendationFocus: "用于证明学生在校外学术、科研、项目或社会实践中的真实投入和专业潜力。",
-      evidence: `当前背景或规划中已经出现校外资源线索，可围绕 ${activityEvidence} 准备过程性材料和成果证据。`,
+      evidence: `规划候选（需核验）：当前信息仅提示可能存在校外资源；只有在确认导师实际指导关系，并核验 ${activityEvidence} 的过程与成果后，才能作为推荐信证据。`,
       preparationAdvice: "只有在导师能写出长期指导、具体贡献和成果质量时才建议提交；泛泛背书不建议占用推荐信名额。",
     });
   }

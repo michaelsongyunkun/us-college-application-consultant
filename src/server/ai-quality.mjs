@@ -1,7 +1,7 @@
 export const AI_QUALITY_VERSIONS = Object.freeze({
   schema: "ai-quality@2026-06-18",
   evaluator: "ai-quality-evaluator@2026-06-18",
-  deepseekPlanPrompt: "deepseek-plan-prompt@2026-06-18",
+  deepseekPlanPrompt: "deepseek-plan-prompt@2026-07-13",
   deepseekPlanParser: "agent-output-parser@2026-06-18",
   ragPromptDefault: "ask-deepseek-rag@2026-06-18",
   ragPromptMajorMatch: "ask-deepseek-major-match@2026-06-18",

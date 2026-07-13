@@ -40,6 +40,13 @@ assert.deepEqual(getRequestMetadata({
   socket: { remoteAddress: "127.0.0.1" },
 }), {
   userAgent: "Node Test",
+  ipAddress: "127.0.0.1",
+});
+assert.deepEqual(getRequestMetadata({
+  headers: { "x-forwarded-for": "203.0.113.7, 10.0.0.1", "user-agent": "Proxy Test" },
+  socket: { remoteAddress: "127.0.0.1" },
+}, { trustProxy: true }), {
+  userAgent: "Proxy Test",
   ipAddress: "203.0.113.7",
 });
 assert.equal(getAppBaseUrl({ headers: { host: "localhost:4177" } }, "https://example.com/"), "https://example.com");
@@ -146,7 +153,7 @@ assert.deepEqual(JSON.parse(loginResponse.body), {
 assert.deepEqual(calls.find((call) => call[0] === "auth.login"), [
   "auth.login",
   { email: "student@example.com", password: "password123" },
-  { userAgent: "Login Test", ipAddress: "198.51.100.9" },
+  { userAgent: "Login Test", ipAddress: "127.0.0.1" },
 ]);
 
 const formLoginResponse = createResponse();

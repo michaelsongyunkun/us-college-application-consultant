@@ -25,9 +25,16 @@ output/
 !package.json
 !package-lock.json
 !tsconfig.json
+!docs/openapi.json
+!prompts/manifest.json
+!tests/fixtures/*.json
+!drizzle/meta/*.json
 data/*.sqlite
 data/*.sqlite-wal
 data/*.sqlite-shm
+storage/
+work/maintenance/
+work/migration-reports/
 
 # OS/editor files
 .DS_Store

@@ -68,7 +68,8 @@ for (const routeNeedle of [
 }
 
 for (const targetService of [
-  "src/server/student-workspace-service.mjs",
+  "src/server/student-workspace-service.ts",
+  "src/repositories/contracts.ts",
 ]) {
   assert.ok(boundaryDoc.includes(targetService), `Boundary doc should name extraction target ${targetService}.`);
 }

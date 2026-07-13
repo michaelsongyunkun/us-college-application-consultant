@@ -82,7 +82,11 @@ try {
     password: "replayed-password123",
   });
   assert.equal(replayResponse.status, 400);
-  assert.deepEqual(await replayResponse.json(), { error: "Invalid or expired reset link" });
+  const replayError = await replayResponse.json();
+  assert.equal(replayError.error, "Invalid or expired reset link");
+  assert.equal(replayError.code, "AUTH");
+  assert.equal(replayError.retryable, false);
+  assert.ok(replayError.requestId);
 
   const oldPasswordLogin = await post("/api/auth/login", {
     email: "reset-http@example.com",

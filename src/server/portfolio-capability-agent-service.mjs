@@ -10,6 +10,7 @@ import {
   createPortfolioCapabilityGraph,
 } from "./langgraph-portfolio-capability-workflow.mjs";
 import { monotonicNowMs } from "./observability.mjs";
+import { withSpan } from "./production-observability.ts";
 
 const DEEPSEEK_CAPABILITY_MAX_TOKENS = 4200;
 const MAX_AGENT_ATTEMPTS = 2;
@@ -96,6 +97,7 @@ export function createPortfolioCapabilityAgentService({
     user,
     payload = {},
     env = process.env,
+    signal,
   } = {}) {
     const apiKey = resolveApiKey({
       environmentApiKey: env.DEEPSEEK_API_KEY,
@@ -117,20 +119,23 @@ export function createPortfolioCapabilityAgentService({
       DEEPSEEK_CAPABILITY_MAX_TOKENS,
     );
 
-    return assessmentGraph.invoke({
+    return withSpan("langgraph.portfolio-capability.invoke", {
+      workflow: PORTFOLIO_CAPABILITY_GRAPH_VERSION,
+    }, () => assessmentGraph.invoke({
       user,
       payload,
       env,
       model,
       maxTokens,
-    });
+      signal,
+    }));
   }
 
   return { generateAssessment };
 }
 
-function loadPortfolioForAssessment({ activityPortfolio, user, payload = {} }) {
-  const currentPortfolio = activityPortfolio.getPortfolio(user);
+async function loadPortfolioForAssessment({ activityPortfolio, user, payload = {} }) {
+  const currentPortfolio = await activityPortfolio.getPortfolio(user);
   const candidatePortfolio = isPlainObject(payload) && Object.keys(payload).length
     ? { ...currentPortfolio, ...payload }
     : currentPortfolio;
@@ -152,6 +157,7 @@ async function assessPortfolioCapabilityDimensions({
   assessmentInput,
   baseline,
   now,
+  signal,
 }) {
   let repairMessage = "";
   for (let attempt = 1; attempt <= MAX_AGENT_ATTEMPTS; attempt += 1) {
@@ -166,6 +172,7 @@ async function assessPortfolioCapabilityDimensions({
         { role: "system", content: buildSystemPrompt() },
         { role: "user", content: buildUserPrompt({ assessmentInput, baseline, repairMessage }) },
       ],
+      signal,
     });
 
     try {
@@ -217,6 +224,7 @@ async function invokePortfolioCapabilityLlm({
   try {
     const result = await llmClient.invoke({
       env,
+      feature: "portfolio-capability-assessment",
       model,
       temperature,
       maxTokens,

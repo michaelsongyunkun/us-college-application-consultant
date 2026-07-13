@@ -358,7 +358,7 @@ export function createPlanningService({ authDb, now = () => new Date() }) {
   };
 }
 
-function emptyDraft() {
+export function emptyDraft() {
   return {
     activities: [],
     rawAnswer: "",
@@ -370,7 +370,7 @@ function emptyDraft() {
   };
 }
 
-function normalizeDraft(value) {
+export function normalizeDraft(value) {
   const draft = stripSensitiveDraftFields(normalizeObject(value, "Plan draft"));
   return { ...emptyDraft(), ...draft };
 }
@@ -442,7 +442,7 @@ function parseObject(serialized) {
   }
 }
 
-function normalizePlanName(value) {
+export function normalizePlanName(value) {
   const name = String(value ?? "").trim();
   if (!name) throw new PlanningError("Plan name is required", 400);
   if (name.length > MAX_PLAN_NAME_LENGTH) {

@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { parseApplicationRoundSchoolsMarkdown } from "../src/domain/application-round-schools.mjs";
 import {
   createSchoolSelectionService,
   validateSchoolSelectionResult,
@@ -125,6 +127,20 @@ assert.equal(repairedRoundDuplicate.rounds.rd.length, 8);
 assert.equal(
   repairedRoundDuplicate.rounds.rd.some((entry) => entry.school === "New York University"),
   false,
+);
+
+const applicationRoundSchools = parseApplicationRoundSchoolsMarkdown(
+  readFileSync("data/application-round-schools.md", "utf8"),
+);
+assert.throws(
+  () => validateSchoolSelectionResult({
+    ...validSelection,
+    rounds: {
+      ...validSelection.rounds,
+      ed2: [school("Brown University", "Education Studies", "high")],
+    },
+  }, { applicationRoundSchools }),
+  /Brown University.*不支持 ED2/u,
 );
 
 assert.throws(
@@ -273,6 +289,27 @@ const retryPayload = calls[1];
 assert.equal(retryPayload.temperature, 0.1);
 assert.match(retryPayload.messages[1].content, /上一次输出未通过二次校验/);
 assert.match(retryPayload.messages[1].content, /EA 需要 3-5 所/);
+
+const incompleteProfileService = createSchoolSelectionService({
+  activityPortfolio: {
+    getPortfolio() {
+      return {};
+    },
+  },
+  llmClient: createMockSchoolSelectionLlmClient([], () => JSON.stringify(validSelection)),
+});
+const incompleteProfileResult = await incompleteProfileService.generateSelection({
+  user: { id: 2 },
+  payload: {
+    nationality: "中国",
+    highSchoolRegion: "中国大陆高中",
+  },
+  env: { DEEPSEEK_API_KEY: "school-selection-secret" },
+});
+const incompleteProfileSchools = Object.values(incompleteProfileResult.selection.rounds).flat();
+assert.ok(incompleteProfileSchools.length > 0);
+assert.ok(incompleteProfileSchools.every((entry) => entry.admissionProbability === "资料不足，暂不估算"));
+assert.ok(incompleteProfileSchools.every((entry) => entry.gaps.some((gap) => /补充.*GPA.*课程.*活动/u.test(gap))));
 
 assert.match(sentPayload.messages[0].content, /Top30/);
 assert.match(sentPayload.messages[0].content, /Top30 之后/);

@@ -9,6 +9,7 @@ const PortfolioCapabilityState = Annotation.Root({
   env: Annotation(),
   model: Annotation(),
   maxTokens: Annotation(),
+  signal: Annotation(),
   candidatePortfolio: Annotation(),
   assessmentInput: Annotation(),
   baseline: Annotation(),

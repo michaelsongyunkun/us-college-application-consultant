@@ -1,0 +1,19 @@
+{
+  "manifestVersion": "1.0.0",
+  "prompts": [
+    {
+      "id": "us-college-admissions-strategist",
+      "version": "2026-07-13",
+      "path": "prompts/us-college-admissions-strategist-agent.md",
+      "sha256": "a2804cb370ea763fd0551659b957e9002446b4330837d098f11fcc32e0d3e1f5",
+      "models": ["deepseek-v4-flash", "deepseek-v4-pro"],
+      "schema": "PlanningResult",
+      "enabled": true
+    }
+  ],
+  "environments": {
+    "development": { "active": "us-college-admissions-strategist@2026-07-13", "rollback": null },
+    "staging": { "active": "us-college-admissions-strategist@2026-07-13", "rollback": null },
+    "production": { "active": "us-college-admissions-strategist@2026-07-13", "rollback": null }
+  }
+}

@@ -26,7 +26,7 @@ echo Keep this window open while using the page.
 echo Press Ctrl+C to stop the local server.
 echo.
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$p = Start-Process -FilePath 'node.exe' -ArgumentList 'server.mjs' -WorkingDirectory '%CD%' -PassThru; " ^
+  "$p = Start-Process -FilePath 'node.exe' -ArgumentList '--import','tsx','server.mjs' -WorkingDirectory '%CD%' -PassThru; " ^
   "try { " ^
   "  $ready = $false; " ^
   "  for ($i = 0; $i -lt 40; $i++) { " ^

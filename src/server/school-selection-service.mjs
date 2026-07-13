@@ -1,5 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import {
+  isEligibleForRound,
+  parseApplicationRoundSchoolsMarkdown,
+} from "../domain/application-round-schools.mjs";
 import { parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs";
 import { resolveApiKey } from "./api-key.mjs";
 import { AI_QUALITY_VERSIONS, evaluateAiAnswerQuality } from "./ai-quality.mjs";
@@ -13,6 +17,7 @@ import {
   createSchoolSelectionGraph,
 } from "./langgraph-school-selection-workflow.mjs";
 import { monotonicNowMs } from "./observability.mjs";
+import { withSpan } from "./production-observability.ts";
 
 const ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "rd", "uc"];
 const MAX_SELECTION_ATTEMPTS = 2;
@@ -309,8 +314,8 @@ export function createSchoolSelectionService({
       loadSchoolSelectionContext({ root, activityPortfolio, user, input }),
     draftSelection: (state) =>
       draftSchoolSelection({ ...state, llmClient, metrics }),
-    calibrateSelection: ({ validatedSelection, friendlinessIndex }) =>
-      calibrateSelectionWithFriendliness(validatedSelection, friendlinessIndex),
+    calibrateSelection: ({ validatedSelection, friendlinessIndex, input, portfolio }) =>
+      calibrateSchoolSelection(validatedSelection, { friendlinessIndex, input, portfolio }),
     evaluateQuality: evaluateSchoolSelectionQuality,
     buildResponse: buildSchoolSelectionResponse,
     metrics,
@@ -320,6 +325,7 @@ export function createSchoolSelectionService({
     user,
     payload = {},
     env = process.env,
+    signal,
   }) {
     const input = normalizeInput(payload);
     const apiKey = resolveApiKey({
@@ -336,26 +342,33 @@ export function createSchoolSelectionService({
       DEEPSEEK_SCHOOL_SELECTION_MAX_TOKENS,
     );
 
-    return graph.invoke({
+    return withSpan("langgraph.school-selection.invoke", {
+      workflow: SCHOOL_SELECTION_GRAPH_VERSION,
+    }, () => graph.invoke({
       user,
       input,
       env,
       model,
       maxTokens,
-    });
+      signal,
+    }));
   }
 
   return { generateSelection };
 }
 
 async function loadSchoolSelectionContext({ root, activityPortfolio, user, input }) {
-  const portfolio = activityPortfolio.getPortfolio(user);
-  const ragSources = await buildSchoolSelectionRagSources({ root, input, portfolio });
-  const friendlinessIndex = await buildSchoolFriendlinessIndex(root);
+  const portfolio = await activityPortfolio.getPortfolio(user);
+  const [ragSources, friendlinessIndex, applicationRoundSchools] = await Promise.all([
+    buildSchoolSelectionRagSources({ root, input, portfolio }),
+    buildSchoolFriendlinessIndex(root),
+    loadApplicationRoundSchools(root),
+  ]);
   return {
     portfolio,
     ragSources,
     friendlinessIndex,
+    applicationRoundSchools,
     ragContext: buildRagContext(ragSources),
   };
 }
@@ -369,6 +382,8 @@ async function draftSchoolSelection({
   input,
   portfolio,
   ragContext,
+  applicationRoundSchools,
+  signal,
 }) {
   let lastValidationError = null;
   for (let attempt = 1; attempt <= MAX_SELECTION_ATTEMPTS; attempt += 1) {
@@ -391,6 +406,7 @@ async function draftSchoolSelection({
           }),
         },
       ],
+      signal,
     });
 
     const answer = String(llmResult?.content || "").trim();
@@ -402,7 +418,9 @@ async function draftSchoolSelection({
     try {
       return {
         answer,
-        validatedSelection: validateSchoolSelectionResult(parseSelectionJson(answer)),
+        validatedSelection: validateSchoolSelectionResult(parseSelectionJson(answer), {
+          applicationRoundSchools,
+        }),
         attempts: attempt,
       };
     } catch (error) {
@@ -468,6 +486,7 @@ async function invokeSchoolSelectionLlm({
   try {
     const result = await llmClient.invoke({
       env,
+      feature: "school-selection",
       model,
       temperature,
       maxTokens,
@@ -501,7 +520,7 @@ function mapSchoolSelectionLlmError(error) {
   return new SchoolSelectionError(error?.message || "DeepSeek 选校调用失败。", error?.statusCode || 502);
 }
 
-export function validateSchoolSelectionResult(value) {
+export function validateSchoolSelectionResult(value, { applicationRoundSchools = [] } = {}) {
   const item = normalizeObject(value, "School selection result");
   const rounds = normalizeObject(item.rounds, "School selection rounds");
   let normalizedRounds = repairUcRoundDuplicates(Object.fromEntries(
@@ -509,6 +528,7 @@ export function validateSchoolSelectionResult(value) {
   ));
   normalizedRounds = repairEarlyApplicationChoice(normalizedRounds);
   normalizedRounds = repairRoundDuplicates(normalizedRounds);
+  assertSupportedApplicationRounds(normalizedRounds, applicationRoundSchools);
 
   if (normalizedRounds.rea.length + normalizedRounds.ed1.length !== 1) {
     throw new SchoolSelectionError("REA / ED1 只能二选一且合计 1 所。", 502);
@@ -528,6 +548,34 @@ export function validateSchoolSelectionResult(value) {
     rounds: normalizedRounds,
     nextActions: normalizeStringList(item.nextActions).slice(0, 8),
   };
+}
+
+async function loadApplicationRoundSchools(root) {
+  try {
+    const markdown = await readFile(join(root, "data", "application-round-schools.md"), "utf8");
+    return parseApplicationRoundSchoolsMarkdown(markdown);
+  } catch {
+    return [];
+  }
+}
+
+function assertSupportedApplicationRounds(rounds, applicationRoundSchools) {
+  if (!Array.isArray(applicationRoundSchools) || !applicationRoundSchools.length) return;
+  const schoolsByKey = new Map();
+  for (const school of applicationRoundSchools) {
+    for (const key of buildFriendlinessSchoolKeys(school.name)) {
+      if (!schoolsByKey.has(key)) schoolsByKey.set(key, school);
+    }
+  }
+  for (const round of ROUND_KEYS) {
+    for (const recommendation of rounds[round] || []) {
+      const school = buildFriendlinessSchoolKeys(recommendation.school)
+        .map((key) => schoolsByKey.get(key))
+        .find(Boolean);
+      if (!school || isEligibleForRound(school, round)) continue;
+      throw new SchoolSelectionError(`${recommendation.school} 不支持 ${round.toUpperCase()} 申请轮次。`, 502);
+    }
+  }
 }
 
 async function buildSchoolFriendlinessIndex(root) {
@@ -583,6 +631,55 @@ function calibrateSelectionWithFriendliness(selection, friendlinessIndex) {
         ),
       ]),
     ),
+  };
+}
+
+function calibrateSchoolSelection(selection, { friendlinessIndex, input, portfolio }) {
+  const calibrated = calibrateSelectionWithFriendliness(selection, friendlinessIndex);
+  if (hasSufficientProbabilityEvidence({ input, portfolio })) return calibrated;
+  return {
+    ...calibrated,
+    rounds: Object.fromEntries(
+      ROUND_KEYS.map((round) => [
+        round,
+        (calibrated.rounds?.[round] || []).map(markSchoolProbabilityAsInsufficient),
+      ]),
+    ),
+  };
+}
+
+function hasSufficientProbabilityEvidence({ input = {}, portfolio = {} }) {
+  const academicRecords = portfolio.academicRecords || {};
+  const hasAcademicEvidence = Boolean(
+    cleanString(academicRecords.ibPredictedScore)
+      || (academicRecords.gpaRecords || []).some((record) => cleanString(record?.gpa))
+      || (academicRecords.satTests || []).some(hasFilledRecord)
+      || (academicRecords.apExams || []).some(hasFilledRecord),
+  );
+  const hasActivityEvidence = [
+    ...(portfolio.activities || []),
+    ...(portfolio.competitions || []),
+    ...(portfolio.summerSchools || []),
+  ].some(hasFilledRecord);
+  const hasDirection = Boolean(cleanString(input.targetMajor) || cleanString(input.preferences));
+  return hasAcademicEvidence && hasActivityEvidence && hasDirection;
+}
+
+function hasFilledRecord(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return Object.values(value).some((entry) => {
+    if (entry && typeof entry === "object") return hasFilledRecord(entry);
+    return Boolean(cleanString(entry));
+  });
+}
+
+function markSchoolProbabilityAsInsufficient(school) {
+  const note = "资料不足：请补充 GPA、课程难度、标化成绩和核心活动证据后再估算录取概率。";
+  const gaps = normalizeStringList(school.gaps);
+  return {
+    ...school,
+    admissionProbability: "资料不足，暂不估算",
+    gaps: gaps.includes(note) ? gaps : [...gaps.slice(0, 5), note],
   };
 }
 

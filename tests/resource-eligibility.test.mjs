@@ -112,6 +112,20 @@ assert.equal(
   }).excluded,
   false,
 );
+assert.match(internationalTrackAvailable.eligibilityNote, /国际生.*付费 track/u);
+
+const jshs = enrichResourceEligibility({
+  name: "JSHS Junior Science and Humanities Symposia",
+  description: "高中生 STEM 研究论文与口试竞赛。",
+});
+assert.equal(jshs.eligibilityStatus, "us_status_only");
+assert.equal(
+  classifyResource(jshs, {
+    schoolContext: "mainland_china_high_school",
+    identityDescription: "无美国公民或永久居民身份",
+  }).excluded,
+  true,
+);
 
 const unknown = enrichResourceEligibility({ name: "未标注竞赛", raw: "" });
 const unknownResult = classifyResource(unknown, { participationPreference: "online_only" });

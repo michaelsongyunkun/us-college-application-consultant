@@ -10,6 +10,7 @@ import {
   getVisibleResultPage,
 } from "./visible-results.mjs";
 import { csrfFetch } from "./csrf-token.mjs";
+import { requestRagStream } from "./rag-stream.mjs";
 
 const status = document.querySelector("#majorStatus");
 const categoryTabs = document.querySelector("#majorCategoryTabs");
@@ -360,13 +361,21 @@ async function runDeepSeekMajorMatch() {
   deepSeekMajorResult.innerHTML = '<p class="resource-empty">DeepSeek 正在生成专业匹配建议...</p>';
   const startedAt = performance.now();
   try {
-    const job = await requestJson(DEEPSEEK_RAG_JOB_ENDPOINT, {
-      method: "POST",
-      body: JSON.stringify({ question: prompt, assistantProfile: "major-match" }),
-    });
-    rememberPendingMajorMatchJob(job.jobId);
-    setDeepSeekStatus("专业匹配任务已提交，DeepSeek 正在后台生成。");
-    const data = await waitForMajorMatchJob(job.jobId);
+    let data;
+    try {
+      data = await requestRagStream({ question: prompt, assistantProfile: "major-match" });
+    } catch (streamError) {
+      if (streamError.status === 401) window.location.href = "./index.html";
+      if (!streamError.fallbackAllowed) throw streamError;
+      setDeepSeekStatus("快速通道暂时不可用，正在转入可恢复的后台任务...");
+      const job = await requestJson(DEEPSEEK_RAG_JOB_ENDPOINT, {
+        method: "POST",
+        body: JSON.stringify({ question: prompt, assistantProfile: "major-match" }),
+      });
+      rememberPendingMajorMatchJob(job.jobId);
+      setDeepSeekStatus("专业匹配任务已提交，DeepSeek 正在后台生成。");
+      data = await waitForMajorMatchJob(job.jobId);
+    }
     const answer = sanitizeDeepSeekMajorAnswer(data.answer || "");
     deepSeekMajorResult.innerHTML = `
       <div class="major-ai-answer">${renderMarkdown(answer)}</div>`;

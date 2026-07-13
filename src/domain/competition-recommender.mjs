@@ -364,6 +364,7 @@ function pickItems(candidates, count, avoidIds, fallback = []) {
   const merged = [...preferred, ...candidates, ...fallback];
   const picked = [];
   for (const item of merged) {
+    if (avoidIds.includes(item.id)) continue;
     if (picked.some((pickedItem) => pickedItem.id === item.id)) continue;
     picked.push(item);
     if (picked.length === count) break;
@@ -399,6 +400,40 @@ function filterEligibleCompetitions(competitions, studentProfile) {
   return { items, excludedCount };
 }
 
+function normalizeCompetitionIdentity(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/^https?:\/\/(?:www\.)?/u, "")
+    .replace(/[/?#]+$/u, "")
+    .replace(/[^a-z0-9\p{Script=Han}]+/gu, "");
+}
+
+function competitionDeduplicationKey(competition) {
+  const urlKey = normalizeCompetitionIdentity(competition.url);
+  return urlKey ? `url:${urlKey}` : `name:${normalizeCompetitionIdentity(competition.name)}`;
+}
+
+function deduplicateCompetitions(competitions) {
+  const items = [];
+  const indexByKey = new Map();
+  let duplicateCount = 0;
+  for (const competition of competitions) {
+    const key = competitionDeduplicationKey(competition);
+    if (!key || key.endsWith(":")) {
+      items.push(competition);
+      continue;
+    }
+    if (!indexByKey.has(key)) {
+      indexByKey.set(key, items.length);
+      items.push(competition);
+      continue;
+    }
+    items[indexByKey.get(key)] = competition;
+    duplicateCount += 1;
+  }
+  return { items, duplicateCount };
+}
+
 export function recommendCompetitions({ studentProfile, competitions, previousBatchIds = [], batchIndex = 0 }) {
   const normalized = competitions || [];
   if (!studentProfile || !normalized.length) {
@@ -408,7 +443,8 @@ export function recommendCompetitions({ studentProfile, competitions, previousBa
     return { items: [], notice: "填写用户背景信息后，将根据学生方向生成国际竞赛推荐。" };
   }
 
-  const eligible = filterEligibleCompetitions(normalized, studentProfile);
+  const deduplicated = deduplicateCompetitions(normalized);
+  const eligible = filterEligibleCompetitions(deduplicated.items, studentProfile);
   const scored = eligible.items
     .map((competition) => ({
       competition,
@@ -481,6 +517,9 @@ export function recommendCompetitions({ studentProfile, competitions, previousBa
         : "",
       eligible.excludedCount
         ? `已依据当前可参与条件排除 ${eligible.excludedCount} 个明确不符合报名要求的竞赛。`
+        : "",
+      deduplicated.duplicateCount
+        ? `已按规范化官网与名称合并 ${deduplicated.duplicateCount} 个重复竞赛条目。`
         : "",
     ].filter(Boolean).join(" "),
   };

@@ -17,17 +17,14 @@ export function createAdminOperationsService({
 } = {}) {
   function getLoginDashboard({ admin, searchParams = new URLSearchParams(), metadata = {} } = {}) {
     const filters = parseAdminDashboardFilters(searchParams);
-    auth.recordAuditEvent({
+    const audit = auth.recordAuditEvent({
       actor: admin,
       action: "admin.dashboard.view",
       resourceType: "admin_dashboard",
       details: buildAdminDashboardAuditDetails(filters),
       metadata,
     });
-    return auth.getLoginDashboard({
-      requester: admin,
-      filters,
-    });
+    return chainMaybe(audit, () => auth.getLoginDashboard({ requester: admin, filters }));
   }
 
   function getOpsMetrics() {
@@ -42,21 +39,11 @@ export function createAdminOperationsService({
       requester: admin,
       filters,
     });
-    const auditEvents = Array.isArray(dashboard.auditEvents) ? dashboard.auditEvents : [];
-    auth.recordAuditEvent({
-      actor: admin,
-      action: "admin.audit_log.export",
-      resourceType: "audit_log",
-      details: buildAdminAuditExportDetails(filters, auditEvents.length),
-      metadata,
+    return chainMaybe(dashboard, (resolvedDashboard) => {
+      const auditEvents = Array.isArray(resolvedDashboard.auditEvents) ? resolvedDashboard.auditEvents : [];
+      const audit = auth.recordAuditEvent({ actor: admin, action: "admin.audit_log.export", resourceType: "audit_log", details: buildAdminAuditExportDetails(filters, auditEvents.length), metadata });
+      return chainMaybe(audit, () => ({ exportedAt: now().toISOString(), retentionPolicy: getAuditLogRetentionPolicy(), filters, eventCount: auditEvents.length, auditEvents }));
     });
-    return {
-      exportedAt: now().toISOString(),
-      retentionPolicy: getAuditLogRetentionPolicy(),
-      filters,
-      eventCount: auditEvents.length,
-      auditEvents,
-    };
   }
 
   function updateFeedbackEntry({ admin, feedbackId, payload = {}, metadata = {} } = {}) {
@@ -65,22 +52,16 @@ export function createAdminOperationsService({
       feedbackId,
       payload,
     });
-    auth.recordAuditEvent({
-      actor: admin,
-      action: "admin.feedback.update",
-      resourceType: "feedback_entry",
-      resourceId: feedbackId,
-      details: {
-        feedbackStatus: feedback.feedbackStatus,
-        adminNoteChanged: didAdminNoteChange(payload),
-      },
-      metadata,
-    });
-    return feedback;
+    return chainMaybe(feedback, (resolvedFeedback) => chainMaybe(auth.recordAuditEvent({
+      actor: admin, action: "admin.feedback.update", resourceType: "feedback_entry", resourceId: feedbackId,
+      details: { feedbackStatus: resolvedFeedback.feedbackStatus, adminNoteChanged: didAdminNoteChange(payload) }, metadata,
+    }), () => resolvedFeedback));
   }
 
   return { getLoginDashboard, getOpsMetrics, exportAuditLog, updateFeedbackEntry };
 }
+
+function chainMaybe(value, callback) { return value && typeof value.then === "function" ? value.then(callback) : callback(value); }
 
 export function parseAdminDashboardFilters(searchParams = new URLSearchParams()) {
   return {

@@ -10,11 +10,16 @@ export function createGenerationJobService({
   unexpectedErrorLogger = console.error,
 } = {}) {
   const jobs = new Map();
+  const controllers = new Map();
 
   function pruneJobs() {
     const expiredBefore = now() - ttlMs;
     for (const [jobId, job] of jobs) {
-      if (job.updatedAt < expiredBefore) jobs.delete(jobId);
+      if (job.updatedAt < expiredBefore) {
+        controllers.get(jobId)?.abort(new Error("Job expired"));
+        controllers.delete(jobId);
+        jobs.delete(jobId);
+      }
     }
   }
 
@@ -28,8 +33,10 @@ export function createGenerationJobService({
       createdAt: timestamp,
       updatedAt: timestamp,
     };
+    const controller = new AbortController();
     jobs.set(job.id, job);
-    startJob(job, task);
+    controllers.set(job.id, controller);
+    startJob(job, task, controller);
     return job;
   }
 
@@ -39,17 +46,32 @@ export function createGenerationJobService({
     return job?.userId === user.id ? job : null;
   }
 
-  function startJob(job, task) {
+  function cancel(user, jobId) {
+    pruneJobs();
+    const job = jobs.get(jobId);
+    if (!job || job.userId !== user.id) return null;
+    if (["completed", "failed", "cancelled"].includes(job.status)) return job;
+    controllers.get(job.id)?.abort(new Error("Job cancelled"));
+    job.status = "cancelled";
+    job.completedAt = now();
+    job.updatedAt = job.completedAt;
+    return job;
+  }
+
+  function startJob(job, task, controller) {
     Promise.resolve()
       .then(async () => {
         job.status = "running";
         job.updatedAt = now();
-        job.result = await task();
+        const result = await task({ signal: controller.signal });
+        if (job.status === "cancelled") return;
+        job.result = result;
         job.status = "completed";
         job.completedAt = now();
         job.updatedAt = job.completedAt;
       })
       .catch((error) => {
+        if (job.status === "cancelled") return;
         const normalizedError = normalizeGenerationJobError(error, {
           errorClasses,
           unexpectedErrorLogger,
@@ -59,10 +81,11 @@ export function createGenerationJobService({
         job.statusCode = normalizedError.statusCode;
         job.completedAt = now();
         job.updatedAt = job.completedAt;
-      });
+      })
+      .finally(() => controllers.delete(job.id));
   }
 
-  return { create, get, pruneJobs };
+  return { create, get, cancel, pruneJobs };
 }
 
 export function serializeGenerationJob(job, { fallbackError = "Generation failed." } = {}) {
