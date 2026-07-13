@@ -310,15 +310,34 @@ function filterByAllowedTags(scoredItems, allowedTags) {
 
 function filterEligibleSummerSchools(summerSchools, studentProfile) {
   let excludedCount = 0;
-  const items = summerSchools.filter((summerSchool) => {
+  const items = [];
+  for (const summerSchool of summerSchools) {
+    const enriched = enrichResourceEligibility(summerSchool);
     const excluded = classifyResource(
-      enrichResourceEligibility(summerSchool),
+      enriched,
       studentProfile.eligibilityFilters || {},
     ).excluded;
-    if (excluded) excludedCount += 1;
-    return !excluded;
-  });
+    if (excluded) {
+      excludedCount += 1;
+      continue;
+    }
+    items.push(adaptTrackSpecificDetails(enriched, studentProfile.eligibilityFilters || {}));
+  }
   return { items, excludedCount };
+}
+
+function adaptTrackSpecificDetails(summerSchool, filters) {
+  const internationalPaidTrackOnly = /国际生仅适用于付费 track/u.test(summerSchool.eligibilityNote || "");
+  const clearlyNonUsStudent = ["mainland_china_high_school", "outside_us_high_school"].includes(filters.schoolContext)
+    || /(?:无|没有|不具备|非|不是)[^。；，,\n]{0,16}(?:美国公民|美国永久居民|永久居民|绿卡)/i.test(
+      filters.identityDescription || "",
+    );
+  if (!internationalPaidTrackOnly || !clearlyNonUsStudent) return summerSchool;
+  return {
+    ...summerSchool,
+    admissionRate: "付费 track 录取率未披露，需以官网最新信息为准",
+    applicationTime: "付费 track 申请时间需以官网最新信息为准",
+  };
 }
 
 export function recommendSummerSchools({ studentProfile, summerSchools, seenIds = [], previousBatchIds = [], batchIndex = 0 }) {

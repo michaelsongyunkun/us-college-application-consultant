@@ -1,0 +1,132 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: consultant
+      POSTGRES_USER: consultant
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-consultant-local}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U consultant -d consultant"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - consultant-postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - consultant-redis:/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - consultant-objects:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
+        mc mb --ignore-existing local/consultant-exports &&
+        mc ilm rule add --expire-days 7 local/consultant-exports
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+
+  app:
+    build:
+      context: .
+      target: runtime
+    environment: &runtime-environment
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4177
+      APP_BASE_URL: http://localhost:4177
+      COOKIE_SECURE: "false"
+      FASTIFY_HTTP_ENABLED: "true"
+      FASTIFY_HTTP_TRAFFIC_PERCENT: "100"
+      RAG_STREAM_RATE_LIMIT: "20"
+      AUTH_DATABASE_PATH: /app/data/auth.sqlite
+      DATABASE_BACKUP_DIR: /app/backups/sqlite
+      DATABASE_URL: postgresql://consultant:${POSTGRES_PASSWORD:-consultant-local}@postgres:5432/consultant
+      REDIS_URL: redis://redis:6379
+      JOB_QUEUE_NAME: consultant-jobs
+      OBJECT_STORE_DRIVER: minio
+      OBJECT_STORE_ENDPOINT: http://minio:9000
+      OBJECT_STORE_PUBLIC_ENDPOINT: http://localhost:9000
+      OBJECT_STORE_REGION: us-east-1
+      OBJECT_STORE_BUCKET: consultant-exports
+      OBJECT_STORE_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      OBJECT_STORE_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      OBJECT_STORE_FORCE_PATH_STYLE: "true"
+      OBJECT_STORE_SIGNING_SECRET: ${OBJECT_STORE_SIGNING_SECRET:-replace-in-production}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    ports:
+      - "4177:4177"
+    volumes:
+      - consultant-data:/app/data
+      - consultant-backups:/app/backups
+      - consultant-state:/app/work/maintenance
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      target: runtime
+    command: ["npm", "run", "worker"]
+    environment:
+      <<: *runtime-environment
+      JOB_HANDLER_MODULE: ./src/worker/default-handlers.mjs
+      WORKER_CONCURRENCY: 4
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  consultant-data:
+  consultant-backups:
+  consultant-state:
+  consultant-postgres:
+  consultant-redis:
+  consultant-objects:

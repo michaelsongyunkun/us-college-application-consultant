@@ -66,6 +66,20 @@ assert.deepEqual(serializeGenerationJob(unknownFailedJob), {
 });
 assert.equal(errors.length, 1);
 
+let cancelledSignal;
+let cancelledTaskSideEffect = false;
+const cancellableJob = jobs.create(alice, async ({ signal } = {}) => {
+  cancelledSignal = signal;
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  if (!signal?.aborted) cancelledTaskSideEffect = true;
+  return { answer: "too late" };
+});
+await flushAsyncJob();
+assert.equal(jobs.cancel(alice, cancellableJob.id).status, "cancelled");
+await new Promise((resolve) => setTimeout(resolve, 30));
+assert.equal(cancelledSignal?.aborted, true);
+assert.equal(cancelledTaskSideEffect, false);
+
 assert.deepEqual(
   serializeGenerationJob({ id: "job-4", status: "failed" }, { fallbackError: "School selection generation failed." }),
   {

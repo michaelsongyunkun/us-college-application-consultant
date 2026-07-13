@@ -8,7 +8,7 @@ import {
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEFAULT_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const DEFAULT_PASSWORD_RESET_TTL_MS = 1000 * 60 * 30;
-const USAGE_EVENT_TYPES = new Set([
+export const USAGE_EVENT_TYPES = new Set([
   "parse_codex_answer",
   "parse_codex_failure",
   "export_json",
@@ -47,14 +47,14 @@ const USAGE_EVENT_TYPES = new Set([
   "major_match_success",
   "major_match_failure",
 ]);
-const AI_ACTION_EVENTS = [
+export const AI_ACTION_EVENTS = [
   "generate_plan_success",
   "generate_deepseek_plan_success",
   "deepseek_rag_question_success",
   "school_selection_generate_success",
   "major_match_success",
 ];
-const SAVE_ACTION_EVENTS = [
+export const SAVE_ACTION_EVENTS = [
   "save_draft",
   "deepseek_review_save",
   "deepseek_answer_save",
@@ -63,7 +63,7 @@ const SAVE_ACTION_EVENTS = [
   "portfolio_import_activity",
   "gpa_sync_portfolio",
 ];
-const EXPORT_ACTION_EVENTS = [
+export const EXPORT_ACTION_EVENTS = [
   "export_json",
   "export_svg",
   "export_word",
@@ -71,7 +71,7 @@ const EXPORT_ACTION_EVENTS = [
   "school_selection_export_svg",
   "school_selection_export_word",
 ];
-const RECOMMENDATION_ACTION_EVENTS = [
+export const RECOMMENDATION_ACTION_EVENTS = [
   "refresh_competitions",
   "refresh_summer_schools",
   "refresh_case_matches",
@@ -81,7 +81,7 @@ const RECOMMENDATION_ACTION_EVENTS = [
   "resource_load_more",
   "school_detail_open",
 ];
-const FAILURE_ACTION_EVENTS = [
+export const FAILURE_ACTION_EVENTS = [
   "parse_codex_failure",
   "generate_plan_failure",
   "generate_deepseek_plan_failure",
@@ -111,11 +111,11 @@ const USAGE_EVENT_CATEGORY_BY_TYPE = new Map([
 ]);
 const FEEDBACK_STATUS_OPTIONS = new Set(["未处理", "处理中", "已解决", "已忽略"]);
 
-function getUsageEventCategory(eventType) {
+export function getUsageEventCategory(eventType) {
   return USAGE_EVENT_CATEGORY_BY_TYPE.get(eventType) || "工作流操作";
 }
 
-function summarizeUsageCategories(usageSummary) {
+export function summarizeUsageCategories(usageSummary) {
   const counts = new Map();
   for (const item of usageSummary) {
     counts.set(item.category, (counts.get(item.category) || 0) + item.count);
@@ -1029,7 +1029,7 @@ export function createAuthService({
 
 export { AuthError };
 
-function normalizeEmail(email) {
+export function normalizeEmail(email) {
   const normalized = String(email || "").trim().toLowerCase();
   if (!EMAIL_PATTERN.test(normalized)) {
     throw new AuthError("Please enter a valid email address", 400);
@@ -1037,7 +1037,7 @@ function normalizeEmail(email) {
   return normalized;
 }
 
-function normalizeName(name) {
+export function normalizeName(name) {
   const normalized = String(name || "").trim();
   if (!normalized) {
     throw new AuthError("Please enter your name", 400);
@@ -1045,7 +1045,7 @@ function normalizeName(name) {
   return normalized;
 }
 
-function assertPassword(password) {
+export function assertPassword(password) {
   if (String(password || "").length < 8) {
     throw new AuthError("Password must be at least 8 characters", 400);
   }
@@ -1057,7 +1057,7 @@ export function hashPassword(password) {
   return `scrypt:${salt}:${key}`;
 }
 
-function verifyPassword(password, storedHash) {
+export function verifyPassword(password, storedHash) {
   const [algorithm, salt, key] = String(storedHash || "").split(":");
   if (algorithm !== "scrypt" || !salt || !key) return false;
   const candidate = Buffer.from(scryptSync(password, salt, 32).toString("base64url"));
@@ -1075,7 +1075,7 @@ function safeEqual(left, right) {
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-function toPublicUser(user) {
+export function toPublicUser(user) {
   return {
     id: Number(user.id),
     email: user.email,
@@ -1098,7 +1098,7 @@ function normalizeFeedbackStatus(value) {
   return status;
 }
 
-function getWeekKey(date) {
+export function getWeekKey(date) {
   const utc = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   const day = utc.getUTCDay() || 7;
   utc.setUTCDate(utc.getUTCDate() + 4 - day);
@@ -1126,14 +1126,14 @@ function normalizeLimitedText(value, maxLength) {
     .slice(0, maxLength);
 }
 
-function redactUserSummary(user) {
+export function redactUserSummary(user) {
   return {
     ...user,
     email: maskEmail(user.email),
   };
 }
 
-function redactLoginEvent(event) {
+export function redactLoginEvent(event) {
   return {
     ...event,
     userEmail: maskEmail(event.userEmail),
@@ -1142,7 +1142,7 @@ function redactLoginEvent(event) {
   };
 }
 
-function redactUsageEvent(event) {
+export function redactUsageEvent(event) {
   return {
     ...event,
     userEmail: maskEmail(event.userEmail),
@@ -1152,7 +1152,7 @@ function redactUsageEvent(event) {
   };
 }
 
-function redactFeedbackEntry(entry) {
+export function redactFeedbackEntry(entry) {
   return {
     ...entry,
     userEmail: maskEmail(entry.userEmail),
@@ -1162,7 +1162,7 @@ function redactFeedbackEntry(entry) {
   };
 }
 
-function redactAuditEvent(event) {
+export function redactAuditEvent(event) {
   return {
     ...event,
     actorUserEmail: maskEmail(event.actorUserEmail),

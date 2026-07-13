@@ -1,6 +1,7 @@
 import { escapeHtml } from "./html-utils.mjs";
 import { renderMarkdown } from "../domain/markdown-renderer.mjs?v=20260531-deepseek-markdown";
 import { csrfFetch } from "./csrf-token.mjs";
+import { requestRagStream } from "./rag-stream.mjs";
 
 const form = document.querySelector("#deepSeekQuestionForm");
 const questionInput = document.querySelector("#deepSeekQuestion");
@@ -589,18 +590,26 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
   try {
     setWorking(true);
     startProgressStatus();
-    const job = await requestJson(DEEPSEEK_RAG_JOB_ENDPOINT, {
-      method: "POST",
-      body: JSON.stringify({ question, historySummary: conversationSummary }),
-    });
-    rememberPendingDeepSeekRagJob({
-      jobId: job.jobId,
-      question,
-      displayQuestion,
-      workflowKey,
-    });
-    setStatus("问答任务已提交，DeepSeek 正在后台生成回答。");
-    const data = await waitForDeepSeekRagJob(job.jobId);
+    let data;
+    try {
+      data = await requestRagStream({ question, historySummary: conversationSummary });
+    } catch (streamError) {
+      if (streamError.status === 401) window.location.href = "./index.html";
+      if (!streamError.fallbackAllowed) throw streamError;
+      setStatus("快速通道暂时不可用，正在转入可恢复的后台任务...");
+      const job = await requestJson(DEEPSEEK_RAG_JOB_ENDPOINT, {
+        method: "POST",
+        body: JSON.stringify({ question, historySummary: conversationSummary }),
+      });
+      rememberPendingDeepSeekRagJob({
+        jobId: job.jobId,
+        question,
+        displayQuestion,
+        workflowKey,
+      });
+      setStatus("问答任务已提交，DeepSeek 正在后台生成回答。");
+      data = await waitForDeepSeekRagJob(job.jobId);
+    }
     const sources = data.sources || [];
     const answer = data.answer || "DeepSeek 暂无回答。";
     stopProgressStatus();

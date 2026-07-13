@@ -7,8 +7,12 @@ on:
       - main
       - master
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
-  verify:
+  quality:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -18,14 +22,68 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Check OpenAPI and browser compatibility
+        run: npm run openapi:check && npm run contracts:compat
+
+      - name: Verify prompt manifest
+        run: npm run prompt:check
 
       - name: Run verification
         run: npm run verify
 
       - name: Run AI quality evaluation
         run: npm run eval:ai
+
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build verified runtime image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          push: false
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: PostgreSQL, Redis restart, and MinIO contract tests
+        run: npm run test:infra

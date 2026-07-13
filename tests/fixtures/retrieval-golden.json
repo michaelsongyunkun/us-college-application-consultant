@@ -1,0 +1,1922 @@
+[
+  {
+    "query": "AP微积分BC适合什么学生",
+    "expectedIds": [
+      "data/ap-courses.md"
+    ],
+    "language": "zh",
+    "category": "course-planning",
+    "keywordRanking": [
+      "data/ap-courses.md",
+      "data/majors.md"
+    ],
+    "vectorRanking": [
+      "data/ap-courses.md",
+      "data/competitions.md"
+    ]
+  },
+  {
+    "query": "AP统计学与微积分如何搭配",
+    "expectedIds": [
+      "data/ap-courses.md"
+    ],
+    "language": "zh",
+    "category": "course-planning",
+    "keywordRanking": [
+      "data/majors.md",
+      "data/ap-courses.md"
+    ],
+    "vectorRanking": [
+      "data/ap-courses.md",
+      "data/competitions.md"
+    ]
+  },
+  {
+    "query": "AP计算机科学A课程内容",
+    "expectedIds": [
+      "data/ap-courses.md"
+    ],
+    "language": "zh",
+    "category": "course-planning",
+    "keywordRanking": [
+      "data/ap-courses.md",
+      "data/majors.md"
+    ],
+    "vectorRanking": [
+      "data/ap-courses.md",
+      "data/competitions.md"
+    ]
+  },
+  {
+    "query": "AP研究课程怎么规划",
+    "expectedIds": [
+      "data/ap-courses.md"
+    ],
+    "language": "zh",
+    "category": "course-planning",
+    "keywordRanking": [
+      "data/majors.md",
+      "data/ap-courses.md"
+    ],
+    "vectorRanking": [
+      "data/ap-courses.md",
+      "data/competitions.md"
+    ]
+  },
+  {
+    "query": "申请理工科应该选哪些AP课",
+    "expectedIds": [
+      "data/ap-courses.md"
+    ],
+    "language": "zh",
+    "category": "course-planning",
+    "keywordRanking": [
+      "data/ap-courses.md",
+      "data/majors.md"
+    ],
+    "vectorRanking": [
+      "data/ap-courses.md",
+      "data/competitions.md"
+    ]
+  },
+  {
+    "query": "AP Calculus BC course planning",
+    "expectedIds": [
+      "data/ap-courses.md"
+    ],
+    "language": "en",
+    "category": "course-planning",
+    "keywordRanking": [
+      "data/majors.md",
+      "data/ap-courses.md"
+    ],
+    "vectorRanking": [
+      "data/ap-courses.md",
+      "data/competitions.md"
+    ]
+  },
+  {
+    "query": "How to combine AP Statistics and Calculus",
+    "expectedIds": [
+      "data/ap-courses.md"
+    ],
+    "language": "en",
+    "category": "course-planning",
+    "keywordRanking": [
+      "data/ap-courses.md",
+      "data/majors.md"
+    ],
+    "vectorRanking": [
+      "data/ap-courses.md",
+      "data/competitions.md"
+    ]
+  },
+  {
+    "query": "What does AP Computer Science A cover",
+    "expectedIds": [
+      "data/ap-courses.md"
+    ],
+    "language": "en",
+    "category": "course-planning",
+    "keywordRanking": [
+      "data/majors.md",
+      "data/ap-courses.md"
+    ],
+    "vectorRanking": [
+      "data/ap-courses.md",
+      "data/competitions.md"
+    ]
+  },
+  {
+    "query": "Planning an AP Research pathway",
+    "expectedIds": [
+      "data/ap-courses.md"
+    ],
+    "language": "en",
+    "category": "course-planning",
+    "keywordRanking": [
+      "data/ap-courses.md",
+      "data/majors.md"
+    ],
+    "vectorRanking": [
+      "data/ap-courses.md",
+      "data/competitions.md"
+    ]
+  },
+  {
+    "query": "Best AP courses for engineering applicants",
+    "expectedIds": [
+      "data/ap-courses.md"
+    ],
+    "language": "en",
+    "category": "course-planning",
+    "keywordRanking": [
+      "data/majors.md",
+      "data/ap-courses.md"
+    ],
+    "vectorRanking": [
+      "data/ap-courses.md",
+      "data/competitions.md"
+    ]
+  },
+  {
+    "query": "计算机科学专业学什么",
+    "expectedIds": [
+      "data/majors.md"
+    ],
+    "language": "zh",
+    "category": "major-exploration",
+    "keywordRanking": [
+      "data/majors.md",
+      "data/competitions.md"
+    ],
+    "vectorRanking": [
+      "data/majors.md",
+      "data/summer-schools.md"
+    ]
+  },
+  {
+    "query": "数据科学和统计学怎么选",
+    "expectedIds": [
+      "data/majors.md"
+    ],
+    "language": "zh",
+    "category": "major-exploration",
+    "keywordRanking": [
+      "data/competitions.md",
+      "data/majors.md"
+    ],
+    "vectorRanking": [
+      "data/majors.md",
+      "data/summer-schools.md"
+    ]
+  },
+  {
+    "query": "机械工程专业方向有哪些",
+    "expectedIds": [
+      "data/majors.md"
+    ],
+    "language": "zh",
+    "category": "major-exploration",
+    "keywordRanking": [
+      "data/majors.md",
+      "data/competitions.md"
+    ],
+    "vectorRanking": [
+      "data/majors.md",
+      "data/summer-schools.md"
+    ]
+  },
+  {
+    "query": "心理学本科专业介绍",
+    "expectedIds": [
+      "data/majors.md"
+    ],
+    "language": "zh",
+    "category": "major-exploration",
+    "keywordRanking": [
+      "data/competitions.md",
+      "data/majors.md"
+    ],
+    "vectorRanking": [
+      "data/majors.md",
+      "data/summer-schools.md"
+    ]
+  },
+  {
+    "query": "生物信息学适合什么学生",
+    "expectedIds": [
+      "data/majors.md"
+    ],
+    "language": "zh",
+    "category": "major-exploration",
+    "keywordRanking": [
+      "data/majors.md",
+      "data/competitions.md"
+    ],
+    "vectorRanking": [
+      "data/majors.md",
+      "data/summer-schools.md"
+    ]
+  },
+  {
+    "query": "Computer science major overview",
+    "expectedIds": [
+      "data/majors.md"
+    ],
+    "language": "en",
+    "category": "major-exploration",
+    "keywordRanking": [
+      "data/competitions.md",
+      "data/majors.md"
+    ],
+    "vectorRanking": [
+      "data/majors.md",
+      "data/summer-schools.md"
+    ]
+  },
+  {
+    "query": "Data science versus statistics major",
+    "expectedIds": [
+      "data/majors.md"
+    ],
+    "language": "en",
+    "category": "major-exploration",
+    "keywordRanking": [
+      "data/majors.md",
+      "data/competitions.md"
+    ],
+    "vectorRanking": [
+      "data/majors.md",
+      "data/summer-schools.md"
+    ]
+  },
+  {
+    "query": "Mechanical engineering study areas",
+    "expectedIds": [
+      "data/majors.md"
+    ],
+    "language": "en",
+    "category": "major-exploration",
+    "keywordRanking": [
+      "data/competitions.md",
+      "data/majors.md"
+    ],
+    "vectorRanking": [
+      "data/majors.md",
+      "data/summer-schools.md"
+    ]
+  },
+  {
+    "query": "Undergraduate psychology major guide",
+    "expectedIds": [
+      "data/majors.md"
+    ],
+    "language": "en",
+    "category": "major-exploration",
+    "keywordRanking": [
+      "data/majors.md",
+      "data/competitions.md"
+    ],
+    "vectorRanking": [
+      "data/majors.md",
+      "data/summer-schools.md"
+    ]
+  },
+  {
+    "query": "Who should study bioinformatics",
+    "expectedIds": [
+      "data/majors.md"
+    ],
+    "language": "en",
+    "category": "major-exploration",
+    "keywordRanking": [
+      "data/competitions.md",
+      "data/majors.md"
+    ],
+    "vectorRanking": [
+      "data/majors.md",
+      "data/summer-schools.md"
+    ]
+  },
+  {
+    "query": "高中生数学竞赛有哪些",
+    "expectedIds": [
+      "data/competitions.md"
+    ],
+    "language": "zh",
+    "category": "competition",
+    "keywordRanking": [
+      "data/competitions.md",
+      "data/summer-schools.md"
+    ],
+    "vectorRanking": [
+      "data/competitions.md",
+      "data/research-projects.md"
+    ]
+  },
+  {
+    "query": "美国物理竞赛路线怎么走",
+    "expectedIds": [
+      "data/competitions.md"
+    ],
+    "language": "zh",
+    "category": "competition",
+    "keywordRanking": [
+      "data/summer-schools.md",
+      "data/competitions.md"
+    ],
+    "vectorRanking": [
+      "data/competitions.md",
+      "data/research-projects.md"
+    ]
+  },
+  {
+    "query": "化学奥赛有哪些选择",
+    "expectedIds": [
+      "data/competitions.md"
+    ],
+    "language": "zh",
+    "category": "competition",
+    "keywordRanking": [
+      "data/competitions.md",
+      "data/summer-schools.md"
+    ],
+    "vectorRanking": [
+      "data/competitions.md",
+      "data/research-projects.md"
+    ]
+  },
+  {
+    "query": "适合计算机学生的竞赛",
+    "expectedIds": [
+      "data/competitions.md"
+    ],
+    "language": "zh",
+    "category": "competition",
+    "keywordRanking": [
+      "data/summer-schools.md",
+      "data/competitions.md"
+    ],
+    "vectorRanking": [
+      "data/competitions.md",
+      "data/research-projects.md"
+    ]
+  },
+  {
+    "query": "数学建模竞赛推荐",
+    "expectedIds": [
+      "data/competitions.md"
+    ],
+    "language": "zh",
+    "category": "competition",
+    "keywordRanking": [
+      "data/competitions.md",
+      "data/summer-schools.md"
+    ],
+    "vectorRanking": [
+      "data/competitions.md",
+      "data/research-projects.md"
+    ]
+  },
+  {
+    "query": "High school mathematics competitions",
+    "expectedIds": [
+      "data/competitions.md"
+    ],
+    "language": "en",
+    "category": "competition",
+    "keywordRanking": [
+      "data/summer-schools.md",
+      "data/competitions.md"
+    ],
+    "vectorRanking": [
+      "data/competitions.md",
+      "data/research-projects.md"
+    ]
+  },
+  {
+    "query": "US physics competition pathway",
+    "expectedIds": [
+      "data/competitions.md"
+    ],
+    "language": "en",
+    "category": "competition",
+    "keywordRanking": [
+      "data/competitions.md",
+      "data/summer-schools.md"
+    ],
+    "vectorRanking": [
+      "data/competitions.md",
+      "data/research-projects.md"
+    ]
+  },
+  {
+    "query": "Chemistry olympiad options",
+    "expectedIds": [
+      "data/competitions.md"
+    ],
+    "language": "en",
+    "category": "competition",
+    "keywordRanking": [
+      "data/summer-schools.md",
+      "data/competitions.md"
+    ],
+    "vectorRanking": [
+      "data/competitions.md",
+      "data/research-projects.md"
+    ]
+  },
+  {
+    "query": "Competitions for computer science students",
+    "expectedIds": [
+      "data/competitions.md"
+    ],
+    "language": "en",
+    "category": "competition",
+    "keywordRanking": [
+      "data/competitions.md",
+      "data/summer-schools.md"
+    ],
+    "vectorRanking": [
+      "data/competitions.md",
+      "data/research-projects.md"
+    ]
+  },
+  {
+    "query": "Recommended mathematical modeling contests",
+    "expectedIds": [
+      "data/competitions.md"
+    ],
+    "language": "en",
+    "category": "competition",
+    "keywordRanking": [
+      "data/summer-schools.md",
+      "data/competitions.md"
+    ],
+    "vectorRanking": [
+      "data/competitions.md",
+      "data/research-projects.md"
+    ]
+  },
+  {
+    "query": "高中数学夏校推荐",
+    "expectedIds": [
+      "data/summer-schools.md"
+    ],
+    "language": "zh",
+    "category": "summer-program",
+    "keywordRanking": [
+      "data/summer-schools.md",
+      "data/research-projects.md"
+    ],
+    "vectorRanking": [
+      "data/summer-schools.md",
+      "data/international-journals.md"
+    ]
+  },
+  {
+    "query": "天体物理夏校有哪些",
+    "expectedIds": [
+      "data/summer-schools.md"
+    ],
+    "language": "zh",
+    "category": "summer-program",
+    "keywordRanking": [
+      "data/research-projects.md",
+      "data/summer-schools.md"
+    ],
+    "vectorRanking": [
+      "data/summer-schools.md",
+      "data/international-journals.md"
+    ]
+  },
+  {
+    "query": "适合科研方向的暑期项目",
+    "expectedIds": [
+      "data/summer-schools.md"
+    ],
+    "language": "zh",
+    "category": "summer-program",
+    "keywordRanking": [
+      "data/summer-schools.md",
+      "data/research-projects.md"
+    ],
+    "vectorRanking": [
+      "data/summer-schools.md",
+      "data/international-journals.md"
+    ]
+  },
+  {
+    "query": "美国大学工程夏校怎么选",
+    "expectedIds": [
+      "data/summer-schools.md"
+    ],
+    "language": "zh",
+    "category": "summer-program",
+    "keywordRanking": [
+      "data/research-projects.md",
+      "data/summer-schools.md"
+    ],
+    "vectorRanking": [
+      "data/summer-schools.md",
+      "data/international-journals.md"
+    ]
+  },
+  {
+    "query": "国际生可以申请哪些夏校",
+    "expectedIds": [
+      "data/summer-schools.md"
+    ],
+    "language": "zh",
+    "category": "summer-program",
+    "keywordRanking": [
+      "data/summer-schools.md",
+      "data/research-projects.md"
+    ],
+    "vectorRanking": [
+      "data/summer-schools.md",
+      "data/international-journals.md"
+    ]
+  },
+  {
+    "query": "Best summer math programs",
+    "expectedIds": [
+      "data/summer-schools.md"
+    ],
+    "language": "en",
+    "category": "summer-program",
+    "keywordRanking": [
+      "data/research-projects.md",
+      "data/summer-schools.md"
+    ],
+    "vectorRanking": [
+      "data/summer-schools.md",
+      "data/international-journals.md"
+    ]
+  },
+  {
+    "query": "Astrophysics summer programs for high schoolers",
+    "expectedIds": [
+      "data/summer-schools.md"
+    ],
+    "language": "en",
+    "category": "summer-program",
+    "keywordRanking": [
+      "data/summer-schools.md",
+      "data/research-projects.md"
+    ],
+    "vectorRanking": [
+      "data/summer-schools.md",
+      "data/international-journals.md"
+    ]
+  },
+  {
+    "query": "Research focused summer program options",
+    "expectedIds": [
+      "data/summer-schools.md"
+    ],
+    "language": "en",
+    "category": "summer-program",
+    "keywordRanking": [
+      "data/research-projects.md",
+      "data/summer-schools.md"
+    ],
+    "vectorRanking": [
+      "data/summer-schools.md",
+      "data/international-journals.md"
+    ]
+  },
+  {
+    "query": "Choosing a university engineering summer school",
+    "expectedIds": [
+      "data/summer-schools.md"
+    ],
+    "language": "en",
+    "category": "summer-program",
+    "keywordRanking": [
+      "data/summer-schools.md",
+      "data/research-projects.md"
+    ],
+    "vectorRanking": [
+      "data/summer-schools.md",
+      "data/international-journals.md"
+    ]
+  },
+  {
+    "query": "Summer schools open to international students",
+    "expectedIds": [
+      "data/summer-schools.md"
+    ],
+    "language": "en",
+    "category": "summer-program",
+    "keywordRanking": [
+      "data/research-projects.md",
+      "data/summer-schools.md"
+    ],
+    "vectorRanking": [
+      "data/summer-schools.md",
+      "data/international-journals.md"
+    ]
+  },
+  {
+    "query": "高中生一对一科研项目",
+    "expectedIds": [
+      "data/research-projects.md"
+    ],
+    "language": "zh",
+    "category": "research",
+    "keywordRanking": [
+      "data/research-projects.md",
+      "data/international-journals.md"
+    ],
+    "vectorRanking": [
+      "data/research-projects.md",
+      "data/extracurricular-activities.md"
+    ]
+  },
+  {
+    "query": "Pioneer Academics项目介绍",
+    "expectedIds": [
+      "data/research-projects.md"
+    ],
+    "language": "zh",
+    "category": "research",
+    "keywordRanking": [
+      "data/international-journals.md",
+      "data/research-projects.md"
+    ],
+    "vectorRanking": [
+      "data/research-projects.md",
+      "data/extracurricular-activities.md"
+    ]
+  },
+  {
+    "query": "人工智能科研项目推荐",
+    "expectedIds": [
+      "data/research-projects.md"
+    ],
+    "language": "zh",
+    "category": "research",
+    "keywordRanking": [
+      "data/research-projects.md",
+      "data/international-journals.md"
+    ],
+    "vectorRanking": [
+      "data/research-projects.md",
+      "data/extracurricular-activities.md"
+    ]
+  },
+  {
+    "query": "气候与可持续发展科研机会",
+    "expectedIds": [
+      "data/research-projects.md"
+    ],
+    "language": "zh",
+    "category": "research",
+    "keywordRanking": [
+      "data/international-journals.md",
+      "data/research-projects.md"
+    ],
+    "vectorRanking": [
+      "data/research-projects.md",
+      "data/extracurricular-activities.md"
+    ]
+  },
+  {
+    "query": "如何选择教授带教科研",
+    "expectedIds": [
+      "data/research-projects.md"
+    ],
+    "language": "zh",
+    "category": "research",
+    "keywordRanking": [
+      "data/research-projects.md",
+      "data/international-journals.md"
+    ],
+    "vectorRanking": [
+      "data/research-projects.md",
+      "data/extracurricular-activities.md"
+    ]
+  },
+  {
+    "query": "One to one research programs for high school students",
+    "expectedIds": [
+      "data/research-projects.md"
+    ],
+    "language": "en",
+    "category": "research",
+    "keywordRanking": [
+      "data/international-journals.md",
+      "data/research-projects.md"
+    ],
+    "vectorRanking": [
+      "data/research-projects.md",
+      "data/extracurricular-activities.md"
+    ]
+  },
+  {
+    "query": "Pioneer Academics program overview",
+    "expectedIds": [
+      "data/research-projects.md"
+    ],
+    "language": "en",
+    "category": "research",
+    "keywordRanking": [
+      "data/research-projects.md",
+      "data/international-journals.md"
+    ],
+    "vectorRanking": [
+      "data/research-projects.md",
+      "data/extracurricular-activities.md"
+    ]
+  },
+  {
+    "query": "Artificial intelligence research opportunities",
+    "expectedIds": [
+      "data/research-projects.md"
+    ],
+    "language": "en",
+    "category": "research",
+    "keywordRanking": [
+      "data/international-journals.md",
+      "data/research-projects.md"
+    ],
+    "vectorRanking": [
+      "data/research-projects.md",
+      "data/extracurricular-activities.md"
+    ]
+  },
+  {
+    "query": "Climate and sustainability research mentorship",
+    "expectedIds": [
+      "data/research-projects.md"
+    ],
+    "language": "en",
+    "category": "research",
+    "keywordRanking": [
+      "data/research-projects.md",
+      "data/international-journals.md"
+    ],
+    "vectorRanking": [
+      "data/research-projects.md",
+      "data/extracurricular-activities.md"
+    ]
+  },
+  {
+    "query": "How to choose a professor mentored project",
+    "expectedIds": [
+      "data/research-projects.md"
+    ],
+    "language": "en",
+    "category": "research",
+    "keywordRanking": [
+      "data/international-journals.md",
+      "data/research-projects.md"
+    ],
+    "vectorRanking": [
+      "data/research-projects.md",
+      "data/extracurricular-activities.md"
+    ]
+  },
+  {
+    "query": "高中生可以投稿哪些国际期刊",
+    "expectedIds": [
+      "data/international-journals.md"
+    ],
+    "language": "zh",
+    "category": "publication",
+    "keywordRanking": [
+      "data/international-journals.md",
+      "data/extracurricular-activities.md"
+    ],
+    "vectorRanking": [
+      "data/international-journals.md",
+      "data/schools.md"
+    ]
+  },
+  {
+    "query": "学生科研论文发表渠道",
+    "expectedIds": [
+      "data/international-journals.md"
+    ],
+    "language": "zh",
+    "category": "publication",
+    "keywordRanking": [
+      "data/extracurricular-activities.md",
+      "data/international-journals.md"
+    ],
+    "vectorRanking": [
+      "data/international-journals.md",
+      "data/schools.md"
+    ]
+  },
+  {
+    "query": "高中科学期刊推荐",
+    "expectedIds": [
+      "data/international-journals.md"
+    ],
+    "language": "zh",
+    "category": "publication",
+    "keywordRanking": [
+      "data/international-journals.md",
+      "data/extracurricular-activities.md"
+    ],
+    "vectorRanking": [
+      "data/international-journals.md",
+      "data/schools.md"
+    ]
+  },
+  {
+    "query": "历史论文适合投什么期刊",
+    "expectedIds": [
+      "data/international-journals.md"
+    ],
+    "language": "zh",
+    "category": "publication",
+    "keywordRanking": [
+      "data/extracurricular-activities.md",
+      "data/international-journals.md"
+    ],
+    "vectorRanking": [
+      "data/international-journals.md",
+      "data/schools.md"
+    ]
+  },
+  {
+    "query": "生物研究学生期刊有哪些",
+    "expectedIds": [
+      "data/international-journals.md"
+    ],
+    "language": "zh",
+    "category": "publication",
+    "keywordRanking": [
+      "data/international-journals.md",
+      "data/extracurricular-activities.md"
+    ],
+    "vectorRanking": [
+      "data/international-journals.md",
+      "data/schools.md"
+    ]
+  },
+  {
+    "query": "International journals accepting high school students",
+    "expectedIds": [
+      "data/international-journals.md"
+    ],
+    "language": "en",
+    "category": "publication",
+    "keywordRanking": [
+      "data/extracurricular-activities.md",
+      "data/international-journals.md"
+    ],
+    "vectorRanking": [
+      "data/international-journals.md",
+      "data/schools.md"
+    ]
+  },
+  {
+    "query": "Publication venues for student research",
+    "expectedIds": [
+      "data/international-journals.md"
+    ],
+    "language": "en",
+    "category": "publication",
+    "keywordRanking": [
+      "data/international-journals.md",
+      "data/extracurricular-activities.md"
+    ],
+    "vectorRanking": [
+      "data/international-journals.md",
+      "data/schools.md"
+    ]
+  },
+  {
+    "query": "Recommended high school science journals",
+    "expectedIds": [
+      "data/international-journals.md"
+    ],
+    "language": "en",
+    "category": "publication",
+    "keywordRanking": [
+      "data/extracurricular-activities.md",
+      "data/international-journals.md"
+    ],
+    "vectorRanking": [
+      "data/international-journals.md",
+      "data/schools.md"
+    ]
+  },
+  {
+    "query": "Where to publish a history paper",
+    "expectedIds": [
+      "data/international-journals.md"
+    ],
+    "language": "en",
+    "category": "publication",
+    "keywordRanking": [
+      "data/international-journals.md",
+      "data/extracurricular-activities.md"
+    ],
+    "vectorRanking": [
+      "data/international-journals.md",
+      "data/schools.md"
+    ]
+  },
+  {
+    "query": "Student journals for biology research",
+    "expectedIds": [
+      "data/international-journals.md"
+    ],
+    "language": "en",
+    "category": "publication",
+    "keywordRanking": [
+      "data/extracurricular-activities.md",
+      "data/international-journals.md"
+    ],
+    "vectorRanking": [
+      "data/international-journals.md",
+      "data/schools.md"
+    ]
+  },
+  {
+    "query": "Common App学术活动怎么写",
+    "expectedIds": [
+      "data/extracurricular-activities.md"
+    ],
+    "language": "zh",
+    "category": "activities",
+    "keywordRanking": [
+      "data/extracurricular-activities.md",
+      "data/schools.md"
+    ],
+    "vectorRanking": [
+      "data/extracurricular-activities.md",
+      "data/application-round-schools.md"
+    ]
+  },
+  {
+    "query": "适合高中生的领导力活动",
+    "expectedIds": [
+      "data/extracurricular-activities.md"
+    ],
+    "language": "zh",
+    "category": "activities",
+    "keywordRanking": [
+      "data/schools.md",
+      "data/extracurricular-activities.md"
+    ],
+    "vectorRanking": [
+      "data/extracurricular-activities.md",
+      "data/application-round-schools.md"
+    ]
+  },
+  {
+    "query": "如何设计同伴辅导项目",
+    "expectedIds": [
+      "data/extracurricular-activities.md"
+    ],
+    "language": "zh",
+    "category": "activities",
+    "keywordRanking": [
+      "data/extracurricular-activities.md",
+      "data/schools.md"
+    ],
+    "vectorRanking": [
+      "data/extracurricular-activities.md",
+      "data/application-round-schools.md"
+    ]
+  },
+  {
+    "query": "社区服务活动创意",
+    "expectedIds": [
+      "data/extracurricular-activities.md"
+    ],
+    "language": "zh",
+    "category": "activities",
+    "keywordRanking": [
+      "data/schools.md",
+      "data/extracurricular-activities.md"
+    ],
+    "vectorRanking": [
+      "data/extracurricular-activities.md",
+      "data/application-round-schools.md"
+    ]
+  },
+  {
+    "query": "跨学科课外活动推荐",
+    "expectedIds": [
+      "data/extracurricular-activities.md"
+    ],
+    "language": "zh",
+    "category": "activities",
+    "keywordRanking": [
+      "data/extracurricular-activities.md",
+      "data/schools.md"
+    ],
+    "vectorRanking": [
+      "data/extracurricular-activities.md",
+      "data/application-round-schools.md"
+    ]
+  },
+  {
+    "query": "Common App academic activity ideas",
+    "expectedIds": [
+      "data/extracurricular-activities.md"
+    ],
+    "language": "en",
+    "category": "activities",
+    "keywordRanking": [
+      "data/schools.md",
+      "data/extracurricular-activities.md"
+    ],
+    "vectorRanking": [
+      "data/extracurricular-activities.md",
+      "data/application-round-schools.md"
+    ]
+  },
+  {
+    "query": "Leadership activities for high school students",
+    "expectedIds": [
+      "data/extracurricular-activities.md"
+    ],
+    "language": "en",
+    "category": "activities",
+    "keywordRanking": [
+      "data/extracurricular-activities.md",
+      "data/schools.md"
+    ],
+    "vectorRanking": [
+      "data/extracurricular-activities.md",
+      "data/application-round-schools.md"
+    ]
+  },
+  {
+    "query": "How to build a peer tutoring program",
+    "expectedIds": [
+      "data/extracurricular-activities.md"
+    ],
+    "language": "en",
+    "category": "activities",
+    "keywordRanking": [
+      "data/schools.md",
+      "data/extracurricular-activities.md"
+    ],
+    "vectorRanking": [
+      "data/extracurricular-activities.md",
+      "data/application-round-schools.md"
+    ]
+  },
+  {
+    "query": "Community service project ideas",
+    "expectedIds": [
+      "data/extracurricular-activities.md"
+    ],
+    "language": "en",
+    "category": "activities",
+    "keywordRanking": [
+      "data/extracurricular-activities.md",
+      "data/schools.md"
+    ],
+    "vectorRanking": [
+      "data/extracurricular-activities.md",
+      "data/application-round-schools.md"
+    ]
+  },
+  {
+    "query": "Interdisciplinary extracurricular activities",
+    "expectedIds": [
+      "data/extracurricular-activities.md"
+    ],
+    "language": "en",
+    "category": "activities",
+    "keywordRanking": [
+      "data/schools.md",
+      "data/extracurricular-activities.md"
+    ],
+    "vectorRanking": [
+      "data/extracurricular-activities.md",
+      "data/application-round-schools.md"
+    ]
+  },
+  {
+    "query": "美国综合大学排名和信息",
+    "expectedIds": [
+      "data/schools.md"
+    ],
+    "language": "zh",
+    "category": "us-schools",
+    "keywordRanking": [
+      "data/schools.md",
+      "data/application-round-schools.md"
+    ],
+    "vectorRanking": [
+      "data/schools.md",
+      "data/international-schools.md"
+    ]
+  },
+  {
+    "query": "美国文理学院怎么选",
+    "expectedIds": [
+      "data/schools.md"
+    ],
+    "language": "zh",
+    "category": "us-schools",
+    "keywordRanking": [
+      "data/application-round-schools.md",
+      "data/schools.md"
+    ],
+    "vectorRanking": [
+      "data/schools.md",
+      "data/international-schools.md"
+    ]
+  },
+  {
+    "query": "适合计算机专业的美国大学",
+    "expectedIds": [
+      "data/schools.md"
+    ],
+    "language": "zh",
+    "category": "us-schools",
+    "keywordRanking": [
+      "data/schools.md",
+      "data/application-round-schools.md"
+    ],
+    "vectorRanking": [
+      "data/schools.md",
+      "data/international-schools.md"
+    ]
+  },
+  {
+    "query": "美国大学本科申请要求",
+    "expectedIds": [
+      "data/schools.md"
+    ],
+    "language": "zh",
+    "category": "us-schools",
+    "keywordRanking": [
+      "data/application-round-schools.md",
+      "data/schools.md"
+    ],
+    "vectorRanking": [
+      "data/schools.md",
+      "data/international-schools.md"
+    ]
+  },
+  {
+    "query": "文理学院前五十有哪些",
+    "expectedIds": [
+      "data/schools.md"
+    ],
+    "language": "zh",
+    "category": "us-schools",
+    "keywordRanking": [
+      "data/schools.md",
+      "data/application-round-schools.md"
+    ],
+    "vectorRanking": [
+      "data/schools.md",
+      "data/international-schools.md"
+    ]
+  },
+  {
+    "query": "US national university information",
+    "expectedIds": [
+      "data/schools.md"
+    ],
+    "language": "en",
+    "category": "us-schools",
+    "keywordRanking": [
+      "data/application-round-schools.md",
+      "data/schools.md"
+    ],
+    "vectorRanking": [
+      "data/schools.md",
+      "data/international-schools.md"
+    ]
+  },
+  {
+    "query": "How to choose a liberal arts college",
+    "expectedIds": [
+      "data/schools.md"
+    ],
+    "language": "en",
+    "category": "us-schools",
+    "keywordRanking": [
+      "data/schools.md",
+      "data/application-round-schools.md"
+    ],
+    "vectorRanking": [
+      "data/schools.md",
+      "data/international-schools.md"
+    ]
+  },
+  {
+    "query": "US universities for computer science",
+    "expectedIds": [
+      "data/schools.md"
+    ],
+    "language": "en",
+    "category": "us-schools",
+    "keywordRanking": [
+      "data/application-round-schools.md",
+      "data/schools.md"
+    ],
+    "vectorRanking": [
+      "data/schools.md",
+      "data/international-schools.md"
+    ]
+  },
+  {
+    "query": "Undergraduate admission requirements by US college",
+    "expectedIds": [
+      "data/schools.md"
+    ],
+    "language": "en",
+    "category": "us-schools",
+    "keywordRanking": [
+      "data/schools.md",
+      "data/application-round-schools.md"
+    ],
+    "vectorRanking": [
+      "data/schools.md",
+      "data/international-schools.md"
+    ]
+  },
+  {
+    "query": "Top fifty liberal arts colleges",
+    "expectedIds": [
+      "data/schools.md"
+    ],
+    "language": "en",
+    "category": "us-schools",
+    "keywordRanking": [
+      "data/application-round-schools.md",
+      "data/schools.md"
+    ],
+    "vectorRanking": [
+      "data/schools.md",
+      "data/international-schools.md"
+    ]
+  },
+  {
+    "query": "美国大学ED申请轮次",
+    "expectedIds": [
+      "data/application-round-schools.md"
+    ],
+    "language": "zh",
+    "category": "application-round",
+    "keywordRanking": [
+      "data/application-round-schools.md",
+      "data/international-schools.md"
+    ],
+    "vectorRanking": [
+      "data/application-round-schools.md",
+      "data/other-region-schools.md"
+    ]
+  },
+  {
+    "query": "哪些学校提供EA申请",
+    "expectedIds": [
+      "data/application-round-schools.md"
+    ],
+    "language": "zh",
+    "category": "application-round",
+    "keywordRanking": [
+      "data/international-schools.md",
+      "data/application-round-schools.md"
+    ],
+    "vectorRanking": [
+      "data/application-round-schools.md",
+      "data/other-region-schools.md"
+    ]
+  },
+  {
+    "query": "REA和ED有什么区别",
+    "expectedIds": [
+      "data/application-round-schools.md"
+    ],
+    "language": "zh",
+    "category": "application-round",
+    "keywordRanking": [
+      "data/application-round-schools.md",
+      "data/international-schools.md"
+    ],
+    "vectorRanking": [
+      "data/application-round-schools.md",
+      "data/other-region-schools.md"
+    ]
+  },
+  {
+    "query": "大学早申请截止日期怎么查",
+    "expectedIds": [
+      "data/application-round-schools.md"
+    ],
+    "language": "zh",
+    "category": "application-round",
+    "keywordRanking": [
+      "data/international-schools.md",
+      "data/application-round-schools.md"
+    ],
+    "vectorRanking": [
+      "data/application-round-schools.md",
+      "data/other-region-schools.md"
+    ]
+  },
+  {
+    "query": "RD常规申请院校信息",
+    "expectedIds": [
+      "data/application-round-schools.md"
+    ],
+    "language": "zh",
+    "category": "application-round",
+    "keywordRanking": [
+      "data/application-round-schools.md",
+      "data/international-schools.md"
+    ],
+    "vectorRanking": [
+      "data/application-round-schools.md",
+      "data/other-region-schools.md"
+    ]
+  },
+  {
+    "query": "US colleges with Early Decision",
+    "expectedIds": [
+      "data/application-round-schools.md"
+    ],
+    "language": "en",
+    "category": "application-round",
+    "keywordRanking": [
+      "data/international-schools.md",
+      "data/application-round-schools.md"
+    ],
+    "vectorRanking": [
+      "data/application-round-schools.md",
+      "data/other-region-schools.md"
+    ]
+  },
+  {
+    "query": "Which colleges offer Early Action",
+    "expectedIds": [
+      "data/application-round-schools.md"
+    ],
+    "language": "en",
+    "category": "application-round",
+    "keywordRanking": [
+      "data/application-round-schools.md",
+      "data/international-schools.md"
+    ],
+    "vectorRanking": [
+      "data/application-round-schools.md",
+      "data/other-region-schools.md"
+    ]
+  },
+  {
+    "query": "REA versus ED application rounds",
+    "expectedIds": [
+      "data/application-round-schools.md"
+    ],
+    "language": "en",
+    "category": "application-round",
+    "keywordRanking": [
+      "data/international-schools.md",
+      "data/application-round-schools.md"
+    ],
+    "vectorRanking": [
+      "data/application-round-schools.md",
+      "data/other-region-schools.md"
+    ]
+  },
+  {
+    "query": "How to find early application deadlines",
+    "expectedIds": [
+      "data/application-round-schools.md"
+    ],
+    "language": "en",
+    "category": "application-round",
+    "keywordRanking": [
+      "data/application-round-schools.md",
+      "data/international-schools.md"
+    ],
+    "vectorRanking": [
+      "data/application-round-schools.md",
+      "data/other-region-schools.md"
+    ]
+  },
+  {
+    "query": "Regular Decision school information",
+    "expectedIds": [
+      "data/application-round-schools.md"
+    ],
+    "language": "en",
+    "category": "application-round",
+    "keywordRanking": [
+      "data/international-schools.md",
+      "data/application-round-schools.md"
+    ],
+    "vectorRanking": [
+      "data/application-round-schools.md",
+      "data/other-region-schools.md"
+    ]
+  },
+  {
+    "query": "英国本科院校申请要求",
+    "expectedIds": [
+      "data/international-schools.md"
+    ],
+    "language": "zh",
+    "category": "international-schools",
+    "keywordRanking": [
+      "data/international-schools.md",
+      "data/other-region-schools.md"
+    ],
+    "vectorRanking": [
+      "data/international-schools.md",
+      "data/admission-cases.md"
+    ]
+  },
+  {
+    "query": "加拿大大学预算和排名",
+    "expectedIds": [
+      "data/international-schools.md"
+    ],
+    "language": "zh",
+    "category": "international-schools",
+    "keywordRanking": [
+      "data/other-region-schools.md",
+      "data/international-schools.md"
+    ],
+    "vectorRanking": [
+      "data/international-schools.md",
+      "data/admission-cases.md"
+    ]
+  },
+  {
+    "query": "澳洲本科申请怎么选校",
+    "expectedIds": [
+      "data/international-schools.md"
+    ],
+    "language": "zh",
+    "category": "international-schools",
+    "keywordRanking": [
+      "data/international-schools.md",
+      "data/other-region-schools.md"
+    ],
+    "vectorRanking": [
+      "data/international-schools.md",
+      "data/admission-cases.md"
+    ]
+  },
+  {
+    "query": "香港大学本科申请条件",
+    "expectedIds": [
+      "data/international-schools.md"
+    ],
+    "language": "zh",
+    "category": "international-schools",
+    "keywordRanking": [
+      "data/other-region-schools.md",
+      "data/international-schools.md"
+    ],
+    "vectorRanking": [
+      "data/international-schools.md",
+      "data/admission-cases.md"
+    ]
+  },
+  {
+    "query": "新加坡大学国际生申请",
+    "expectedIds": [
+      "data/international-schools.md"
+    ],
+    "language": "zh",
+    "category": "international-schools",
+    "keywordRanking": [
+      "data/international-schools.md",
+      "data/other-region-schools.md"
+    ],
+    "vectorRanking": [
+      "data/international-schools.md",
+      "data/admission-cases.md"
+    ]
+  },
+  {
+    "query": "UK undergraduate admission requirements",
+    "expectedIds": [
+      "data/international-schools.md"
+    ],
+    "language": "en",
+    "category": "international-schools",
+    "keywordRanking": [
+      "data/other-region-schools.md",
+      "data/international-schools.md"
+    ],
+    "vectorRanking": [
+      "data/international-schools.md",
+      "data/admission-cases.md"
+    ]
+  },
+  {
+    "query": "Canadian university budgets and rankings",
+    "expectedIds": [
+      "data/international-schools.md"
+    ],
+    "language": "en",
+    "category": "international-schools",
+    "keywordRanking": [
+      "data/international-schools.md",
+      "data/other-region-schools.md"
+    ],
+    "vectorRanking": [
+      "data/international-schools.md",
+      "data/admission-cases.md"
+    ]
+  },
+  {
+    "query": "Choosing an Australian university",
+    "expectedIds": [
+      "data/international-schools.md"
+    ],
+    "language": "en",
+    "category": "international-schools",
+    "keywordRanking": [
+      "data/other-region-schools.md",
+      "data/international-schools.md"
+    ],
+    "vectorRanking": [
+      "data/international-schools.md",
+      "data/admission-cases.md"
+    ]
+  },
+  {
+    "query": "Hong Kong undergraduate application requirements",
+    "expectedIds": [
+      "data/international-schools.md"
+    ],
+    "language": "en",
+    "category": "international-schools",
+    "keywordRanking": [
+      "data/international-schools.md",
+      "data/other-region-schools.md"
+    ],
+    "vectorRanking": [
+      "data/international-schools.md",
+      "data/admission-cases.md"
+    ]
+  },
+  {
+    "query": "Singapore universities for international applicants",
+    "expectedIds": [
+      "data/international-schools.md"
+    ],
+    "language": "en",
+    "category": "international-schools",
+    "keywordRanking": [
+      "data/other-region-schools.md",
+      "data/international-schools.md"
+    ],
+    "vectorRanking": [
+      "data/international-schools.md",
+      "data/admission-cases.md"
+    ]
+  },
+  {
+    "query": "欧洲非英美本科院校推荐",
+    "expectedIds": [
+      "data/other-region-schools.md"
+    ],
+    "language": "zh",
+    "category": "global-schools",
+    "keywordRanking": [
+      "data/other-region-schools.md",
+      "data/admission-cases.md"
+    ],
+    "vectorRanking": [
+      "data/other-region-schools.md",
+      "data/ap-courses.md"
+    ]
+  },
+  {
+    "query": "QS前一百其他地区大学",
+    "expectedIds": [
+      "data/other-region-schools.md"
+    ],
+    "language": "zh",
+    "category": "global-schools",
+    "keywordRanking": [
+      "data/admission-cases.md",
+      "data/other-region-schools.md"
+    ],
+    "vectorRanking": [
+      "data/other-region-schools.md",
+      "data/ap-courses.md"
+    ]
+  },
+  {
+    "query": "荷兰本科院校申请信息",
+    "expectedIds": [
+      "data/other-region-schools.md"
+    ],
+    "language": "zh",
+    "category": "global-schools",
+    "keywordRanking": [
+      "data/other-region-schools.md",
+      "data/admission-cases.md"
+    ],
+    "vectorRanking": [
+      "data/other-region-schools.md",
+      "data/ap-courses.md"
+    ]
+  },
+  {
+    "query": "瑞士大学本科申请要求",
+    "expectedIds": [
+      "data/other-region-schools.md"
+    ],
+    "language": "zh",
+    "category": "global-schools",
+    "keywordRanking": [
+      "data/admission-cases.md",
+      "data/other-region-schools.md"
+    ],
+    "vectorRanking": [
+      "data/other-region-schools.md",
+      "data/ap-courses.md"
+    ]
+  },
+  {
+    "query": "亚洲其他地区名校有哪些",
+    "expectedIds": [
+      "data/other-region-schools.md"
+    ],
+    "language": "zh",
+    "category": "global-schools",
+    "keywordRanking": [
+      "data/other-region-schools.md",
+      "data/admission-cases.md"
+    ],
+    "vectorRanking": [
+      "data/other-region-schools.md",
+      "data/ap-courses.md"
+    ]
+  },
+  {
+    "query": "European universities outside the UK",
+    "expectedIds": [
+      "data/other-region-schools.md"
+    ],
+    "language": "en",
+    "category": "global-schools",
+    "keywordRanking": [
+      "data/admission-cases.md",
+      "data/other-region-schools.md"
+    ],
+    "vectorRanking": [
+      "data/other-region-schools.md",
+      "data/ap-courses.md"
+    ]
+  },
+  {
+    "query": "QS top 100 universities in other regions",
+    "expectedIds": [
+      "data/other-region-schools.md"
+    ],
+    "language": "en",
+    "category": "global-schools",
+    "keywordRanking": [
+      "data/other-region-schools.md",
+      "data/admission-cases.md"
+    ],
+    "vectorRanking": [
+      "data/other-region-schools.md",
+      "data/ap-courses.md"
+    ]
+  },
+  {
+    "query": "Undergraduate admissions in the Netherlands",
+    "expectedIds": [
+      "data/other-region-schools.md"
+    ],
+    "language": "en",
+    "category": "global-schools",
+    "keywordRanking": [
+      "data/admission-cases.md",
+      "data/other-region-schools.md"
+    ],
+    "vectorRanking": [
+      "data/other-region-schools.md",
+      "data/ap-courses.md"
+    ]
+  },
+  {
+    "query": "Swiss university application requirements",
+    "expectedIds": [
+      "data/other-region-schools.md"
+    ],
+    "language": "en",
+    "category": "global-schools",
+    "keywordRanking": [
+      "data/other-region-schools.md",
+      "data/admission-cases.md"
+    ],
+    "vectorRanking": [
+      "data/other-region-schools.md",
+      "data/ap-courses.md"
+    ]
+  },
+  {
+    "query": "Leading universities in other Asian regions",
+    "expectedIds": [
+      "data/other-region-schools.md"
+    ],
+    "language": "en",
+    "category": "global-schools",
+    "keywordRanking": [
+      "data/admission-cases.md",
+      "data/other-region-schools.md"
+    ],
+    "vectorRanking": [
+      "data/other-region-schools.md",
+      "data/ap-courses.md"
+    ]
+  },
+  {
+    "query": "计算机专业录取案例参考",
+    "expectedIds": [
+      "data/admission-cases.md"
+    ],
+    "language": "zh",
+    "category": "admission-case",
+    "keywordRanking": [
+      "data/admission-cases.md",
+      "data/ap-courses.md"
+    ],
+    "vectorRanking": [
+      "data/admission-cases.md",
+      "data/majors.md"
+    ]
+  },
+  {
+    "query": "高GPA申请者录取案例",
+    "expectedIds": [
+      "data/admission-cases.md"
+    ],
+    "language": "zh",
+    "category": "admission-case",
+    "keywordRanking": [
+      "data/ap-courses.md",
+      "data/admission-cases.md"
+    ],
+    "vectorRanking": [
+      "data/admission-cases.md",
+      "data/majors.md"
+    ]
+  },
+  {
+    "query": "科研活动背景录取案例",
+    "expectedIds": [
+      "data/admission-cases.md"
+    ],
+    "language": "zh",
+    "category": "admission-case",
+    "keywordRanking": [
+      "data/admission-cases.md",
+      "data/ap-courses.md"
+    ],
+    "vectorRanking": [
+      "data/admission-cases.md",
+      "data/majors.md"
+    ]
+  },
+  {
+    "query": "竞赛奖项强的申请案例",
+    "expectedIds": [
+      "data/admission-cases.md"
+    ],
+    "language": "zh",
+    "category": "admission-case",
+    "keywordRanking": [
+      "data/ap-courses.md",
+      "data/admission-cases.md"
+    ],
+    "vectorRanking": [
+      "data/admission-cases.md",
+      "data/majors.md"
+    ]
+  },
+  {
+    "query": "如何对比相似学生录取结果",
+    "expectedIds": [
+      "data/admission-cases.md"
+    ],
+    "language": "zh",
+    "category": "admission-case",
+    "keywordRanking": [
+      "data/admission-cases.md",
+      "data/ap-courses.md"
+    ],
+    "vectorRanking": [
+      "data/admission-cases.md",
+      "data/majors.md"
+    ]
+  },
+  {
+    "query": "Computer science admission case examples",
+    "expectedIds": [
+      "data/admission-cases.md"
+    ],
+    "language": "en",
+    "category": "admission-case",
+    "keywordRanking": [
+      "data/ap-courses.md",
+      "data/admission-cases.md"
+    ],
+    "vectorRanking": [
+      "data/admission-cases.md",
+      "data/majors.md"
+    ]
+  },
+  {
+    "query": "Admission cases for high GPA applicants",
+    "expectedIds": [
+      "data/admission-cases.md"
+    ],
+    "language": "en",
+    "category": "admission-case",
+    "keywordRanking": [
+      "data/admission-cases.md",
+      "data/ap-courses.md"
+    ],
+    "vectorRanking": [
+      "data/admission-cases.md",
+      "data/majors.md"
+    ]
+  },
+  {
+    "query": "Research focused applicant case studies",
+    "expectedIds": [
+      "data/admission-cases.md"
+    ],
+    "language": "en",
+    "category": "admission-case",
+    "keywordRanking": [
+      "data/ap-courses.md",
+      "data/admission-cases.md"
+    ],
+    "vectorRanking": [
+      "data/admission-cases.md",
+      "data/majors.md"
+    ]
+  },
+  {
+    "query": "Competition award applicant examples",
+    "expectedIds": [
+      "data/admission-cases.md"
+    ],
+    "language": "en",
+    "category": "admission-case",
+    "keywordRanking": [
+      "data/admission-cases.md",
+      "data/ap-courses.md"
+    ],
+    "vectorRanking": [
+      "data/admission-cases.md",
+      "data/majors.md"
+    ]
+  },
+  {
+    "query": "Compare outcomes of similar student profiles",
+    "expectedIds": [
+      "data/admission-cases.md"
+    ],
+    "language": "en",
+    "category": "admission-case",
+    "keywordRanking": [
+      "data/ap-courses.md",
+      "data/admission-cases.md"
+    ],
+    "vectorRanking": [
+      "data/admission-cases.md",
+      "data/majors.md"
+    ]
+  }
+]

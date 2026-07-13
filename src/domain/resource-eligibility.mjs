@@ -1,6 +1,7 @@
 function combinedText(item) {
   const requirements = Array.isArray(item.requirements) ? item.requirements : [item.requirements];
   return [
+    item.name,
     item.format,
     item.formatAndWebsite,
     item.description,
@@ -11,6 +12,10 @@ function combinedText(item) {
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+function hasKnownUsStatusRestriction(item) {
+  return /\bJSHS\b|Junior Science and Humanities Symposia/i.test(String(item?.name || ""));
 }
 
 function statesNoUsStatus(filters) {
@@ -48,6 +53,7 @@ export function enrichResourceEligibility(item) {
         ? "offline"
         : "unknown";
   const usOnly =
+    hasKnownUsStatusRestriction(item) ||
     /(?:仅|限)[^。；，,\n]{0,12}(?:美国公民|美籍|美国永久居民|永久居民|绿卡)|U\.?S\.?\s*(?:citizen|permanent resident).{0,12}only/i.test(
       text,
     );
@@ -59,6 +65,9 @@ export function enrichResourceEligibility(item) {
     /(?:仅|限)[^。；，,\n]{0,14}(?:(?:美国|纽约市|纽约都会区|纽黑文)[^。；，,\n]{0,18}(?:公立|独立|当地|地区|low-income\s*)?(?:高中|高中生)|美高(?:学生|学子)?)/i.test(text) ||
     /美国(?:顶尖)?高中生(?:团队)?(?:独立科研赛|团队编程邀请赛)/i.test(text);
   const restricted = /身份受限|资格受限|eligibility restricted/i.test(text);
+  const internationalPaidTrackOnly =
+    /(?:商业版|付费|paid)\s*(?:版|track)?[^。；，,\n]{0,24}(?:国际生|international students?)[^。；，,\n]{0,12}(?:开放|eligible|accepted)|(?:国际生|international students?)[^。；，,\n]{0,24}(?:商业版|付费|paid)\s*(?:版|track)?/i.test(text)
+    && /免费\s*track[^。；，,\n]{0,30}(?:限|仅|面向)[^。；，,\n]{0,18}(?:美国|美籍|公民|永久居民|underrepresented)/i.test(text);
   const inferredStatus = mainlandChinaExcluded
     ? "mainland_china_excluded"
     : internationalOpen
@@ -77,7 +86,9 @@ export function enrichResourceEligibility(item) {
     eligibilityStatus: item.eligibilityStatus || inferredStatus,
     eligibilityNote:
       item.eligibilityNote ||
-      (inferredStatus === "mainland_china_excluded"
+      (internationalPaidTrackOnly
+        ? "国际生仅适用于付费 track；免费 track 的录取率、截止日期与资助信息不适用，需核验付费 track 最新要求"
+        : inferredStatus === "mainland_china_excluded"
         ? "不接受中国大陆高中生申请"
         : inferredStatus === "open_to_international"
           ? "接受国际生"

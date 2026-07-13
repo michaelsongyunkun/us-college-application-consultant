@@ -199,3 +199,38 @@ const onlyRestrictedCompetitionBatch = recommendCompetitions({
   competitions: [eligibilityCompetitions[0]],
 });
 assert.deepEqual(onlyRestrictedCompetitionBatch.items, []);
+
+const jshsBatch = recommendCompetitions({
+  studentProfile: eligibilityCompetitionProfile,
+  competitions: [{
+    id: "jshs",
+    name: "JSHS Junior Science and Humanities Symposia",
+    category: "科创类",
+    raw: "高中生 STEM 研究论文与口试竞赛",
+    url: "https://www.jshs.org",
+  }],
+});
+assert.deepEqual(jshsBatch.items, []);
+assert.match(jshsBatch.notice, /排除 1 个/u);
+
+const duplicateNocBatch = recommendCompetitions({
+  studentProfile: eligibilityCompetitionProfile,
+  competitions: [
+    {
+      id: "noc-old-name",
+      name: "全国中学生美式计算机设计大赛（NOC）",
+      category: "计算机类",
+      raw: "编程与 AI",
+      url: "https://www.noc.net.cn",
+    },
+    {
+      id: "noc-current-name",
+      name: "全国中小学信息技术创新与实践大赛（NOC）",
+      category: "计算机类",
+      raw: "编程与 AI",
+      url: "https://www.noc.net.cn",
+    },
+  ],
+});
+assert.equal(duplicateNocBatch.items.length, 1);
+assert.match(duplicateNocBatch.notice, /合并 1 个重复/u);

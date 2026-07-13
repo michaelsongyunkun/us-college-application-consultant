@@ -1,0 +1,14 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+node_modules
+data/*.sqlite
+data/*.sqlite-*
+backups
+outputs
+work
+*.log
+tmp-*.json
+docs/superpowers

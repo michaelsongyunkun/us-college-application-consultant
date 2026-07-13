@@ -1,0 +1,279 @@
+{
+  "version": "ai-golden-set@2026-06-18",
+  "thresholds": {
+    "minimumRetrievalHitRate": 0.8,
+    "minimumPlanningActivities": 2,
+    "minimumPortfolioDimensions": 6
+  },
+  "ragCases": [
+    {
+      "id": "rag-robotics-school-resource",
+      "question": "How should a Robotics Portfolio student compare Polygence and MIT?",
+      "answer": "Use the saved portfolio, the MIT school reference, and the resource library as the evidence base. Avoid admissions guarantees and ask for missing context before making final decisions.",
+      "expectedSourceTypes": ["application-portfolio", "resource-library", "school-encyclopedia"],
+      "minimumRetrievalHitRate": 1,
+      "mustRequireReview": false,
+      "sources": [
+        {
+          "id": "rag-portfolio-robotics",
+          "type": "application-portfolio",
+          "title": "Application portfolio / Robotics Portfolio Lab",
+          "snippet": "Robotics Portfolio Lab with assistive navigation demo."
+        },
+        {
+          "id": "rag-resource-polygence",
+          "type": "resource-library",
+          "title": "Resource library / Polygence",
+          "snippet": "Mentored research resource."
+        },
+        {
+          "id": "rag-school-mit",
+          "type": "school-encyclopedia",
+          "title": "School encyclopedia / MIT",
+          "snippet": "MIT context."
+        }
+      ]
+    },
+    {
+      "id": "rag-unsupported-citation-risk",
+      "question": "Can this student guarantee admission?",
+      "answer": "This profile will guarantee admission [9].",
+      "expectedSourceTypes": ["school-encyclopedia"],
+      "minimumRetrievalHitRate": 1,
+      "mustRequireReview": true,
+      "expectedReviewReasons": ["unsupported_citations", "high_risk_claims"],
+      "sources": [
+        {
+          "id": "rag-school-mit",
+          "type": "school-encyclopedia",
+          "title": "School encyclopedia / MIT",
+          "snippet": "MIT context without guarantee claims."
+        }
+      ]
+    }
+  ],
+  "planningCases": [
+    {
+      "id": "planning-table-minimum-shape",
+      "answer": "| 1 | Research | Robotics Lab | Build a robot vision prototype for assistive navigation. | 10-11 |\n| 2 | Community | STEM Workshop | Teach two prototype workshops and collect feedback. | 10-11 |",
+      "minimumActivities": 2
+    }
+  ],
+  "schoolSelectionCases": [
+    {
+      "id": "school-selection-balanced-json",
+      "selection": {
+        "summary": "Balanced list with one ED1, one ED2, three EA, eight RD, and six UC options.",
+        "strategy": {
+          "earlyStrategy": "Use ED1 for the best fit school.",
+          "ucStrategy": "Keep UC choices across selectivity bands.",
+          "rdStrategy": "Layer reach, target, and likely schools."
+        },
+        "rounds": {
+          "rea": [],
+          "ed1": [
+            {
+              "school": "University of Chicago",
+              "major": "Computer Science",
+              "riskLevel": "medium",
+              "admissionProbability": "medium",
+              "matchReason": "Strong fit with essay-driven application.",
+              "gaps": ["Confirm ED commitment."],
+              "nextAction": "Validate official requirements."
+            }
+          ],
+          "ed2": [
+            {
+              "school": "New York University",
+              "major": "Computer Science",
+              "riskLevel": "medium",
+              "admissionProbability": "medium",
+              "matchReason": "Urban CS option.",
+              "gaps": ["Confirm budget."],
+              "nextAction": "Validate official requirements."
+            }
+          ],
+          "ea": [
+            {
+              "school": "University of Michigan--Ann Arbor",
+              "major": "Computer Science",
+              "riskLevel": "medium",
+              "admissionProbability": "medium",
+              "matchReason": "Large public CS option.",
+              "gaps": ["Confirm school-specific essays."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "Georgia Institute of Technology",
+              "major": "Computer Science",
+              "riskLevel": "high",
+              "admissionProbability": "low",
+              "matchReason": "Strong engineering fit.",
+              "gaps": ["Strengthen technical evidence."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "University of Illinois Urbana-Champaign",
+              "major": "Computer Science",
+              "riskLevel": "high",
+              "admissionProbability": "low",
+              "matchReason": "CS reach option.",
+              "gaps": ["Confirm major selectivity."],
+              "nextAction": "Validate official requirements."
+            }
+          ],
+          "rd": [
+            {
+              "school": "Harvard University",
+              "major": "Computer Science",
+              "riskLevel": "high",
+              "admissionProbability": "low",
+              "matchReason": "Reach option.",
+              "gaps": ["No guaranteed outcome."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "Princeton University",
+              "major": "Computer Science",
+              "riskLevel": "high",
+              "admissionProbability": "low",
+              "matchReason": "Reach option.",
+              "gaps": ["No guaranteed outcome."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "Cornell University",
+              "major": "Computer Science",
+              "riskLevel": "high",
+              "admissionProbability": "low",
+              "matchReason": "Reach option.",
+              "gaps": ["Confirm college fit."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "Duke University",
+              "major": "Computer Science",
+              "riskLevel": "high",
+              "admissionProbability": "low",
+              "matchReason": "Reach option.",
+              "gaps": ["Confirm interdisciplinary fit."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "Northwestern University",
+              "major": "Computer Science",
+              "riskLevel": "medium",
+              "admissionProbability": "medium",
+              "matchReason": "Balanced option.",
+              "gaps": ["Confirm school fit."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "Rice University",
+              "major": "Computer Science",
+              "riskLevel": "medium",
+              "admissionProbability": "medium",
+              "matchReason": "Balanced option.",
+              "gaps": ["Confirm residential fit."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "Boston University",
+              "major": "Computer Science",
+              "riskLevel": "medium",
+              "admissionProbability": "medium",
+              "matchReason": "Target option.",
+              "gaps": ["Confirm program details."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "Northeastern University",
+              "major": "Computer Science",
+              "riskLevel": "medium",
+              "admissionProbability": "medium",
+              "matchReason": "Co-op option.",
+              "gaps": ["Confirm co-op interest."],
+              "nextAction": "Validate official requirements."
+            }
+          ],
+          "uc": [
+            {
+              "school": "University of California, Berkeley",
+              "major": "Computer Science",
+              "riskLevel": "high",
+              "admissionProbability": "low",
+              "matchReason": "UC reach.",
+              "gaps": ["Confirm major policy."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "University of California, Los Angeles",
+              "major": "Computer Science",
+              "riskLevel": "high",
+              "admissionProbability": "low",
+              "matchReason": "UC reach.",
+              "gaps": ["Confirm major policy."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "University of California, San Diego",
+              "major": "Computer Science",
+              "riskLevel": "medium",
+              "admissionProbability": "medium",
+              "matchReason": "UC target.",
+              "gaps": ["Confirm capped major policy."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "University of California, Irvine",
+              "major": "Computer Science",
+              "riskLevel": "medium",
+              "admissionProbability": "medium",
+              "matchReason": "UC target.",
+              "gaps": ["Confirm major policy."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "University of California, Davis",
+              "major": "Computer Science",
+              "riskLevel": "medium",
+              "admissionProbability": "medium",
+              "matchReason": "UC target.",
+              "gaps": ["Confirm campus fit."],
+              "nextAction": "Validate official requirements."
+            },
+            {
+              "school": "University of California, Santa Barbara",
+              "major": "Computer Science",
+              "riskLevel": "medium",
+              "admissionProbability": "medium",
+              "matchReason": "UC target.",
+              "gaps": ["Confirm major policy."],
+              "nextAction": "Validate official requirements."
+            }
+          ]
+        },
+        "nextActions": ["Confirm ED commitment.", "Validate official major policies."]
+      }
+    }
+  ],
+  "portfolioAssessmentCases": [
+    {
+      "id": "portfolio-capability-minimum-shape",
+      "assessment": {
+        "overallSummary": "The application direction is forming around robotics and service.",
+        "radarScores": [
+          { "dimension": "academicReadiness", "score": 78, "confidence": "medium", "evidence": ["SAT 1510"], "missing": ["More AP evidence"] },
+          { "dimension": "directionConsistency", "score": 82, "confidence": "high", "evidence": ["Robotics theme"], "missing": [] },
+          { "dimension": "activityDepth", "score": 76, "confidence": "medium", "evidence": ["Lead role"], "missing": ["More outcomes"] },
+          { "dimension": "outcomeImpact", "score": 70, "confidence": "medium", "evidence": ["Demo"], "missing": ["Impact proof"] },
+          { "dimension": "leadershipInitiative", "score": 74, "confidence": "medium", "evidence": ["Workshop"], "missing": ["Scale evidence"] },
+          { "dimension": "competitiveExperience", "score": 68, "confidence": "low", "evidence": ["Physics Bowl"], "missing": ["Award detail"] }
+        ],
+        "strengths": ["Clear robotics theme"],
+        "gaps": ["Need stronger proof links"],
+        "actions30Days": ["Collect evidence"]
+      }
+    }
+  ]
+}

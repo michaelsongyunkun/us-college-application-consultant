@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { createReadStream } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AUTH_DATABASE_MIGRATIONS, createAuthDatabase } from "./src/server/auth-db.mjs";
@@ -54,7 +54,6 @@ import { loadEnvFile } from "./src/server/env-loader.mjs";
 import {
   RESPONSE_REQUEST_ID_HEADER,
   buildStructuredEvent,
-  createConsoleStructuredLogger,
   createMetricsStore,
   getLatestBackupStatus,
   getOrCreateRequestId,
@@ -65,6 +64,35 @@ import {
   SchoolSelectionError,
   createSchoolSelectionService,
 } from "./src/server/school-selection-service.mjs";
+import { ZodError } from "zod";
+import { createSqliteStudentWorkspaceRepositories } from "./src/repositories/sqlite-student-workspace-repositories.ts";
+import {
+  createStudentWorkspaceService,
+  isStudentWorkspaceRoute,
+} from "./src/server/student-workspace-service.ts";
+import {
+  captureSanitizedException,
+  createPinoLogger,
+  initializeProductionObservability,
+  startSpan,
+} from "./src/server/production-observability.ts";
+import {
+  createBullMqGenerationJobAdapter,
+  createBullMqJobService,
+  createRedisConnection,
+} from "./src/infrastructure/bullmq-job-service.ts";
+import { checkPostgresReadiness, createPostgresPool, migratePostgres } from "./src/infrastructure/postgres.ts";
+import { createPostgresAuthService } from "./src/server/postgres-auth-service.ts";
+import { createPostgresWorkspaceRuntime } from "./src/repositories/postgres-student-workspace-repositories.ts";
+import { createEmbeddingClientFromEnv } from "./src/infrastructure/embedding-client.ts";
+import { createRerankerClientFromEnv } from "./src/infrastructure/reranker-client.ts";
+import { createRetrievalCacheFromEnv } from "./src/infrastructure/retrieval-cache.ts";
+import { createPostgresRagRetriever } from "./src/infrastructure/postgres-rag-retriever.ts";
+import { createObjectStoreFromEnv } from "./src/infrastructure/object-store.ts";
+import {
+  createFastifyHttpLayer,
+  isFastifyMigratedRoute,
+} from "./src/server/fastify-http-layer.ts";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const worldRankingRoot = join(root, "world-ranking");
@@ -89,6 +117,7 @@ const DEFAULT_RATE_LIMITS = {
   "/api/portfolio-capability-assessment-jobs": { maxRequests: 10, windowMs: 60_000 },
   "/api/school-selection": { maxRequests: 10, windowMs: 60_000 },
   "/api/school-selection-jobs": { maxRequests: 10, windowMs: 60_000 },
+  "/api/export-word-jobs": { maxRequests: 20, windowMs: 60_000 },
   "/api/analytics/usage-event": { maxRequests: 120, windowMs: 60_000 },
 };
 const SECURITY_HEADERS = Object.freeze({
@@ -113,6 +142,19 @@ function sendJson(response, statusCode, payload) {
   response.end(JSON.stringify(payload));
 }
 
+function buildErrorResponse(error, requestId, statusCode) {
+  const code = error instanceof ZodError
+    ? "CONTRACT_VALIDATION_FAILED"
+    : String(error?.name || "SERVER_ERROR").replace(/Error$/u, "").replace(/([a-z])([A-Z])/g, "$1_$2").toUpperCase();
+  return {
+    error: String(error?.message || "Server error").slice(0, 1_000),
+    code: code || "SERVER_ERROR",
+    requestId: requestId || undefined,
+    retryable: statusCode === 429 || statusCode >= 500,
+    ...(error instanceof ZodError ? { details: { issues: error.issues } } : {}),
+  };
+}
+
 function withSecurityHeaders(headers = {}) {
   return { ...SECURITY_HEADERS, ...headers };
 }
@@ -133,12 +175,17 @@ function isWorldRankingHost(request) {
   return getRequestHostname(request) === worldRankingHostname;
 }
 
-function attachRequestObservability(request, response, { logger, metrics }) {
+function attachRequestObservability(request, response, { logger, metrics, httpLayer = "native" }) {
   const requestId = getOrCreateRequestId(request);
   request.requestId = requestId;
   response.setHeader(RESPONSE_REQUEST_ID_HEADER, requestId);
   const startedAt = monotonicNowMs();
   const path = safeRequestPath(request);
+  const span = startSpan("http.server.request", {
+    "http.request.method": request.method || "UNKNOWN",
+    "url.path": path,
+    "consultant.http.layer": httpLayer,
+  });
 
   response.on("finish", () => {
     const durationMs = Math.round(monotonicNowMs() - startedAt);
@@ -158,8 +205,11 @@ function attachRequestObservability(request, response, { logger, metrics }) {
         path,
         statusCode: response.statusCode,
         durationMs,
+        httpLayer,
       },
     }));
+    span.setAttribute("http.response.status_code", response.statusCode);
+    span.end();
   });
 
   return { requestId, path };
@@ -245,31 +295,34 @@ async function readRequestJson(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_BYTE
   }
 }
 
-function requireAccess(request, response, auth, {
+async function requireAccess(request, response, auth, {
   role = "user",
   redirectLocation = "",
   audit = null,
 } = {}) {
-  const user = getUserForRequest(request, auth);
+  const user = await getUserForRequest(request, auth);
   const decision = evaluateRouteAccess(user, { role, redirectLocation });
   if (decision.allowed) return decision.user;
 
-  recordDeniedAudit(auth, user, audit, request);
+  await recordDeniedAudit(auth, user, audit, request);
 
   if (decision.redirectLocation) {
     response.writeHead(302, withSecurityHeaders({ Location: decision.redirectLocation }));
     response.end();
     return null;
   }
-  sendJson(response, decision.statusCode, decision.payload);
+  const payload = typeof decision.payload?.error === "string"
+    ? { ...decision.payload, ...buildErrorResponse(new AuthError(decision.payload.error, decision.statusCode), request.requestId, decision.statusCode) }
+    : decision.payload;
+  sendJson(response, decision.statusCode, payload);
   return null;
 }
 
-function requireUser(request, response, auth) {
+async function requireUser(request, response, auth) {
   return requireAccess(request, response, auth, { role: "user" });
 }
 
-function requireAdmin(request, response, auth, { redirect = false, audit = null } = {}) {
+async function requireAdmin(request, response, auth, { redirect = false, audit = null } = {}) {
   return requireAccess(request, response, auth, {
     role: "admin",
     redirectLocation: redirect ? "/" : "",
@@ -277,10 +330,10 @@ function requireAdmin(request, response, auth, { redirect = false, audit = null 
   });
 }
 
-function recordDeniedAudit(auth, user, audit, request) {
+async function recordDeniedAudit(auth, user, audit, request) {
   if (!audit || typeof auth.recordAuditEvent !== "function") return;
   try {
-    auth.recordAuditEvent(buildDeniedAuditEvent({
+    await auth.recordAuditEvent(buildDeniedAuditEvent({
       user,
       audit,
       metadata: getRequestMetadata(request),
@@ -311,6 +364,20 @@ function createRateLimiter(rateLimits) {
     entries.set(key, requests);
     return null;
   };
+}
+
+function requestJobOptions(request, payload = {}) {
+  const headerValue = request.headers?.["idempotency-key"];
+  const idempotencyKey = String(Array.isArray(headerValue) ? headerValue[0] : headerValue || payload.idempotencyKey || "").trim();
+  const timeoutMs = Number(payload.timeoutMs);
+  return {
+    ...(idempotencyKey ? { idempotencyKey: idempotencyKey.slice(0, 200) } : {}),
+    ...(Number.isInteger(timeoutMs) ? { timeoutMs } : {}),
+  };
+}
+
+function isPromiseLike(value) {
+  return value && typeof value.then === "function";
 }
 
 export function resolveDatabasePath(env = process.env) {
@@ -351,11 +418,13 @@ export function createAppServer({
     ...(deepSeekPortfolioCapabilityLlmClient ? { llmClient: deepSeekPortfolioCapabilityLlmClient } : {}),
   }),
   deepSeekRagLlmClient = null,
+  deepSeekRagRetriever = null,
   deepSeekRag = createDeepSeekRagService({
     root,
     planning,
     activityPortfolio,
     metrics,
+    ...(deepSeekRagRetriever ? { retriever: deepSeekRagRetriever } : {}),
     ...(deepSeekRagLlmClient ? { llmClient: deepSeekRagLlmClient } : {}),
   }),
   deepSeekSchoolSelectionLlmClient = null,
@@ -370,6 +439,11 @@ export function createAppServer({
   authHttp = null,
   maxRequestBodyBytes = DEFAULT_MAX_REQUEST_BODY_BYTES,
   rateLimits = DEFAULT_RATE_LIMITS,
+  studentWorkspace = null,
+  jobServices = null,
+  infrastructureClose = null,
+  readinessCheck = () => buildReadinessPayload({ authDb }),
+  localObjectStore = createObjectStoreFromEnv(env, { root }),
 } = {}) {
   const readText = (request) => readRequestText(request, maxRequestBodyBytes);
   const readJson = (request) => readRequestJson(request, maxRequestBodyBytes);
@@ -395,15 +469,74 @@ export function createAppServer({
       SchoolSelectionError,
     ],
   };
-  const deepSeekPlanJobs = createGenerationJobService(generationJobOptions);
-  const deepSeekRagJobs = createGenerationJobService(generationJobOptions);
-  const portfolioCapabilityAssessmentJobs = createGenerationJobService(generationJobOptions);
-  const schoolSelectionJobs = createGenerationJobService(generationJobOptions);
+  const deepSeekPlanJobs = jobServices?.deepSeekPlan || createGenerationJobService(generationJobOptions);
+  const deepSeekRagJobs = jobServices?.deepSeekRag || createGenerationJobService(generationJobOptions);
+  const portfolioCapabilityAssessmentJobs = jobServices?.capabilityAssessment || createGenerationJobService(generationJobOptions);
+  const schoolSelectionJobs = jobServices?.schoolSelection || createGenerationJobService(generationJobOptions);
+  const wordExportJobs = jobServices?.wordExport || createGenerationJobService(generationJobOptions);
+  const workspace = studentWorkspace || createStudentWorkspaceService({
+    repositories: createSqliteStudentWorkspaceRepositories({
+      planning,
+      activityPortfolio,
+      progressPlanner,
+      auth,
+    }),
+  });
+  const fastifyHttpLayer = env.FASTIFY_HTTP_ENABLED === "true"
+    ? createFastifyHttpLayer({
+      auth,
+      env,
+      readinessCheck,
+      readPrompt: () => readFile(promptPath, "utf8"),
+      answerRag: ({ user, question, historySummary, assistantProfile, signal }) => deepSeekRag.answerQuestion({
+        user,
+        question,
+        historySummary,
+        assistantProfile,
+        env,
+        signal,
+      }),
+    })
+    : null;
 
   const server = createServer(async (request, response) => {
-    const observedRequest = attachRequestObservability(request, response, { logger, metrics });
+    request.trustProxy = env.TRUST_PROXY === "true";
+    const requestPath = safeRequestPath(request);
+    const useFastifyHttpLayer = Boolean(
+      fastifyHttpLayer
+      && isFastifyMigratedRoute(request.method, requestPath)
+      && (requestPath === "/api/deepseek-rag/stream" || isFastifyTrafficSelected(request, env)),
+    );
+    const observedRequest = attachRequestObservability(request, response, {
+      logger,
+      metrics,
+      httpLayer: useFastifyHttpLayer ? "fastify" : "native",
+    });
+
+    if (useFastifyHttpLayer) {
+      try {
+        const app = await fastifyHttpLayer;
+        app.routing(request, response);
+      } catch (error) {
+        logRequestError(logger, request, error, 500, observedRequest.path);
+        captureSanitizedException(error, {
+          requestId: observedRequest.requestId,
+          method: request.method,
+          path: observedRequest.path,
+          statusCode: 500,
+        });
+        sendJson(response, 500, buildErrorResponse(new Error("Server error"), observedRequest.requestId, 500));
+      }
+      return;
+    }
+
     try {
       const url = new URL(request.url || "/", `http://${host}:${port}`);
+
+      if (isWritePaused(env) && isUnsafeWriteRequest(request, url.pathname)) {
+        sendJson(response, 503, { error: "Maintenance window: writes are temporarily paused.", code: "WRITES_PAUSED", retryable: true });
+        return;
+      }
 
       if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/healthz") {
         sendJson(response, 200, buildHealthPayload(observedRequest.requestId));
@@ -411,8 +544,31 @@ export function createAppServer({
       }
 
       if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/readyz") {
-        const readiness = buildReadinessPayload({ authDb });
+        const readiness = await readinessCheck();
         sendJson(response, readiness.status === "ready" ? 200 : 503, readiness);
+        return;
+      }
+
+      if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/api/objects/download") {
+        if (typeof localObjectStore?.readSignedUrl !== "function") {
+          sendJson(response, 404, { error: "Local object downloads are not enabled." });
+          return;
+        }
+        try {
+          const object = await localObjectStore.readSignedUrl(request.url || url.pathname);
+          const fileName = String(object.objectKey || "download").split("/").at(-1) || "download";
+          response.writeHead(200, withSecurityHeaders({
+            "Cache-Control": "private, no-store",
+            "Content-Type": object.contentType || "application/octet-stream",
+            "Content-Length": String(object.body.length),
+            "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+          }));
+          if (request.method === "HEAD") response.end();
+          else response.end(object.body);
+        } catch (error) {
+          const statusCode = /not found/iu.test(error?.message || "") ? 404 : 403;
+          sendJson(response, statusCode, { error: statusCode === 404 ? "Object not found." : "Invalid or expired download link." });
+        }
         return;
       }
 
@@ -449,14 +605,14 @@ export function createAppServer({
         }
       }
 
-      if (!authHttpService.verifyCsrfRequest(request, response, url.pathname)) return;
+      if (!await authHttpService.verifyCsrfRequest(request, response, url.pathname)) return;
 
       if (await handleAuth(request, response, url.pathname)) return;
 
       if (request.method === "GET" && url.pathname === "/api/account/export") {
-        const user = requireUser(request, response, auth);
+        const user = await requireUser(request, response, auth);
         if (!user) return;
-        const exportData = accountDataRights.exportAccountData({
+        const exportData = await accountDataRights.exportAccountData({
           user,
           metadata: getRequestMetadata(request),
         });
@@ -469,9 +625,9 @@ export function createAppServer({
       }
 
       if (request.method === "DELETE" && url.pathname === "/api/account") {
-        const user = requireUser(request, response, auth);
+        const user = await requireUser(request, response, auth);
         if (!user) return;
-        const result = accountDataRights.deleteAccount({
+        const result = await accountDataRights.deleteAccount({
           user,
           payload: await readJson(request),
           metadata: getRequestMetadata(request),
@@ -486,8 +642,8 @@ export function createAppServer({
       }
 
       if (request.method === "POST" && url.pathname === "/api/feedback") {
-        const feedback = auth.recordFeedback({
-          user: getUserForRequest(request, auth),
+        const feedback = await auth.recordFeedback({
+          user: await getUserForRequest(request, auth),
           payload: await readJson(request),
           metadata: getRequestMetadata(request),
         });
@@ -496,14 +652,14 @@ export function createAppServer({
       }
 
       if (request.method === "GET" && url.pathname === "/api/prompt") {
-        if (!requireUser(request, response, auth)) return;
+        if (!await requireUser(request, response, auth)) return;
         const prompt = await readFile(promptPath, "utf8");
         sendJson(response, 200, { prompt, hasDeepSeekApiKey: Boolean(env.DEEPSEEK_API_KEY) });
         return;
       }
 
       if (request.method === "POST" && url.pathname === "/api/deepseek-plan") {
-        if (!requireUser(request, response, auth)) return;
+        if (!await requireUser(request, response, auth)) return;
         const payload = await readJson(request);
         sendJson(response, 200, await deepSeekPlan.generatePlan({
           payload,
@@ -513,24 +669,33 @@ export function createAppServer({
       }
 
       if (request.method === "POST" && url.pathname === "/api/deepseek-plan-jobs") {
-        const user = requireUser(request, response, auth);
+        const user = await requireUser(request, response, auth);
         if (!user) return;
         const payload = await readJson(request);
-        const job = deepSeekPlanJobs.create(user, () =>
+        const createdJob = deepSeekPlanJobs.create(user, ({ signal } = {}) =>
           deepSeekPlan.generatePlan({
             payload,
             env,
+            signal,
           }),
+          { type: "ai.deepseek-plan", payload: { payload }, options: requestJobOptions(request, payload) },
         );
+        const job = isPromiseLike(createdJob) ? await createdJob : createdJob;
         sendJson(response, 202, { jobId: job.id, status: job.status });
         return;
       }
 
       const deepSeekPlanJobMatch = url.pathname.match(/^\/api\/deepseek-plan-jobs\/([a-f0-9-]{36})$/);
-      if (request.method === "GET" && deepSeekPlanJobMatch) {
-        const user = requireUser(request, response, auth);
+      if ((request.method === "GET" || request.method === "DELETE") && deepSeekPlanJobMatch) {
+        const user = await requireUser(request, response, auth);
         if (!user) return;
-        const job = deepSeekPlanJobs.get(user, deepSeekPlanJobMatch[1]);
+        if (request.method === "DELETE") {
+          const cancelled = await deepSeekPlanJobs.cancel?.(user, deepSeekPlanJobMatch[1]);
+          if (!cancelled) sendJson(response, 404, { error: "DeepSeek plan job not found." });
+          else sendJson(response, 200, serializeGenerationJob(cancelled));
+          return;
+        }
+        const job = await deepSeekPlanJobs.get(user, deepSeekPlanJobMatch[1]);
         if (!job) {
           sendJson(response, 404, { error: "DeepSeek plan job not found." });
           return;
@@ -540,7 +705,7 @@ export function createAppServer({
       }
 
       if (request.method === "POST" && url.pathname === "/api/deepseek-rag") {
-        const user = requireUser(request, response, auth);
+        const user = await requireUser(request, response, auth);
         if (!user) return;
         const payload = await readJson(request);
         sendJson(response, 200, await deepSeekRag.answerQuestion({
@@ -554,7 +719,7 @@ export function createAppServer({
       }
 
       if (request.method === "POST" && url.pathname === "/api/school-selection") {
-        const user = requireUser(request, response, auth);
+        const user = await requireUser(request, response, auth);
         if (!user) return;
         sendJson(response, 200, await schoolSelection.generateSelection({
           user,
@@ -565,25 +730,34 @@ export function createAppServer({
       }
 
       if (request.method === "POST" && url.pathname === "/api/school-selection-jobs") {
-        const user = requireUser(request, response, auth);
+        const user = await requireUser(request, response, auth);
         if (!user) return;
         const payload = await readJson(request);
-        const job = schoolSelectionJobs.create(user, () =>
+        const createdJob = schoolSelectionJobs.create(user, ({ signal } = {}) =>
           schoolSelection.generateSelection({
             user,
             payload,
             env,
+            signal,
           }),
+          { type: "ai.school-selection", payload: { user, payload, portfolio: await activityPortfolio.getPortfolio(user) }, options: requestJobOptions(request, payload) },
         );
+        const job = isPromiseLike(createdJob) ? await createdJob : createdJob;
         sendJson(response, 202, { jobId: job.id, status: job.status });
         return;
       }
 
       const schoolSelectionJobMatch = url.pathname.match(/^\/api\/school-selection-jobs\/([a-f0-9-]{36})$/);
-      if (request.method === "GET" && schoolSelectionJobMatch) {
-        const user = requireUser(request, response, auth);
+      if ((request.method === "GET" || request.method === "DELETE") && schoolSelectionJobMatch) {
+        const user = await requireUser(request, response, auth);
         if (!user) return;
-        const job = schoolSelectionJobs.get(user, schoolSelectionJobMatch[1]);
+        if (request.method === "DELETE") {
+          const cancelled = await schoolSelectionJobs.cancel?.(user, schoolSelectionJobMatch[1]);
+          if (!cancelled) sendJson(response, 404, { error: "School selection job not found." });
+          else sendJson(response, 200, serializeGenerationJob(cancelled, { fallbackError: "School selection generation failed." }));
+          return;
+        }
+        const job = await schoolSelectionJobs.get(user, schoolSelectionJobMatch[1]);
         if (!job) {
           sendJson(response, 404, { error: "School selection job not found." });
           return;
@@ -594,30 +768,24 @@ export function createAppServer({
         return;
       }
 
-      if (request.method === "GET" && url.pathname === "/api/student-profile") {
-        const user = requireUser(request, response, auth);
+      if (isStudentWorkspaceRoute(url.pathname)) {
+        const user = await requireUser(request, response, auth);
         if (!user) return;
-        sendJson(response, 200, planning.getProfile(user));
-        return;
-      }
-
-      if (request.method === "PUT" && url.pathname === "/api/student-profile") {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        const payload = await readJson(request);
-        sendJson(response, 200, planning.saveProfile(user, payload.profile || {}));
-        return;
-      }
-
-      if (request.method === "GET" && url.pathname === "/api/my-activities") {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        sendJson(response, 200, activityPortfolio.getPortfolio(user));
-        return;
+        const result = await workspace.handle({
+          method: request.method,
+          path: url.pathname,
+          user,
+          readJson: () => readJson(request),
+          metadata: getRequestMetadata(request),
+        });
+        if (result) {
+          sendJson(response, result.statusCode, result.body);
+          return;
+        }
       }
 
       if (request.method === "POST" && url.pathname === "/api/portfolio-capability-assessment") {
-        const user = requireUser(request, response, auth);
+        const user = await requireUser(request, response, auth);
         if (!user) return;
         sendJson(response, 200, await portfolioCapabilityAgent.generateAssessment({
           user,
@@ -628,16 +796,19 @@ export function createAppServer({
       }
 
       if (request.method === "POST" && url.pathname === "/api/portfolio-capability-assessment-jobs") {
-        const user = requireUser(request, response, auth);
+        const user = await requireUser(request, response, auth);
         if (!user) return;
         const payload = await readJson(request);
-        const job = portfolioCapabilityAssessmentJobs.create(user, () =>
+        const createdJob = portfolioCapabilityAssessmentJobs.create(user, ({ signal } = {}) =>
           portfolioCapabilityAgent.generateAssessment({
             user,
             payload,
             env,
+            signal,
           }),
+          { type: "ai.capability-assessment", payload: { user, payload, portfolio: await activityPortfolio.getPortfolio(user) }, options: requestJobOptions(request, payload) },
         );
+        const job = isPromiseLike(createdJob) ? await createdJob : createdJob;
         sendJson(response, 202, { jobId: job.id, status: job.status });
         return;
       }
@@ -645,10 +816,16 @@ export function createAppServer({
       const capabilityAssessmentJobMatch = url.pathname.match(
         /^\/api\/portfolio-capability-assessment-jobs\/([a-f0-9-]{36})$/,
       );
-      if (request.method === "GET" && capabilityAssessmentJobMatch) {
-        const user = requireUser(request, response, auth);
+      if ((request.method === "GET" || request.method === "DELETE") && capabilityAssessmentJobMatch) {
+        const user = await requireUser(request, response, auth);
         if (!user) return;
-        const job = portfolioCapabilityAssessmentJobs.get(user, capabilityAssessmentJobMatch[1]);
+        if (request.method === "DELETE") {
+          const cancelled = await portfolioCapabilityAssessmentJobs.cancel?.(user, capabilityAssessmentJobMatch[1]);
+          if (!cancelled) sendJson(response, 404, { error: "Portfolio capability assessment job not found." });
+          else sendJson(response, 200, serializeGenerationJob(cancelled));
+          return;
+        }
+        const job = await portfolioCapabilityAssessmentJobs.get(user, capabilityAssessmentJobMatch[1]);
         if (!job) {
           sendJson(response, 404, { error: "Portfolio capability assessment job not found." });
           return;
@@ -658,27 +835,48 @@ export function createAppServer({
       }
 
       if (request.method === "POST" && url.pathname === "/api/deepseek-rag-jobs") {
-        const user = requireUser(request, response, auth);
+        const user = await requireUser(request, response, auth);
         if (!user) return;
         const payload = await readJson(request);
-        const job = deepSeekRagJobs.create(user, () =>
+        const createdJob = deepSeekRagJobs.create(user, ({ signal } = {}) =>
           deepSeekRag.answerQuestion({
             user,
             question: payload.question,
             historySummary: payload.historySummary,
             assistantProfile: payload.assistantProfile,
             env,
+            signal,
           }),
+          {
+            type: "ai.deepseek-rag",
+            payload: {
+              user,
+              question: payload.question,
+              historySummary: payload.historySummary,
+              assistantProfile: payload.assistantProfile,
+              profile: await planning.getProfile(user),
+              portfolio: await activityPortfolio.getPortfolio(user),
+              backups: await planning.listRagBackups(user),
+            },
+            options: requestJobOptions(request, payload),
+          },
         );
+        const job = isPromiseLike(createdJob) ? await createdJob : createdJob;
         sendJson(response, 202, { jobId: job.id, status: job.status });
         return;
       }
 
       const deepSeekRagJobMatch = url.pathname.match(/^\/api\/deepseek-rag-jobs\/([a-f0-9-]{36})$/);
-      if (request.method === "GET" && deepSeekRagJobMatch) {
-        const user = requireUser(request, response, auth);
+      if ((request.method === "GET" || request.method === "DELETE") && deepSeekRagJobMatch) {
+        const user = await requireUser(request, response, auth);
         if (!user) return;
-        const job = deepSeekRagJobs.get(user, deepSeekRagJobMatch[1]);
+        if (request.method === "DELETE") {
+          const cancelled = await deepSeekRagJobs.cancel?.(user, deepSeekRagJobMatch[1]);
+          if (!cancelled) sendJson(response, 404, { error: "DeepSeek RAG job not found." });
+          else sendJson(response, 200, serializeGenerationJob(cancelled));
+          return;
+        }
+        const job = await deepSeekRagJobs.get(user, deepSeekRagJobMatch[1]);
         if (!job) {
           sendJson(response, 404, { error: "DeepSeek RAG job not found." });
           return;
@@ -687,157 +885,12 @@ export function createAppServer({
         return;
       }
 
-      if (request.method === "PUT" && url.pathname === "/api/my-activities") {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        sendJson(response, 200, activityPortfolio.savePortfolio(user, await readJson(request)));
-        return;
-      }
-
-      if (request.method === "GET" && url.pathname === "/api/my-activities/import-sources") {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        sendJson(response, 200, { sources: planning.listActivityImportSources(user) });
-        return;
-      }
-
-      if (request.method === "GET" && url.pathname === "/api/progress-planner") {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        sendJson(response, 200, progressPlanner.getPlanner(user));
-        return;
-      }
-
-      if (request.method === "PUT" && url.pathname === "/api/progress-planner") {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        sendJson(response, 200, progressPlanner.savePlanner(user, await readJson(request)));
-        return;
-      }
-
-      if (request.method === "GET" && url.pathname === "/api/plans") {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        sendJson(response, 200, { plans: planning.listPlans(user) });
-        return;
-      }
-
-      if (request.method === "POST" && url.pathname === "/api/plans") {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        sendJson(response, 201, { plan: planning.createPlan(user, await readJson(request)) });
-        return;
-      }
-
-      const snapshotMatch = url.pathname.match(/^\/api\/plans\/(\d+)\/snapshots\/(\d+)$/);
-      if (request.method === "DELETE" && snapshotMatch) {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        const result = planning.deleteSnapshot(user, snapshotMatch[1], snapshotMatch[2]);
-        auth.recordAuditEvent({
-          actor: user,
-          action: "plan.snapshot.delete",
-          resourceType: "planning_snapshot",
-          resourceId: snapshotMatch[2],
-          details: { planId: snapshotMatch[1] },
-          metadata: getRequestMetadata(request),
-        });
-        sendJson(response, 200, result);
-        return;
-      }
-
-      const restoreMatch = url.pathname.match(
-        /^\/api\/plans\/(\d+)\/snapshots\/(\d+)\/restore$/,
-      );
-      if (request.method === "POST" && restoreMatch) {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        await readJson(request);
-        const restored = planning.restoreSnapshot(user, restoreMatch[1], restoreMatch[2]);
-        auth.recordAuditEvent({
-          actor: user,
-          action: "plan.snapshot.restore",
-          resourceType: "planning_snapshot",
-          resourceId: restoreMatch[2],
-          details: { planId: restoreMatch[1] },
-          metadata: getRequestMetadata(request),
-        });
-        sendJson(response, 200, restored);
-        return;
-      }
-
-      const snapshotsMatch = url.pathname.match(/^\/api\/plans\/(\d+)\/snapshots$/);
-      if (request.method === "GET" && snapshotsMatch) {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        sendJson(response, 200, { snapshots: planning.listSnapshots(user, snapshotsMatch[1]) });
-        return;
-      }
-
-      if (request.method === "POST" && snapshotsMatch) {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        const payload = await readJson(request);
-        sendJson(response, 201, {
-          snapshot: planning.createSnapshot(user, snapshotsMatch[1], payload),
-        });
-        return;
-      }
-
-      const planMatch = url.pathname.match(/^\/api\/plans\/(\d+)$/);
-      if (request.method === "GET" && planMatch) {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        sendJson(response, 200, { plan: planning.getPlan(user, planMatch[1]) });
-        return;
-      }
-
-      if (request.method === "PUT" && planMatch) {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        sendJson(response, 200, {
-          plan: planning.savePlan(user, planMatch[1], await readJson(request)),
-        });
-        return;
-      }
-
-      if (request.method === "DELETE" && planMatch) {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        const result = planning.deletePlan(user, planMatch[1]);
-        auth.recordAuditEvent({
-          actor: user,
-          action: "plan.delete",
-          resourceType: "planning_project",
-          resourceId: planMatch[1],
-          metadata: getRequestMetadata(request),
-        });
-        sendJson(response, 200, result);
-        return;
-      }
-
-      if (request.method === "POST" && url.pathname === "/api/analytics/usage-event") {
-        const user = requireUser(request, response, auth);
-        if (!user) return;
-        const payload = await readJson(request);
-        auth.recordUsageEvent({
-          user,
-          eventType: payload.eventType,
-          profile: payload.profile || {},
-          metrics: payload.metrics || {},
-          details: payload.details || {},
-          metadata: getRequestMetadata(request),
-        });
-        sendJson(response, 200, { ok: true });
-        return;
-      }
-
       if (request.method === "GET" && url.pathname === "/api/admin/login-dashboard") {
-        const admin = requireAdmin(request, response, auth, {
+        const admin = await requireAdmin(request, response, auth, {
           audit: { action: "admin.dashboard.view", resourceType: "admin_dashboard" },
         });
         if (!admin) return;
-        const dashboard = adminOperations.getLoginDashboard({
+        const dashboard = await adminOperations.getLoginDashboard({
           admin,
           searchParams: url.searchParams,
           metadata: getRequestMetadata(request),
@@ -847,20 +900,20 @@ export function createAppServer({
       }
 
       if (request.method === "GET" && url.pathname === "/api/admin/ops/metrics") {
-        const admin = requireAdmin(request, response, auth, {
+        const admin = await requireAdmin(request, response, auth, {
           audit: { action: "admin.ops.metrics.view", resourceType: "admin_ops_metrics" },
         });
         if (!admin) return;
-        sendJson(response, 200, adminOperations.getOpsMetrics());
+        sendJson(response, 200, await adminOperations.getOpsMetrics());
         return;
       }
 
       if (request.method === "GET" && url.pathname === "/api/admin/audit-log/export") {
-        const admin = requireAdmin(request, response, auth, {
+        const admin = await requireAdmin(request, response, auth, {
           audit: { action: "admin.audit_log.export", resourceType: "audit_log" },
         });
         if (!admin) return;
-        const auditExport = adminOperations.exportAuditLog({
+        const auditExport = await adminOperations.exportAuditLog({
           admin,
           searchParams: url.searchParams,
           metadata: getRequestMetadata(request),
@@ -875,7 +928,7 @@ export function createAppServer({
 
       const adminFeedbackMatch = url.pathname.match(/^\/api\/admin\/feedback\/(\d+)$/);
       if (request.method === "PUT" && adminFeedbackMatch) {
-        const admin = requireAdmin(request, response, auth, {
+        const admin = await requireAdmin(request, response, auth, {
           audit: {
             action: "admin.feedback.update",
             resourceType: "feedback_entry",
@@ -884,13 +937,43 @@ export function createAppServer({
         });
         if (!admin) return;
         const payload = await readJson(request);
-        const feedback = adminOperations.updateFeedbackEntry({
+        const feedback = await adminOperations.updateFeedbackEntry({
           admin,
           feedbackId: adminFeedbackMatch[1],
           payload,
           metadata: getRequestMetadata(request),
         });
         sendJson(response, 200, { feedback });
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/export-word-jobs") {
+        const user = await requireUser(request, response, auth);
+        if (!user) return;
+        const payload = await readJson(request);
+        const createdJob = wordExportJobs.create(
+          user,
+          async () => ({ content: payload.document || payload, contentType: "application/msword" }),
+          { type: "export.word", payload: { ...payload, userId: user.id }, options: requestJobOptions(request, payload) },
+        );
+        const job = isPromiseLike(createdJob) ? await createdJob : createdJob;
+        sendJson(response, 202, { jobId: job.id, status: job.status });
+        return;
+      }
+
+      const wordExportJobMatch = url.pathname.match(/^\/api\/export-word-jobs\/([a-f0-9-]{36})$/);
+      if ((request.method === "GET" || request.method === "DELETE") && wordExportJobMatch) {
+        const user = await requireUser(request, response, auth);
+        if (!user) return;
+        if (request.method === "DELETE") {
+          const cancelled = await wordExportJobs.cancel?.(user, wordExportJobMatch[1]);
+          if (!cancelled) sendJson(response, 404, { error: "Word export job not found." });
+          else sendJson(response, 200, serializeGenerationJob(cancelled, { fallbackError: "Word export failed." }));
+          return;
+        }
+        const job = await wordExportJobs.get(user, wordExportJobMatch[1]);
+        if (!job) sendJson(response, 404, { error: "Word export job not found." });
+        else sendJson(response, 200, serializeGenerationJob(job, { fallbackError: "Word export failed." }));
         return;
       }
 
@@ -902,7 +985,7 @@ export function createAppServer({
 
       const requestPath = normalizeStaticRequestPath(url.pathname);
       const staticAccessPolicy = getStaticRouteAccessPolicy(requestPath);
-      if (staticAccessPolicy && !requireAccess(request, response, auth, staticAccessPolicy)) {
+      if (staticAccessPolicy && !await requireAccess(request, response, auth, staticAccessPolicy)) {
         return;
       }
 
@@ -919,7 +1002,7 @@ export function createAppServer({
         return;
       }
       if (requestPath === "/index.html") {
-        const user = getUserForRequest(request, auth);
+        const user = await getUserForRequest(request, auth);
         response.end(renderIndexForSession(await readFile(filePath, "utf8"), user, url.searchParams.get("auth")));
         return;
       }
@@ -934,32 +1017,153 @@ export function createAppServer({
         error instanceof SchoolSelectionError ||
         error instanceof PlanningError ||
         error instanceof ProgressPlannerError ||
-        error instanceof RequestError
+        error instanceof RequestError ||
+        error instanceof ZodError
       ) {
-        const statusCode = error.statusCode || 500;
+        const statusCode = error instanceof ZodError ? 400 : error.statusCode || 500;
         logRequestError(logger, request, error, statusCode, observedRequest.path);
-        sendJson(response, statusCode, { error: error.message });
+        sendJson(response, statusCode, buildErrorResponse(error, observedRequest.requestId, statusCode));
         return;
       }
+
       logRequestError(logger, request, error, 500, observedRequest.path);
-      sendJson(response, 500, { error: "Server error" });
+      captureSanitizedException(error, {
+        requestId: observedRequest.requestId,
+        method: request.method,
+        path: observedRequest.path,
+        statusCode: 500,
+      });
+      sendJson(response, 500, buildErrorResponse(new Error("Server error"), observedRequest.requestId, 500));
     }
   });
 
-  server.on("close", () => authDb.close());
+  server.on("close", () => {
+    void authDb.close();
+    void infrastructureClose?.();
+  });
   return server;
 }
 
+function isWritePaused(env) {
+  if (env.WRITE_PAUSED === "true") return true;
+  return existsSync(env.WRITE_PAUSE_FILE || join(root, "work", "maintenance", "write-paused.lock"));
+}
+
+function isFastifyTrafficSelected(request, env) {
+  const percentage = Math.max(0, Math.min(100, Number(env.FASTIFY_HTTP_TRAFFIC_PERCENT || 100)));
+  if (percentage <= 0) return false;
+  if (percentage >= 100) return true;
+
+  const rolloutKey = String(
+    request.headers?.["x-request-id"]
+      || request.headers?.cookie
+      || request.socket?.remoteAddress
+      || "anonymous",
+  );
+  let hash = 0;
+  for (const character of rolloutKey) hash = ((hash * 31) + character.codePointAt(0)) >>> 0;
+  return hash % 100 < percentage;
+}
+
+function isUnsafeWriteRequest(request, pathname) {
+  return ["POST", "PUT", "PATCH", "DELETE"].includes(request.method) && !pathname.startsWith("/healthz") && !pathname.startsWith("/readyz");
+}
+
+async function createRuntimeJobInfrastructure(env) {
+  const redisUrl = String(env.REDIS_URL || "").trim();
+  if (!redisUrl) return null;
+  const connection = createRedisConnection(redisUrl);
+  const service = createBullMqJobService({
+    queueName: env.JOB_QUEUE_NAME || "consultant-jobs",
+    connection,
+  });
+  return {
+    jobServices: {
+      deepSeekPlan: createBullMqGenerationJobAdapter({ service, type: "ai.deepseek-plan" }),
+      deepSeekRag: createBullMqGenerationJobAdapter({ service, type: "ai.deepseek-rag" }),
+      capabilityAssessment: createBullMqGenerationJobAdapter({ service, type: "ai.capability-assessment" }),
+      schoolSelection: createBullMqGenerationJobAdapter({ service, type: "ai.school-selection" }),
+      wordExport: createBullMqGenerationJobAdapter({ service, type: "export.word" }),
+    },
+    mailer: {
+      async sendPasswordResetEmail(payload) {
+        const userId = Number(payload.userId);
+        const messageId = `password-reset-${userId}-${String(payload.expiresAt || "").replace(/[^0-9]/gu, "")}`;
+        await service.create({ id: userId }, "email.password-reset", { ...payload, messageId }, {
+          idempotencyKey: `password-reset:${userId}:${payload.expiresAt || payload.resetUrl}`,
+          attempts: 5,
+        });
+      },
+    },
+    async close() {
+      await service.close();
+      await connection.quit();
+    },
+  };
+}
+
+async function createRuntimeDatabaseInfrastructure(env) {
+  const databaseUrl = String(env.DATABASE_URL || "").trim();
+  if (!databaseUrl) return null;
+  const pool = createPostgresPool(env);
+  try {
+    await migratePostgres(pool);
+    const workspaceRuntime = createPostgresWorkspaceRuntime({ pool });
+    const auth = createPostgresAuthService({ pool });
+    const embeddingClient = env.EMBEDDING_API_KEY ? createEmbeddingClientFromEnv(env) : null;
+    const rerankerClient = createRerankerClientFromEnv(env);
+    const retrievalCache = createRetrievalCacheFromEnv(env);
+    const deepSeekRagRetriever = createPostgresRagRetriever({
+      pool,
+      root,
+      planning: workspaceRuntime.planning,
+      activityPortfolio: workspaceRuntime.activityPortfolio,
+      embeddingClient,
+      rerankerClient,
+      retrievalCache,
+      knowledgeVersion: env.KNOWLEDGE_SOURCE_VERSION,
+    });
+    return {
+      authDb: { db: null, close: () => Promise.all([pool.end(), retrievalCache?.close()]) },
+      auth,
+      planning: workspaceRuntime.planning,
+      activityPortfolio: workspaceRuntime.activityPortfolio,
+      progressPlanner: workspaceRuntime.progressPlanner,
+      studentWorkspace: createStudentWorkspaceService({ repositories: workspaceRuntime.repositories }),
+      deepSeekRagRetriever,
+      readinessCheck: async () => {
+        try {
+          const database = await checkPostgresReadiness(pool);
+          return { status: database.vectorEnabled ? "ready" : "not_ready", database };
+        } catch (error) {
+          return { status: "not_ready", database: { ok: false, error: error?.message || "PostgreSQL readiness check failed." } };
+        }
+      },
+    };
+  } catch (error) {
+    await pool.end();
+    throw error;
+  }
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  createAppServer({ logger: createConsoleStructuredLogger() }).listen(port, host, () => {
-    console.log(`US college consultant running at http://${host}:${port}`);
-    if (envFileStatus.loaded) {
-      console.log(`Loaded .env with ${envFileStatus.keys.length} setting(s).`);
-    }
+  await initializeProductionObservability(process.env);
+  const startupLogger = createPinoLogger(process.env);
+  const databaseInfrastructure = await createRuntimeDatabaseInfrastructure(process.env);
+  const jobInfrastructure = await createRuntimeJobInfrastructure(process.env);
+  createAppServer({
+    logger: startupLogger,
+    ...(databaseInfrastructure || {}),
+    ...(jobInfrastructure ? { jobServices: jobInfrastructure.jobServices, mailer: jobInfrastructure.mailer, infrastructureClose: () => jobInfrastructure.close() } : {}),
+  }).listen(port, host, () => {
     const hasDeepSeekApiKey = Boolean(String(process.env.DEEPSEEK_API_KEY || "").trim());
-    console.log(`DeepSeek API key: ${hasDeepSeekApiKey ? "configured" : "missing"}`);
-    if (!hasDeepSeekApiKey) {
-      console.log("Set DEEPSEEK_API_KEY in the system environment or project .env file to enable generation.");
-    }
+    startupLogger.info({
+      event: "server_started",
+      host,
+      port,
+      envFileLoaded: envFileStatus.loaded,
+      envSettingCount: envFileStatus.loaded ? envFileStatus.keys.length : 0,
+      deepSeekConfigured: hasDeepSeekApiKey,
+    });
   });
 }

@@ -198,7 +198,7 @@ export function createActivityPortfolioService({ authDb, now = () => new Date() 
   };
 }
 
-function emptyPortfolio() {
+export function emptyPortfolio() {
   return {
     applicationPlan: emptyApplicationPlan(),
     activities: [],
@@ -214,7 +214,7 @@ function emptyPortfolio() {
   };
 }
 
-function normalizePortfolio(payload) {
+export function normalizePortfolio(payload) {
   const value = normalizeObject(payload, "Activity portfolio");
   return {
     applicationPlan: normalizeApplicationPlan(value.applicationPlan),

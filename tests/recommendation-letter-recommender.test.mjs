@@ -30,6 +30,9 @@ assert.equal(strategy.items[0].role, "校内 Counselor 推荐信");
 assert.ok(strategy.items[1].recommenderType.includes("计算机"));
 assert.equal(strategy.items[2].recommenderType, "文社艺术科老师");
 assert.equal(strategy.items[3].role, "校外推荐信");
+assert.ok(strategy.items.every((item) => /规划候选/u.test(item.evidence)));
+assert.ok(strategy.items.every((item) => /需核验/u.test(item.evidence)));
+assert.doesNotMatch(strategy.items[3].evidence, /已经出现校外资源/u);
 
 const humanitiesStrategy = buildRecommendationLetterStrategy({
   profile: {

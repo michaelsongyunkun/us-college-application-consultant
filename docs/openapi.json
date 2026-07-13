@@ -1,0 +1,855 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "US College Application Consultant API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "StudentProfile": {
+        "type": "object",
+        "properties": {
+          "grade": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "nationality": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "schoolRegion": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "curriculum": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "majorDirection": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "interests": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {}
+            },
+            {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "uptimeSeconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "status",
+          "requestId",
+          "uptimeSeconds",
+          "timestamp"
+        ]
+      },
+      "ReadinessResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "not_ready"
+            ]
+          },
+          "database": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "ok"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "status",
+          "database"
+        ]
+      },
+      "PromptResponse": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string"
+          },
+          "hasDeepSeekApiKey": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "prompt",
+          "hasDeepSeekApiKey"
+        ]
+      },
+      "RagStreamRequest": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1200
+          },
+          "historySummary": {
+            "type": "string",
+            "maxLength": 1800,
+            "default": ""
+          },
+          "assistantProfile": {
+            "type": "string",
+            "enum": [
+              "",
+              "major-match"
+            ],
+            "default": ""
+          }
+        },
+        "required": [
+          "question"
+        ]
+      },
+      "StudentProfileResponse": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "$ref": "#/components/schemas/StudentProfile"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "profile",
+          "updatedAt"
+        ]
+      },
+      "PlanningResult": {
+        "type": "object",
+        "properties": {
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanningActivity"
+            }
+          },
+          "narrative": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "caveats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "maxItems": 10,
+            "default": []
+          },
+          "nextActions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "maxItems": 10,
+            "default": []
+          }
+        },
+        "required": [
+          "activities",
+          "narrative"
+        ]
+      },
+      "PlanningActivity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "activityName": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "executionDescription": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "suggestedGrade": {
+            "type": "string",
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "activityName",
+          "executionDescription",
+          "suggestedGrade"
+        ]
+      },
+      "RagSource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "typeLabel": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "snippet": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "typeLabel",
+          "title"
+        ],
+        "additionalProperties": {}
+      },
+      "SchoolSelectionResult": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "rounds": {
+            "type": "object",
+            "properties": {
+              "rea": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SchoolRecommendation"
+                }
+              },
+              "ed1": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SchoolRecommendation"
+                }
+              },
+              "ed2": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SchoolRecommendation"
+                }
+              },
+              "ea": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SchoolRecommendation"
+                }
+              },
+              "rd": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SchoolRecommendation"
+                }
+              },
+              "uc": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SchoolRecommendation"
+                }
+              }
+            },
+            "required": [
+              "rea",
+              "ed1",
+              "ed2",
+              "ea",
+              "rd",
+              "uc"
+            ]
+          },
+          "strategy": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "nextActions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "maxItems": 8
+          }
+        },
+        "required": [
+          "summary",
+          "rounds",
+          "strategy",
+          "nextActions"
+        ],
+        "additionalProperties": {}
+      },
+      "SchoolRecommendation": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "major": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "riskLevel": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "admissionProbability": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "matchReason": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "gaps": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "maxItems": 10,
+            "default": []
+          },
+          "nextAction": {
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "school",
+          "major",
+          "riskLevel",
+          "admissionProbability",
+          "matchReason",
+          "nextAction"
+        ],
+        "additionalProperties": {}
+      },
+      "JobStatus": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "completed",
+              "failed"
+            ]
+          },
+          "result": {},
+          "error": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "statusCode": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          }
+        },
+        "required": [
+          "jobId",
+          "status"
+        ]
+      },
+      "UnifiedError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "requestId": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "retryable": {
+            "type": "boolean",
+            "default": false
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "error",
+          "code"
+        ]
+      },
+      "UsageEvent": {
+        "type": "object",
+        "properties": {
+          "eventType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "profile": {
+            "type": "object",
+            "additionalProperties": {},
+            "default": {}
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": {},
+            "default": {}
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {},
+            "default": {}
+          }
+        },
+        "required": [
+          "eventType"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Process liveness",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Runtime dependencies are ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A runtime dependency is not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompt": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Fixed planning prompt and model configuration status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/student-profile": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Current student profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentProfileResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profile": {
+                    "$ref": "#/components/schemas/StudentProfile"
+                  }
+                },
+                "required": [
+                  "profile"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved student profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/usage-event": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsageEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/deepseek-plan": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Validated planning result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "parsed": {
+                      "$ref": "#/components/schemas/PlanningResult"
+                    },
+                    "attempts": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "parsed",
+                    "attempts"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/deepseek-rag/stream": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RagStreamRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "RAG progress and final result as Server-Sent Events",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unified API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

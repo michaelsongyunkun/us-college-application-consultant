@@ -18,6 +18,7 @@ import {
   createLangChainDeepSeekClient,
 } from "./langchain-llm-client.mjs";
 import { monotonicNowMs } from "./observability.mjs";
+import { withSpan } from "./production-observability.ts";
 
 const MAX_QUESTION_LENGTH = 1200;
 const MAX_HISTORY_SUMMARY_LENGTH = 1800;
@@ -158,6 +159,7 @@ export function createDeepSeekRagService({
     historySummary = "",
     assistantProfile = "",
     env = process.env,
+    signal,
   }) {
     const normalizedQuestion = normalizeQuestion(question);
     const normalizedHistorySummary = normalizeHistorySummary(historySummary);
@@ -170,14 +172,15 @@ export function createDeepSeekRagService({
     }
 
     const model = normalizeDeepSeekModel(env.DEEPSEEK_RAG_MODEL || env.DEEPSEEK_MODEL);
-    return answerGraph.invoke({
+    return withSpan("langgraph.rag.invoke", { workflow: RAG_ANSWER_GRAPH_VERSION }, () => answerGraph.invoke({
       user,
       question: normalizedQuestion,
       historySummary: normalizedHistorySummary,
       assistantProfile,
       env,
       model,
-    });
+      signal,
+    }));
   }
 
   return {
@@ -194,6 +197,7 @@ async function draftDeepSeekRagAnswer({
   env = process.env,
   llmClient,
   metrics = null,
+  signal,
 }) {
   const retrieval = retrievalResult.retrieval || {};
   const intentProfile = {
@@ -221,6 +225,7 @@ async function draftDeepSeekRagAnswer({
         ),
       },
     ],
+    signal,
   });
 
   const answer = String(llmResult?.content || "").trim();
@@ -241,6 +246,7 @@ async function invokeRagLlm({
   try {
     const result = await llmClient.invoke({
       env,
+      feature: "deepseek-rag",
       model,
       temperature,
       messages,
@@ -298,7 +304,9 @@ function evaluateRagGraphQuality({
   });
 }
 
-export function createRagRetriever({ root, planning, activityPortfolio, metrics = null }) {
+export function createRagRetriever({ root, planning, activityPortfolio, metrics = null, readMarkdownFile = readFile }) {
+  const loadStaticMarkdownDocuments = createStaticMarkdownDocumentLoader({ root, readMarkdownFile });
+
   async function retrieve({
     user,
     question,
@@ -307,8 +315,8 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
   } = {}) {
     const normalizedQuestion = normalizeQuestion(question);
 
-    const profile = planning.getProfile(user);
-    const portfolio = activityPortfolio.getPortfolio(user);
+    const profile = await planning.getProfile(user);
+    const portfolio = await activityPortfolio.getPortfolio(user);
     const missingFields = buildMissingFieldChecklist({ profile, portfolio });
     const retrievalStartedAt = monotonicNowMs();
     const documents = await buildRagDocuments({
@@ -318,14 +326,17 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
       activityPortfolio,
       profile,
       portfolio,
+      backups: await planning.listRagBackups(user),
+      staticDocuments: await loadStaticMarkdownDocuments(),
     });
     const intentProfile = analyzeQuestionIntent(normalizedQuestion);
     const weightedSelected = selectRelevantDocuments(documents, normalizedQuestion, intentProfile);
-    const context = buildContext(weightedSelected);
+    const contextSelection = buildContextSelection(weightedSelected);
+    const context = contextSelection.context;
     const retrievalMs = Math.round(monotonicNowMs() - retrievalStartedAt);
     const retrieval = {
       totalDocuments: documents.length,
-      selectedDocuments: weightedSelected.length,
+      selectedDocuments: contextSelection.included.length,
       intent: intentProfile.intent,
       intentReason: intentProfile.reason,
       sourceWeights: intentProfile.sourceWeights,
@@ -334,13 +345,13 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
     metrics?.recordRagRetrieval?.({
       intent: intentProfile.intent,
       durationMs: retrievalMs,
-      selectedDocuments: weightedSelected.length,
+      selectedDocuments: contextSelection.included.length,
       totalDocuments: documents.length,
     });
 
     return {
       context,
-      sources: weightedSelected.map(serializeRagSource),
+      sources: contextSelection.included.map(serializeRagSource),
       retrieval,
       missingFields,
     };
@@ -350,21 +361,40 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
 }
 
 async function buildRagDocuments({
-  root,
   user,
   planning,
   activityPortfolio,
   profile = planning.getProfile(user),
   portfolio = activityPortfolio.getPortfolio(user),
+  backups = [],
+  staticDocuments = [],
 }) {
-  return [
-    ...buildStudentDocuments({ user, planning, profile, portfolio }),
-    ...(await buildMarkdownDocuments(root, RESOURCE_LIBRARY_FILES, "resource-library")),
-    ...(await buildMarkdownDocuments(root, SCHOOL_ENCYCLOPEDIA_FILES, "school-encyclopedia")),
-    ...(await buildMarkdownDocuments(root, MAJOR_ENCYCLOPEDIA_FILES, "major-encyclopedia")),
-  ]
+  const studentDocuments = buildStudentDocuments({ profile, portfolio, backups })
     .filter((document) => document.text.trim())
     .map(toLangChainRagDocument);
+  return [...studentDocuments, ...staticDocuments];
+}
+
+export function createStaticMarkdownDocumentLoader({ root, readMarkdownFile = readFile }) {
+  let documentsPromise = null;
+  return async function loadStaticMarkdownDocuments() {
+    if (!documentsPromise) {
+      documentsPromise = Promise.all([
+        buildMarkdownDocuments(root, RESOURCE_LIBRARY_FILES, "resource-library", readMarkdownFile),
+        buildMarkdownDocuments(root, SCHOOL_ENCYCLOPEDIA_FILES, "school-encyclopedia", readMarkdownFile),
+        buildMarkdownDocuments(root, MAJOR_ENCYCLOPEDIA_FILES, "major-encyclopedia", readMarkdownFile),
+      ]).then((groups) => groups
+        .flat()
+        .filter((document) => document.text.trim())
+        .map(toLangChainRagDocument));
+    }
+    try {
+      return await documentsPromise;
+    } catch (error) {
+      documentsPromise = null;
+      throw error;
+    }
+  };
 }
 
 export function toLangChainRagDocument(source = {}) {
@@ -379,7 +409,7 @@ export function toLangChainRagDocument(source = {}) {
   });
 }
 
-function buildStudentDocuments({ user, planning, profile, portfolio }) {
+function buildStudentDocuments({ profile, portfolio, backups = [] }) {
   const documents = [];
   addJsonDocument(documents, {
     type: "student-backup",
@@ -393,7 +423,7 @@ function buildStudentDocuments({ user, planning, profile, portfolio }) {
     data: summarizeApplicationPortfolio(portfolio),
   });
 
-  for (const backup of planning.listRagBackups(user)) {
+  for (const backup of backups) {
     addJsonDocument(documents, {
       type: "student-backup",
       title:
@@ -410,11 +440,15 @@ function buildStudentDocuments({ user, planning, profile, portfolio }) {
 function addJsonDocument(documents, { type, title, data }) {
   const text = typeof data === "string" ? data : stringifyForRag(data);
   if (!hasMeaningfulText(text)) return;
-  documents.push({
-    id: stableId(`${type}:${title}`),
-    type,
-    title,
-    text,
+  const chunks = splitLongSection(text);
+  chunks.forEach((chunk, index) => {
+    const chunkTitle = chunks.length > 1 ? `${title}（${index + 1}/${chunks.length}）` : title;
+    documents.push({
+      id: stableId(`${type}:${title}:${index}`),
+      type,
+      title: chunkTitle,
+      text: chunk,
+    });
   });
 }
 
@@ -598,10 +632,10 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
-async function buildMarkdownDocuments(root, files, type) {
+async function buildMarkdownDocuments(root, files, type, readMarkdownFile = readFile) {
   const documents = [];
   for (const entry of files) {
-    const text = await readFile(join(root, "data", entry.file), "utf8");
+    const text = await readMarkdownFile(join(root, "data", entry.file), "utf8");
     const chunks = splitMarkdownIntoChunks(text);
     chunks.forEach((chunk, index) => {
       const heading = getChunkHeading(chunk);
@@ -631,11 +665,19 @@ function splitLongSection(section) {
   const lines = section.split("\n");
   let current = "";
   for (const line of lines) {
-    if (current && `${current}\n${line}`.length > MAX_CHUNK_CHARS) {
-      chunks.push(current);
-      current = "";
+    const segments = line.length > MAX_CHUNK_CHARS
+      ? Array.from(
+          { length: Math.ceil(line.length / MAX_CHUNK_CHARS) },
+          (_, index) => line.slice(index * MAX_CHUNK_CHARS, (index + 1) * MAX_CHUNK_CHARS),
+        )
+      : [line];
+    for (const segment of segments) {
+      if (current && `${current}\n${segment}`.length > MAX_CHUNK_CHARS) {
+        chunks.push(current);
+        current = "";
+      }
+      current = current ? `${current}\n${segment}` : segment;
     }
-    current = current ? `${current}\n${line}` : line;
   }
   if (current) chunks.push(current);
   return chunks;
@@ -751,12 +793,19 @@ function ensureBaselineContext(documents, scored, intentProfile) {
       .filter((document) => getRagDocumentType(document) === "application-portfolio")
       .map((document) => ({ ...document, score: 0.3 }))[0];
   const studentScored = scored.filter((document) => getRagDocumentType(document) === "student-backup");
-  const studentDocuments = studentScored.length
-    ? studentScored.slice(0, 3)
+  const studentProfile = studentScored.find(isStudentProfileDocument)
+    || documents
+      .filter((document) => getRagDocumentType(document) === "student-backup")
+      .filter(isStudentProfileDocument)
+      .map((document) => ({ ...document, score: 0.1 }))[0];
+  const studentDetails = studentScored.filter((document) => !isStudentProfileDocument(document));
+  const fallbackStudentDetails = studentDetails.length
+    ? studentDetails
     : documents
         .filter((document) => getRagDocumentType(document) === "student-backup")
-        .slice(0, 2)
+        .filter((document) => !isStudentProfileDocument(document))
         .map((document) => ({ ...document, score: 0.1 }));
+  const studentDocuments = [studentProfile, ...fallbackStudentDetails.slice(0, 2)].filter(Boolean);
   const school =
     scored.find((document) => getRagDocumentType(document) === "school-encyclopedia")
     || documents
@@ -775,6 +824,10 @@ function ensureBaselineContext(documents, scored, intentProfile) {
   const baselines = [portfolio, ...studentDocuments, school, resource, major].filter(Boolean);
   return baselines.sort((left, right) =>
     sourcePriority(getRagDocumentType(left), intentProfile) - sourcePriority(getRagDocumentType(right), intentProfile));
+}
+
+function isStudentProfileDocument(document) {
+  return getRagDocumentTitle(document).includes("基础信息");
 }
 
 function scoreDocument(document, queryTokens, question, intentProfile) {
@@ -834,20 +887,45 @@ function portfolioLedSourcePriority(type) {
   }[type] ?? 9;
 }
 
-function buildContext(selected) {
+export function buildContextSelection(selected, maxContextChars = MAX_CONTEXT_CHARS) {
   const sections = [];
+  const included = [];
   let totalChars = 0;
-  for (const [index, source] of selected.entries()) {
+  for (const source of prioritizeContextSources(selected)) {
     const type = getRagDocumentType(source);
     const block = [
-      `[${index + 1}] ${SOURCE_TYPE_LABELS[type]} | ${getRagDocumentTitle(source)}`,
+      `[${included.length + 1}] ${SOURCE_TYPE_LABELS[type]} | ${getRagDocumentTitle(source)}`,
       getRagDocumentText(source).trim(),
     ].join("\n");
-    if (totalChars + block.length > MAX_CONTEXT_CHARS) break;
+    const separatorChars = sections.length ? 7 : 0;
+    if (totalChars + separatorChars + block.length > maxContextChars) continue;
     sections.push(block);
-    totalChars += block.length;
+    included.push(source);
+    totalChars += separatorChars + block.length;
   }
-  return sections.join("\n\n---\n\n");
+  return { context: sections.join("\n\n---\n\n"), included };
+}
+
+function prioritizeContextSources(selected) {
+  const firstByGroup = [];
+  const remaining = [];
+  const seenGroups = new Set();
+  for (const source of selected) {
+    const group = getContextSourceGroup(source);
+    if (!seenGroups.has(group)) {
+      seenGroups.add(group);
+      firstByGroup.push(source);
+    } else {
+      remaining.push(source);
+    }
+  }
+  return [...firstByGroup, ...remaining];
+}
+
+function getContextSourceGroup(source) {
+  const type = getRagDocumentType(source);
+  if (type !== "student-backup") return type;
+  return isStudentProfileDocument(source) ? "student-profile" : "student-plan";
 }
 
 function buildUserMessage(question, context, historySummary, missingFields = [], intentProfile = analyzeQuestionIntent(question)) {

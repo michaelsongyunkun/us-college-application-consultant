@@ -2,7 +2,7 @@ import {
   buildApCourseStudentProfile,
   parseApCoursesMarkdown,
   recommendApCoursePlan,
-} from "../domain/ap-course-recommender.mjs?v=20260605-ap-balance-fit";
+} from "../domain/ap-course-recommender.mjs?v=20260713-quality-calibration";
 import { csrfFetch } from "./csrf-token.mjs";
 
 const form = document.querySelector("#courseHelperForm");
@@ -181,7 +181,7 @@ function renderRecommendations() {
                     </dl>
                     <div class="ap-plan-reason-grid">
                       <div>
-                        <strong>专业相关</strong>
+                        <strong>${escapeHtml(course.fitType || "课程适配")}</strong>
                         <p>${escapeHtml(course.reason)}</p>
                       </div>
                       <div>

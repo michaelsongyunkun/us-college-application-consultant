@@ -72,6 +72,41 @@ assert.equal(calls[0].messages[1]._getType(), "human");
 assert.equal(calls[0].messages[0].content, "System prompt");
 assert.equal(calls[0].messages[1].content, "User question");
 
+const policyCalls = [];
+const policySignals = [];
+const timeoutClient = createLangChainDeepSeekClient({
+  callPolicy: {
+    async execute(options) {
+      policyCalls.push(options);
+      const value = await options.operation({
+        model: options.primaryModel,
+        attempt: 1,
+        signal: "policy-timeout-signal",
+      });
+      return { ...value, selectedModel: options.primaryModel };
+    },
+  },
+  chatModelFactory() {
+    return {
+      async invoke(_messages, callOptions) {
+        policySignals.push(callOptions?.signal);
+        return { content: "timeout override response" };
+      },
+    };
+  },
+});
+await timeoutClient.invoke({
+  env: { DEEPSEEK_API_KEY: "server-secret" },
+  feature: "deepseek-plan",
+  model: "deepseek-v4-flash",
+  messages: [["user", "Test timeout"]],
+  timeoutMs: 75_000,
+});
+assert.equal(policyCalls.length, 1);
+assert.equal(policyCalls[0].feature, "deepseek-plan");
+assert.equal(policyCalls[0].timeoutMs, 75_000);
+assert.deepEqual(policySignals, ["policy-timeout-signal"]);
+
 assert.equal(normalizeLangChainMessages([["human", "Hi"]])[0]._getType(), "human");
 assert.equal(normalizeLangChainMessages([["ai", "Hello"]])[0]._getType(), "ai");
 assert.equal(normalizeLangChainMessages([["developer", "Policy"]])[0]._getType(), "system");

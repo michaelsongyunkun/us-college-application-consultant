@@ -2,6 +2,8 @@ import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages
 import { ChatDeepSeek } from "@langchain/deepseek";
 import { resolveApiKey } from "./api-key.mjs";
 import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
+import { createAiCallPolicy } from "./ai-call-policy.ts";
+import { withSpan } from "./production-observability.ts";
 
 export class LangChainLlmError extends Error {
   constructor(message, statusCode = 400, options = {}) {
@@ -14,13 +16,21 @@ export class LangChainLlmError extends Error {
 export function createLangChainDeepSeekClient({
   chatModelFactory = createDefaultLangChainChatModel,
   apiKeyResolver = resolveApiKey,
+  callPolicy = createAiCallPolicy({
+    timeoutMs: Number(process.env.AI_TIMEOUT_MS) || 30_000,
+    maxAttempts: Number(process.env.AI_MAX_ATTEMPTS) || 3,
+    failureThreshold: Number(process.env.AI_CIRCUIT_FAILURE_THRESHOLD) || 5,
+    resetTimeoutMs: Number(process.env.AI_CIRCUIT_RESET_MS) || 30_000,
+  }),
 } = {}) {
   async function invoke({
     messages = [],
     env = process.env,
+    feature = "langchain-deepseek",
     model = "",
     temperature = 0.25,
     maxTokens,
+    timeoutMs,
     signal,
   } = {}) {
     const apiKey = apiKeyResolver({
@@ -32,43 +42,67 @@ export function createLangChainDeepSeekClient({
     }
 
     const selectedModel = normalizeDeepSeekModel(model || env.DEEPSEEK_MODEL, "deepseek-v4-pro");
-    const chatModelOptions = {
-      apiKey,
-      model: selectedModel,
-      temperature: normalizeTemperature(temperature),
-      streaming: false,
-      modelKwargs: {
-        thinking: { type: "disabled" },
-      },
-    };
     const normalizedMaxTokens = normalizePositiveInteger(maxTokens);
-    if (normalizedMaxTokens) chatModelOptions.maxTokens = normalizedMaxTokens;
-
-    const chatModel = chatModelFactory(chatModelOptions);
-    let response;
-    try {
-      response = await chatModel.invoke(
+    const invokeModel = async (activeModel, activeSignal) => {
+      const chatModelOptions = {
+        apiKey,
+        model: activeModel,
+        temperature: normalizeTemperature(temperature),
+        streaming: false,
+        modelKwargs: {
+          thinking: { type: "disabled" },
+        },
+      };
+      if (normalizedMaxTokens) chatModelOptions.maxTokens = normalizedMaxTokens;
+      const chatModel = chatModelFactory(chatModelOptions);
+      const response = await withSpan("langchain.chat.invoke", {
+        "gen_ai.system": "deepseek",
+        "gen_ai.request.model": activeModel,
+      }, () => chatModel.invoke(
         normalizeLangChainMessages(messages),
-        signal ? { signal } : undefined,
-      );
+        activeSignal ? { signal: activeSignal } : undefined,
+      ));
+      const content = extractLangChainMessageText(response);
+      if (!content) throw new LangChainLlmError("DeepSeek 未返回可解析的问答内容。", 502);
+      return {
+        content,
+        responseMetadata: response?.response_metadata || response?.responseMetadata || {},
+        usage: extractLangChainUsage(response),
+      };
+    };
+
+    try {
+      const result = signal && typeof signal.addEventListener !== "function"
+        ? await invokeModel(selectedModel, signal)
+        : await callPolicy.execute({
+          feature: String(feature || "langchain-deepseek"),
+          primaryModel: selectedModel,
+          fallbackModels: parseFallbackModels(env.DEEPSEEK_FALLBACK_MODEL, selectedModel),
+          timeoutMs,
+          signal,
+          operation: ({ model: activeModel, signal: activeSignal }) => invokeModel(activeModel, activeSignal),
+        });
+      return {
+        content: result.content,
+        model: result.selectedModel || selectedModel,
+        responseMetadata: result.responseMetadata,
+        usage: result.usage,
+      };
     } catch (error) {
       throw new LangChainLlmError(error?.message || "DeepSeek LangChain 调用失败。", error?.statusCode || 502, {
         cause: error,
       });
     }
-
-    const content = extractLangChainMessageText(response);
-    if (!content) throw new LangChainLlmError("DeepSeek 未返回可解析的问答内容。", 502);
-
-    return {
-      content,
-      model: selectedModel,
-      responseMetadata: response?.response_metadata || response?.responseMetadata || {},
-      usage: extractLangChainUsage(response),
-    };
   }
 
   return { invoke };
+}
+
+function parseFallbackModels(value, primaryModel) {
+  return String(value || "")
+    .split(",")
+    .map((model) => normalizeDeepSeekModel(model.trim(), ""))
+    .filter((model) => model && model !== primaryModel);
 }
 
 export function createDefaultLangChainChatModel(options) {

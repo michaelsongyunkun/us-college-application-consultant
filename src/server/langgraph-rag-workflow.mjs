@@ -10,6 +10,7 @@ const RagAnswerState = Annotation.Root({
   assistantProfile: Annotation(),
   env: Annotation(),
   model: Annotation(),
+  signal: Annotation(),
   retrievalResult: Annotation(),
   answer: Annotation(),
   quality: Annotation(),

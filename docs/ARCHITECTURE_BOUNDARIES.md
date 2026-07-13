@@ -4,7 +4,7 @@ Created: 2026-06-18
 
 ## Decision Summary
 
-Keep `server.mjs` as the native Node.js HTTP boundary for routing, request parsing, response serialization, security headers, cookies, rate limits, CSRF checks, request ids, and static file serving. Product behavior should live in `src/server/` service modules or `src/domain/` pure modules, with tests at the same ownership level.
+Use the Fastify strangler defined by `docs/decisions/ADR-002-fastify-strangler-http-migration.md` to migrate HTTP composition route by route. During the transition, `server.mjs` remains the native dispatcher and static-file boundary, while `src/server/fastify-http-layer.ts` owns only its explicit allowlist. Product behavior stays in `src/server/` service modules or `src/domain/` pure modules, with tests at the same ownership level.
 
 The guiding rule is: routes coordinate; services decide; domain modules calculate.
 
@@ -13,8 +13,8 @@ The guiding rule is: routes coordinate; services decide; domain modules calculat
 | Capability | Current owner | Allowed dependencies | Must not own |
 | --- | --- | --- | --- |
 | User and permission | `server.mjs`, `src/server/auth-http-service.mjs`, `src/server/route-access-policy.mjs`, `src/server/auth-service.mjs`, `src/server/auth-db.mjs` | Cookies, sessions, CSRF, RBAC, audit events, route access policy | Page rendering rules, planning logic, AI prompt logic |
-| Student profile | `src/server/planning-service.mjs` | SQLite profile persistence, privacy guards | Static page routing, AI generation |
-| Planning versions | `src/server/planning-service.mjs` | Drafts, snapshots, activity-import sources | HTTP status selection, cookie/session handling |
+| Student profile | `src/server/student-workspace-service.ts`, `src/repositories/*` | Typed profile contract, repository persistence, privacy guards | Static page routing, AI generation |
+| Planning versions | `src/server/student-workspace-service.ts`, `src/repositories/*` | Drafts, snapshots, activity-import sources | Cookie/session handling |
 | Resource recommendation | `src/domain/*recommender.mjs`, `src/domain/resource-eligibility.mjs` | Runtime Markdown data, pure scoring/parsing helpers | Auth, persistence, request routing |
 | AI service | `src/server/deepseek-plan-service.mjs`, `src/server/deepseek-rag-service.mjs`, `src/server/langchain-llm-client.mjs`, `src/server/langgraph-rag-workflow.mjs`, `src/server/langgraph-portfolio-capability-workflow.mjs`, `src/server/langgraph-school-selection-workflow.mjs`, `src/server/school-selection-service.mjs`, `src/server/portfolio-capability-agent-service.mjs`, `src/server/generation-job-service.mjs`, `src/server/ai-quality.mjs`, `src/server/deepseek-model.mjs`, `src/server/api-key.mjs` | Server-only LangChain model calls, model selection, API-key resolution, prompt/version metadata, RAG retrieval, graph orchestration, validation, async generation job lifecycle | Browser imports of LangChain/LangGraph; user/session mutation outside explicit save flows |
 | Export service | `src/domain/word-export.mjs`, `src/domain/svg-export.mjs`, `src/server/account-data-rights-service.mjs`, account export in `src/server/auth-service.mjs` and `src/server/planning-service.mjs` | Serializable user-owned data, privacy lifecycle assembly, pure document generation | Auth routing, admin dashboard concerns |
@@ -25,11 +25,11 @@ The guiding rule is: routes coordinate; services decide; domain modules calculat
 
 | Route group | Routes | Boundary owner | Current service owner |
 | --- | --- | --- | --- |
-| Health and ops | `GET /healthz`, `GET /readyz`, `GET /api/admin/ops/metrics` | `server.mjs` | `src/server/admin-operations-service.mjs`, `src/server/observability.mjs`, `src/server/sqlite-migrations.mjs` |
+| Health and ops | `GET /healthz`, `GET /readyz`, `GET /api/admin/ops/metrics` | Fastify for health/readiness; native for admin ops | `src/server/fastify-http-layer.ts`, `src/server/admin-operations-service.mjs`, `src/server/observability.mjs`, `src/server/sqlite-migrations.mjs` |
 | Auth | `/api/auth/me`, `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/request-password-reset`, `/api/auth/reset-password` | `server.mjs` | `src/server/auth-http-service.mjs`, `src/server/auth-service.mjs`, `src/server/mailer.mjs` |
 | Account data rights | `GET /api/account/export`, `DELETE /api/account` | `server.mjs` | `src/server/account-data-rights-service.mjs`, `src/server/auth-service.mjs`, `src/server/planning-service.mjs`, portfolio/progress services |
 | Feedback | `POST /api/feedback`, `PUT /api/admin/feedback/:id` | `server.mjs` | `src/server/admin-operations-service.mjs`, `src/server/auth-service.mjs` |
-| Prompt and planning AI | `GET /api/prompt`, `POST /api/deepseek-plan`, `/api/deepseek-plan-jobs` | `server.mjs` | `src/server/deepseek-plan-service.mjs`, `src/server/generation-job-service.mjs`, `src/domain/agent-output-parser.mjs`; `GET /api/prompt` stays route-owned |
+| Prompt and planning AI | `GET /api/prompt`, `POST /api/deepseek-plan`, `/api/deepseek-plan-jobs` | Fastify for prompt GET; native for planning and jobs | `src/server/fastify-http-layer.ts`, `src/server/deepseek-plan-service.mjs`, `src/server/generation-job-service.mjs`, `src/domain/agent-output-parser.mjs` |
 | RAG Q&A | `POST /api/deepseek-rag`, `/api/deepseek-rag-jobs` | `server.mjs` | `src/server/deepseek-rag-service.mjs`, `src/server/langgraph-rag-workflow.mjs`, `src/server/generation-job-service.mjs`, `src/server/ai-quality.mjs` |
 | School selection | `POST /api/school-selection`, `/api/school-selection-jobs` | `server.mjs` | `src/server/school-selection-service.mjs`, `src/server/generation-job-service.mjs` |
 | Portfolio capability AI | `POST /api/portfolio-capability-assessment`, `/api/portfolio-capability-assessment-jobs` | `server.mjs` | `src/server/portfolio-capability-agent-service.mjs`, `src/server/generation-job-service.mjs` |
@@ -37,17 +37,17 @@ The guiding rule is: routes coordinate; services decide; domain modules calculat
 | Portfolio | `GET/PUT /api/my-activities`, `GET /api/my-activities/import-sources` | `server.mjs` | `src/server/activity-portfolio-service.mjs`, `src/server/planning-service.mjs` |
 | Progress planner | `GET/PUT /api/progress-planner` | `server.mjs` | `src/server/progress-planner-service.mjs` |
 | Planning projects | `/api/plans`, `/api/plans/:id`, `/api/plans/:id/snapshots`, `/api/plans/:id/snapshots/:snapshotId`, `/api/plans/:id/snapshots/:snapshotId/restore` | `server.mjs` | `src/server/planning-service.mjs` |
-| Analytics | `POST /api/analytics/usage-event` | `server.mjs` | `src/server/auth-service.mjs` |
+| Analytics | `POST /api/analytics/usage-event` | `server.mjs` | `src/server/student-workspace-service.ts`, analytics repository adapter |
 | Admin dashboard and audit | `GET /api/admin/login-dashboard`, `GET /api/admin/audit-log/export` | `server.mjs` | `src/server/admin-operations-service.mjs`, `src/server/auth-service.mjs` |
 | Static files | `GET/HEAD /*` | `server.mjs` | `src/server/static-file-service.mjs`, `src/server/route-access-policy.mjs` |
 
 ## Business Logic Still In server.mjs
 
-These are the next extraction candidates. Each extraction should move behavior and tests together, without changing browser routes.
+The priority workspace route logic has been extracted. Remaining route groups should move only when a focused service boundary is clearer than the native HTTP coordination already present.
 
 | Area | Current logic in `server.mjs` | Target service |
 | --- | --- | --- |
-| Student workspace route orchestration | Repeated authenticated CRUD response shapes and destructive planning audit event wiring | `src/server/student-workspace-service.mjs` |
+| Remaining HTTP coordination | AI job and admin route response serialization | Keep route-owned until a typed handler removes meaningful duplication |
 
 ## Completed Extractions
 
@@ -60,6 +60,7 @@ These are the next extraction candidates. Each extraction should move behavior a
 | 2026-06-18 | Account data rights: cross-service export assembly, export audit event, deletion confirmation extraction, account deletion delegation | `src/server/account-data-rights-service.mjs` |
 | 2026-06-18 | Admin operations: dashboard filter parsing, success-audit event details, ops metrics backup status shape, feedback moderation audit, audit-log export policy | `src/server/admin-operations-service.mjs` |
 | 2026-06-18 | Auth HTTP adapter: auth route response shape, redirect-vs-JSON behavior, session/CSRF cookie issuance, CSRF API guard | `src/server/auth-http-service.mjs` |
+| 2026-07-12 | Student profile, activity portfolio, progress planner, planning versions, analytics, and destructive audit wiring | `src/server/student-workspace-service.ts`, `src/repositories/*` |
 
 ## Extraction Rules
 
@@ -73,7 +74,7 @@ These are the next extraction candidates. Each extraction should move behavior a
 
 ## Recommended Extraction Order
 
-1. `student-workspace-service.mjs`: groups authenticated student CRUD route orchestration and planning audit-event wiring.
+1. Add PostgreSQL adapters behind `src/repositories/contracts.ts` without changing route contracts.
 
 ## Boundary Test Expectations
 

@@ -40,8 +40,9 @@ export function createMailerFromEnv(env = process.env) {
   });
 
   return {
-    async sendPasswordResetEmail({ to, resetUrl }) {
+    async sendPasswordResetEmail({ to, resetUrl, messageId }) {
       await transporter.sendMail({
+        ...(messageId ? { messageId } : {}),
         from: config.from,
         to,
         subject: PASSWORD_RESET_SUBJECT,

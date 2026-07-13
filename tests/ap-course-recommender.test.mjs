@@ -474,3 +474,53 @@ assertPlanIncludesAny(
   "Humanities/social science route should retain reasonable quantitative/science breadth.",
 );
 assertRecommendationFields(humanitiesBalancedPlan);
+
+const csEducationQualityPlan = recommendApCoursePlan({
+  studentProfile: buildApCourseStudentProfile({
+    grade: "10年级",
+    majorDirection: "Computer Science / Education Technology",
+    completedCourses: ["AP Calculus AB", "AP Computer Science A"],
+    academicStatus: "英文写作较弱、没有物理实验经历。",
+  }),
+  courses,
+});
+const csEducationRecommendations = csEducationQualityPlan.items.flatMap((item) => item.recommendations);
+assert.ok(
+  csEducationRecommendations.some((course) => course.name === "AP Physics 1"),
+  "A stated lack of physics/experimental experience should prioritize AP Physics 1.",
+);
+assert.equal(recommendedCourse(csEducationQualityPlan, "AP Physics 1")?.fitType, "文理补强");
+assert.match(
+  recommendedCourse(csEducationQualityPlan, "AP Physics 1")?.reason || "",
+  /物理.*实验.*不足|不足.*物理.*实验/u,
+  "The reason should explain that Physics 1 addresses the stated physics/experimental gap.",
+);
+assert.ok(
+  csEducationRecommendations.length <= 5,
+  `A student with stated weak areas should receive a calibrated load, got ${csEducationRecommendations.length} new AP courses.`,
+);
+for (const courseName of [
+  "AP US Government and Politics",
+  "AP European History",
+  "AP Environmental Science",
+]) {
+  const recommendation = recommendedCourse(csEducationQualityPlan, courseName);
+  if (recommendation) {
+    assert.ok(
+      ["文理补强", "兴趣拓展"].includes(recommendation.fitType),
+      `${courseName} should not be labeled directly major-related for CS + Education Technology.`,
+    );
+  }
+}
+assert.match(csEducationQualityPlan.notice, /负荷|每年|稳妥/u);
+
+const noWeaknessPlan = recommendApCoursePlan({
+  studentProfile: buildApCourseStudentProfile({
+    grade: "10年级",
+    majorDirection: "Computer Science",
+    completedCourses: ["AP Calculus AB", "AP Computer Science A"],
+    academicStatus: "成绩稳定，没有明显薄弱项。",
+  }),
+  courses,
+});
+assert.doesNotMatch(noWeaknessPlan.notice, /已说明的薄弱项/u);

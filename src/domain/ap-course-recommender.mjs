@@ -320,6 +320,15 @@ function tagsForText(text) {
   );
 }
 
+function refineMajorTags(tags, majorDirection) {
+  const normalized = normalizeText(majorDirection);
+  const isEducationTechnology = /education(?:al)? technology|edtech|教育科技|教育技术/u.test(normalized);
+  if (isEducationTechnology && tags.includes("cs")) {
+    return tags.filter((tag) => tag !== "humanities_social");
+  }
+  return tags;
+}
+
 function normalizeCourseName(value) {
   return normalizeText(value)
     .replace(/（.*?）|\(.*?\)/g, "")
@@ -392,7 +401,7 @@ export function buildApCourseStudentProfile({
   return {
     currentGrade,
     majorDirection: String(majorDirection || "").trim(),
-    majorTags: tagsForText(majorDirection),
+    majorTags: refineMajorTags(tagsForText(majorDirection), majorDirection),
     academicStatus: String(academicStatus || "").trim(),
     academicTags: tagsForText(academicStatus),
     completedCourseNames: (completedCourses || []).map(normalizeCourseName),
@@ -734,6 +743,50 @@ function selectCoursesForGrade(sortedCandidates, count, batchIndex, requiredCour
   return ensureStudyBalance(selectedCandidates, prioritizedCandidates, count, lockedCourseIds);
 }
 
+function foundationGapCourseNames(studentProfile) {
+  const status = normalizeText(studentProfile.academicStatus);
+  const required = [];
+  if (/(?:没有|缺少|缺乏|不足|较弱|薄弱)[^。；，,]{0,12}(?:物理|实验)|(?:物理|实验)[^。；，,]{0,12}(?:没有|缺少|缺乏|不足|较弱|薄弱)/u.test(status)) {
+    required.push("AP Physics 1");
+  }
+  if (/(?:英文|英语|写作|论证)[^。；，,]{0,10}(?:较弱|薄弱|不足|需要加强|待加强)/u.test(status)) {
+    required.push("AP English Language and Composition");
+  }
+  return required;
+}
+
+function applyFoundationGapFit(course, fit, isFoundationGap) {
+  if (!isFoundationGap) return fit;
+  if (courseMatchesConfiguredName(course, "AP Physics 1")) {
+    return {
+      ...fit,
+      fitType: "文理补强",
+      signal: "针对已填写的物理实验经历不足，优先用 AP Physics 1 补齐基础概念、实验分析和科学建模经验。",
+    };
+  }
+  if (courseMatchesConfiguredName(course, "AP English Language and Composition")) {
+    return {
+      ...fit,
+      fitType: "文理补强",
+      signal: "针对已填写的英文论证写作薄弱项，优先用 AP English Language and Composition 补强阅读、修辞分析和证据表达。",
+    };
+  }
+  return fit;
+}
+
+function hasLoadCalibrationNeed(studentProfile) {
+  if (Number(studentProfile.currentGrade) < 10) return false;
+  const status = normalizeText(studentProfile.academicStatus)
+    .replace(/(?:没有|无)(?:明显|任何)?(?:的)?(?:薄弱项?|弱项|短板|不足项?)/gu, "");
+  return foundationGapCourseNames({ ...studentProfile, academicStatus: status }).length > 0
+    || /缺少|缺乏|不足|较弱|薄弱|需要加强|待加强/u.test(status);
+}
+
+function targetCourseCount(studentProfile, grade) {
+  const baseline = GRADE_COURSE_COUNTS[grade] || 3;
+  return hasLoadCalibrationNeed(studentProfile) ? Math.max(2, baseline - 1) : baseline;
+}
+
 function courseScore(course, studentProfile, targetGrade) {
   const fit = inferCourseFit(course, studentProfile);
   const tagOverlap = course.tags.filter((tag) => studentProfile.majorTags.includes(tag)).length;
@@ -857,13 +910,15 @@ export function recommendApCoursePlan({ studentProfile, courses, batchIndex = 0 
   const selectedIds = new Set();
   const plannedCourseNames = new Set(studentProfile.completedCourseNames);
   const rigorCourseNames = majorRigorCourseNames(studentProfile);
+  const foundationCourseNames = foundationGapCourseNames(studentProfile);
   const rigorDeadlineGrade = majorRigorDeadlineGrade(studentProfile.currentGrade);
   const canUseLateRigorOverride = Number(studentProfile.currentGrade) >= 11;
   const items = futureGrades.map((grade) => {
-    const count = GRADE_COURSE_COUNTS[grade] || 3;
-    const requiredCourseNames = grade === rigorDeadlineGrade
-      ? rigorCourseNames.filter((courseName) => configuredCourseAllowedForTargetGrade(courseName, grade))
-      : [];
+    const count = targetCourseCount(studentProfile, grade);
+    const requiredCourseNames = unique([
+      ...(grade === futureGrades[0] ? foundationCourseNames : []),
+      ...(grade === rigorDeadlineGrade ? rigorCourseNames : []),
+    ]).filter((courseName) => configuredCourseAllowedForTargetGrade(courseName, grade));
     const sortedCandidates = availableCourses
       .filter(
         (course) =>
@@ -887,8 +942,10 @@ export function recommendApCoursePlan({ studentProfile, courses, batchIndex = 0 
       .map(({ course, score }) => {
         selectedIds.add(course.id);
         plannedCourseNames.add(normalizeCourseName(course.name));
-        const isMajorRigor = isRequiredRigorCourse(course, requiredCourseNames);
-        const fit = inferCourseFit(course, studentProfile);
+        const isFoundationGap = isRequiredRigorCourse(course, foundationCourseNames);
+        const isMajorRigor = isRequiredRigorCourse(course, requiredCourseNames)
+          && isRequiredRigorCourse(course, rigorCourseNames);
+        const fit = applyFoundationGapFit(course, inferCourseFit(course, studentProfile), isFoundationGap);
         return {
           id: course.id,
           name: course.name,
@@ -918,6 +975,6 @@ export function recommendApCoursePlan({ studentProfile, courses, batchIndex = 0 
 
   return {
     items,
-    notice: `已根据成绩与难点、文理均衡和先易后难顺序生成 ${futureGrades[0]} 至 12 年级 AP 选课计划，并优先引导学生在 11 年级、最晚 12 年级完成目标专业最高阶 AP 课程。`,
+    notice: `已根据成绩与难点、文理均衡和先易后难顺序生成 ${futureGrades[0]} 至 12 年级 AP 选课计划，并优先引导学生在 11 年级、最晚 12 年级完成目标专业最高阶 AP 课程。${hasLoadCalibrationNeed(studentProfile) ? " 针对已说明的薄弱项，已按每年 2-3 门新增 AP 的稳妥负荷校准。" : ""}`,
   };
 }
