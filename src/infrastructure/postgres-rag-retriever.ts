@@ -13,6 +13,7 @@ export function createPostgresRagRetriever({ pool, root, planning, activityPortf
       return knowledge.vectorSearch(embedding, { ...options, embeddingModelVersion: embeddingClient.modelVersion });
     },
     rerank: rerankerClient ? (query: string, candidates: any[], options: any) => rerankerClient.rerank(query, candidates, options) : null,
+    rerankCandidateLimit: rerankerClient?.candidateLimit || 24,
     logger,
   });
 
@@ -20,14 +21,34 @@ export function createPostgresRagRetriever({ pool, root, planning, activityPortf
     async retrieve(input: any) {
       const baselineResult = await baseline.retrieve(input);
       const search = () => hybrid.search(input.question, { limit: 8, embeddingModelVersion: embeddingClient?.modelVersion || "" });
+      const rerankerProvider = rerankerClient?.provider || "disabled";
+      const rerankerModelVersion = rerankerClient?.modelVersion || "";
       const cached = retrievalCache
         ? await retrievalCache.getOrLoad({
           query: input.question,
-          variant: `${knowledgeVersion || "unversioned"}:${embeddingClient?.modelVersion || "keyword-only"}`,
+          variant: [
+            knowledgeVersion || "unversioned",
+            embeddingClient?.modelVersion || "keyword-only",
+            rerankerProvider,
+            rerankerModelVersion || "no-reranker-model",
+            `candidates-${rerankerClient?.candidateLimit || 24}`,
+          ].join(":"),
         }, search)
         : { value: await search(), status: "disabled" };
       const postgresResult = cached.value;
-      if (!postgresResult.results.length) return { ...baselineResult, retrieval: { ...baselineResult.retrieval, infrastructureMode: postgresResult.mode } };
+      if (!postgresResult.results.length) {
+        return {
+          ...baselineResult,
+          retrieval: {
+            ...baselineResult.retrieval,
+            infrastructureMode: postgresResult.mode,
+            ...postgresResult.retrieval,
+            rerankerProvider,
+            rerankerModelVersion,
+            retrievalCache: cached.status,
+          },
+        };
+      }
       const merged = mergePostgresRetrieval({ baselineResult, postgresResults: postgresResult.results });
       return {
         ...merged,
@@ -35,6 +56,8 @@ export function createPostgresRagRetriever({ pool, root, planning, activityPortf
           ...merged.retrieval,
           infrastructureMode: postgresResult.mode,
           ...postgresResult.retrieval,
+          rerankerProvider,
+          rerankerModelVersion,
           retrievalCache: cached.status,
         },
       };

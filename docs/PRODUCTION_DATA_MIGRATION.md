@@ -46,7 +46,12 @@ Explicit integer IDs are preserved and PostgreSQL sequences are advanced after i
 
 `data/*.md` is never deleted or rewritten. `npm run knowledge:ingest` reads it, chunks deterministically, records source ID/content hash/source version/update time/confidence/official URL/embedding model version, and upserts PostgreSQL. Re-running unchanged sources produces no new embeddings.
 
-Set `EMBEDDING_BASE_URL`, `EMBEDDING_API_KEY`, `EMBEDDING_MODEL` and `EMBEDDING_DIMENSIONS=1536`. If the vector endpoint is down, online retrieval automatically uses PostgreSQL keyword search plus the existing local keyword context. `npm run eval:retrieval` must remain green before release.
+Choose one retrieval path before ingestion:
+
+- Vector Hybrid: set `EMBEDDING_BASE_URL`, `EMBEDDING_API_KEY`, `EMBEDDING_MODEL` and `EMBEDDING_DIMENSIONS=1536`.
+- DeepSeek-only reranking: leave the embedding variables unset, run `npm run knowledge:ingest -- --keyword-only`, and set `DEEPSEEK_RERANK_ENABLED=true`, `DEEPSEEK_RERANK_MODEL=deepseek-v4-flash`, `DEEPSEEK_RERANK_TIMEOUT_MS=15000`, `DEEPSEEK_RERANK_MAX_TOKENS=1800`, and `DEEPSEEK_RERANK_CANDIDATE_LIMIT=12`. This reuses `DEEPSEEK_API_KEY`; no separate embedding key is required.
+
+If vector search is unavailable, online retrieval automatically uses PostgreSQL keyword search plus the existing local keyword context. With DeepSeek reranking enabled, the expected infrastructure mode is `keyword-fallback-reranked`; this is not vector Hybrid. An explicitly configured `RERANKER_URL` still takes precedence over DeepSeek. `npm run eval:retrieval` must remain green before release.
 
 ## Job operations
 

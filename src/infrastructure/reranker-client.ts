@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createDeepSeekRerankerClientFromEnv } from "./deepseek-reranker-client.js";
 
 const RerankerResponseSchema = z.object({
   results: z.array(z.object({
@@ -7,13 +8,19 @@ const RerankerResponseSchema = z.object({
   })),
 });
 
-export function createRerankerClientFromEnv(env: any = process.env, { fetchImpl = fetch }: any = {}) {
+export function createRerankerClientFromEnv(env: any = process.env, dependencies: any = {}) {
+  return createExternalRerankerClientFromEnv(env, dependencies)
+    || createDeepSeekRerankerClientFromEnv(env, dependencies);
+}
+
+export function createExternalRerankerClientFromEnv(env: any = process.env, { fetchImpl = fetch }: any = {}) {
   const baseUrl = String(env.RERANKER_URL || "").trim().replace(/\/+$/u, "");
   if (!baseUrl) return null;
   const timeoutMs = boundedInteger(env.RERANKER_TIMEOUT_MS, 350, 50, 10_000);
   const apiKey = String(env.RERANKER_API_KEY || "").trim();
   const model = String(env.RERANKER_MODEL || "BAAI/bge-reranker-v2-m3").trim();
   return {
+    provider: "external",
     modelVersion: model,
     async rerank(query: string, candidates: any[], { limit = candidates.length }: any = {}) {
       if (!candidates.length) return [];
