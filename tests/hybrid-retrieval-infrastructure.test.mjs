@@ -69,6 +69,19 @@ assert.equal(degradedFallbackResult.mode, "keyword-fallback-rerank-fallback");
 assert.equal(degradedFallbackResult.results[0].id, "keyword-first");
 assert.equal(degradedFallbackResult.retrieval.reranker, "fallback");
 
+let limitedRerankCandidateCount = 0;
+const limitedRerankFallback = createHybridRetriever({
+  vectorSearch: async () => { throw new Error("embedding unavailable"); },
+  keywordSearch: async () => [{ id: "first" }, { id: "second" }, { id: "third" }],
+  rerankCandidateLimit: 2,
+  rerank: async (_query, candidates) => {
+    limitedRerankCandidateCount = candidates.length;
+    return candidates;
+  },
+});
+await limitedRerankFallback.search("question", { limit: 1 });
+assert.equal(limitedRerankCandidateCount, 2);
+
 const hybrid = createHybridRetriever({
   vectorSearch: async (_query, options) => {
     assert.equal(options.limit, 40);

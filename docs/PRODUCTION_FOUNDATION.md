@@ -21,6 +21,7 @@ The PostgreSQL schema is in `src/db/schema/postgres.ts`; Drizzle migrations are 
 - Prompt content is immutable; `prompts/manifest.json` pins its SHA-256, model set, schema, enabled state, and environment selection.
 - Planning output requests strict JSON and validates `PlanningResult`; legacy Markdown is accepted only as a compatibility fallback and is marked for manual review.
 - `ai-call-policy.ts` owns timeout, capped exponential backoff, retry classification, circuit breaking, and fallback models.
+- Reranking prefers an explicitly configured external `RERANKER_URL`. Otherwise, `DEEPSEEK_RERANK_ENABLED=true` reuses the server-side `DEEPSEEK_API_KEY`, requests strict JSON scores, and validates candidate indices before applying the ranking.
 
 ## Observability and privacy
 
@@ -36,7 +37,7 @@ The PostgreSQL schema is in `src/db/schema/postgres.ts`; Drizzle migrations are 
 
 - BullMQ uses user-scoped deterministic job IDs for idempotency, retained terminal states, timeout/retry/backoff, cancellation tombstones and a dead-letter queue. With no `REDIS_URL`, local development keeps the existing in-memory fallback.
 - Markdown remains the canonical business source. `npm run knowledge:ingest` performs content-hash based upserts; unchanged chunks are not re-embedded. `--keyword-only` is available when an embedding service is intentionally unavailable.
-- PostgreSQL retrieval combines pgvector and `tsvector`; vector failures return the keyword path. `npm run eval:retrieval` prevents hybrid MRR/recall from dropping below the keyword baseline.
+- With an embedding provider configured, PostgreSQL retrieval combines pgvector and `tsvector`; vector failures return the keyword path. Without an embedding provider, ingest with `npm run knowledge:ingest -- --keyword-only` and optionally enable DeepSeek reranking. That mode is reported as `keyword-fallback-reranked`, not vector Hybrid. `npm run eval:retrieval` prevents retrieval MRR/recall from dropping below the keyword baseline.
 - Object keys are always `users/<userId>/...`. Local storage and S3-compatible MinIO/S3/R2 implement the same interface; downloads use expiring signatures. MinIO compose config expires objects after seven days, while production S3/R2 must use an equivalent bucket lifecycle rule.
 - A transitional production deployment that still uses the local object-store driver must set a unique `OBJECT_STORE_SIGNING_SECRET`; the application refuses to start with the public development default in production.
 
