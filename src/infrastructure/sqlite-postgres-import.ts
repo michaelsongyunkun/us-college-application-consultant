@@ -30,7 +30,12 @@ export function normalizeSqliteValueForPostgres(column: string, value: unknown) 
   if (value === null || value === undefined) return null;
   if (!JSON_COLUMNS.has(column)) return value;
   if (typeof value !== "string") return value;
-  try { return JSON.parse(value); } catch { throw new Error(`Invalid JSON in ${column}`); }
+  try {
+    const parsed = JSON.parse(value);
+    return typeof parsed === "string" ? JSON.stringify(parsed) : parsed;
+  } catch {
+    throw new Error(`Invalid JSON in ${column}`);
+  }
 }
 
 export function compareMigrationValidation(source: any, target: any) {
