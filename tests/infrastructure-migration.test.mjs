@@ -11,6 +11,7 @@ const rows = [
 ];
 assert.equal(hashCriticalRows(rows, ["id", "user_id", "profile_json"]), hashCriticalRows([...rows].reverse(), ["id", "user_id", "profile_json"]));
 assert.equal(normalizeSqliteValueForPostgres("profile_json", '{"grade":"11"}').grade, "11");
+assert.equal(normalizeSqliteValueForPostgres("details_json", '"legacy-string"'), '"legacy-string"');
 assert.equal(normalizeSqliteValueForPostgres("user_id", 3), 3);
 
 assert.deepEqual(
