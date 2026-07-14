@@ -32,7 +32,10 @@ export function normalizeSqliteValueForPostgres(column: string, value: unknown) 
   if (typeof value !== "string") return value;
   try {
     const parsed = JSON.parse(value);
-    return typeof parsed === "string" ? JSON.stringify(parsed) : parsed;
+    // node-postgres serializes JavaScript arrays as PostgreSQL array literals,
+    // which are not valid jsonb input. Passing every SQLite JSON value as
+    // canonical JSON text keeps objects, arrays, and scalar JSON values valid.
+    return JSON.stringify(parsed);
   } catch {
     throw new Error(`Invalid JSON in ${column}`);
   }
