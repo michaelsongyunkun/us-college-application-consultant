@@ -20,7 +20,9 @@ const knowledge = createPostgresKnowledgeRepository({
   },
 });
 await knowledge.keywordSearch("计算机科学专业怎么选", { limit: 7 });
-assert.match(keywordSql, /word_similarity/u);
+assert.match(keywordSql, /word_similarity\(term, knowledge_documents\.title\)/u);
+assert.doesNotMatch(keywordSql, /word_similarity\(term, knowledge_documents\.content\)/u);
+assert.match(keywordSql, /knowledge_documents\.content ILIKE '%' \|\| term \|\| '%' THEN 0\.25/u);
 assert.deepEqual(keywordParameters[1], chineseTerms);
 assert.equal(keywordParameters[2], 7);
 

@@ -108,7 +108,7 @@ export function createPostgresKnowledgeRepository({ pool }: any) {
           SELECT SUM(
             CASE WHEN knowledge_documents.title ILIKE '%' || term || '%' THEN 0.8 ELSE 0 END +
             CASE WHEN knowledge_documents.content ILIKE '%' || term || '%' THEN 0.25 ELSE 0 END +
-            GREATEST(word_similarity(term, knowledge_documents.title), word_similarity(term, knowledge_documents.content)) * 0.2
+            word_similarity(term, knowledge_documents.title) * 0.2
           ) FROM query_terms
         ), 0)) * (confidence / 100.0) AS score
         FROM knowledge_documents
