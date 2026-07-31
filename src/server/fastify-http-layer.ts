@@ -57,8 +57,9 @@ export type FastifyHttpLayerOptions = {
     user: any;
     question: string;
     historySummary: string;
-    assistantProfile: "" | "major-match";
+    assistantProfile: "" | "major-match" | "inspiration";
     signal: AbortSignal;
+    onToken?: (text: string) => void | Promise<void>;
   }) => unknown | Promise<unknown>;
 };
 
@@ -186,6 +187,7 @@ const readOnlyRoutesPlugin: FastifyPluginAsync<FastifyHttpLayerOptions> = async 
     if (!ragRateLimit.allow(String(session.user?.id || request.ip))) {
       return reply.code(429).send(buildErrorResponse({ error: "Too many requests", code: "RATE_LIMIT", requestId: request.id, retryable: true }));
     }
+    const isInspirationRequest = parsed.data.assistantProfile === "inspiration";
 
     const stream = new PassThrough();
     const controller = new AbortController();
@@ -199,16 +201,30 @@ const readOnlyRoutesPlugin: FastifyPluginAsync<FastifyHttpLayerOptions> = async 
       .header("X-Accel-Buffering", "no")
       .send(stream);
 
-    stream.write(sseEvent("status", { stage: "retrieval_started", requestId: request.id }));
+    stream.write(sseEvent("status", {
+      stage: isInspirationRequest ? "conversation_started" : "retrieval_started",
+      requestId: request.id,
+    }));
     void (async () => {
       try {
-        const result = await answerRag({ ...parsed.data, user: session.user, signal: controller.signal });
+        const result = await answerRag({
+          ...parsed.data,
+          user: session.user,
+          signal: controller.signal,
+          onToken: isInspirationRequest
+            ? (text) => {
+              if (!controller.signal.aborted && !stream.destroyed && text) {
+                stream.write(sseEvent("delta", { text }));
+              }
+            }
+            : undefined,
+        });
         stream.write(sseEvent("result", result));
         stream.write(sseEvent("done", { requestId: request.id }));
       } catch (error) {
         stream.write(sseEvent("error", {
-          error: "RAG request failed",
-          code: "RAG_ERROR",
+          error: isInspirationRequest ? "Inspiration conversation failed" : "RAG request failed",
+          code: isInspirationRequest ? "INSPIRATION_ERROR" : "RAG_ERROR",
           requestId: request.id,
           retryable: true,
         }));

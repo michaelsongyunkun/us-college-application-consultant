@@ -7,6 +7,7 @@ const sensitiveDraftKeys = new Set([
   "openaiApiKey",
   "OPENAI_API_KEY",
   "DEEPSEEK_API_KEY",
+  "INSPIRATION_API_KEY",
 ]);
 
 export function normalizeSnapshotNote(value) {

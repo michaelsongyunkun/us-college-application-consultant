@@ -26,6 +26,7 @@ const MAX_SELECTED_CHUNKS = 14;
 const MAX_CONTEXT_CHARS = 18_000;
 const MAX_CHUNK_CHARS = 2_200;
 const SOURCE_SNIPPET_CHARS = 260;
+const DEFAULT_INSPIRATION_MAX_TOKENS = 600;
 
 const RESOURCE_LIBRARY_FILES = [
   { file: "competitions.md", label: "竞赛库" },
@@ -64,7 +65,7 @@ const APPLICATION_ROUND_LABELS = {
 };
 
 const SYSTEM_PROMPT = [
-  "你是 US College Compass 的“问DeepSeek”申请规划智能体，服务对象是正在准备美本申请的学生和家长。你的任务是基于系统提供的 RAG 资料，帮助用户分析个人申请档案、学生背景、活动规划、资源库项目和院校百科信息，并给出清晰、务实、可执行的建议。",
+  "你是 US College Compass 的“申请机器人”，服务对象是正在准备美本申请的学生和家长。你的任务是基于系统提供的 RAG 资料，帮助用户分析个人申请档案、学生背景、活动规划、资源库项目和院校百科信息，并给出清晰、务实、可执行的建议。",
   "",
   "你可以使用的资料范围包括：",
   "1. 个人申请档案：选校计划、课外活动、竞赛、夏校、推荐信、GPA/SAT/AP 等成绩档案。",
@@ -91,6 +92,32 @@ const SYSTEM_PROMPT = [
   "5. 不要另起“参考资料”章节；把可执行建议写完整即可。",
   "",
   "你不是替代升学顾问、学校官网或法律/财务/签证专业意见的工具。你的作用是帮助用户整理信息、发现问题、形成下一步申请规划。",
+].join("\n");
+
+const INSPIRATION_SYSTEM_PROMPT = [
+  "你是 US College Compass 的“启发性机器人”，是一位温暖、耐心、不过度推断的知心大姐姐式学生探索伙伴。你的任务不是判断学生真正热爱什么，也不是直接规划竞赛和活动，而是基于学生真实的历史对话，发现几个可能感兴趣的方向，通过多轮追问帮助学生自主判断，最终形成一个由学生确认、值得继续探索的问题和一次可以亲自完成的小行动。",
+  "",
+  "完整交互流程：",
+  "1. 读取历史对话并寻找线索：只关注学生反复提到的事情、描述特别具体的经历、主动投入时间精力的事情、表达过的价值观，以及想法中的变化或矛盾。只能使用已经出现的事实，不能编造经历或做过度心理分析。",
+  "2. 提出多个可能方向：当历史信息足够时，用“根据你之前提到的这些经历，我发现了几个你可能感兴趣的方向”开头，并列呈现 2-4 个方向。每个方向都必须分别写清“历史对话事实依据”和“待验证的可能性”，明确这不是热爱标签。",
+  "3. 把选择权交给学生：不要替学生排序，不要按申请价值替学生决定。列出方向后只问一个问题：“这几个方向中，你想先探索哪一个？”",
+  "4. 基于事实逐步追问：学生选择后，每轮只提出一个关键问题。问题应围绕具体经历，例如“哪段经历让你开始关注它？”“你最喜欢其中的哪一部分？”“为什么这件事对你重要？”“它与你重视的事情有什么联系？”“关于这个方向，你最想弄明白什么？”。如果学生回答“不知道”，回到他已经讲过的具体事实继续追问，不要凭空推断。",
+  "5. 形成探索问题：在多轮追问后，提出一个能区分不同动机或兴趣形态的暂定探索问题，并明确这是根据哪些事实形成的。这个问题必须得到学生明确确认或修正，不能由你单方面决定。",
+  "6. 设计一次小行动：只有探索问题得到学生确认后，才共同形成一个门槛低、时间范围明确、能真实接触该方向、完成后能产生新认识、且可以由学生亲自完成的小行动。这个行动不是为了包装申请履历。",
+  "7. 行动后回顾：学生完成行动后，继续一次只问一个反思问题，依次帮助他看见哪个部分最吸引、哪个部分与想象不同、是否还愿意投入，以及原来的探索问题是否需要变化。让兴趣在“对话—行动—反思”循环中逐步得到验证。",
+  "",
+  "必须遵守的原则：",
+  "- 把学生说过的话与 AI 推断明确分开；每个推断都引用历史记录中的具体依据，并使用“可能”“值得探索”等措辞。",
+  "- 不替学生选择兴趣方向，不把兴趣强行包装成申请故事，也不为了申请而安排竞赛、活动或履历项目。",
+  "- 如果个人兴趣与申请现实存在冲突，同时呈现兴趣线索、申请现实和选择风险，把最终选择权交给学生。",
+  "- 每个阶段的结论都由学生确认。每轮结束时只留下一个需要学生回答的问题，或者在学生已确认探索问题后留下一个具体小行动；不要一次抛出多个问题。",
+  "- 没有足够历史对话时，坦诚说明目前还不能列出有依据的方向，然后只邀请学生讲一个最近主动投入、描述具体或想法发生变化的真实经历。",
+  "- 不虚构用户经历、情绪、家庭关系或心理状态，不做心理诊断，不操纵、不说教，也不使用羞耻、恐惧或录取焦虑迫使用户接受某个方向。",
+  "- 涉及截止日期、费用、资格、官方政策、申请要求或录取规则时，提醒用户以申请年度官网信息为准，不做绝对化录取承诺。",
+  "- 以中文为主，温和、真诚、简洁，像一位善于倾听的知心大姐姐，但不要假装自己是真人。",
+  "- 除了需要并列呈现 2-4 个待验证方向的阶段，回复通常控制在 300 个中文字符以内；避免重复复述规则、写成长篇报告或一次给出多个问题。",
+  "- 你只能依据用户当前输入和系统提供的对话记忆摘要展开对话；不要假设你读取过学生档案、申请资料、外部知识库或其他未提供的信息。",
+  "- 对话的成功标准不是输出“你适合什么”，而是帮助学生形成一个自己认可的探索问题、一次小行动和行动后的反思问题。",
 ].join("\n");
 
 const MAJOR_MATCH_SYSTEM_PROMPT = [
@@ -160,18 +187,41 @@ export function createDeepSeekRagService({
     assistantProfile = "",
     env = process.env,
     signal,
+    onToken,
   }) {
     const normalizedQuestion = normalizeQuestion(question);
     const normalizedHistorySummary = normalizeHistorySummary(historySummary);
+    const isInspirationProfile = assistantProfile === "inspiration";
     const apiKey = resolveApiKey({
-      environmentApiKey: env.DEEPSEEK_API_KEY,
+      environmentApiKey: isInspirationProfile ? env.INSPIRATION_API_KEY : env.DEEPSEEK_API_KEY,
       requestApiKey: "",
     });
     if (!apiKey) {
-      throw new DeepSeekRagError("DeepSeek API 尚未配置。请在服务端配置 DEEPSEEK_API_KEY。", 400);
+      const variableName = isInspirationProfile ? "INSPIRATION_API_KEY" : "DEEPSEEK_API_KEY";
+      throw new DeepSeekRagError(`DeepSeek API 尚未配置。请在服务端配置 ${variableName}。`, 400);
     }
 
-    const model = normalizeDeepSeekModel(env.DEEPSEEK_RAG_MODEL || env.DEEPSEEK_MODEL);
+    const model = isInspirationProfile
+      ? normalizeDeepSeekModel(env.INSPIRATION_MODEL, "doubao-seed-2-1-turbo-260628")
+      : normalizeDeepSeekModel(env.DEEPSEEK_RAG_MODEL || env.DEEPSEEK_MODEL);
+    if (isInspirationProfile) {
+      return withSpan("deepseek.inspiration.invoke", { workflow: "direct-deepseek" }, () =>
+        answerInspirationQuestion({
+          question: normalizedQuestion,
+          historySummary: normalizedHistorySummary,
+          model,
+          apiKey,
+          baseURL: env.INSPIRATION_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3",
+          fallbackModels: env.INSPIRATION_FALLBACK_MODEL || "",
+          maxTokens: normalizePositiveInteger(env.INSPIRATION_MAX_TOKENS, DEFAULT_INSPIRATION_MAX_TOKENS),
+          env,
+          llmClient,
+          metrics,
+          signal,
+          onToken,
+        }));
+    }
+
     return withSpan("langgraph.rag.invoke", { workflow: RAG_ANSWER_GRAPH_VERSION }, () => answerGraph.invoke({
       user,
       question: normalizedQuestion,
@@ -186,6 +236,46 @@ export function createDeepSeekRagService({
   return {
     answerQuestion,
   };
+}
+
+async function answerInspirationQuestion({
+  question,
+  historySummary = "",
+  model,
+  apiKey,
+  baseURL,
+  fallbackModels = "",
+  maxTokens = DEFAULT_INSPIRATION_MAX_TOKENS,
+  env = process.env,
+  llmClient,
+  metrics = null,
+  signal,
+  onToken,
+}) {
+  const llmResult = await invokeDeepSeekLlm({
+    llmClient,
+    metrics,
+    env,
+    feature: "deepseek-inspiration",
+    apiKey,
+    baseURL,
+    model,
+    temperature: 0.25,
+    disableThinking: true,
+    fallbackModels,
+    maxTokens,
+    messages: [
+      { role: "system", content: INSPIRATION_SYSTEM_PROMPT },
+      { role: "user", content: buildInspirationUserMessage(question, historySummary) },
+    ],
+    signal,
+    onToken,
+  });
+
+  const answer = String(llmResult?.content || "").trim();
+  if (!answer) throw new DeepSeekRagError("DeepSeek 未返回可解析的问答内容。", 502);
+
+  return { answer };
 }
 
 async function draftDeepSeekRagAnswer({
@@ -206,10 +296,11 @@ async function draftDeepSeekRagAnswer({
     sourceWeights: retrieval.sourceWeights,
   };
 
-  const llmResult = await invokeRagLlm({
+  const llmResult = await invokeDeepSeekLlm({
     llmClient,
     metrics,
     env,
+    feature: "deepseek-rag",
     model,
     temperature: 0.25,
     messages: [
@@ -233,36 +324,49 @@ async function draftDeepSeekRagAnswer({
   return answer;
 }
 
-async function invokeRagLlm({
+async function invokeDeepSeekLlm({
   llmClient,
   metrics,
   env,
+  feature,
+  apiKey = "",
+  baseURL = "",
   model,
   temperature,
+  disableThinking = true,
+  fallbackModels,
+  maxTokens,
   messages,
   signal,
+  onToken,
 }) {
   const startedAt = monotonicNowMs();
   try {
     const result = await llmClient.invoke({
       env,
-      feature: "deepseek-rag",
+      feature,
+      apiKey,
+      baseURL,
       model,
       temperature,
+      disableThinking,
+      fallbackModels,
+      maxTokens,
       messages,
       signal,
+      onToken,
     });
     metrics?.recordAiCall?.({
-      feature: "deepseek-rag",
+      feature,
       ok: true,
       statusCode: 200,
       durationMs: monotonicNowMs() - startedAt,
     });
     return result;
   } catch (error) {
-    const mappedError = mapRagLlmError(error);
+    const mappedError = mapDeepSeekLlmError(error);
     metrics?.recordAiCall?.({
-      feature: "deepseek-rag",
+      feature,
       ok: false,
       statusCode: mappedError.statusCode || 0,
       durationMs: monotonicNowMs() - startedAt,
@@ -271,12 +375,12 @@ async function invokeRagLlm({
   }
 }
 
-function mapRagLlmError(error) {
+function mapDeepSeekLlmError(error) {
   if (error instanceof DeepSeekRagError) return error;
   if (error instanceof LangChainLlmError) {
     return new DeepSeekRagError(error.message, error.statusCode || 502);
   }
-  return new DeepSeekRagError(error?.message || "DeepSeek RAG 调用失败。", error?.statusCode || 502);
+  return new DeepSeekRagError(error?.message || "DeepSeek 调用失败。", error?.statusCode || 502);
 }
 
 function evaluateRagGraphQuality({
@@ -928,7 +1032,13 @@ function getContextSourceGroup(source) {
   return isStudentProfileDocument(source) ? "student-profile" : "student-plan";
 }
 
-function buildUserMessage(question, context, historySummary, missingFields = [], intentProfile = analyzeQuestionIntent(question)) {
+function buildUserMessage(
+  question,
+  context,
+  historySummary,
+  missingFields = [],
+  intentProfile = analyzeQuestionIntent(question),
+) {
   return [
     `问题：${question}`,
     "",
@@ -950,8 +1060,20 @@ function buildUserMessage(question, context, historySummary, missingFields = [],
   ].join("\n");
 }
 
+function buildInspirationUserMessage(question, historySummary = "") {
+  return [
+    `用户此刻想聊的内容：${question}`,
+    "",
+    "当前对话记忆摘要：",
+    historySummary || "暂无可引用的历史对话；请只邀请用户讲一个真实的具体经历。",
+    "",
+    "只把上面的用户输入和对话记忆摘要视为事实。不要补充、猜测或暗示你还掌握其他用户背景。",
+  ].join("\n");
+}
+
 function selectSystemPrompt(assistantProfile = "") {
-  return assistantProfile === "major-match" ? MAJOR_MATCH_SYSTEM_PROMPT : SYSTEM_PROMPT;
+  if (assistantProfile === "major-match") return MAJOR_MATCH_SYSTEM_PROMPT;
+  return SYSTEM_PROMPT;
 }
 
 export function serializeRagSource(source) {
@@ -1002,6 +1124,11 @@ function normalizeQuestion(value) {
 
 function normalizeHistorySummary(value) {
   return String(value ?? "").trim().slice(0, MAX_HISTORY_SUMMARY_LENGTH);
+}
+
+function normalizePositiveInteger(value, fallback) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function stringifyForRag(data) {

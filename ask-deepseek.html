@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>问DeepSeek</title>
+    <title>申请机器人</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css?v=20260702-ai-quality-review" />
   </head>
-  <body>
+  <body data-assistant-profile="application">
     <main class="app-shell command-shell ask-deepseek-shell">
       <aside class="command-sidebar" aria-label="Application Planning Center">
         <a class="command-sidebar-brand" href="./index.html" data-safe-nav>
@@ -21,7 +21,8 @@
               <a href="./my-activities.html" data-safe-nav>我的申请档案</a>
               <a href="./planning-tracker.html" data-safe-nav>计划与进度</a>
               <a href="./school-selection.html" data-safe-nav>美本选校系统</a>
-              <a href="./ask-deepseek.html" data-safe-nav aria-current="page">问DeepSeek</a>
+              <a href="./ask-deepseek.html" data-safe-nav aria-current="page">申请机器人</a>
+              <a href="./inspiration-robot.html" data-safe-nav>启发性机器人</a>
             </div>
             <div class="command-nav-section" data-nav-section="reference">
               <p class="command-nav-section-label">资料检索</p>
@@ -44,14 +45,14 @@
             </div>
         </nav>
         <div class="command-sidebar-note">
-          <strong>DeepSeek RAG</strong>
-          <span>回答会检索你的学生备份、资料库和院校百科，再把相关片段交给 DeepSeek 生成。</span>
+          <strong>申请机器人</strong>
+          <span>由 DeepSeek 与 RAG 驱动，结合你的申请档案和资料库生成建议。</span>
         </div>
       </aside>
 
       <div class="command-main">
 
-        <section class="command-page-summary" aria-label="DeepSeek RAG 数据范围">
+        <section class="command-page-summary" aria-label="申请机器人数据范围">
           <div>
             <p class="eyebrow">RAG Workspace</p>
             <h2>带资料来源追问申请问题</h2>
@@ -116,11 +117,11 @@
 
           <div id="deepSeekChatLog" class="deepseek-chat-log" aria-live="polite">
             <article class="chat-message assistant">
-              <img class="chat-avatar" src="./assets/deepseek-avatar.svg" width="42" height="42" alt="DeepSeek" />
+              <img class="chat-avatar" src="./assets/deepseek-avatar.svg" width="42" height="42" alt="申请机器人" />
               <div class="chat-message-body">
-                <p class="chat-speaker">DeepSeek</p>
+                <p class="chat-speaker">申请机器人</p>
                 <div class="chat-bubble">
-                  <p>你好，我是你的申请规划智能体。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍；我会结合你的个人申请档案和已保存资料回答，参考资料会收起在回答下方，需要核验时再展开。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。</p>
+                  <p>你好，我是你的申请机器人。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍；我会结合你的个人申请档案和已保存资料回答，参考资料会收起在回答下方，需要核验时再展开。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。</p>
                 </div>
               </div>
             </article>
@@ -147,6 +148,6 @@
     </main>
     <script type="module" src="./src/client/admin-nav.js?v=20260602-mobile-drawer"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260602-mobile-drawer"></script>
-    <script type="module" src="./src/client/ask-deepseek.js?v=20260702-ai-quality-review"></script>
+    <script type="module" src="./src/client/ask-deepseek.js?v=20260731-inspiration-streaming"></script>
   </body>
 </html>

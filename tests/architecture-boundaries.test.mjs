@@ -123,6 +123,7 @@ for (const protectedPolicyNeedle of [
   '"/planning-tracker.html"',
   '"/school-selection.html"',
   '"/ask-deepseek.html"',
+  '"/inspiration-robot.html"',
   '"/resource-library.html"',
   '"/school-encyclopedia.html"',
   '"/major-encyclopedia.html"',

@@ -12,4 +12,5 @@ assert.equal(planning.activities.length, 15);
 assert.deepEqual(planning.caveats, []);
 assert.equal(SchoolSelectionResultSchema.safeParse({ rounds: {} }).success, false);
 assert.equal(RagStreamRequestSchema.parse({ question: "major match", assistantProfile: "major-match" }).assistantProfile, "major-match");
+assert.equal(RagStreamRequestSchema.parse({ question: "what matters", assistantProfile: "inspiration" }).assistantProfile, "inspiration");
 assert.equal(RagStreamRequestSchema.safeParse({ question: "x".repeat(1_201) }).success, false);

@@ -3,6 +3,7 @@ import { AiCircuitOpenError, classifyAiCallError, createAiCallPolicy } from "../
 
 assert.equal(classifyAiCallError({ statusCode: 429 }), "rate_limited");
 assert.equal(classifyAiCallError({ statusCode: 503 }), "retryable");
+assert.equal(classifyAiCallError({ statusCode: 503, retryable: false }), "non_retryable");
 assert.equal(classifyAiCallError({ statusCode: 400 }), "non_retryable");
 const attempts = [];
 const policy = createAiCallPolicy({ maxAttempts: 2, baseDelayMs: 1, sleep: async () => {}, random: () => 0 });

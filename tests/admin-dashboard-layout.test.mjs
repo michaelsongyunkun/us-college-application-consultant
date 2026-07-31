@@ -46,7 +46,7 @@ assert.match(script, /generate_plan_success: "解析 Codex 回答进表格成功
 assert.doesNotMatch(script, /规划生成/, "Dashboard script should not show the old planning-generation label.");
 assert.match(script, /refresh_case_matches/, "Dashboard should label similar-case refresh events.");
 assert.match(script, /school_selection_generate_success: "选校方案生成成功"/, "Dashboard should label school-selection generation events.");
-assert.match(script, /deepseek_rag_question_success: "问 DeepSeek 成功"/, "Dashboard should label DeepSeek RAG questions.");
+assert.match(script, /deepseek_rag_question_success: "机器人问答成功"/, "Dashboard should label robot RAG questions.");
 assert.match(script, /portfolio_save: "保存我的申请档案"/, "Dashboard should label portfolio saves.");
 assert.match(script, /renderFeedbackEntries/, "Dashboard should render submitted feedback entries.");
 assert.match(script, /feedbackEntries/, "Dashboard should read feedback entries from the admin payload.");

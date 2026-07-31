@@ -27,15 +27,20 @@ export function createLangChainDeepSeekClient({
     messages = [],
     env = process.env,
     feature = "langchain-deepseek",
+    apiKey: explicitApiKey = "",
+    baseURL = "",
     model = "",
     temperature = 0.25,
     maxTokens,
+    disableThinking = true,
+    fallbackModels,
     timeoutMs,
     signal,
+    onToken,
   } = {}) {
     const apiKey = apiKeyResolver({
       environmentApiKey: env.DEEPSEEK_API_KEY,
-      requestApiKey: "",
+      requestApiKey: explicitApiKey,
     });
     if (!apiKey) {
       throw new LangChainLlmError("DeepSeek API 尚未配置。请在服务端配置 DEEPSEEK_API_KEY。", 400);
@@ -44,23 +49,58 @@ export function createLangChainDeepSeekClient({
     const selectedModel = normalizeDeepSeekModel(model || env.DEEPSEEK_MODEL, "deepseek-v4-pro");
     const normalizedMaxTokens = normalizePositiveInteger(maxTokens);
     const invokeModel = async (activeModel, activeSignal) => {
+      const isStreaming = typeof onToken === "function";
       const chatModelOptions = {
         apiKey,
         model: activeModel,
         temperature: normalizeTemperature(temperature),
-        streaming: false,
-        modelKwargs: {
-          thinking: { type: "disabled" },
-        },
+        streaming: isStreaming,
       };
+      if (disableThinking) {
+        chatModelOptions.modelKwargs = {
+          thinking: { type: "disabled" },
+        };
+      }
+      if (String(baseURL || "").trim()) {
+        chatModelOptions.configuration = {
+          baseURL: String(baseURL).trim().replace(/\/$/u, ""),
+        };
+      }
       if (normalizedMaxTokens) chatModelOptions.maxTokens = normalizedMaxTokens;
       const chatModel = chatModelFactory(chatModelOptions);
+      const normalizedMessages = normalizeLangChainMessages(messages);
+      const callOptions = activeSignal ? { signal: activeSignal } : undefined;
+      if (isStreaming) {
+        let content = "";
+        let responseMetadata = {};
+        let usage = {};
+        let emittedContent = false;
+        try {
+          const responseStream = await chatModel.stream(normalizedMessages, callOptions);
+          for await (const chunk of responseStream) {
+            responseMetadata = chunk?.response_metadata || chunk?.responseMetadata || responseMetadata;
+            const chunkUsage = extractLangChainUsage(chunk);
+            if (Object.keys(chunkUsage).length) usage = chunkUsage;
+            const text = extractLangChainChunkText(chunk);
+            if (!text) continue;
+            content += text;
+            emittedContent = true;
+            await onToken(text);
+          }
+        } catch (error) {
+          if (emittedContent && error && typeof error === "object") error.retryable = false;
+          throw error;
+        }
+        const normalizedContent = content.trim();
+        if (!normalizedContent) throw new LangChainLlmError("DeepSeek 未返回可解析的问答内容。", 502);
+        return { content: normalizedContent, responseMetadata, usage };
+      }
       const response = await withSpan("langchain.chat.invoke", {
         "gen_ai.system": "deepseek",
         "gen_ai.request.model": activeModel,
       }, () => chatModel.invoke(
-        normalizeLangChainMessages(messages),
-        activeSignal ? { signal: activeSignal } : undefined,
+        normalizedMessages,
+        callOptions,
       ));
       const content = extractLangChainMessageText(response);
       if (!content) throw new LangChainLlmError("DeepSeek 未返回可解析的问答内容。", 502);
@@ -77,7 +117,10 @@ export function createLangChainDeepSeekClient({
         : await callPolicy.execute({
           feature: String(feature || "langchain-deepseek"),
           primaryModel: selectedModel,
-          fallbackModels: parseFallbackModels(env.DEEPSEEK_FALLBACK_MODEL, selectedModel),
+          fallbackModels: parseFallbackModels(
+            fallbackModels === undefined ? env.DEEPSEEK_FALLBACK_MODEL : fallbackModels,
+            selectedModel,
+          ),
           timeoutMs,
           signal,
           operation: ({ model: activeModel, signal: activeSignal }) => invokeModel(activeModel, activeSignal),
@@ -127,8 +170,12 @@ export function normalizeLangChainMessages(messages) {
 }
 
 export function extractLangChainMessageText(response) {
+  return extractLangChainChunkText(response).trim();
+}
+
+export function extractLangChainChunkText(response) {
   const content = response?.content;
-  if (typeof content === "string") return content.trim();
+  if (typeof content === "string") return content;
   if (Array.isArray(content)) {
     return content
       .map((part) => {
@@ -136,8 +183,7 @@ export function extractLangChainMessageText(response) {
         if (typeof part?.text === "string") return part.text;
         return "";
       })
-      .join("")
-      .trim();
+      .join("");
   }
   return "";
 }

@@ -117,9 +117,8 @@ export function evaluateAiAnswerQuality({
 }
 
 export function getRagPromptVersion(assistantProfile = "") {
-  return assistantProfile === "major-match"
-    ? AI_QUALITY_VERSIONS.ragPromptMajorMatch
-    : AI_QUALITY_VERSIONS.ragPromptDefault;
+  if (assistantProfile === "major-match") return AI_QUALITY_VERSIONS.ragPromptMajorMatch;
+  return AI_QUALITY_VERSIONS.ragPromptDefault;
 }
 
 export function getExpectedRagSourceTypes(intent = "general") {

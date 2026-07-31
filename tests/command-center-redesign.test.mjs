@@ -6,7 +6,8 @@ const pages = [
   ["my-activities.html", "我的申请档案"],
   ["planning-tracker.html", "计划与进度"],
   ["school-selection.html", "美本选校系统"],
-  ["ask-deepseek.html", "问DeepSeek"],
+  ["ask-deepseek.html", "申请机器人"],
+  ["inspiration-robot.html", "启发性机器人"],
   ["resource-library.html", "资源库"],
   ["school-encyclopedia.html", "院校百科"],
   ["major-encyclopedia.html", "专业百科"],
@@ -155,7 +156,8 @@ for (const [file, activeLabel] of pages) {
     commandNav.indexOf("申请规划中心") < commandNav.indexOf("我的申请档案")
       && commandNav.indexOf("我的申请档案") < commandNav.indexOf("计划与进度")
       && commandNav.indexOf("计划与进度") < commandNav.indexOf("美本选校系统")
-      && commandNav.indexOf("美本选校系统") < commandNav.indexOf("问DeepSeek")
+      && commandNav.indexOf("美本选校系统") < commandNav.indexOf("申请机器人")
+      && commandNav.indexOf("申请机器人") < commandNav.indexOf("启发性机器人")
       && commandNav.indexOf("院校百科") < commandNav.indexOf("专业百科")
       && commandNav.indexOf("专业百科") < commandNav.indexOf("选课辅助器")
       && commandNav.indexOf("选课辅助器") < commandNav.indexOf("GPA / AP 工具")
