@@ -154,7 +154,8 @@
             "type": "string",
             "enum": [
               "",
-              "major-match"
+              "major-match",
+              "inspiration"
             ],
             "default": ""
           }

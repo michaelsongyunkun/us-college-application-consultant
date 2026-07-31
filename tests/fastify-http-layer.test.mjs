@@ -25,8 +25,12 @@ const app = await createFastifyHttpLayer({
   env: { DEEPSEEK_API_KEY: "configured-for-test" },
   readinessCheck: async () => readiness,
   readPrompt: async () => "fixed admissions prompt",
-  answerRag: async ({ user, question, signal }) => {
+  answerRag: async ({ user, question, assistantProfile, signal, onToken }) => {
     if (ragFailure) throw ragFailure;
+    if (assistantProfile === "inspiration") {
+      await onToken?.("First");
+      await onToken?.(" reflection");
+    }
     return {
       answer: `Answer for ${question}`,
       sources: [{ id: "source", type: "guide", typeLabel: "Guide", title: "Source" }],
@@ -129,6 +133,22 @@ try {
   assert.match(streamResponse.body, /Answer for computer science/u);
   assert.match(streamResponse.body, /event: done/u);
 
+  const inspirationStreamResponse = await app.inject({
+    method: "POST",
+    url: "/api/deepseek-rag/stream",
+    headers: {
+      cookie: "consultant_session=valid-session; consultant_csrf=valid-csrf",
+      "x-csrf-token": "valid-csrf",
+    },
+    payload: { question: "What matters to me?", assistantProfile: "inspiration" },
+  });
+  assert.equal(inspirationStreamResponse.statusCode, 200);
+  assert.match(inspirationStreamResponse.body, /conversation_started/u);
+  assert.match(inspirationStreamResponse.body, /event: delta/u);
+  assert.match(inspirationStreamResponse.body, /First/u);
+  assert.match(inspirationStreamResponse.body, /reflection/u);
+  assert.doesNotMatch(inspirationStreamResponse.body, /retrieval_started/u);
+
   ragFailure = new Error("postgresql://user:super-secret@db/internal");
   const failedStreamResponse = await app.inject({
     method: "POST",
@@ -142,6 +162,18 @@ try {
   assert.equal(failedStreamResponse.statusCode, 200);
   assert.match(failedStreamResponse.body, /RAG request failed/u);
   assert.doesNotMatch(failedStreamResponse.body, /super-secret|postgresql:\/\//u);
+
+  const failedInspirationStreamResponse = await app.inject({
+    method: "POST",
+    url: "/api/deepseek-rag/stream",
+    headers: {
+      cookie: "consultant_session=valid-session; consultant_csrf=valid-csrf",
+      "x-csrf-token": "valid-csrf",
+    },
+    payload: { question: "trigger inspiration failure", assistantProfile: "inspiration" },
+  });
+  assert.match(failedInspirationStreamResponse.body, /Inspiration conversation failed/u);
+  assert.doesNotMatch(failedInspirationStreamResponse.body, /RAG request failed|RAG_ERROR/u);
 } finally {
   await app.close();
 }

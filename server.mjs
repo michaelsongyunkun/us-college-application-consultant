@@ -482,22 +482,21 @@ export function createAppServer({
       auth,
     }),
   });
-  const fastifyHttpLayer = env.FASTIFY_HTTP_ENABLED === "true"
-    ? createFastifyHttpLayer({
-      auth,
+  const fastifyHttpLayer = createFastifyHttpLayer({
+    auth,
+    env,
+    readinessCheck,
+    readPrompt: () => readFile(promptPath, "utf8"),
+    answerRag: ({ user, question, historySummary, assistantProfile, signal, onToken }) => deepSeekRag.answerQuestion({
+      user,
+      question,
+      historySummary,
+      assistantProfile,
       env,
-      readinessCheck,
-      readPrompt: () => readFile(promptPath, "utf8"),
-      answerRag: ({ user, question, historySummary, assistantProfile, signal }) => deepSeekRag.answerQuestion({
-        user,
-        question,
-        historySummary,
-        assistantProfile,
-        env,
-        signal,
-      }),
-    })
-    : null;
+      signal,
+      onToken,
+    }),
+  });
 
   const server = createServer(async (request, response) => {
     request.trustProxy = env.TRUST_PROXY === "true";
@@ -505,7 +504,10 @@ export function createAppServer({
     const useFastifyHttpLayer = Boolean(
       fastifyHttpLayer
       && isFastifyMigratedRoute(request.method, requestPath)
-      && (requestPath === "/api/deepseek-rag/stream" || isFastifyTrafficSelected(request, env)),
+      && (
+        requestPath === "/api/deepseek-rag/stream"
+        || (env.FASTIFY_HTTP_ENABLED === "true" && isFastifyTrafficSelected(request, env))
+      ),
     );
     const observedRequest = attachRequestObservability(request, response, {
       logger,
@@ -838,6 +840,19 @@ export function createAppServer({
         const user = await requireUser(request, response, auth);
         if (!user) return;
         const payload = await readJson(request);
+        const jobPayload = {
+          user,
+          question: payload.question,
+          historySummary: payload.historySummary,
+          assistantProfile: payload.assistantProfile,
+        };
+        if (payload.assistantProfile !== "inspiration") {
+          Object.assign(jobPayload, {
+            profile: await planning.getProfile(user),
+            portfolio: await activityPortfolio.getPortfolio(user),
+            backups: await planning.listRagBackups(user),
+          });
+        }
         const createdJob = deepSeekRagJobs.create(user, ({ signal } = {}) =>
           deepSeekRag.answerQuestion({
             user,
@@ -849,15 +864,7 @@ export function createAppServer({
           }),
           {
             type: "ai.deepseek-rag",
-            payload: {
-              user,
-              question: payload.question,
-              historySummary: payload.historySummary,
-              assistantProfile: payload.assistantProfile,
-              profile: await planning.getProfile(user),
-              portfolio: await activityPortfolio.getPortfolio(user),
-              backups: await planning.listRagBackups(user),
-            },
+            payload: jobPayload,
             options: requestJobOptions(request, payload),
           },
         );

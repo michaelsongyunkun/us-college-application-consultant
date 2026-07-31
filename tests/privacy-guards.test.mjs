@@ -14,6 +14,7 @@ assert.deepEqual(
     openaiApiKey: "sk-openai-lower",
     OPENAI_API_KEY: "sk-env",
     DEEPSEEK_API_KEY: "deepseek-env",
+    INSPIRATION_API_KEY: "inspiration-env",
   }),
   { rawAnswer: "answer" },
 );

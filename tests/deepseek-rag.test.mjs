@@ -15,6 +15,10 @@ const server = createAppServer({
   env: {
     DEEPSEEK_API_KEY: "env-rag-secret",
     DEEPSEEK_MODEL: "Deepseek V4 pro",
+    INSPIRATION_API_KEY: "env-inspiration-secret",
+    INSPIRATION_BASE_URL: "https://ark.example/api/v3/",
+    INSPIRATION_MODEL: "doubao-seed-2-1-turbo-test",
+    INSPIRATION_MAX_TOKENS: "480",
   },
   deepSeekRagLlmClient: createMockRagLlmClient(calls),
 });
@@ -42,7 +46,7 @@ try {
 
   const askPage = await get("/ask-deepseek.html", cookie);
   assert.equal(askPage.status, 200);
-  assert.match(await askPage.text(), /问DeepSeek/);
+  assert.match(await askPage.text(), /申请机器人/);
 
   await put(
     "/api/student-profile",
@@ -162,7 +166,7 @@ try {
   assert.equal(sentPayload.messages[0].role, "system");
   assert.equal(sentPayload.messages[1].role, "user");
   const systemPrompt = sentPayload.messages[0].content;
-  assert.match(systemPrompt, /问DeepSeek”申请规划智能体/);
+  assert.match(systemPrompt, /“申请机器人”/);
   assert.match(systemPrompt, /个人申请档案：选校计划、课外活动、竞赛、夏校、推荐信、GPA\/SAT\/AP 等成绩档案/);
   assert.match(systemPrompt, /当前资料不足以判断/);
   assert.match(systemPrompt, /不要做绝对化承诺/);
@@ -192,6 +196,42 @@ try {
   assert.match(sentPayload.messages[1].content, /Polygence/);
   assert.match(sentPayload.messages[1].content, /MIT/);
 
+  const inspirationResponse = await post(
+    "/api/deepseek-rag",
+    {
+      question: "我不知道自己是真喜欢机器人，还是只是觉得它对申请有帮助。",
+      assistantProfile: "inspiration",
+    },
+    cookie,
+  );
+  assert.equal(inspirationResponse.status, 200);
+  const inspirationBody = await inspirationResponse.json();
+  assert.deepEqual(Object.keys(inspirationBody), ["answer"]);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].feature, "deepseek-inspiration");
+  assert.equal(calls[1].apiKey, "env-inspiration-secret");
+  assert.equal(calls[1].baseURL, "https://ark.example/api/v3/");
+  assert.equal(calls[1].model, "doubao-seed-2-1-turbo-test");
+  assert.equal(calls[1].disableThinking, true);
+  assert.equal(calls[1].maxTokens, 480);
+  const inspirationSystemPrompt = calls[1].messages[0].content;
+  assert.match(inspirationSystemPrompt, /“启发性机器人”/);
+  assert.match(inspirationSystemPrompt, /知心大姐姐式学生探索伙伴/);
+  assert.match(inspirationSystemPrompt, /历史对话事实依据/);
+  assert.match(inspirationSystemPrompt, /待验证的可能性/);
+  assert.match(inspirationSystemPrompt, /每轮只提出一个关键问题/);
+  assert.match(inspirationSystemPrompt, /必须得到学生明确确认或修正/);
+  assert.match(inspirationSystemPrompt, /不是为了包装申请履历/);
+  assert.match(inspirationSystemPrompt, /对话—行动—反思/);
+  assert.match(inspirationSystemPrompt, /不做心理诊断/);
+  assert.doesNotMatch(inspirationSystemPrompt, /推荐专业优先级表/);
+  assert.doesNotMatch(inspirationSystemPrompt, /RAG|检索来源/);
+  assert.match(inspirationSystemPrompt, /不要假设你读取过学生档案、申请资料、外部知识库/);
+  const inspirationUserPrompt = calls[1].messages[1].content;
+  assert.match(inspirationUserPrompt, /用户此刻想聊的内容/);
+  assert.match(inspirationUserPrompt, /当前对话记忆摘要/);
+  assert.doesNotMatch(inspirationUserPrompt, /RAG|检索|档案|资料片段|缺失字段|Robotics Portfolio|Polygence|MIT/);
+
   const majorMatchResponse = await post(
     "/api/deepseek-rag",
     {
@@ -203,8 +243,8 @@ try {
   assert.equal(majorMatchResponse.status, 200);
   const majorMatchBody = await majorMatchResponse.json();
   assert.equal(majorMatchBody.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.ragPromptMajorMatch);
-  assert.equal(calls.length, 2);
-  const majorMatchPayload = calls[1];
+  assert.equal(calls.length, 3);
+  const majorMatchPayload = calls[2];
   const majorMatchSystemPrompt = majorMatchPayload.messages[0].content;
   assert.match(majorMatchSystemPrompt, /美本本科专业匹配顾问/);
   assert.match(majorMatchSystemPrompt, /推荐专业优先级表/);
@@ -215,7 +255,7 @@ try {
   assert.match(majorMatchSystemPrompt, /不得提示“信息不足”或“档案信息缺口”/);
   assert.match(majorMatchSystemPrompt, /只有活动、竞赛、夏校、AP 课程四类全部为空/);
   assert.doesNotMatch(majorMatchSystemPrompt, /如果信息不足，请先输出“档案信息缺口”，再给出暂定匹配建议/);
-  assert.doesNotMatch(majorMatchSystemPrompt, /问DeepSeek”申请规划智能体/);
+  assert.doesNotMatch(majorMatchSystemPrompt, /“申请机器人”/);
   const ragJobResponse = await post(
     "/api/deepseek-rag-jobs",
     {
@@ -233,6 +273,19 @@ try {
   assert.equal(completedRagJob.result.answer, ragAnswer);
   assert.ok(completedRagJob.result.sources.some((source) => source.type === "student-backup"));
   assert.equal(completedRagJob.result.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.ragPromptDefault);
+
+  const inspirationStreamResponse = await post(
+    "/api/deepseek-rag/stream",
+    { question: "帮我从这段经历继续想下去。", assistantProfile: "inspiration" },
+    cookie,
+  );
+  assert.equal(inspirationStreamResponse.status, 200);
+  const inspirationStreamBody = await inspirationStreamResponse.text();
+  assert.match(inspirationStreamBody, /event: delta/u);
+  assert.match(inspirationStreamBody, /第一段/u);
+  assert.match(inspirationStreamBody, /第二段/u);
+  assert.match(inspirationStreamBody, /event: result/u);
+  assert.match(inspirationStreamBody, /event: done/u);
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });
@@ -275,13 +328,22 @@ function createMockRagLlmClient(callLog, getContent = () => ragAnswer) {
   return {
     async invoke(options) {
       callLog.push({
+        feature: options.feature,
+        apiKey: options.apiKey,
+        baseURL: options.baseURL,
         model: options.model,
         temperature: options.temperature,
+        disableThinking: options.disableThinking,
+        maxTokens: options.maxTokens,
         messages: options.messages,
         signal: options.signal,
       });
       const content = getContent(callLog.length, options);
       if (content instanceof Error) throw content;
+      if (typeof options.onToken === "function") {
+        await options.onToken("第一段");
+        await options.onToken("，第二段");
+      }
       return {
         content,
         model: options.model,

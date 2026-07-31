@@ -2,14 +2,19 @@ import assert from "node:assert/strict";
 import { readRagEventStream, requestRagStream } from "../src/client/rag-stream.mjs";
 
 const encoder = new TextEncoder();
+const streamedDeltas = [];
 const response = new Response(new ReadableStream({
   start(controller) {
-    controller.enqueue(encoder.encode('event: status\ndata: {"stage":"retrieval_started"}\n\nevent: res'));
-    controller.enqueue(encoder.encode('ult\ndata: {"answer":"ok","sources":[]}\n\nevent: done\ndata: {}\n\n'));
+    controller.enqueue(encoder.encode('event: status\ndata: {"stage":"retrieval_started"}\n\nevent: delta\ndata: {"text":"第一段"}\n\nevent: res'));
+    controller.enqueue(encoder.encode('ult\ndata: {"answer":"第一段，第二段","sources":[]}\n\nevent: delta\ndata: {"text":"，第二段"}\n\nevent: done\ndata: {}\n\n'));
     controller.close();
   },
 }), { status: 200, headers: { "content-type": "text/event-stream" } });
-assert.deepEqual(await readRagEventStream(response), { answer: "ok", sources: [] });
+assert.deepEqual(
+  await readRagEventStream(response, { onDelta: (text) => streamedDeltas.push(text) }),
+  { answer: "第一段，第二段", sources: [] },
+);
+assert.deepEqual(streamedDeltas, ["第一段", "，第二段"]);
 
 let request = null;
 const result = await requestRagStream(

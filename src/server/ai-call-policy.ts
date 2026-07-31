@@ -98,6 +98,7 @@ export function createAiCallPolicy(options: AiCallPolicyOptions = {}) {
 }
 
 export function classifyAiCallError(error: any): RetryClassification {
+  if (error?.retryable === false) return "non_retryable";
   if (error?.name === "AbortError" || error?.code === "ETIMEDOUT" || error?.code === "ECONNABORTED") return "timeout";
   const status = Number(error?.statusCode || error?.status || error?.response?.status || 0);
   if (status === 429) return "rate_limited";

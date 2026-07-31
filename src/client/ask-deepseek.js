@@ -1,7 +1,7 @@
 import { escapeHtml } from "./html-utils.mjs";
 import { renderMarkdown } from "../domain/markdown-renderer.mjs?v=20260531-deepseek-markdown";
 import { csrfFetch } from "./csrf-token.mjs";
-import { requestRagStream } from "./rag-stream.mjs";
+import { requestRagStream } from "./rag-stream.mjs?v=20260731-stream-delta";
 
 const form = document.querySelector("#deepSeekQuestionForm");
 const questionInput = document.querySelector("#deepSeekQuestion");
@@ -13,21 +13,43 @@ const status = document.querySelector("#deepSeekAskStatus");
 const chatLog = document.querySelector("#deepSeekChatLog");
 const workflowRegion = document.querySelector("#deepSeekWorkflows");
 
+const PAGE_ASSISTANT_PROFILE = document.body.dataset.assistantProfile === "inspiration"
+  ? "inspiration"
+  : "";
+const IS_INSPIRATION_PROFILE = PAGE_ASSISTANT_PROFILE === "inspiration";
+const ASSISTANT_NAME = IS_INSPIRATION_PROFILE ? "启发性机器人" : "申请机器人";
+const ANALYTICS_SOURCE = IS_INSPIRATION_PROFILE ? "inspiration_robot" : "application_robot";
+const INITIAL_CHAT_MESSAGE = IS_INSPIRATION_PROFILE
+  ? "你好，我是启发性机器人。我会像一位温暖、耐心但不过度推断的知心大姐姐式探索伙伴，先从我们真实说过的话里寻找可能的兴趣线索，再由你选择想探索的方向。如果现在还没有足够的历史对话，我们就从一个你真实经历过的具体时刻开始。"
+  : "你好，我是你的申请机器人。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍；我会结合你的个人申请档案和已保存资料回答，参考资料会收起在回答下方，需要核验时再展开。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。";
+
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const DEEPSEEK_RAG_JOB_ENDPOINT = "/api/deepseek-rag-jobs";
-const DEEPSEEK_RAG_PENDING_JOB_KEY = "deepseek-rag-pending-job";
+const DEEPSEEK_RAG_PENDING_JOB_KEY = IS_INSPIRATION_PROFILE
+  ? "deepseek-inspiration-pending-job"
+  : "deepseek-rag-pending-job";
 const DEEPSEEK_RAG_JOB_POLL_INTERVAL_MS = 3000;
 const DEEPSEEK_RAG_JOB_TIMEOUT_MS = 8 * 60 * 1000;
 const USER_AVATAR_SRC = "./assets/logo-mark.svg";
 const DEEPSEEK_AVATAR_SRC = "./assets/deepseek-avatar.svg";
+const INSPIRATION_AVATAR_SRC = "./assets/inspiration-bean-avatar.svg";
+const ASSISTANT_AVATAR_SRC = IS_INSPIRATION_PROFILE
+  ? INSPIRATION_AVATAR_SRC
+  : DEEPSEEK_AVATAR_SRC;
 const THINKING_TEXT = "......";
-const MAX_MEMORY_TURNS = 4;
-const MAX_MEMORY_CHARS = 900;
-const PROGRESS_STATUSES = [
-  "正在检索你的申请档案...",
-  "正在整理参考资料...",
-  "DeepSeek 正在生成建议...",
-];
+const MAX_MEMORY_TURNS = IS_INSPIRATION_PROFILE ? 8 : 4;
+const MAX_MEMORY_CHARS = IS_INSPIRATION_PROFILE ? 1750 : 900;
+const PROGRESS_STATUSES = IS_INSPIRATION_PROFILE
+  ? [
+      "正在理解你刚才说的重点...",
+      "正在寻找值得继续追问的线索...",
+      "启发性机器人正在组织回应...",
+    ]
+  : [
+      "正在检索你的申请档案...",
+      "正在整理参考资料...",
+      "DeepSeek 正在生成建议...",
+    ];
 const STANDARD_RESPONSE_SECTIONS = [
   "最终输出请只使用以下报告结构：",
   "## 核心结论",
@@ -36,27 +58,42 @@ const STANDARD_RESPONSE_SECTIONS = [
   "## 下一步行动",
   "不要在正文末尾单独输出“参考资料”章节；页面会把检索来源收起在回答下方的参考资料下拉区。",
 ].join("\n");
-const FOLLOW_UP_ACTIONS = [
-  {
-    label: "生成行动清单",
-    prompt: "请基于我的个人申请档案和已保存资料，生成未来 30 天按优先级排序的行动清单，并标注每项行动需要的证据或材料。",
-  },
-  {
-    label: "按冲刺/匹配/保底重排",
-    prompt: "请基于我的个人申请档案、选校计划和院校百科，把目标院校按冲刺、匹配、保底重新梳理，并说明调整理由与需要核验的官方信息。",
-  },
-  {
-    label: "转成推荐信素材",
-    prompt: "请基于我的个人申请档案、活动证据和推荐信记录，把可用于推荐信沟通的素材整理成推荐人视角的要点清单。",
-  },
-];
+const FOLLOW_UP_ACTIONS = IS_INSPIRATION_PROFILE
+  ? [
+      {
+        label: "继续问一个问题",
+        prompt: "请根据我刚才说过的事实继续探索，不要给结论，也不要一次问多个问题。这一轮只问我一个最关键的问题。",
+      },
+      {
+        label: "形成探索问题",
+        prompt: "请先判断现有对话是否足以形成一个暂定探索问题。如果还不够，这一轮只问一个关键问题；如果足够，请写清事实依据和暂定探索问题，并只问我是否认可或想怎样修改。",
+      },
+      {
+        label: "设计一个小尝试",
+        prompt: "请先确认我是否已经明确认可了一个探索问题。如果还没有，不要直接设计行动，这一轮只问一个帮助确认的问题；如果已经确认，请和我形成一个低门槛、时间明确、能亲自完成且不是为了包装申请履历的小行动，并附一个行动后的反思问题。",
+      },
+    ]
+  : [
+      {
+        label: "生成行动清单",
+        prompt: "请基于我的个人申请档案和已保存资料，生成未来 30 天按优先级排序的行动清单，并标注每项行动需要的证据或材料。",
+      },
+      {
+        label: "按冲刺/匹配/保底重排",
+        prompt: "请基于我的个人申请档案、选校计划和院校百科，把目标院校按冲刺、匹配、保底重新梳理，并说明调整理由与需要核验的官方信息。",
+      },
+      {
+        label: "转成推荐信素材",
+        prompt: "请基于我的个人申请档案、活动证据和推荐信记录，把可用于推荐信沟通的素材整理成推荐人视角的要点清单。",
+      },
+    ];
 const QUALITY_REVIEW_REASON_LABELS = {
   no_sources: "没有可核验来源",
   low_retrieval_hit_rate: "来源覆盖不足",
   unsupported_citations: "引用编号需要核验",
   high_risk_claims: "高风险录取表述",
 };
-const WORKFLOW_PROMPTS = {
+const APPLICATION_WORKFLOW_PROMPTS = {
   "profile-audit": {
     label: "申请档案体检",
     prompt: [
@@ -171,6 +208,29 @@ const WORKFLOW_PROMPTS = {
   },
 };
 
+const INSPIRATION_WORKFLOW_PROMPTS = {
+  "history-clues": {
+    label: "从历史对话找线索",
+    prompt: "请只根据我们已经发生的真实对话寻找兴趣线索。关注我反复提到、描述具体、主动投入时间精力、表达价值观或想法发生变化的内容。如果依据足够，请并列给出 2-4 个可能方向，每个方向严格分开写“历史事实依据”和“待验证的可能性”，最后只问我想先探索哪一个；如果依据不足，只问我一个关于真实经历的问题。",
+  },
+  "explore-direction": {
+    label: "探索一个兴趣方向",
+    prompt: "请先让我选择一个有历史事实依据的可能方向。选定后，每轮只问一个基于事实的关键问题，帮助我判断喜欢的是哪一部分、为什么重要，以及它和我重视的事情有什么联系。不要替我下结论。",
+  },
+  "confirm-question": {
+    label: "确认探索问题",
+    prompt: "请基于我们已经说过的事实，判断是否能形成一个区分不同动机或兴趣形态的暂定探索问题。如果还不能，这一轮只问一个问题；如果可以，请说明事实依据，提出一个暂定问题，并只邀请我确认或修正它。",
+  },
+  "small-action": {
+    label: "设计一次小行动",
+    prompt: "请先确认我已经认可一个探索问题。只有确认后，才和我设计一次门槛低、时间范围明确、能真实接触该方向、可以亲自完成、完成后能产生新认识且不是为了包装申请履历的小行动；最后只留下一个行动后的反思问题。",
+  },
+};
+
+const WORKFLOW_PROMPTS = IS_INSPIRATION_PROFILE
+  ? INSPIRATION_WORKFLOW_PROMPTS
+  : APPLICATION_WORKFLOW_PROMPTS;
+
 let progressStatusTimer = null;
 let deepSeekRagJobPolling = false;
 let conversationSummary = "";
@@ -187,7 +247,8 @@ function trackDeepSeekUsageEvent(eventType, { metrics = {}, details = {} } = {})
       profile: {},
       metrics,
       details: {
-        source: "ask_deepseek",
+        source: ANALYTICS_SOURCE,
+        assistantProfile: PAGE_ASSISTANT_PROFILE || "application",
         conversationTurns: conversationArchive.length,
         ...details,
       },
@@ -195,8 +256,10 @@ function trackDeepSeekUsageEvent(eventType, { metrics = {}, details = {} } = {})
   }).catch(() => {});
 }
 
-for (const workflow of Object.values(WORKFLOW_PROMPTS)) {
-  workflow.prompt = `${workflow.prompt}\n\n${STANDARD_RESPONSE_SECTIONS}`;
+if (!IS_INSPIRATION_PROFILE) {
+  for (const workflow of Object.values(WORKFLOW_PROMPTS)) {
+    workflow.prompt = `${workflow.prompt}\n\n${STANDARD_RESPONSE_SECTIONS}`;
+  }
 }
 
 function setStatus(message, isError = false) {
@@ -281,7 +344,7 @@ function clearPendingDeepSeekRagJob() {
 }
 
 async function waitForDeepSeekRagJob(jobId) {
-  if (!jobId) throw new Error("DeepSeek 问答任务创建失败，请刷新页面后重试。");
+  if (!jobId) throw new Error(`${ASSISTANT_NAME}问答任务创建失败，请刷新页面后重试。`);
   const deadline = performance.now() + DEEPSEEK_RAG_JOB_TIMEOUT_MS;
   let consecutivePollFailures = 0;
 
@@ -295,22 +358,22 @@ async function waitForDeepSeekRagJob(jobId) {
     } catch (error) {
       consecutivePollFailures += 1;
       if (consecutivePollFailures >= 3) throw error;
-      setStatus("正在重新连接 DeepSeek 后台问答任务...");
+      setStatus(`正在重新连接${ASSISTANT_NAME}后台问答任务...`);
       await delay(DEEPSEEK_RAG_JOB_POLL_INTERVAL_MS);
       continue;
     }
 
     if (job.status === "completed") return job.result || {};
     if (job.status === "failed") {
-      const error = new Error(job.error || "DeepSeek 问答失败，请稍后重试。");
+      const error = new Error(job.error || `${ASSISTANT_NAME}问答失败，请稍后重试。`);
       error.final = true;
       throw error;
     }
-    setStatus("DeepSeek 正在后台生成回答，可先切换到其他页面；回到本页会自动接上。");
+    setStatus(`${ASSISTANT_NAME}正在后台生成回答，可先切换到其他页面；回到本页会自动接上。`);
     await delay(DEEPSEEK_RAG_JOB_POLL_INTERVAL_MS);
   }
 
-  throw new Error("DeepSeek 问答耗时过长，请稍后回到本页查看，或重新提问。");
+  throw new Error(`${ASSISTANT_NAME}问答耗时过长，请稍后回到本页查看，或重新提问。`);
 }
 
 function renderPlainText(text) {
@@ -396,6 +459,14 @@ function renderMissingFieldChecklist(missingFields = []) {
     </section>`;
 }
 
+function buildRagRequestPayload(question, historySummary) {
+  return {
+    question,
+    historySummary,
+    ...(PAGE_ASSISTANT_PROFILE ? { assistantProfile: PAGE_ASSISTANT_PROFILE } : {}),
+  };
+}
+
 function renderQualityReview(quality = null) {
   if (!quality || typeof quality !== "object") return "";
   const review = quality.review || {};
@@ -473,18 +544,20 @@ function renderMessage({
   quality = null,
 }) {
   const isUser = role === "user";
-  const avatarSrc = isUser ? USER_AVATAR_SRC : DEEPSEEK_AVATAR_SRC;
-  const avatarAlt = isUser ? "US College Compass" : "DeepSeek";
-  const speaker = isUser ? "你" : "DeepSeek";
+  const avatarSrc = isUser ? USER_AVATAR_SRC : ASSISTANT_AVATAR_SRC;
+  const avatarAlt = isUser ? "US College Compass" : ASSISTANT_NAME;
+  const speaker = isUser ? "你" : ASSISTANT_NAME;
   const bubbleContent = thinking
-    ? `<span class="thinking-dots" aria-label="DeepSeek 正在思考">${THINKING_TEXT}</span>`
+    ? `<span class="thinking-dots" aria-label="${ASSISTANT_NAME}正在思考">${THINKING_TEXT}</span>`
     : renderBubbleContent(content, { isUser, error });
-  const referenceContent = !isUser && !thinking && !error && showReferences ? renderGuidedSourceCards(sources) : "";
+  const referenceContent = !IS_INSPIRATION_PROFILE && !isUser && !thinking && !error && showReferences
+    ? renderGuidedSourceCards(sources)
+    : "";
   const followUpContent = !isUser && !thinking && !error && showFollowUps ? renderFollowUpActions() : "";
   const missingFieldContent = !isUser && !thinking && !error
     ? renderMissingFieldChecklist(missingFields)
     : "";
-  const qualityContent = !isUser && !thinking && !error
+  const qualityContent = !IS_INSPIRATION_PROFILE && !isUser && !thinking && !error
     ? renderQualityReview(quality)
     : "";
   const portfolioActionContent = !isUser && !thinking && !error && showPortfolioActions
@@ -527,6 +600,16 @@ function replaceMessage(messageId, message) {
   scrollChatToBottom();
 }
 
+function updateStreamingMessage(messageId, content) {
+  const existing = document.getElementById(messageId);
+  const bubble = existing?.querySelector(".chat-bubble");
+  if (!existing || !bubble) return;
+  existing.classList.remove("is-thinking");
+  bubble.setAttribute("aria-live", "polite");
+  bubble.innerHTML = renderBubbleContent(content, { isUser: false, error: false });
+  scrollChatToBottom();
+}
+
 function rememberAssistantMessage(messageId, message) {
   if (message.role !== "assistant" || message.thinking || message.error) return;
   assistantMessages.set(messageId, {
@@ -549,8 +632,7 @@ function renderThinkingMessage() {
 function renderInitialChat() {
   chatLog.innerHTML = renderMessage({
     role: "assistant",
-    content:
-      "你好，我是你的申请规划智能体。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍；我会结合你的个人申请档案和已保存资料回答，参考资料会收起在回答下方，需要核验时再展开。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。",
+    content: INITIAL_CHAT_MESSAGE,
     showReferences: false,
     showFollowUps: false,
     showPortfolioActions: false,
@@ -592,14 +674,32 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
     startProgressStatus();
     let data;
     try {
-      data = await requestRagStream({ question, historySummary: conversationSummary });
+      let streamedAnswer = "";
+      let streamRenderPending = false;
+      data = await requestRagStream(buildRagRequestPayload(question, conversationSummary), {
+        onDelta: IS_INSPIRATION_PROFILE
+          ? (text) => {
+            if (!streamedAnswer) {
+              stopProgressStatus();
+              setStatus(`${ASSISTANT_NAME}正在回复...`);
+            }
+            streamedAnswer += text;
+            if (streamRenderPending) return;
+            streamRenderPending = true;
+            window.requestAnimationFrame(() => {
+              streamRenderPending = false;
+              updateStreamingMessage(thinkingMessageId, streamedAnswer);
+            });
+          }
+          : undefined,
+      });
     } catch (streamError) {
       if (streamError.status === 401) window.location.href = "./index.html";
       if (!streamError.fallbackAllowed) throw streamError;
       setStatus("快速通道暂时不可用，正在转入可恢复的后台任务...");
       const job = await requestJson(DEEPSEEK_RAG_JOB_ENDPOINT, {
         method: "POST",
-        body: JSON.stringify({ question, historySummary: conversationSummary }),
+        body: JSON.stringify(buildRagRequestPayload(question, conversationSummary)),
       });
       rememberPendingDeepSeekRagJob({
         jobId: job.jobId,
@@ -607,25 +707,27 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
         displayQuestion,
         workflowKey,
       });
-      setStatus("问答任务已提交，DeepSeek 正在后台生成回答。");
+      setStatus(`问答任务已提交，${ASSISTANT_NAME}正在后台生成回答。`);
       data = await waitForDeepSeekRagJob(job.jobId);
     }
-    const sources = data.sources || [];
-    const answer = data.answer || "DeepSeek 暂无回答。";
+    const sources = IS_INSPIRATION_PROFILE ? [] : data.sources || [];
+    const missingFields = IS_INSPIRATION_PROFILE ? [] : data.missingFields || [];
+    const answer = data.answer || `${ASSISTANT_NAME}暂无回答。`;
     stopProgressStatus();
     replaceMessage(thinkingMessageId, {
       role: "assistant",
       content: answer,
       sources,
-      missingFields: data.missingFields || [],
-      quality: data.quality || null,
+      missingFields,
+      showReferences: !IS_INSPIRATION_PROFILE,
+      quality: IS_INSPIRATION_PROFILE ? null : data.quality || null,
     });
     updateConversationSummary({ question: displayQuestion, answer });
     conversationArchive.push({
       question: displayQuestion,
       answer,
       sources: sources.map((source) => source.title),
-      missingFields: data.missingFields || [],
+      missingFields,
       createdAt: new Date().toISOString(),
     });
     trackDeepSeekUsageEvent("deepseek_rag_question_success", {
@@ -637,11 +739,11 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
       details: {
         workflowKey,
         questionLength: question.length,
-        missingFieldCount: (data.missingFields || []).length,
+        missingFieldCount: missingFields.length,
       },
     });
     clearPendingDeepSeekRagJob();
-    setStatus(`已回复，附 ${sources.length} 条参考资料`);
+    setStatus(IS_INSPIRATION_PROFILE ? "已回复" : `已回复，附 ${sources.length} 条参考资料`);
   } catch (error) {
     if (error.final || /not found/i.test(error.message)) clearPendingDeepSeekRagJob();
     stopProgressStatus();
@@ -674,24 +776,26 @@ async function resumePendingDeepSeekRagJob() {
   try {
     setWorking(true);
     startProgressStatus();
-    setStatus("正在接回上次未完成的 DeepSeek 问答任务...");
+    setStatus(`正在接回上次未完成的${ASSISTANT_NAME}问答任务...`);
     const data = await waitForDeepSeekRagJob(pendingJob.jobId);
-    const sources = data.sources || [];
-    const answer = data.answer || "DeepSeek 暂无回答。";
+    const sources = IS_INSPIRATION_PROFILE ? [] : data.sources || [];
+    const missingFields = IS_INSPIRATION_PROFILE ? [] : data.missingFields || [];
+    const answer = data.answer || `${ASSISTANT_NAME}暂无回答。`;
     stopProgressStatus();
     replaceMessage(thinkingMessageId, {
       role: "assistant",
       content: answer,
       sources,
-      missingFields: data.missingFields || [],
-      quality: data.quality || null,
+      missingFields,
+      showReferences: !IS_INSPIRATION_PROFILE,
+      quality: IS_INSPIRATION_PROFILE ? null : data.quality || null,
     });
     updateConversationSummary({ question: pendingJob.displayQuestion || pendingJob.question, answer });
     conversationArchive.push({
       question: pendingJob.displayQuestion || pendingJob.question,
       answer,
       sources: sources.map((source) => source.title),
-      missingFields: data.missingFields || [],
+      missingFields,
       createdAt: new Date().toISOString(),
     });
     trackDeepSeekUsageEvent("deepseek_rag_question_success", {
@@ -703,12 +807,12 @@ async function resumePendingDeepSeekRagJob() {
       details: {
         workflowKey: pendingJob.workflowKey || "",
         questionLength: pendingJob.question.length,
-        missingFieldCount: (data.missingFields || []).length,
+        missingFieldCount: missingFields.length,
         resumed: true,
       },
     });
     clearPendingDeepSeekRagJob();
-    setStatus(`已回复，附 ${sources.length} 条参考资料`);
+    setStatus(IS_INSPIRATION_PROFILE ? "已回复" : `已回复，附 ${sources.length} 条参考资料`);
   } catch (error) {
     if (error.final || /not found/i.test(error.message)) clearPendingDeepSeekRagJob();
     stopProgressStatus();
@@ -758,7 +862,7 @@ async function saveAnswerAsActions(messageId, button) {
     ...portfolio,
     planningActions: mergePortfolioItems(
       portfolio.planningActions || [],
-      actions.map((text) => ({ text, source: "问DeepSeek" })),
+      actions.map((text) => ({ text, source: ASSISTANT_NAME })),
       "text",
     ),
   }), "行动清单已保存到我的申请档案", button);
@@ -781,7 +885,7 @@ function exportDeepSeekConversation() {
     details: { format: "json" },
   });
   downloadTextFile(
-    `deepseek-review-${new Date().toISOString().slice(0, 10)}.json`,
+    `${IS_INSPIRATION_PROFILE ? "inspiration" : "application"}-robot-review-${new Date().toISOString().slice(0, 10)}.json`,
     JSON.stringify(payload, null, 2),
     "application/json;charset=utf-8",
   );
@@ -798,7 +902,7 @@ async function saveDeepSeekReviewVersion() {
     deepSeekNotes: mergePortfolioItems(
       portfolio.deepSeekNotes || [],
       [{
-        title: `DeepSeek 对话复盘 ${new Date().toLocaleString("zh-CN")}`,
+        title: `${ASSISTANT_NAME}对话复盘 ${new Date().toLocaleString("zh-CN")}`,
         content: conversationArchive
           .map((turn, index) => [
             `第 ${index + 1} 轮：${turn.question}`,
@@ -806,11 +910,11 @@ async function saveDeepSeekReviewVersion() {
           ].join("\n"))
           .join("\n\n---\n\n")
           .slice(0, 2400),
-        source: "问DeepSeek",
+        source: ASSISTANT_NAME,
       }],
       "content",
     ),
-  }), "DeepSeek 对话复盘已保存到我的申请档案", saveReviewButton);
+  }), `${ASSISTANT_NAME}对话复盘已保存到我的申请档案`, saveReviewButton);
   if (saved) {
     trackDeepSeekUsageEvent("deepseek_review_save", {
       metrics: { generatedActivityCount: conversationArchive.length },
@@ -824,7 +928,7 @@ async function saveAnswerAsNote(messageId, button) {
   const note = {
     title: extractNoteTitle(message.content),
     content: String(message.content || "").trim().slice(0, 2400),
-    source: "问DeepSeek",
+    source: ASSISTANT_NAME,
   };
   const saved = await savePortfolioUpdate((portfolio) => ({
     ...portfolio,
@@ -901,7 +1005,7 @@ function extractMarkdownSection(content, headings) {
 
 function extractNoteTitle(content) {
   const heading = String(content || "").match(/^#{1,4}\s*(.+)$/m)?.[1]?.trim();
-  return heading ? heading.slice(0, 60) : "DeepSeek 回答摘录";
+  return heading ? heading.slice(0, 60) : `${ASSISTANT_NAME}回答摘录`;
 }
 
 function mergePortfolioItems(existingItems, newItems, key) {

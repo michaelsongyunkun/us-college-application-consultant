@@ -5,6 +5,7 @@ const appPages = [
   "index.html",
   "my-activities.html",
   "ask-deepseek.html",
+  "inspiration-robot.html",
   "resource-library.html",
   "school-encyclopedia.html",
   "major-encyclopedia.html",
@@ -20,21 +21,28 @@ for (const page of appPages) {
   const navigation = html.match(/<nav class="command-sidebar-nav"[\s\S]*?<\/nav>/)?.[0] || "";
   assert.ok(
     navigation.includes('href="./ask-deepseek.html"'),
-    `${page} sidebar should include the Ask DeepSeek entry.`,
+    `${page} sidebar should include the application robot entry.`,
+  );
+  assert.ok(
+    navigation.includes('href="./inspiration-robot.html"'),
+    `${page} sidebar should include the inspiration robot entry.`,
   );
   assert.ok(
     navigation.indexOf("my-activities.html") < navigation.indexOf("ask-deepseek.html")
-      && navigation.indexOf("ask-deepseek.html") < navigation.indexOf("resource-library.html"),
-    `${page} sidebar should place Ask DeepSeek between portfolio and resource library.`,
+      && navigation.indexOf("ask-deepseek.html") < navigation.indexOf("inspiration-robot.html")
+      && navigation.indexOf("inspiration-robot.html") < navigation.indexOf("resource-library.html"),
+    `${page} sidebar should place both robots between portfolio and resource library.`,
   );
 }
 
 const pageHtml = readFileSync("ask-deepseek.html", "utf8");
+const inspirationPageHtml = readFileSync("inspiration-robot.html", "utf8");
 const script = readFileSync("src/client/ask-deepseek.js", "utf8");
 const styles = readFileSync("styles.css", "utf8");
+const inspirationAvatar = readFileSync("assets/inspiration-bean-avatar.svg", "utf8");
 
 for (const expected of [
-  "问DeepSeek",
+  "申请机器人",
   "学生备份",
   "资源库",
   "院校百科",
@@ -74,11 +82,11 @@ assert.ok(
   "Ask DeepSeek page should not show the removed RAG summary heading.",
 );
 assert.ok(
-  pageHtml.includes("我是你的申请规划智能体"),
+  pageHtml.includes("我是你的申请机器人"),
   "Ask DeepSeek page should open with the new agent greeting.",
 );
 assert.ok(
-  script.includes("我是你的申请规划智能体"),
+  script.includes("我是你的申请机器人"),
   "Ask DeepSeek reset state should reuse the new agent greeting.",
 );
 assert.ok(
@@ -217,3 +225,64 @@ assert.match(styles, /\.chat-source-type-chip\s*\{/, "Ask DeepSeek should style 
 assert.match(styles, /\.chat-source-snippet\s*\{/, "Ask DeepSeek should style visual source snippets.");
 assert.match(styles, /\.chat-quality-review\s*\{/, "Ask DeepSeek should style AI quality review guidance.");
 assert.match(styles, /\.chat-quality-review\.needs-review\s*\{/, "Ask DeepSeek should style required review states.");
+
+for (const expected of [
+  "启发性机器人",
+  'data-assistant-profile="inspiration"',
+  "在寻找答案之前，先看清你真正关心什么",
+  "知心大姐姐式对话",
+  "从历史对话找线索",
+  "探索一个兴趣方向",
+  "确认探索问题",
+  "设计一次小行动",
+  'data-deepseek-workflow="history-clues"',
+  'data-deepseek-workflow="explore-direction"',
+  'data-deepseek-workflow="confirm-question"',
+  'data-deepseek-workflow="small-action"',
+  "./assets/inspiration-bean-avatar.svg",
+  "./src/client/ask-deepseek.js?v=20260731-inspiration-streaming",
+]) {
+  assert.ok(inspirationPageHtml.includes(expected), `Inspiration robot page should include ${expected}.`);
+}
+
+assert.ok(
+  inspirationPageHtml.indexOf("ask-deepseek.html") < inspirationPageHtml.indexOf("inspiration-robot.html"),
+  "Inspiration robot should appear immediately below the application robot in navigation.",
+);
+assert.ok(script.includes('PAGE_ASSISTANT_PROFILE = document.body.dataset.assistantProfile === "inspiration"'));
+assert.ok(script.includes('assistantProfile: PAGE_ASSISTANT_PROFILE'));
+assert.ok(script.includes('INSPIRATION_AVATAR_SRC = "./assets/inspiration-bean-avatar.svg"'));
+assert.ok(script.includes("isUser ? USER_AVATAR_SRC : ASSISTANT_AVATAR_SRC"));
+assert.ok(inspirationAvatar.includes("原创豆形探索伙伴头像"));
+assert.equal(/doubao|豆包/i.test(inspirationAvatar), false, "Original avatar asset should not use Doubao branding.");
+assert.ok(script.includes("buildRagRequestPayload(question, conversationSummary)"));
+assert.ok(script.includes("onDelta: IS_INSPIRATION_PROFILE"));
+assert.ok(script.includes("updateStreamingMessage(thinkingMessageId, streamedAnswer)"));
+assert.ok(script.includes("deepseek-inspiration-pending-job"));
+assert.ok(script.includes("这一轮只问我一个最关键的问题"));
+assert.ok(script.includes("不是为了包装申请履历"));
+assert.ok(script.includes("MAX_MEMORY_TURNS = IS_INSPIRATION_PROFILE ? 8 : 4"));
+assert.ok(
+  inspirationPageHtml.includes("采用纯对话模式，不读取申请档案或资料库"),
+  "Inspiration robot should clearly disclose that it does not read RAG data.",
+);
+assert.ok(
+  inspirationPageHtml.includes("由豆包 Seed 2.1 Turbo 驱动"),
+  "Inspiration robot should disclose its dedicated Doubao model.",
+);
+assert.ok(
+  script.includes("showReferences: !IS_INSPIRATION_PROFILE"),
+  "Inspiration responses should not render reference cards.",
+);
+assert.ok(
+  script.includes("quality: IS_INSPIRATION_PROFILE ? null"),
+  "Inspiration responses should not render retrieval quality metadata.",
+);
+assert.ok(
+  script.includes('IS_INSPIRATION_PROFILE ? "已回复"'),
+  "Inspiration status should not mention reference counts.",
+);
+assert.ok(
+  script.includes("if (!IS_INSPIRATION_PROFILE)"),
+  "Inspiration workflows should not inherit the application robot's fixed report template.",
+);

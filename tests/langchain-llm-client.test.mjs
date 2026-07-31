@@ -72,6 +72,65 @@ assert.equal(calls[0].messages[1]._getType(), "human");
 assert.equal(calls[0].messages[0].content, "System prompt");
 assert.equal(calls[0].messages[1].content, "User question");
 
+const arkCalls = [];
+const arkClient = createLangChainDeepSeekClient({
+  chatModelFactory(options) {
+    arkCalls.push(options);
+    return {
+      async invoke() {
+        return { content: "Ark response" };
+      },
+    };
+  },
+});
+const arkResult = await arkClient.invoke({
+  env: { DEEPSEEK_API_KEY: "application-key" },
+  apiKey: "inspiration-key",
+  baseURL: "https://ark.cn-beijing.volces.com/api/v3/",
+  model: "deepseek-v3-250324",
+  messages: [["user", "Reflect with me"]],
+  disableThinking: false,
+  fallbackModels: "",
+});
+assert.equal(arkResult.content, "Ark response");
+assert.deepEqual(arkCalls[0], {
+  apiKey: "inspiration-key",
+  model: "deepseek-v3-250324",
+  temperature: 0.25,
+  streaming: false,
+  configuration: {
+    baseURL: "https://ark.cn-beijing.volces.com/api/v3",
+  },
+});
+
+const streamedTokens = [];
+const streamingCalls = [];
+const streamingClient = createLangChainDeepSeekClient({
+  chatModelFactory(options) {
+    streamingCalls.push({ options });
+    return {
+      async *stream(messages, callOptions) {
+        streamingCalls.at(-1).messages = messages;
+        streamingCalls.at(-1).callOptions = callOptions;
+        yield { content: "第一段" };
+        yield { content: "，第二段" };
+      },
+    };
+  },
+});
+const streamingResult = await streamingClient.invoke({
+  apiKey: "inspiration-key",
+  baseURL: "https://ark.example/api/v3",
+  model: "doubao-seed-2-1-turbo-test",
+  messages: [["user", "Reflect with me"]],
+  signal: "stream-signal",
+  onToken(token) { streamedTokens.push(token); },
+});
+assert.equal(streamingResult.content, "第一段，第二段");
+assert.deepEqual(streamedTokens, ["第一段", "，第二段"]);
+assert.equal(streamingCalls[0].options.streaming, true);
+assert.equal(streamingCalls[0].callOptions.signal, "stream-signal");
+
 const policyCalls = [];
 const policySignals = [];
 const timeoutClient = createLangChainDeepSeekClient({
@@ -147,8 +206,10 @@ assert.throws(
 
 const originalFetch = globalThis.fetch;
 let sdkRequestBody = null;
+let sdkRequestUrl = "";
 try {
-  globalThis.fetch = async (_url, options = {}) => {
+  globalThis.fetch = async (url, options = {}) => {
+    sdkRequestUrl = String(url);
     sdkRequestBody = JSON.parse(String(options.body || "{}"));
     return new Response(
       JSON.stringify({
@@ -184,6 +245,16 @@ try {
     { type: "disabled" },
     "DeepSeek V4 requests with temperature must explicitly disable thinking mode.",
   );
+
+  await sdkClient.invoke({
+    apiKey: "ark-boundary-secret",
+    baseURL: "https://ark.example/api/v3/",
+    model: "deepseek-v4-pro-260425",
+    messages: [["user", "Return JSON"]],
+    disableThinking: false,
+  });
+  assert.match(sdkRequestUrl, /^https:\/\/ark\.example\/api\/v3\/chat\/completions/u);
+  assert.equal(Object.hasOwn(sdkRequestBody, "thinking"), false);
 } finally {
   globalThis.fetch = originalFetch;
 }
