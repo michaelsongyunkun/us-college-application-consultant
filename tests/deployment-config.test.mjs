@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { resolveDatabasePath, shouldUseSecureCookies } from "../server.mjs";
+import { readFile } from "node:fs/promises";
+import { resolveAppBaseUrl, resolveDatabasePath, shouldUseSecureCookies } from "../server.mjs";
 
 assert.equal(resolveDatabasePath({ AUTH_DATABASE_PATH: "/var/data/auth.sqlite" }), "/var/data/auth.sqlite");
 assert.equal(resolveDatabasePath({ DATABASE_PATH: "/tmp/auth.sqlite" }), "/tmp/auth.sqlite");
@@ -16,3 +17,26 @@ assert.equal(shouldUseSecureCookies({ COOKIE_SECURE: "true" }), true);
 assert.equal(shouldUseSecureCookies({ COOKIE_SECURE: "false", NODE_ENV: "production" }), false);
 assert.equal(shouldUseSecureCookies({ NODE_ENV: "production" }), true);
 assert.equal(shouldUseSecureCookies({ NODE_ENV: "development" }), false);
+
+assert.equal(resolveAppBaseUrl({ APP_BASE_URL: "https://custom.example.com", RENDER_EXTERNAL_URL: "https://render.example.com" }), "https://custom.example.com");
+assert.equal(resolveAppBaseUrl({ RENDER_EXTERNAL_URL: "https://consultant.onrender.com" }), "https://consultant.onrender.com");
+assert.equal(resolveAppBaseUrl({}), "");
+
+const renderBlueprint = await readFile(new URL("../render.yaml", import.meta.url), "utf8");
+assert.match(renderBlueprint, /type: web[\s\S]*runtime: docker[\s\S]*healthCheckPath: \/readyz/u);
+assert.match(renderBlueprint, /preDeployCommand: npm run db:pg:migrate && npm run knowledge:ingest -- --keyword-only/u);
+assert.match(renderBlueprint, /type: worker[\s\S]*dockerCommand: npm run worker/u);
+assert.match(renderBlueprint, /key: DATABASE_URL\s+fromDatabase:\s+name: consultant-postgres\s+property: connectionString/u);
+assert.match(renderBlueprint, /key: REDIS_URL\s+fromService:\s+type: keyvalue\s+name: consultant-redis\s+property: connectionString/u);
+assert.match(renderBlueprint, /type: keyvalue[\s\S]*ipAllowList: \[\]/u);
+assert.match(renderBlueprint, /databases:[\s\S]*name: consultant-postgres[\s\S]*ipAllowList: \[\]/u);
+for (const secret of [
+  "DEEPSEEK_API_KEY",
+  "INSPIRATION_API_KEY",
+  "OBJECT_STORE_ENDPOINT",
+  "OBJECT_STORE_BUCKET",
+  "OBJECT_STORE_ACCESS_KEY_ID",
+  "OBJECT_STORE_SECRET_ACCESS_KEY",
+]) {
+  assert.match(renderBlueprint, new RegExp(`key: ${secret}\\s+sync: false`, "u"));
+}
