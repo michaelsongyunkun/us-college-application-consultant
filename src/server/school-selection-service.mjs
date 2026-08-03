@@ -18,6 +18,8 @@ import {
 } from "./langgraph-school-selection-workflow.mjs";
 import { monotonicNowMs } from "./observability.mjs";
 import { withSpan } from "./production-observability.ts";
+import { createStaticAdmissionsKnowledgeGraphAdapter } from "./admissions-knowledge-graph-adapter.mjs";
+import { createRetrievalOrchestrator } from "./retrieval-orchestrator.mjs";
 
 const ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "rd", "uc"];
 const MAX_SELECTION_ATTEMPTS = 2;
@@ -307,11 +309,20 @@ export function createSchoolSelectionService({
   root = process.cwd(),
   llmClient = createLangChainDeepSeekClient(),
   metrics = null,
+  knowledgeGraph = null,
+  retrievalOrchestrator = null,
+  logger = null,
   selectionGraph = null,
 } = {}) {
+  const graphAdapter = knowledgeGraph || createStaticAdmissionsKnowledgeGraphAdapter({ root, activityPortfolio });
+  const contextRetriever = retrievalOrchestrator || createRetrievalOrchestrator({
+    documentRetriever: createSchoolSelectionDocumentRetriever({ root }),
+    knowledgeGraph: graphAdapter,
+    logger,
+  });
   const graph = selectionGraph || createSchoolSelectionGraph({
     loadContext: ({ user, input }) =>
-      loadSchoolSelectionContext({ root, activityPortfolio, user, input }),
+      loadSchoolSelectionContext({ root, activityPortfolio, contextRetriever, user, input }),
     draftSelection: (state) =>
       draftSchoolSelection({ ...state, llmClient, metrics }),
     calibrateSelection: ({ validatedSelection, friendlinessIndex, input, portfolio }) =>
@@ -357,19 +368,26 @@ export function createSchoolSelectionService({
   return { generateSelection };
 }
 
-async function loadSchoolSelectionContext({ root, activityPortfolio, user, input }) {
+async function loadSchoolSelectionContext({ root, activityPortfolio, contextRetriever, user, input }) {
   const portfolio = await activityPortfolio.getPortfolio(user);
-  const [ragSources, friendlinessIndex, applicationRoundSchools] = await Promise.all([
-    buildSchoolSelectionRagSources({ root, input, portfolio }),
+  const [retrievalResult, friendlinessIndex, applicationRoundSchools] = await Promise.all([
+    contextRetriever.retrieve({
+      user,
+      question: buildSchoolSelectionRetrievalQuery({ input, portfolio }),
+      taskType: "school-selection",
+      input,
+      portfolio,
+    }),
     buildSchoolFriendlinessIndex(root),
     loadApplicationRoundSchools(root),
   ]);
   return {
     portfolio,
-    ragSources,
+    ragSources: retrievalResult.sources || [],
     friendlinessIndex,
     applicationRoundSchools,
-    ragContext: buildRagContext(ragSources),
+    ragContext: retrievalResult.context || "",
+    retrieval: retrievalResult.retrieval || {},
   };
 }
 
@@ -382,6 +400,7 @@ async function draftSchoolSelection({
   input,
   portfolio,
   ragContext,
+  retrieval,
   applicationRoundSchools,
   signal,
 }) {
@@ -402,6 +421,7 @@ async function draftSchoolSelection({
             input,
             portfolio,
             ragContext,
+            retrieval,
             repairMessage: lastValidationError?.message || "",
           }),
         },
@@ -462,6 +482,7 @@ function buildSchoolSelectionResponse({
   ragSources = [],
   attempts,
   quality,
+  retrieval,
 }) {
   return {
     selection,
@@ -469,6 +490,7 @@ function buildSchoolSelectionResponse({
     ragSources: ragSources.map(serializeRagSource),
     attempts,
     quality,
+    retrieval,
   };
 }
 
@@ -911,7 +933,7 @@ function normalizeInput(payload) {
   };
 }
 
-function buildUserMessage({ input, portfolio, ragContext = "", repairMessage = "" }) {
+function buildUserMessage({ input, portfolio, ragContext = "", retrieval = {}, repairMessage = "" }) {
   return [
     "请基于以下信息生成美本选校系统结果，并严格遵守系统提示中的 JSON schema 与轮次数量规则。",
     "请先判断学生整体竞争力，再分配 REA/ED1、ED2、EA、RD、UC。",
@@ -941,7 +963,12 @@ function buildUserMessage({ input, portfolio, ragContext = "", repairMessage = "
     "补充偏好：",
     input.preferences || "无",
     "",
-    "院校百科 RAG 参考：",
+    `检索模式：${retrieval.queryPlan?.mode || "graph-rag-with-constraints"}`,
+    `证据处理步骤：${(retrieval.queryPlan?.steps || ["graph_traversal", "document_retrieval", "evidence_synthesis", "constraint_validation"]).join(" -> ")}`,
+    `结构化约束：${JSON.stringify(retrieval.queryPlan?.constraints || {})}`,
+    `知识图谱命中关系数：${retrieval.graph?.selectedFacts || 0}`,
+    "",
+    "知识图谱与院校百科 RAG 参考：",
     ragContext || "未匹配到高相关院校百科片段；仍需提醒用户核验申请年度官网。",
     "",
     "我的申请档案：",
@@ -1208,6 +1235,42 @@ async function buildSchoolSelectionRagSources({ root, input, portfolio }) {
     .slice(0, MAX_RAG_SOURCES);
 }
 
+function createSchoolSelectionDocumentRetriever({ root }) {
+  return {
+    async retrieve({ input = {}, portfolio = {} } = {}) {
+      const sources = await buildSchoolSelectionRagSources({ root, input, portfolio });
+      return {
+        context: buildRagContext(sources),
+        sources,
+        missingFields: [],
+        retrieval: {
+          intent: "school",
+          intentReason: "School-selection generation requires school encyclopedia evidence.",
+          totalDocuments: sources.length,
+          selectedDocuments: sources.length,
+        },
+      };
+    },
+  };
+}
+
+export function buildSchoolSelectionRetrievalQuery({ input = {}, portfolio = {} } = {}) {
+  return [
+    "生成选校方案并校验申请轮次约束",
+    input.targetMajor,
+    input.preferences,
+    input.regionPreference,
+    input.campusSetting,
+    input.schoolSize,
+    input.budgetSensitivity,
+    input.scholarshipNeed,
+    input.edRiskTolerance,
+    ...Object.values(portfolio.applicationPlan || {}).flatMap((entries) =>
+      Array.isArray(entries) ? entries.flatMap((entry) => [entry.school, entry.major]) : [],
+    ),
+  ].filter(Boolean).join(" ");
+}
+
 async function buildSchoolEncyclopediaDocuments(root) {
   const documents = [];
   for (const entry of SCHOOL_ENCYCLOPEDIA_FILES) {
@@ -1258,7 +1321,9 @@ function serializeRagSource(source) {
     id: source.id,
     type: source.type,
     title: source.title,
-    snippet: source.text.slice(0, 260),
+    snippet: String(source.snippet || source.text || "").replace(/\s+/gu, " ").slice(0, 260),
+    ...(source.sourceId ? { sourceId: source.sourceId } : {}),
+    ...(Number.isFinite(source.confidence) ? { confidence: source.confidence } : {}),
   };
 }
 

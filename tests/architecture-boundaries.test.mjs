@@ -75,6 +75,15 @@ for (const targetService of [
 }
 
 assert.ok(boundaryDoc.includes("src/server/deepseek-plan-service.mjs"));
+for (const graphRagModule of [
+  "src/server/retrieval-orchestrator.mjs",
+  "src/server/admissions-knowledge-graph-adapter.mjs",
+  "src/domain/retrieval-query-plan.mjs",
+  "src/domain/admissions-knowledge-graph.mjs",
+  "src/infrastructure/postgres-knowledge-graph.ts",
+]) {
+  assert.ok(boundaryDoc.includes(graphRagModule), `Boundary doc should name GraphRAG module ${graphRagModule}.`);
+}
 assert.ok(boundaryDoc.includes("DeepSeek plan generation"));
 assert.ok(server.includes("createDeepSeekPlanService"));
 assert.ok(deepSeekPlanService.includes("export function createDeepSeekPlanService"));

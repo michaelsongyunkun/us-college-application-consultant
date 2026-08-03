@@ -24,6 +24,9 @@ This is a static HTML plus native Node.js application. There is no frontend buil
 - `src/client/`: browser-only page behavior, DOM reads/writes, fetch calls, UI state, rendering helpers.
 - `src/domain/`: framework-free business logic, parsers, recommenders, exports, and calculations. Prefer putting testable logic here.
 - `src/server/`: Node-only services for auth, persistence, mail, DeepSeek, RAG, school selection, and planning state.
+- `src/server/retrieval-orchestrator.mjs`: deep retrieval module that selects hybrid RAG or GraphRAG without changing caller contracts.
+- `src/domain/retrieval-query-plan.mjs`, `src/domain/admissions-knowledge-graph.mjs`: pure query-planning and admissions-graph logic.
+- `src/infrastructure/postgres-knowledge-graph.ts`: PostgreSQL graph ingestion and recursive traversal adapter; the local fallback builds the same graph deterministically from Markdown.
 - `src/shared/`: small utilities shared by client and server, currently including privacy guards.
 - `tests/`: plain Node test files, one focused behavior area per file where possible.
 - `data/`: runtime business data in Markdown and SQLite. Markdown here is application input, not documentation clutter.

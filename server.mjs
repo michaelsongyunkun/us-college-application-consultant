@@ -88,6 +88,8 @@ import { createEmbeddingClientFromEnv } from "./src/infrastructure/embedding-cli
 import { createRerankerClientFromEnv } from "./src/infrastructure/reranker-client.ts";
 import { createRetrievalCacheFromEnv } from "./src/infrastructure/retrieval-cache.ts";
 import { createPostgresRagRetriever } from "./src/infrastructure/postgres-rag-retriever.ts";
+import { createPostgresAdmissionsKnowledgeGraphAdapter } from "./src/infrastructure/postgres-knowledge-graph.ts";
+import { createStaticAdmissionsKnowledgeGraphAdapter } from "./src/server/admissions-knowledge-graph-adapter.mjs";
 import { createObjectStoreFromEnv } from "./src/infrastructure/object-store.ts";
 import {
   createFastifyHttpLayer,
@@ -419,19 +421,23 @@ export function createAppServer({
   }),
   deepSeekRagLlmClient = null,
   deepSeekRagRetriever = null,
+  deepSeekRagKnowledgeGraph = null,
   deepSeekRag = createDeepSeekRagService({
     root,
     planning,
     activityPortfolio,
     metrics,
     ...(deepSeekRagRetriever ? { retriever: deepSeekRagRetriever } : {}),
+    ...(deepSeekRagKnowledgeGraph ? { knowledgeGraph: deepSeekRagKnowledgeGraph } : {}),
     ...(deepSeekRagLlmClient ? { llmClient: deepSeekRagLlmClient } : {}),
+    logger,
   }),
   deepSeekSchoolSelectionLlmClient = null,
   schoolSelection = createSchoolSelectionService({
     activityPortfolio,
     root,
     metrics,
+    ...(deepSeekRagKnowledgeGraph ? { knowledgeGraph: deepSeekRagKnowledgeGraph } : {}),
     ...(deepSeekSchoolSelectionLlmClient ? { llmClient: deepSeekSchoolSelectionLlmClient } : {}),
   }),
   mailer = createMailerFromEnv(env),
@@ -1130,6 +1136,14 @@ async function createRuntimeDatabaseInfrastructure(env) {
       retrievalCache,
       knowledgeVersion: env.KNOWLEDGE_SOURCE_VERSION,
     });
+    const deepSeekRagKnowledgeGraph = createPostgresAdmissionsKnowledgeGraphAdapter({
+      pool,
+      fallback: createStaticAdmissionsKnowledgeGraphAdapter({
+        root,
+        planning: workspaceRuntime.planning,
+        activityPortfolio: workspaceRuntime.activityPortfolio,
+      }),
+    });
     return {
       authDb: { db: null, close: () => Promise.all([pool.end(), retrievalCache?.close()]) },
       auth,
@@ -1138,6 +1152,7 @@ async function createRuntimeDatabaseInfrastructure(env) {
       progressPlanner: workspaceRuntime.progressPlanner,
       studentWorkspace: createStudentWorkspaceService({ repositories: workspaceRuntime.repositories }),
       deepSeekRagRetriever,
+      deepSeekRagKnowledgeGraph,
       readinessCheck: async () => {
         try {
           const database = await checkPostgresReadiness(pool);

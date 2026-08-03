@@ -73,18 +73,36 @@ export function createMetricsStore({
     ok = true,
     statusCode = 0,
     durationMs = 0,
+    promptTokens = 0,
+    completionTokens = 0,
+    totalTokens = 0,
+    outputCharacters = 0,
+    finishReason = "",
   } = {}) {
     const roundedDurationMs = roundDuration(durationMs);
+    const normalizedPromptTokens = nonNegativeMetric(promptTokens);
+    const normalizedCompletionTokens = nonNegativeMetric(completionTokens);
+    const normalizedTotalTokens = nonNegativeMetric(totalTokens);
+    const normalizedOutputCharacters = nonNegativeMetric(outputCharacters);
     ai.total += 1;
     ai.totalDurationMs += roundedDurationMs;
     ai.maxDurationMs = Math.max(ai.maxDurationMs, roundedDurationMs);
+    ai.promptTokens += normalizedPromptTokens;
+    ai.completionTokens += normalizedCompletionTokens;
+    ai.tokens += normalizedTotalTokens;
+    ai.outputCharacters += normalizedOutputCharacters;
     if (!ok) ai.failures += 1;
     const bucket = ai.byFeature[feature] || createAiFeatureMetrics();
     bucket.total += 1;
     bucket.totalDurationMs += roundedDurationMs;
     bucket.maxDurationMs = Math.max(bucket.maxDurationMs, roundedDurationMs);
+    bucket.promptTokens += normalizedPromptTokens;
+    bucket.completionTokens += normalizedCompletionTokens;
+    bucket.tokens += normalizedTotalTokens;
+    bucket.outputCharacters += normalizedOutputCharacters;
     if (!ok) bucket.failures += 1;
     if (statusCode) increment(bucket.byStatusCode, String(statusCode));
+    if (finishReason) increment(bucket.byFinishReason, String(finishReason));
     ai.byFeature[feature] = bucket;
   }
 
@@ -172,6 +190,10 @@ export function createMetricsStore({
         failureRate: aiFailureRate,
         averageLatencyMs: aiAverageLatencyMs,
         maxLatencyMs: ai.maxDurationMs,
+        totalPromptTokens: ai.promptTokens,
+        totalCompletionTokens: ai.completionTokens,
+        totalTokens: ai.tokens,
+        averageOutputCharacters: average(ai.outputCharacters, ai.total),
         byFeature: Object.fromEntries(
           Object.entries(ai.byFeature).map(([feature, value]) => [
             feature,
@@ -181,7 +203,12 @@ export function createMetricsStore({
               failureRate: average(value.failures, value.total),
               averageLatencyMs: average(value.totalDurationMs, value.total),
               maxLatencyMs: value.maxDurationMs,
+              promptTokens: value.promptTokens,
+              completionTokens: value.completionTokens,
+              totalTokens: value.tokens,
+              averageOutputCharacters: average(value.outputCharacters, value.total),
               byStatusCode: { ...value.byStatusCode },
+              byFinishReason: { ...value.byFinishReason },
             },
           ]),
         ),
@@ -341,6 +368,10 @@ function createAiMetrics() {
     failures: 0,
     totalDurationMs: 0,
     maxDurationMs: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+    tokens: 0,
+    outputCharacters: 0,
     byFeature: {},
   };
 }
@@ -351,8 +382,18 @@ function createAiFeatureMetrics() {
     failures: 0,
     totalDurationMs: 0,
     maxDurationMs: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+    tokens: 0,
+    outputCharacters: 0,
     byStatusCode: {},
+    byFinishReason: {},
   };
+}
+
+function nonNegativeMetric(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed) : 0;
 }
 
 function createRagMetrics() {

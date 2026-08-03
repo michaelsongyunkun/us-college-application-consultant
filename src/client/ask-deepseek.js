@@ -39,6 +39,8 @@ const ASSISTANT_AVATAR_SRC = IS_INSPIRATION_PROFILE
 const THINKING_TEXT = "......";
 const MAX_MEMORY_TURNS = IS_INSPIRATION_PROFILE ? 8 : 4;
 const MAX_MEMORY_CHARS = IS_INSPIRATION_PROFILE ? 1750 : 900;
+const LONG_ANSWER_COLLAPSE_CHARS = 3_000;
+const LONG_ANSWER_PREVIEW_CHARS = 800;
 const PROGRESS_STATUSES = IS_INSPIRATION_PROFILE
   ? [
       "正在理解你刚才说的重点...",
@@ -92,6 +94,7 @@ const QUALITY_REVIEW_REASON_LABELS = {
   low_retrieval_hit_rate: "来源覆盖不足",
   unsupported_citations: "引用编号需要核验",
   high_risk_claims: "高风险录取表述",
+  response_too_long: "回答达到长度上限",
 };
 const APPLICATION_WORKFLOW_PROMPTS = {
   "profile-audit": {
@@ -389,9 +392,30 @@ function renderPlainText(text) {
     .join("");
 }
 
-function renderBubbleContent(content, { isUser = false, error = false } = {}) {
-  if (isUser || error) return renderPlainText(content);
-  return renderMarkdown(content) || renderPlainText(content);
+function renderBubbleContent(content, {
+  isUser = false,
+  error = false,
+  answerContentId = "",
+} = {}) {
+  const rendered = isUser || error
+    ? renderPlainText(content)
+    : renderMarkdown(content) || renderPlainText(content);
+  if (isUser || error || String(content || "").length <= LONG_ANSWER_COLLAPSE_CHARS) return rendered;
+  const controlledId = escapeHtml(answerContentId || createMessageId("answer-content"));
+  const previewText = `${compactText(content, LONG_ANSWER_PREVIEW_CHARS)}…`;
+  return `
+    <div class="chat-answer-preview">${renderPlainText(previewText)}</div>
+    <div
+      id="${controlledId}"
+      class="chat-answer-content"
+      hidden>${rendered}</div>
+    <button
+      class="chat-answer-toggle"
+      type="button"
+      data-deepseek-answer-toggle
+      aria-controls="${controlledId}"
+      aria-expanded="false"
+    >展开全文</button>`;
 }
 
 function renderSourceCards(sources = []) {
@@ -547,9 +571,10 @@ function renderMessage({
   const avatarSrc = isUser ? USER_AVATAR_SRC : ASSISTANT_AVATAR_SRC;
   const avatarAlt = isUser ? "US College Compass" : ASSISTANT_NAME;
   const speaker = isUser ? "你" : ASSISTANT_NAME;
+  const answerContentId = `${id || createMessageId("message")}-answer-content`;
   const bubbleContent = thinking
     ? `<span class="thinking-dots" aria-label="${ASSISTANT_NAME}正在思考">${THINKING_TEXT}</span>`
-    : renderBubbleContent(content, { isUser, error });
+    : renderBubbleContent(content, { isUser, error, answerContentId });
   const referenceContent = !IS_INSPIRATION_PROFILE && !isUser && !thinking && !error && showReferences
     ? renderGuidedSourceCards(sources)
     : "";
@@ -606,7 +631,11 @@ function updateStreamingMessage(messageId, content) {
   if (!existing || !bubble) return;
   existing.classList.remove("is-thinking");
   bubble.setAttribute("aria-live", "polite");
-  bubble.innerHTML = renderBubbleContent(content, { isUser: false, error: false });
+  bubble.innerHTML = renderBubbleContent(content, {
+    isUser: false,
+    error: false,
+    answerContentId: `${messageId}-answer-content`,
+  });
   scrollChatToBottom();
 }
 
@@ -1045,6 +1074,20 @@ workflowRegion?.addEventListener("click", (event) => {
 });
 
 chatLog.addEventListener("click", (event) => {
+  const answerToggleButton = event.target.closest("[data-deepseek-answer-toggle]");
+  if (answerToggleButton) {
+    const answerBubble = answerToggleButton.closest(".chat-bubble");
+    const answerPreview = answerBubble?.querySelector(".chat-answer-preview");
+    const answerContent = answerBubble?.querySelector(".chat-answer-content");
+    if (!answerPreview || !answerContent) return;
+    const expanded = answerToggleButton.getAttribute("aria-expanded") === "true";
+    const nextExpanded = !expanded;
+    answerPreview.hidden = nextExpanded;
+    answerContent.hidden = !nextExpanded;
+    answerToggleButton.setAttribute("aria-expanded", String(nextExpanded));
+    answerToggleButton.textContent = nextExpanded ? "收起全文" : "展开全文";
+    return;
+  }
   const saveActionsButton = event.target.closest("[data-deepseek-save-actions]");
   if (saveActionsButton) {
     saveAnswerAsActions(saveActionsButton.dataset.deepseekSaveActions, saveActionsButton);

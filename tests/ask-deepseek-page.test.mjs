@@ -158,7 +158,7 @@ assert.match(
   "Ask DeepSeek script should be cache-busted.",
 );
 assert.ok(
-  pageHtml.includes("styles.css?v=20260702-ai-quality-review"),
+  pageHtml.includes("styles.css?v=20260803-response-length-preview"),
   "Ask DeepSeek page should refresh the stylesheet cache after workflow quality fixes.",
 );
 assert.match(styles, /\.deepseek-chat-log\s*\{/, "Ask DeepSeek should style the chat log.");
@@ -201,6 +201,7 @@ assert.ok(script.includes("deepseek_answer_save"), "Ask DeepSeek should track sa
 assert.ok(script.includes("renderMissingFieldChecklist"), "Ask DeepSeek should render missing-field guidance.");
 assert.ok(script.includes("renderQualityReview"), "Ask DeepSeek should render AI quality review guidance.");
 assert.ok(script.includes("QUALITY_REVIEW_REASON_LABELS"), "Ask DeepSeek should label AI quality review reasons.");
+assert.ok(script.includes('response_too_long: "回答达到长度上限"'), "Ask DeepSeek should explain length review warnings.");
 assert.ok(script.includes("quality.review"), "Ask DeepSeek should read review metadata from RAG quality results.");
 assert.ok(script.includes("chat-quality-review"), "Ask DeepSeek quality review should use a styled container.");
 assert.ok(script.includes("需要人工复核"), "Ask DeepSeek should warn when AI quality review requires human checking.");
@@ -225,6 +226,18 @@ assert.match(styles, /\.chat-source-type-chip\s*\{/, "Ask DeepSeek should style 
 assert.match(styles, /\.chat-source-snippet\s*\{/, "Ask DeepSeek should style visual source snippets.");
 assert.match(styles, /\.chat-quality-review\s*\{/, "Ask DeepSeek should style AI quality review guidance.");
 assert.match(styles, /\.chat-quality-review\.needs-review\s*\{/, "Ask DeepSeek should style required review states.");
+assert.ok(script.includes("LONG_ANSWER_COLLAPSE_CHARS = 3_000"), "Ask DeepSeek should use a stable long-answer threshold.");
+assert.ok(script.includes("LONG_ANSWER_PREVIEW_CHARS"), "Long answers should render a bounded collapsed preview.");
+assert.ok(script.includes("data-deepseek-answer-toggle"), "Ask DeepSeek should let users expand and collapse long answers.");
+assert.ok(script.includes('aria-controls="${controlledId}"'), "Long-answer toggles should control a specific answer region.");
+assert.ok(script.includes('class="chat-answer-preview"'), "Collapsed long answers should use a separate bounded preview.");
+assert.ok(script.includes('class="chat-answer-content"'), "Long answers should retain a separate complete answer region.");
+assert.ok(script.includes('hidden>${rendered}</div>'), "Complete long-answer content should use native hidden semantics while collapsed.");
+assert.ok(script.includes('answerPreview.hidden = nextExpanded'), "Long-answer previews should hide when the complete answer expands.");
+assert.ok(script.includes('answerContent.hidden = !nextExpanded'), "Complete long answers should be removed from layout and accessibility until expanded.");
+assert.match(styles, /\.chat-answer-preview\s*\{/, "Ask DeepSeek should style the bounded answer preview.");
+assert.match(styles, /\.chat-answer-content\[hidden\]\s*\{/, "Hidden complete answers should stay out of layout.");
+assert.match(styles, /\.chat-answer-toggle\s*\{/, "Ask DeepSeek should style the answer expansion control.");
 
 for (const expected of [
   "启发性机器人",
@@ -240,7 +253,7 @@ for (const expected of [
   'data-deepseek-workflow="confirm-question"',
   'data-deepseek-workflow="small-action"',
   "./assets/inspiration-bean-avatar.svg",
-  "./src/client/ask-deepseek.js?v=20260731-inspiration-streaming",
+  "./src/client/ask-deepseek.js?v=20260803-response-length-preview",
 ]) {
   assert.ok(inspirationPageHtml.includes(expected), `Inspiration robot page should include ${expected}.`);
 }

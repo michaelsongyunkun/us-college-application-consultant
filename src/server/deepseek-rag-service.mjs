@@ -19,6 +19,8 @@ import {
 } from "./langchain-llm-client.mjs";
 import { monotonicNowMs } from "./observability.mjs";
 import { withSpan } from "./production-observability.ts";
+import { createStaticAdmissionsKnowledgeGraphAdapter } from "./admissions-knowledge-graph-adapter.mjs";
+import { createRetrievalOrchestrator } from "./retrieval-orchestrator.mjs";
 
 const MAX_QUESTION_LENGTH = 1200;
 const MAX_HISTORY_SUMMARY_LENGTH = 1800;
@@ -27,6 +29,10 @@ const MAX_CONTEXT_CHARS = 18_000;
 const MAX_CHUNK_CHARS = 2_200;
 const SOURCE_SNIPPET_CHARS = 260;
 const DEFAULT_INSPIRATION_MAX_TOKENS = 600;
+const DEFAULT_RAG_MAX_TOKENS = 1_600;
+const DEFAULT_MAJOR_MATCH_MAX_TOKENS = 2_200;
+const DEFAULT_RAG_MAX_ANSWER_CHARS = 12_000;
+const RAG_ANSWER_TRUNCATION_NOTICE = "\n\n> 回答已达到长度上限。建议缩小问题范围后继续追问。";
 
 const RESOURCE_LIBRARY_FILES = [
   { file: "competitions.md", label: "竞赛库" },
@@ -169,12 +175,26 @@ export function createDeepSeekRagService({
   activityPortfolio,
   llmClient = createLangChainDeepSeekClient(),
   metrics = null,
-  retriever = createRagRetriever({ root, planning, activityPortfolio, metrics }),
+  retriever = null,
+  knowledgeGraph = null,
+  retrievalOrchestrator = null,
+  logger = null,
   ragAnswerGraph = null,
 }) {
+  const documentRetriever = retriever || createRagRetriever({ root, planning, activityPortfolio, metrics });
+  const graphAdapter = knowledgeGraph || createStaticAdmissionsKnowledgeGraphAdapter({
+    root,
+    planning,
+    activityPortfolio,
+  });
+  const orchestratedRetriever = retrievalOrchestrator || createRetrievalOrchestrator({
+    documentRetriever,
+    knowledgeGraph: graphAdapter,
+    logger,
+  });
   const answerGraph = ragAnswerGraph || createRagAnswerGraph({
     retrieveSources: ({ user, question, historySummary, assistantProfile }) =>
-      retriever.retrieve({ user, question, historySummary, assistantProfile }),
+      orchestratedRetriever.retrieve({ user, question, historySummary, assistantProfile }),
     draftAnswer: (state) => draftDeepSeekRagAnswer({ ...state, llmClient, metrics }),
     evaluateQuality: evaluateRagGraphQuality,
     metrics,
@@ -289,11 +309,14 @@ async function draftDeepSeekRagAnswer({
   metrics = null,
   signal,
 }) {
+  const outputLimits = resolveRagOutputLimits({ assistantProfile, env });
   const retrieval = retrievalResult.retrieval || {};
   const intentProfile = {
     intent: retrieval.intent,
     reason: retrieval.intentReason,
     sourceWeights: retrieval.sourceWeights,
+    queryPlan: retrieval.queryPlan,
+    graph: retrieval.graph,
   };
 
   const llmResult = await invokeDeepSeekLlm({
@@ -303,6 +326,7 @@ async function draftDeepSeekRagAnswer({
     feature: "deepseek-rag",
     model,
     temperature: 0.25,
+    maxTokens: outputLimits.maxTokens,
     messages: [
       { role: "system", content: selectSystemPrompt(assistantProfile) },
       {
@@ -319,9 +343,21 @@ async function draftDeepSeekRagAnswer({
     signal,
   });
 
-  const answer = String(llmResult?.content || "").trim();
-  if (!answer) throw new DeepSeekRagError("DeepSeek 未返回可解析的问答内容。", 502);
-  return answer;
+  const rawAnswer = String(llmResult?.content || "").trim();
+  if (!rawAnswer) throw new DeepSeekRagError("DeepSeek 未返回可解析的问答内容。", 502);
+  const finishReason = getLlmFinishReason(llmResult);
+  const boundedAnswer = enforceRagAnswerLength(rawAnswer, outputLimits.maxAnswerChars, { finishReason });
+  return {
+    answer: boundedAnswer.answer,
+    outputDiagnostics: {
+      originalCharacters: rawAnswer.length,
+      returnedCharacters: boundedAnswer.answer.length,
+      maxCharacters: outputLimits.maxAnswerChars,
+      maxTokens: outputLimits.maxTokens,
+      truncated: boundedAnswer.truncated,
+      finishReason,
+    },
+  };
 }
 
 async function invokeDeepSeekLlm({
@@ -361,6 +397,7 @@ async function invokeDeepSeekLlm({
       ok: true,
       statusCode: 200,
       durationMs: monotonicNowMs() - startedAt,
+      ...getLlmUsageMetrics(result),
     });
     return result;
   } catch (error) {
@@ -385,6 +422,7 @@ function mapDeepSeekLlmError(error) {
 
 function evaluateRagGraphQuality({
   answer,
+  outputDiagnostics = {},
   assistantProfile = "",
   retrievalResult = {},
   model,
@@ -393,6 +431,7 @@ function evaluateRagGraphQuality({
   const retrieval = retrievalResult.retrieval || {};
   return evaluateAiAnswerQuality({
     answer,
+    outputDiagnostics,
     sources: retrievalResult.sources || [],
     expectedSourceTypes: getExpectedRagSourceTypes(retrieval.intent),
     metadata: {
@@ -406,6 +445,111 @@ function evaluateRagGraphQuality({
       },
     },
   });
+}
+
+function resolveRagOutputLimits({ assistantProfile = "", env = process.env } = {}) {
+  const majorMatch = assistantProfile === "major-match";
+  return {
+    maxTokens: normalizePositiveInteger(
+      majorMatch ? env.DEEPSEEK_MAJOR_MATCH_MAX_TOKENS : env.DEEPSEEK_RAG_MAX_TOKENS,
+      majorMatch ? DEFAULT_MAJOR_MATCH_MAX_TOKENS : DEFAULT_RAG_MAX_TOKENS,
+    ),
+    maxAnswerChars: normalizePositiveInteger(
+      env.DEEPSEEK_RAG_MAX_ANSWER_CHARS,
+      DEFAULT_RAG_MAX_ANSWER_CHARS,
+    ),
+  };
+}
+
+function enforceRagAnswerLength(answer, maxCharacters, { finishReason = "" } = {}) {
+  const normalized = String(answer || "").trim();
+  const providerLimited = String(finishReason || "").trim().toLowerCase() === "length";
+  if (normalized.length <= maxCharacters && !providerLimited) {
+    return { answer: normalized, truncated: false };
+  }
+
+  if (maxCharacters <= RAG_ANSWER_TRUNCATION_NOTICE.length) {
+    return {
+      answer: RAG_ANSWER_TRUNCATION_NOTICE.trimStart().slice(0, maxCharacters),
+      truncated: normalized.length > 0,
+    };
+  }
+
+  const contentLimit = maxCharacters - RAG_ANSWER_TRUNCATION_NOTICE.length;
+  let prefix = normalized.length > contentLimit
+    ? selectSafeMarkdownPrefix(normalized, contentLimit)
+    : normalized;
+  let closure = getMarkdownFenceClosure(prefix);
+  if (prefix.length + closure.length > contentLimit) {
+    prefix = selectSafeMarkdownPrefix(normalized, Math.max(0, contentLimit - closure.length));
+    closure = getMarkdownFenceClosure(prefix);
+  }
+  if (prefix.length + closure.length > contentLimit) {
+    prefix = prefix.slice(0, Math.max(0, contentLimit - closure.length)).trimEnd();
+  }
+
+  return {
+    answer: `${prefix}${closure}${RAG_ANSWER_TRUNCATION_NOTICE}`,
+    truncated: prefix.length < normalized.length,
+  };
+}
+
+function selectSafeMarkdownPrefix(answer, limit) {
+  if (limit <= 0) return "";
+  const candidate = String(answer || "").slice(0, limit).trimEnd();
+  const boundaryFloor = Math.floor(limit * 0.65);
+  const boundaries = [
+    { index: candidate.lastIndexOf("\n\n"), width: 0 },
+    { index: candidate.lastIndexOf("\n"), width: 0 },
+    { index: candidate.lastIndexOf("。"), width: 1 },
+    { index: candidate.lastIndexOf("！"), width: 1 },
+    { index: candidate.lastIndexOf("？"), width: 1 },
+    { index: candidate.lastIndexOf(". "), width: 1 },
+    { index: candidate.lastIndexOf("! "), width: 1 },
+    { index: candidate.lastIndexOf("? "), width: 1 },
+  ];
+  const boundary = boundaries.reduce(
+    (best, entry) => entry.index > best.index ? entry : best,
+    { index: -1, width: 0 },
+  );
+  if (boundary.index < boundaryFloor) return candidate;
+  return candidate.slice(0, boundary.index + boundary.width).trimEnd();
+}
+
+function getMarkdownFenceClosure(answer) {
+  const text = String(answer || "");
+  const closures = [];
+  if ((text.match(/```/gu) || []).length % 2 === 1) closures.push("```");
+  if ((text.match(/~~~/gu) || []).length % 2 === 1) closures.push("~~~");
+  return closures.length ? `\n${closures.join("\n")}` : "";
+}
+
+function getLlmUsageMetrics(result = {}) {
+  const usage = result.usage || {};
+  const promptTokens = readTokenCount(usage, ["promptTokens", "prompt_tokens", "inputTokens", "input_tokens"]);
+  const completionTokens = readTokenCount(usage, ["completionTokens", "completion_tokens", "outputTokens", "output_tokens"]);
+  const totalTokens = readTokenCount(usage, ["totalTokens", "total_tokens"])
+    || promptTokens + completionTokens;
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    outputCharacters: String(result.content || "").length,
+    finishReason: getLlmFinishReason(result),
+  };
+}
+
+function readTokenCount(usage, keys) {
+  for (const key of keys) {
+    const value = Number(usage?.[key]);
+    if (Number.isFinite(value) && value >= 0) return Math.round(value);
+  }
+  return 0;
+}
+
+function getLlmFinishReason(result = {}) {
+  const metadata = result.responseMetadata || result.response_metadata || {};
+  return String(metadata.finish_reason || metadata.finishReason || "").trim();
 }
 
 export function createRagRetriever({ root, planning, activityPortfolio, metrics = null, readMarkdownFile = readFile }) {
@@ -1045,6 +1189,10 @@ function buildUserMessage(
     `问题意图：${intentProfile.intent}`,
     `意图判断依据：${intentProfile.reason}`,
     `检索权重：${JSON.stringify(intentProfile.sourceWeights)}`,
+    `检索模式：${intentProfile.queryPlan?.mode || "hybrid-rag"}`,
+    `证据处理步骤：${(intentProfile.queryPlan?.steps || ["document_retrieval", "evidence_synthesis"]).join(" -> ")}`,
+    `结构化约束：${JSON.stringify(intentProfile.queryPlan?.constraints || {})}`,
+    `知识图谱状态：${intentProfile.graph?.status || "not-required"}；命中关系数：${intentProfile.graph?.selectedFacts || 0}`,
     "",
     "对话记忆摘要：",
     historySummary || "暂无上一轮对话记忆。",

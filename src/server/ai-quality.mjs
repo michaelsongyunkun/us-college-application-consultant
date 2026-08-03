@@ -1,15 +1,15 @@
 export const AI_QUALITY_VERSIONS = Object.freeze({
   schema: "ai-quality@2026-06-18",
-  evaluator: "ai-quality-evaluator@2026-06-18",
+  evaluator: "ai-quality-evaluator@2026-08-03",
   deepseekPlanPrompt: "deepseek-plan-prompt@2026-07-13",
   deepseekPlanParser: "agent-output-parser@2026-06-18",
-  ragPromptDefault: "ask-deepseek-rag@2026-06-18",
-  ragPromptMajorMatch: "ask-deepseek-major-match@2026-06-18",
-  ragParser: "rag-context-parser@2026-06-18",
-  ragSourceSet: "rag-source-set@2026-06-18",
-  schoolSelectionPrompt: "school-selection-prompt@2026-06-18",
+  ragPromptDefault: "ask-deepseek-graph-rag@2026-08-03",
+  ragPromptMajorMatch: "ask-deepseek-major-match-graph-rag@2026-08-03",
+  ragParser: "query-graph-rag-orchestrator@2026-08-03",
+  ragSourceSet: "admissions-graph-rag-source-set@2026-08-03",
+  schoolSelectionPrompt: "school-selection-graph-rag@2026-08-03",
   schoolSelectionParser: "school-selection-json-parser@2026-06-18",
-  schoolSelectionSourceSet: "school-selection-rag-source-set@2026-06-18",
+  schoolSelectionSourceSet: "school-selection-graph-rag-source-set@2026-08-03",
   portfolioCapabilityPrompt: "portfolio-capability-prompt@2026-06-18",
   portfolioCapabilityParser: "portfolio-capability-json-parser@2026-06-18",
   noSourceSet: "no-rag-source-set@2026-06-18",
@@ -70,6 +70,7 @@ export function evaluateAiAnswerQuality({
   sources = [],
   expectedSourceTypes = [],
   metadata = {},
+  outputDiagnostics = {},
   hitRateThreshold = DEFAULT_HIT_RATE_THRESHOLD,
 } = {}) {
   const normalizedSources = sources.map(normalizeSource).filter((source) => source.id || source.title);
@@ -85,11 +86,13 @@ export function evaluateAiAnswerQuality({
 
   const unsupportedCitations = findUnsupportedCitations(answer, normalizedSources);
   const highRiskClaims = findHighRiskClaims(answer);
+  const output = normalizeOutputDiagnostics(answer, outputDiagnostics);
   const reviewReasons = [
     normalizedSources.length ? "" : "no_sources",
     retrievalHitRate < hitRateThreshold ? "low_retrieval_hit_rate" : "",
     unsupportedCitations.length ? "unsupported_citations" : "",
     highRiskClaims.length ? "high_risk_claims" : "",
+    output.truncated || output.finishReason === "length" ? "response_too_long" : "",
   ].filter(Boolean);
 
   return {
@@ -112,6 +115,7 @@ export function evaluateAiAnswerQuality({
       unsupportedCitations,
       highRiskClaims,
     },
+    output,
     review: buildReviewState(reviewReasons),
   };
 }
@@ -209,6 +213,26 @@ function normalizeSource(source = {}) {
     title: String(source.title || source.sourceTitle || "").trim(),
     snippet: String(source.snippet || "").trim(),
   };
+}
+
+function normalizeOutputDiagnostics(answer, diagnostics = {}) {
+  const returnedCharacters = toNonNegativeInteger(
+    diagnostics.returnedCharacters,
+    String(answer || "").length,
+  );
+  return {
+    originalCharacters: toNonNegativeInteger(diagnostics.originalCharacters, returnedCharacters),
+    returnedCharacters,
+    maxCharacters: toNonNegativeInteger(diagnostics.maxCharacters, 0),
+    maxTokens: toNonNegativeInteger(diagnostics.maxTokens, 0),
+    truncated: Boolean(diagnostics.truncated),
+    finishReason: String(diagnostics.finishReason || "").trim(),
+  };
+}
+
+function toNonNegativeInteger(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed) : fallback;
 }
 
 function uniqueStrings(values) {

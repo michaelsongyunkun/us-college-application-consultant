@@ -14,6 +14,8 @@ import { createEmbeddingClientFromEnv } from "../infrastructure/embedding-client
 import { createRerankerClientFromEnv } from "../infrastructure/reranker-client.ts";
 import { createRetrievalCacheFromEnv } from "../infrastructure/retrieval-cache.ts";
 import { createPostgresRagRetriever } from "../infrastructure/postgres-rag-retriever.ts";
+import { createPostgresAdmissionsKnowledgeGraphAdapter } from "../infrastructure/postgres-knowledge-graph.ts";
+import { createStaticAdmissionsKnowledgeGraphAdapter } from "../server/admissions-knowledge-graph-adapter.mjs";
 
 export async function createHandlers({ env, root }) {
   const promptPath = join(root, "prompts", "us-college-admissions-strategist-agent.md");
@@ -76,11 +78,20 @@ export function createDefaultJobHandlers({
         retrievalCache,
         knowledgeVersion: env.KNOWLEDGE_SOURCE_VERSION,
       }) : null;
-      const service = createRagService({ root, planning, activityPortfolio, ...(retriever ? { retriever } : {}) });
+      const localKnowledgeGraph = createStaticAdmissionsKnowledgeGraphAdapter({ root, planning, activityPortfolio });
+      const knowledgeGraph = pool
+        ? createPostgresAdmissionsKnowledgeGraphAdapter({ pool, fallback: localKnowledgeGraph })
+        : localKnowledgeGraph;
+      const service = createRagService({ root, planning, activityPortfolio, knowledgeGraph, ...(retriever ? { retriever } : {}) });
       return service.answerQuestion({ user: payload.user, question: payload.question, historySummary: payload.historySummary, assistantProfile: payload.assistantProfile, env, signal });
     },
     "ai.school-selection": async (payload, { signal } = {}) => {
-      const service = createSchoolSelection({ root, activityPortfolio: { getPortfolio: () => payload.portfolio || {} } });
+      const activityPortfolio = { getPortfolio: () => payload.portfolio || {} };
+      const localKnowledgeGraph = createStaticAdmissionsKnowledgeGraphAdapter({ root, activityPortfolio });
+      const knowledgeGraph = pool
+        ? createPostgresAdmissionsKnowledgeGraphAdapter({ pool, fallback: localKnowledgeGraph })
+        : localKnowledgeGraph;
+      const service = createSchoolSelection({ root, activityPortfolio, knowledgeGraph });
       return service.generateSelection({ user: payload.user, payload: payload.payload, env, signal });
     },
     "ai.capability-assessment": async (payload, { signal } = {}) => {

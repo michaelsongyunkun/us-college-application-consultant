@@ -50,6 +50,8 @@ const server = createAppServer({
       return {
         content: "Use the retrieved sources and avoid absolute admissions claims.",
         model: "deepseek-v4-pro",
+        usage: { promptTokens: 240, completionTokens: 60, totalTokens: 300 },
+        responseMetadata: { finish_reason: "stop" },
       };
     },
   },
@@ -129,6 +131,12 @@ try {
   assert.equal(metrics.ai.failedCalls, 1);
   assert.equal(metrics.ai.byFeature["deepseek-plan"].failedCalls, 1);
   assert.equal(metrics.ai.byFeature["deepseek-rag"].totalCalls, 1);
+  assert.equal(metrics.ai.totalPromptTokens, 240);
+  assert.equal(metrics.ai.totalCompletionTokens, 60);
+  assert.equal(metrics.ai.totalTokens, 300);
+  assert.equal(metrics.ai.byFeature["deepseek-rag"].completionTokens, 60);
+  assert.equal(metrics.ai.byFeature["deepseek-rag"].byFinishReason.stop, 1);
+  assert.ok(metrics.ai.byFeature["deepseek-rag"].averageOutputCharacters > 0);
   assert.equal(metrics.rag.retrievalCount, 1);
   assert.ok(metrics.rag.averageRetrievalMs >= 0);
   assert.equal(metrics.graph.totalRuns, 1);

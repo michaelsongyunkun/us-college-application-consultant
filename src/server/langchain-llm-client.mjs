@@ -190,7 +190,22 @@ export function extractLangChainChunkText(response) {
 
 function extractLangChainUsage(response) {
   const metadata = response?.response_metadata || response?.responseMetadata || {};
-  return metadata.tokenUsage || metadata.token_usage || {};
+  const candidates = [
+    metadata.tokenUsage,
+    metadata.token_usage,
+    response?.usage_metadata,
+    response?.usageMetadata,
+  ];
+  return candidates.find(isNonEmptyUsage) || {};
+}
+
+function isNonEmptyUsage(value) {
+  return Boolean(
+    value
+    && typeof value === "object"
+    && !Array.isArray(value)
+    && Object.keys(value).length,
+  );
 }
 
 function normalizeMessageRole(role) {
