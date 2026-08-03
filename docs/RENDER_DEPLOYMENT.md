@@ -2,16 +2,17 @@
 
 This project deploys to Render from the repository-root `render.yaml` Blueprint.
 
-## Production topology
+## Lean production topology
 
 - Docker web service (`npm start`) with `/readyz` health checks.
-- Same-image background worker (`npm run worker`).
 - Render Postgres with migrations and keyword/GraphRAG knowledge ingestion before each web deploy.
-- Render Key Value for BullMQ and retrieval cache.
-- External S3-compatible object storage (the Blueprint defaults to Cloudflare R2) because Render web and worker filesystems are not shared.
+- In-process generation jobs, using the application's existing no-Redis fallback.
+- External S3-compatible object storage (the Blueprint defaults to Cloudflare R2) so exports survive web deploys and restarts.
 - Singapore region for every Render-managed component.
 
-The Blueprint uses paid production plans (`starter` web/worker/Key Value and `basic-256mb` Postgres). Confirm Render's current pricing in the Dashboard before applying it. Do not substitute Free Postgres for production data: Render Free Postgres expires after 30 days and has no backups.
+The Blueprint uses a `starter` web service and `basic-256mb` Postgres. At the time this configuration was created, Render estimated approximately $14.95/month in Singapore; confirm the current price in the Dashboard before applying it. R2/S3 charges are separate. Do not substitute Free Postgres for production data: Render Free Postgres expires after 30 days and has no backups.
+
+This lean topology preserves model selection, Query Planning, GraphRAG, structured reasoning, account data, and knowledge ingestion. Without a worker and Key Value instance, jobs run in the web process: in-flight jobs are lost on a deploy or restart, and concurrency is limited to the web instance. Add the worker and Key Value service when traffic or job reliability requires it.
 
 ## Prerequisites
 
@@ -47,7 +48,7 @@ Invoke-RestMethod https://<service-url>/healthz
 Invoke-RestMethod https://<service-url>/readyz
 ```
 
-Both endpoints must return HTTP 200. Then verify registration/login, one planning request, Ask DeepSeek RAG, school selection, inspiration streaming, and a queued Word export. Check the worker logs for a completed BullMQ job and confirm the signed export URL downloads from the configured bucket.
+Both endpoints must return HTTP 200. Then verify registration/login, one planning request, Ask DeepSeek RAG, school selection, inspiration streaming, and a Word export. Confirm that the in-process job completes and the signed export URL downloads from the configured bucket.
 
 ## Admin and email setup
 
@@ -57,5 +58,5 @@ The existing `npm run db:seed-admin` command targets SQLite and must not be used
 
 - `autoDeployTrigger: checksPass` deploys `main` only after GitHub checks pass.
 - The web pre-deploy command runs PostgreSQL migrations and idempotent keyword-only knowledge/graph ingestion.
-- Roll back both the web service and worker to the same image revision from Render's deploy history.
+- Roll back the web service to the previous image revision from Render's deploy history.
 - Never roll back the database schema destructively during an incident. Restore or roll forward using the production data runbook.
