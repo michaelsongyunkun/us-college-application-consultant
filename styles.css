@@ -3487,6 +3487,36 @@ button.danger:hover {
   box-shadow: 0 12px 28px rgba(25, 35, 58, 0.08);
 }
 
+.chat-answer-preview {
+  position: relative;
+  max-height: 32rem;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+}
+
+.chat-answer-preview[hidden],
+.chat-answer-content[hidden] {
+  display: none;
+}
+
+.chat-answer-toggle {
+  margin-top: 12px;
+  border: 1px solid #b9d6c4;
+  border-radius: 999px;
+  background: #f1f8f3;
+  padding: 7px 14px;
+  color: var(--brand-green);
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.chat-answer-toggle:hover,
+.chat-answer-toggle:focus-visible {
+  border-color: var(--brand-green);
+  background: #e5f4e9;
+}
+
 .chat-message.user .chat-bubble {
   border-color: #c7e5d4;
   background: #dff4e7;

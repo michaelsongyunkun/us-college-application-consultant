@@ -1,7 +1,7 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { monotonicNowMs } from "./observability.mjs";
 
-export const SCHOOL_SELECTION_GRAPH_VERSION = "school-selection-graph@2026-07-02";
+export const SCHOOL_SELECTION_GRAPH_VERSION = "school-selection-graph@2026-08-03";
 
 const SchoolSelectionState = Annotation.Root({
   user: Annotation(),
@@ -15,6 +15,7 @@ const SchoolSelectionState = Annotation.Root({
   friendlinessIndex: Annotation(),
   applicationRoundSchools: Annotation(),
   ragContext: Annotation(),
+  retrieval: Annotation(),
   answer: Annotation(),
   validatedSelection: Annotation(),
   selection: Annotation(),

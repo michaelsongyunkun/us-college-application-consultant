@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
 import { AI_QUALITY_VERSIONS } from "../src/server/ai-quality.mjs";
+import { RAG_ANSWER_GRAPH_VERSION } from "../src/server/langgraph-rag-workflow.mjs";
 import { buildCookieHeader, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-deepseek-rag-"));
@@ -135,7 +136,10 @@ try {
   assert.ok(body.sources.some((source) => source.type === "school-encyclopedia"));
   assert.ok(body.sources.some((source) => source.type === "major-encyclopedia"));
   assert.ok(body.sources.some((source) => source.typeLabel === "专业百科"));
+  assert.ok(body.sources.some((source) => source.type === "knowledge-graph"));
   assert.equal(body.retrieval.intent, "school");
+  assert.equal(body.retrieval.mode, "graph-rag");
+  assert.ok(body.retrieval.graph.selectedFacts > 0);
   assert.ok(
     body.retrieval.sourceWeights["school-encyclopedia"] > body.retrieval.sourceWeights["resource-library"],
     "School questions should weight school encyclopedia above general resources.",
@@ -146,7 +150,7 @@ try {
   assert.equal(body.quality.metadata.model, "deepseek-v4-pro");
   assert.equal(body.quality.metadata.sourceSetVersion, AI_QUALITY_VERSIONS.ragSourceSet);
   assert.equal(body.quality.metadata.parserVersion, AI_QUALITY_VERSIONS.ragParser);
-  assert.equal(body.quality.metadata.workflowVersion, "rag-answer-graph@2026-07-02");
+  assert.equal(body.quality.metadata.workflowVersion, RAG_ANSWER_GRAPH_VERSION);
   assert.equal(body.quality.retrieval.retrievalHitRate, 1);
   assert.deepEqual(body.quality.retrieval.missingSourceTypes, []);
   assert.equal(body.quality.review.required, false);
@@ -243,9 +247,13 @@ try {
   assert.equal(majorMatchResponse.status, 200);
   const majorMatchBody = await majorMatchResponse.json();
   assert.equal(majorMatchBody.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.ragPromptMajorMatch);
+  assert.equal(majorMatchBody.retrieval.mode, "graph-rag");
+  assert.equal(majorMatchBody.retrieval.queryPlan.taskType, "major-match");
+  assert.ok(majorMatchBody.retrieval.graph.selectedFacts > 0);
   assert.equal(calls.length, 3);
   const majorMatchPayload = calls[2];
   const majorMatchSystemPrompt = majorMatchPayload.messages[0].content;
+  assert.match(majorMatchPayload.messages[1].content, /graph_traversal.*document_retrieval.*evidence_synthesis/);
   assert.match(majorMatchSystemPrompt, /美本本科专业匹配顾问/);
   assert.match(majorMatchSystemPrompt, /推荐专业优先级表/);
   assert.match(majorMatchSystemPrompt, /专业方向｜优先级｜匹配理由｜需要补强的证据｜申请叙事切入点/);

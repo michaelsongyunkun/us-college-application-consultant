@@ -68,6 +68,24 @@ assert.equal(noSourceQuality.review.required, true);
 assert.ok(noSourceQuality.review.reasons.includes("no_sources"));
 assert.ok(noSourceQuality.review.reasons.includes("low_retrieval_hit_rate"));
 
+const longAnswerQuality = evaluateAiAnswerQuality({
+  answer: "A bounded answer.",
+  sources: [{ id: "rag-known", type: "application-portfolio", title: "Portfolio" }],
+  expectedSourceTypes: ["application-portfolio"],
+  outputDiagnostics: {
+    originalCharacters: 14_000,
+    returnedCharacters: 12_000,
+    maxCharacters: 12_000,
+    maxTokens: 1_600,
+    truncated: true,
+    finishReason: "length",
+  },
+});
+assert.equal(longAnswerQuality.output.truncated, true);
+assert.equal(longAnswerQuality.output.originalCharacters, 14_000);
+assert.equal(longAnswerQuality.output.maxTokens, 1_600);
+assert.ok(longAnswerQuality.review.reasons.includes("response_too_long"));
+
 assert.deepEqual(findUnsupportedCitations("Use [2] and rag-missing.", [{ id: "rag-known" }]), [
   { marker: "[2]", reason: "citation_index_outside_retrieved_context" },
   { marker: "rag-missing", reason: "source_id_outside_retrieved_context" },

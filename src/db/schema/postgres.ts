@@ -109,6 +109,39 @@ export const knowledgeDocuments = pgTable("knowledge_documents", {
   index("knowledge_documents_embedding_hnsw").using("hnsw", table.embedding.op("vector_cosine_ops")),
 ]);
 
+export const knowledgeEntities = pgTable("knowledge_entities", {
+  id: text("id").primaryKey(),
+  entityType: text("entity_type").notNull(),
+  name: text("name").notNull(),
+  aliases: jsonb("aliases_json").notNull().default([]),
+  metadata: jsonb("metadata_json").notNull().default({}),
+  sourceVersion: text("source_version").notNull(),
+  updatedAt: timestamptz("updated_at"),
+}, (table) => [
+  index("knowledge_entities_type_idx").on(table.entityType),
+  index("knowledge_entities_name_trgm_idx").using("gin", sql`${table.name} gin_trgm_ops`),
+  index("knowledge_entities_aliases_idx").using("gin", table.aliases),
+]);
+
+export const knowledgeRelations = pgTable("knowledge_relations", {
+  id: text("id").primaryKey(),
+  fromEntityId: text("from_entity_id").notNull().references(() => knowledgeEntities.id, { onDelete: "cascade" }),
+  toEntityId: text("to_entity_id").notNull().references(() => knowledgeEntities.id, { onDelete: "cascade" }),
+  relationType: text("relation_type").notNull(),
+  sourceId: text("source_id").notNull().default(""),
+  sourceVersion: text("source_version").notNull(),
+  confidence: integer("confidence").notNull().default(80),
+  validFrom: timestamp("valid_from", { withTimezone: true, mode: "string" }),
+  validTo: timestamp("valid_to", { withTimezone: true, mode: "string" }),
+  officialUrl: text("official_url"),
+  metadata: jsonb("metadata_json").notNull().default({}),
+  updatedAt: timestamptz("updated_at"),
+}, (table) => [
+  index("knowledge_relations_from_idx").on(table.fromEntityId),
+  index("knowledge_relations_to_idx").on(table.toEntityId),
+  index("knowledge_relations_type_idx").on(table.relationType),
+]);
+
 export const backgroundJobs = pgTable("background_jobs", {
   id: text("id").primaryKey(), userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   queueName: text("queue_name").notNull(), jobType: text("job_type").notNull(), idempotencyKey: text("idempotency_key").notNull(),

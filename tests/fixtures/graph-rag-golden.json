@@ -1,0 +1,216 @@
+[
+  {
+    "id": "zh-cs-project-major-schools",
+    "query": "我有 Python、算法和机器人项目，请把经历连接到 Computer Science，并比较 MIT、Stanford 等专业强校",
+    "language": "zh",
+    "category": "student-major-school",
+    "assistantProfile": "major-match",
+    "profile": { "interests": ["人工智能", "机器人", "算法"] },
+    "portfolio": { "activities": [{ "activityName": "机器人视觉项目", "type": "工程项目", "description": "使用 Python、计算机视觉和控制算法完成机器人项目" }] },
+    "expected": {
+      "mode": "graph-rag",
+      "graphStatus": "applied",
+      "documentSourceTypes": ["application-portfolio", "major-encyclopedia"],
+      "graphSourceIds": ["data/majors.md"],
+      "predicates": ["STUDIES_TOPIC", "STRONG_FOR_MAJOR"],
+      "relations": [
+        { "subjectIncludes": "Computer Science", "predicate": "STUDIES_TOPIC", "objectIncludes": "算法" },
+        { "subjectIncludes": "MIT", "predicate": "STRONG_FOR_MAJOR", "objectIncludes": "Computer Science" }
+      ]
+    }
+  },
+  {
+    "id": "en-data-project-major-schools",
+    "query": "My Python and data visualization project should connect to Data Science and strong schools such as Berkeley and CMU.",
+    "language": "en",
+    "category": "student-major-school",
+    "assistantProfile": "major-match",
+    "profile": { "interests": ["data science", "visualization"] },
+    "portfolio": { "activities": [{ "activityName": "Community data dashboard", "type": "research", "description": "Built a Python dashboard and explained public data visually" }] },
+    "expected": {
+      "mode": "graph-rag",
+      "graphStatus": "applied",
+      "documentSourceTypes": ["application-portfolio", "major-encyclopedia"],
+      "graphSourceIds": ["data/majors.md"],
+      "predicates": ["STUDIES_TOPIC", "STRONG_FOR_MAJOR"],
+      "relations": [
+        { "subjectIncludes": "UC Berkeley", "predicate": "STRONG_FOR_MAJOR", "objectIncludes": "Data Science" },
+        { "subjectIncludes": "Data Journalism", "predicate": "STUDIES_TOPIC", "objectIncludes": "可视化" }
+      ]
+    }
+  },
+  {
+    "id": "zh-mechanical-project-major-schools",
+    "query": "机械设计、CAD 和机器人项目适合 Mechanical Engineering 吗？请关联 Michigan、Purdue 强校",
+    "language": "zh",
+    "category": "student-major-school",
+    "assistantProfile": "major-match",
+    "profile": { "interests": ["机械设计", "机器人"] },
+    "portfolio": { "activities": [{ "activityName": "机械臂设计", "type": "工程项目", "description": "使用 CAD 设计并制作机械臂原型" }] },
+    "expected": {
+      "mode": "graph-rag",
+      "graphStatus": "applied",
+      "documentSourceTypes": ["application-portfolio", "major-encyclopedia"],
+      "graphSourceIds": ["data/majors.md"],
+      "predicates": ["STUDIES_TOPIC", "LEADS_TO_CAREER", "STRONG_FOR_MAJOR"],
+      "relations": [
+        { "subjectIncludes": "Mechanical Engineering", "predicate": "STUDIES_TOPIC", "objectIncludes": "机械设计" },
+        { "subjectIncludes": "Michigan", "predicate": "STRONG_FOR_MAJOR", "objectIncludes": "Mechanical Engineering" },
+        { "subjectIncludes": "Purdue", "predicate": "STRONG_FOR_MAJOR", "objectIncludes": "Mechanical Engineering" }
+      ]
+    }
+  },
+  {
+    "id": "zh-mit-cs-ea",
+    "query": "机器人与 AI 背景申请 Computer Science，MIT EA 是否合适？",
+    "language": "zh",
+    "category": "school-major-round",
+    "taskType": "school-selection",
+    "profile": { "interests": ["AI", "Computer Science"] },
+    "portfolio": { "activities": [{ "activityName": "机器人项目", "type": "engineering", "description": "Python 与 AI 机器人控制" }] },
+    "expected": {
+      "mode": "graph-rag-with-constraints",
+      "graphStatus": "applied",
+      "constraints": { "rounds": ["EA"] },
+      "documentSourceTypes": ["application-portfolio", "school-encyclopedia"],
+      "graphSourceIds": ["data/application-round-schools.md"],
+      "predicates": ["SUPPORTS_APPLICATION_ROUND"],
+      "relations": [{ "subjectIncludes": "MIT", "predicate": "SUPPORTS_APPLICATION_ROUND", "objectIncludes": "EA" }]
+    }
+  },
+  {
+    "id": "en-stanford-me-rea",
+    "query": "With mechanical design and robotics evidence, is Stanford REA coherent for Mechanical Engineering?",
+    "language": "en",
+    "category": "school-major-round",
+    "taskType": "school-selection",
+    "profile": { "interests": ["mechanical engineering", "robotics"] },
+    "portfolio": { "activities": [{ "activityName": "Robotics prototype", "type": "engineering", "description": "Mechanical design, CAD, controls and testing" }] },
+    "expected": {
+      "mode": "graph-rag-with-constraints",
+      "graphStatus": "applied",
+      "constraints": { "rounds": ["REA"] },
+      "documentSourceTypes": ["application-portfolio", "school-encyclopedia"],
+      "graphSourceIds": ["data/application-round-schools.md", "data/majors.md"],
+      "predicates": ["SUPPORTS_APPLICATION_ROUND", "STRONG_FOR_MAJOR"],
+      "relations": [
+        { "subjectIncludes": "Stanford", "predicate": "SUPPORTS_APPLICATION_ROUND", "objectIncludes": "REA" },
+        { "subjectIncludes": "Stanford", "predicate": "STRONG_FOR_MAJOR", "objectIncludes": "Mechanical Engineering" }
+      ]
+    }
+  },
+  {
+    "id": "zh-cmu-cs-ed1",
+    "query": "Python 与算法竞赛背景申请 Computer Science，CMU ED1 是否匹配？",
+    "language": "zh",
+    "category": "school-major-round",
+    "taskType": "school-selection",
+    "profile": { "interests": ["Computer Science", "算法"] },
+    "portfolio": { "competitions": [{ "competitionName": "算法竞赛", "subject": "计算机", "award": "校级奖项" }] },
+    "expected": {
+      "mode": "graph-rag-with-constraints",
+      "graphStatus": "applied",
+      "constraints": { "rounds": ["ED1"] },
+      "documentSourceTypes": ["application-portfolio", "school-encyclopedia"],
+      "graphSourceIds": ["data/application-round-schools.md", "data/majors.md"],
+      "predicates": ["SUPPORTS_APPLICATION_ROUND", "STUDIES_TOPIC"],
+      "relations": [
+        { "subjectIncludes": "CMU", "predicate": "SUPPORTS_APPLICATION_ROUND", "objectIncludes": "ED1" },
+        { "subjectIncludes": "Computer Science", "predicate": "STUDIES_TOPIC", "objectIncludes": "算法" }
+      ]
+    }
+  },
+  {
+    "id": "en-duke-bme-ed1",
+    "query": "Given biology experiments and data analysis, is Duke ED1 coherent for Biomedical Engineering?",
+    "language": "en",
+    "category": "school-major-round",
+    "taskType": "school-selection",
+    "profile": { "interests": ["biology", "data analysis", "biomedical engineering"] },
+    "portfolio": { "activities": [{ "activityName": "Biology lab analysis", "type": "research", "description": "Analyzed experimental biology data" }] },
+    "expected": {
+      "mode": "graph-rag-with-constraints",
+      "graphStatus": "applied",
+      "constraints": { "rounds": ["ED1"] },
+      "documentSourceTypes": ["application-portfolio", "school-encyclopedia"],
+      "graphSourceIds": ["data/application-round-schools.md", "data/majors.md"],
+      "predicates": ["SUPPORTS_APPLICATION_ROUND", "STRONG_FOR_MAJOR"],
+      "relations": [
+        { "subjectIncludes": "Duke", "predicate": "SUPPORTS_APPLICATION_ROUND", "objectIncludes": "ED1" },
+        { "subjectIncludes": "Duke", "predicate": "STRONG_FOR_MAJOR", "objectIncludes": "Biomedical Engineering" }
+      ]
+    }
+  },
+  {
+    "id": "en-cornell-cs-ed1",
+    "query": "Algorithms and open-source work for Computer Science: is Cornell ED1 a coherent choice?",
+    "language": "en",
+    "category": "school-round",
+    "taskType": "school-selection",
+    "profile": { "interests": ["algorithms", "open source"] },
+    "portfolio": { "activities": [{ "activityName": "Open-source algorithms", "type": "software", "description": "Contributed algorithm implementations and tests" }] },
+    "expected": {
+      "mode": "graph-rag-with-constraints",
+      "graphStatus": "applied",
+      "constraints": { "rounds": ["ED1"] },
+      "documentSourceTypes": ["application-portfolio", "school-encyclopedia"],
+      "graphSourceIds": ["data/application-round-schools.md"],
+      "predicates": ["SUPPORTS_APPLICATION_ROUND"],
+      "relations": [{ "subjectIncludes": "Cornell", "predicate": "SUPPORTS_APPLICATION_ROUND", "objectIncludes": "ED1" }]
+    }
+  },
+  {
+    "id": "zh-michigan-me-ea",
+    "query": "机械设计和机器人项目申请 Mechanical Engineering，Michigan EA 是否匹配？",
+    "language": "zh",
+    "category": "school-major-round",
+    "taskType": "school-selection",
+    "profile": { "interests": ["Mechanical Engineering", "机器人"] },
+    "portfolio": { "activities": [{ "activityName": "机器人机械结构", "type": "engineering", "description": "完成机械设计、CAD 和原型测试" }] },
+    "expected": {
+      "mode": "graph-rag-with-constraints",
+      "graphStatus": "applied",
+      "constraints": { "rounds": ["EA"] },
+      "documentSourceTypes": ["application-portfolio", "school-encyclopedia"],
+      "graphSourceIds": ["data/application-round-schools.md", "data/majors.md"],
+      "predicates": ["SUPPORTS_APPLICATION_ROUND", "STRONG_FOR_MAJOR", "STUDIES_TOPIC"],
+      "relations": [
+        { "subjectIncludes": "Michigan", "predicate": "SUPPORTS_APPLICATION_ROUND", "objectIncludes": "EA" },
+        { "subjectIncludes": "Michigan", "predicate": "STRONG_FOR_MAJOR", "objectIncludes": "Mechanical Engineering" }
+      ]
+    }
+  },
+  {
+    "id": "zh-mit-focused-lookup",
+    "query": "MIT 的推荐信要求是什么？",
+    "language": "zh",
+    "category": "focused-lookup-control",
+    "expected": {
+      "mode": "hybrid-rag",
+      "graphStatus": "not-required",
+      "documentSourceTypes": ["school-encyclopedia"]
+    }
+  },
+  {
+    "id": "en-stanford-focused-lookup",
+    "query": "Summarize Stanford recommendation letter expectations.",
+    "language": "en",
+    "category": "focused-lookup-control",
+    "expected": {
+      "mode": "hybrid-rag",
+      "graphStatus": "not-required",
+      "documentSourceTypes": ["school-encyclopedia"]
+    }
+  },
+  {
+    "id": "en-inspiration-direct-control",
+    "query": "What topic should I explore next based on our conversation?",
+    "language": "en",
+    "category": "direct-control",
+    "assistantProfile": "inspiration",
+    "expected": {
+      "mode": "direct",
+      "graphStatus": "not-required"
+    }
+  }
+]

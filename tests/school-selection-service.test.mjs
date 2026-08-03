@@ -251,6 +251,10 @@ assert.equal(
 assert.equal(generated.selectionVersion, "均衡版");
 assert.equal(generated.quality.metadata.workflowVersion, SCHOOL_SELECTION_GRAPH_VERSION);
 assert.ok(generated.ragSources.some((source) => source.type === "school-encyclopedia"));
+assert.ok(generated.ragSources.some((source) => source.type === "knowledge-graph"));
+assert.equal(generated.retrieval.mode, "graph-rag-with-constraints");
+assert.equal(generated.retrieval.queryPlan.primaryIntent, "school");
+assert.ok(generated.retrieval.graph.selectedFacts > 0);
 assert.equal(JSON.stringify(generated).includes("school-selection-secret"), false);
 
 assert.equal(calls.length, 2, "School selection should retry once when the first JSON fails strict validation.");
@@ -282,6 +286,8 @@ assert.match(sentPayload.messages[1].content, /Robotics Portfolio Lab/);
 assert.match(sentPayload.messages[1].content, /1510/);
 assert.doesNotMatch(sentPayload.messages[1].content, /legacy-selection-json-marker/);
 assert.match(sentPayload.messages[1].content, /院校百科 RAG 参考/);
+assert.match(sentPayload.messages[1].content, /graph-rag-with-constraints/);
+assert.match(sentPayload.messages[1].content, /graph_traversal.*document_retrieval.*constraint_validation/);
 assert.match(sentPayload.messages[1].content, /University of California|UC/);
 assert.match(sentPayload.messages[1].content, /先判断学生整体竞争力/);
 assert.match(sentPayload.messages[1].content, /如果信息不足，明确写入 gaps/);

@@ -72,6 +72,78 @@ assert.equal(calls[0].messages[1]._getType(), "human");
 assert.equal(calls[0].messages[0].content, "System prompt");
 assert.equal(calls[0].messages[1].content, "User question");
 
+const nonStreamingUsageVariants = [
+  {
+    label: "response_metadata.token_usage",
+    response: {
+      content: "snake case response metadata",
+      response_metadata: {
+        token_usage: {
+          prompt_tokens: 11,
+          completion_tokens: 5,
+          total_tokens: 16,
+        },
+      },
+    },
+    expected: {
+      prompt_tokens: 11,
+      completion_tokens: 5,
+      total_tokens: 16,
+    },
+  },
+  {
+    label: "usage_metadata",
+    response: {
+      content: "standard LangChain usage metadata",
+      response_metadata: { tokenUsage: {} },
+      usage_metadata: {
+        input_tokens: 12,
+        output_tokens: 6,
+        total_tokens: 18,
+      },
+    },
+    expected: {
+      input_tokens: 12,
+      output_tokens: 6,
+      total_tokens: 18,
+    },
+  },
+  {
+    label: "usageMetadata",
+    response: {
+      content: "camel case LangChain usage metadata",
+      usageMetadata: {
+        inputTokens: 13,
+        outputTokens: 7,
+        totalTokens: 20,
+      },
+    },
+    expected: {
+      inputTokens: 13,
+      outputTokens: 7,
+      totalTokens: 20,
+    },
+  },
+];
+
+for (const variant of nonStreamingUsageVariants) {
+  const usageClient = createLangChainDeepSeekClient({
+    chatModelFactory() {
+      return {
+        async invoke() {
+          return variant.response;
+        },
+      };
+    },
+  });
+  const usageResult = await usageClient.invoke({
+    apiKey: "usage-test-key",
+    messages: [["user", variant.label]],
+    fallbackModels: "",
+  });
+  assert.deepEqual(usageResult.usage, variant.expected, variant.label);
+}
+
 const arkCalls = [];
 const arkClient = createLangChainDeepSeekClient({
   chatModelFactory(options) {
@@ -112,6 +184,14 @@ const streamingClient = createLangChainDeepSeekClient({
       async *stream(messages, callOptions) {
         streamingCalls.at(-1).messages = messages;
         streamingCalls.at(-1).callOptions = callOptions;
+        yield {
+          content: "",
+          usage_metadata: {
+            input_tokens: 21,
+            output_tokens: 8,
+            total_tokens: 29,
+          },
+        };
         yield { content: "第一段" };
         yield { content: "，第二段" };
       },
@@ -128,6 +208,11 @@ const streamingResult = await streamingClient.invoke({
 });
 assert.equal(streamingResult.content, "第一段，第二段");
 assert.deepEqual(streamedTokens, ["第一段", "，第二段"]);
+assert.deepEqual(streamingResult.usage, {
+  input_tokens: 21,
+  output_tokens: 8,
+  total_tokens: 29,
+});
 assert.equal(streamingCalls[0].options.streaming, true);
 assert.equal(streamingCalls[0].callOptions.signal, "stream-signal");
 

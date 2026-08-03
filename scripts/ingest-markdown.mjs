@@ -4,6 +4,10 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createEmbeddingClientFromEnv } from "../src/infrastructure/embedding-client.ts";
 import { createPostgresKnowledgeRepository, ingestMarkdownSources } from "../src/infrastructure/markdown-ingestion.ts";
+import {
+  createPostgresKnowledgeGraphRepository,
+  ingestAdmissionsKnowledgeGraph,
+} from "../src/infrastructure/postgres-knowledge-graph.ts";
 import { createPostgresPool, migratePostgres } from "../src/infrastructure/postgres.ts";
 import { loadEnvFile } from "../src/server/env-loader.mjs";
 
@@ -30,7 +34,12 @@ try {
     sourceVersion: process.env.KNOWLEDGE_SOURCE_VERSION || new Date().toISOString().slice(0, 10),
     embeddingModelVersion: embedding.modelVersion,
   });
-  console.log(JSON.stringify(report, null, 2));
+  const graphReport = await ingestAdmissionsKnowledgeGraph({
+    sources,
+    repository: createPostgresKnowledgeGraphRepository({ pool }),
+    sourceVersion: process.env.KNOWLEDGE_SOURCE_VERSION || new Date().toISOString().slice(0, 10),
+  });
+  console.log(JSON.stringify({ ...report, knowledgeGraph: graphReport }, null, 2));
 } finally { await pool.end(); }
 
 async function findMarkdownFiles(directory) {

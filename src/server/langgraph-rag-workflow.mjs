@@ -1,7 +1,7 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { monotonicNowMs } from "./observability.mjs";
 
-export const RAG_ANSWER_GRAPH_VERSION = "rag-answer-graph@2026-07-02";
+export const RAG_ANSWER_GRAPH_VERSION = "rag-answer-graph@2026-08-03";
 
 const RagAnswerState = Annotation.Root({
   user: Annotation(),
@@ -13,6 +13,7 @@ const RagAnswerState = Annotation.Root({
   signal: Annotation(),
   retrievalResult: Annotation(),
   answer: Annotation(),
+  outputDiagnostics: Annotation(),
   quality: Annotation(),
   response: Annotation(),
   completedNodes: Annotation(),
@@ -43,7 +44,7 @@ export function createRagAnswerGraph({
       })))
     .addNode("draftAnswer", (state) =>
       runObservedNode({ metrics, workflowVersion, node: "draftAnswer" }, async () => ({
-        answer: await draftAnswer(state),
+        ...normalizeDraftAnswer(await draftAnswer(state)),
         completedNodes: appendCompletedNode(state, "draftAnswer"),
       })))
     .addNode("evaluateQuality", (state) =>
@@ -116,6 +117,16 @@ async function runObservedNode({ metrics, workflowVersion, node }, handler) {
 
 function appendCompletedNode(state, node) {
   return [...(state.completedNodes || []), node];
+}
+
+function normalizeDraftAnswer(result) {
+  if (result && typeof result === "object" && Object.hasOwn(result, "answer")) {
+    return {
+      answer: String(result.answer || ""),
+      outputDiagnostics: result.outputDiagnostics || {},
+    };
+  }
+  return { answer: String(result || ""), outputDiagnostics: {} };
 }
 
 function finalizeRagAnswerResponse(state) {
