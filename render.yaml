@@ -1,0 +1,135 @@
+services:
+  - type: web
+    name: us-college-consultant
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /readyz
+    preDeployCommand: npm run db:pg:migrate && npm run knowledge:ingest -- --keyword-only
+    autoDeployTrigger: checksPass
+    maxShutdownDelaySeconds: 60
+    envVars:
+      - fromGroup: consultant-production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: consultant-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: consultant-redis
+          property: connectionString
+
+  - type: worker
+    name: us-college-consultant-worker
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: npm run worker
+    autoDeployTrigger: checksPass
+    maxShutdownDelaySeconds: 120
+    envVars:
+      - fromGroup: consultant-production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: consultant-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: consultant-redis
+          property: connectionString
+
+  - type: keyvalue
+    name: consultant-redis
+    plan: starter
+    region: singapore
+    maxmemoryPolicy: noeviction
+    persistenceMode: journal-snapshot
+    ipAllowList: []
+
+databases:
+  - name: consultant-postgres
+    databaseName: consultant
+    user: consultant
+    plan: basic-256mb
+    region: singapore
+    ipAllowList: []
+
+envVarGroups:
+  - name: consultant-production
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRUST_PROXY
+        value: "true"
+      - key: FASTIFY_HTTP_ENABLED
+        value: "true"
+      - key: FASTIFY_HTTP_TRAFFIC_PERCENT
+        value: "100"
+      - key: RAG_STREAM_RATE_LIMIT
+        value: "20"
+      - key: JOB_QUEUE_NAME
+        value: consultant-jobs
+      - key: JOB_HANDLER_MODULE
+        value: ./src/worker/default-handlers.mjs
+      - key: WORKER_CONCURRENCY
+        value: "4"
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: DEEPSEEK_MODEL
+        value: deepseek-v4-pro
+      - key: DEEPSEEK_PLAN_MODEL
+        value: deepseek-v4-flash
+      - key: DEEPSEEK_RAG_MODEL
+        value: deepseek-v4-pro
+      - key: DEEPSEEK_RAG_MAX_TOKENS
+        value: "1600"
+      - key: DEEPSEEK_RAG_MAX_ANSWER_CHARS
+        value: "12000"
+      - key: DEEPSEEK_RERANK_ENABLED
+        value: "true"
+      - key: DEEPSEEK_RERANK_MODEL
+        value: deepseek-v4-flash
+      - key: DEEPSEEK_RERANK_TIMEOUT_MS
+        value: "15000"
+      - key: DEEPSEEK_RERANK_MAX_TOKENS
+        value: "1800"
+      - key: DEEPSEEK_RERANK_CANDIDATE_LIMIT
+        value: "12"
+      - key: INSPIRATION_API_KEY
+        sync: false
+      - key: INSPIRATION_BASE_URL
+        value: https://ark.cn-beijing.volces.com/api/v3
+      - key: INSPIRATION_MODEL
+        value: doubao-seed-2-1-turbo-260628
+      - key: INSPIRATION_MAX_TOKENS
+        value: "600"
+      - key: OBJECT_STORE_DRIVER
+        value: r2
+      - key: OBJECT_STORE_ENDPOINT
+        sync: false
+      - key: OBJECT_STORE_REGION
+        value: auto
+      - key: OBJECT_STORE_BUCKET
+        sync: false
+      - key: OBJECT_STORE_ACCESS_KEY_ID
+        sync: false
+      - key: OBJECT_STORE_SECRET_ACCESS_KEY
+        sync: false
+      - key: OBJECT_STORE_FORCE_PATH_STYLE
+        value: "false"
+      - key: OBJECT_SIGNED_URL_TTL_SECONDS
+        value: "300"
+      - key: LOG_LEVEL
+        value: info
+      - key: OTEL_SERVICE_NAME
+        value: us-college-consultant

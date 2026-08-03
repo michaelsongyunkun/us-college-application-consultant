@@ -386,6 +386,10 @@ export function resolveDatabasePath(env = process.env) {
   return env.AUTH_DATABASE_PATH || env.DATABASE_PATH || defaultDatabasePath;
 }
 
+export function resolveAppBaseUrl(env = process.env) {
+  return String(env.APP_BASE_URL || env.RENDER_EXTERNAL_URL || "").trim();
+}
+
 export function createAppServer({
   env = process.env,
   databasePath = resolveDatabasePath(env),
@@ -441,7 +445,7 @@ export function createAppServer({
     ...(deepSeekSchoolSelectionLlmClient ? { llmClient: deepSeekSchoolSelectionLlmClient } : {}),
   }),
   mailer = createMailerFromEnv(env),
-  appBaseUrl = env.APP_BASE_URL || "",
+  appBaseUrl = resolveAppBaseUrl(env),
   authHttp = null,
   maxRequestBodyBytes = DEFAULT_MAX_REQUEST_BODY_BYTES,
   rateLimits = DEFAULT_RATE_LIMITS,
