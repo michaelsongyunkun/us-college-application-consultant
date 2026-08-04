@@ -22,7 +22,7 @@ import { createStaticAdmissionsKnowledgeGraphAdapter } from "./admissions-knowle
 import { createRetrievalOrchestrator } from "./retrieval-orchestrator.mjs";
 
 const ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "rd", "uc"];
-const MAX_SELECTION_ATTEMPTS = 2;
+const MAX_SELECTION_ATTEMPTS = 3;
 const MAX_RAG_SOURCES = 8;
 const MAX_RAG_CONTEXT_CHARS = 12_000;
 const DEEPSEEK_SCHOOL_SELECTION_MAX_TOKENS = 9000;
@@ -407,6 +407,8 @@ async function draftSchoolSelection({
   signal,
 }) {
   let lastValidationError = null;
+  let lastRepairMessage = "";
+  let lastRepairSelection = null;
   for (let attempt = 1; attempt <= MAX_SELECTION_ATTEMPTS; attempt += 1) {
     const llmResult = await invokeSchoolSelectionLlm({
       llmClient,
@@ -424,7 +426,8 @@ async function draftSchoolSelection({
             portfolio,
             ragContext,
             retrieval,
-            repairMessage: lastValidationError?.message || "",
+            repairMessage: lastRepairMessage || lastValidationError?.message || "",
+            repairSelection: lastRepairSelection,
           }),
         },
       ],
@@ -437,10 +440,12 @@ async function draftSchoolSelection({
       continue;
     }
 
+    let parsedSelection = null;
     try {
+      parsedSelection = parseSelectionJson(answer);
       return {
         answer,
-        validatedSelection: validateSchoolSelectionResult(parseSelectionJson(answer), {
+        validatedSelection: validateSchoolSelectionResult(parsedSelection, {
           applicationRoundSchools,
         }),
         attempts: attempt,
@@ -450,9 +455,23 @@ async function draftSchoolSelection({
         throw error;
       }
       lastValidationError = error;
+      lastRepairSelection = parsedSelection;
+      lastRepairMessage = buildSelectionRepairMessage(error, parsedSelection);
     }
   }
   throw lastValidationError || new SchoolSelectionError("DeepSeek 选校结果未通过二次校验。", 502);
+}
+
+function buildSelectionRepairMessage(error, selection) {
+  const counts = Object.fromEntries(
+    ROUND_KEYS.map((round) => [round, Array.isArray(selection?.rounds?.[round]) ? selection.rounds[round].length : 0]),
+  );
+  const earlyCount = counts.rea + counts.ed1;
+  return [
+    error?.message || "选校结果未通过二次校验。",
+    `当前轮次数量：REA/ED1 ${earlyCount}，ED2 ${counts.ed2}，EA ${counts.ea}，RD ${counts.rd}，UC ${counts.uc}。`,
+    "必须保留合规学校，并只补齐、替换或移动导致缺口的学校。",
+  ].join(" ");
 }
 
 function evaluateSchoolSelectionQuality({
@@ -563,6 +582,7 @@ export function validateSchoolSelectionResult(value, { applicationRoundSchools =
   normalizedRounds = repairEarlyApplicationChoice(normalizedRounds);
   normalizedRounds = repairRoundDuplicates(normalizedRounds);
   normalizedRounds = repairUnsupportedEaSchools(normalizedRounds, applicationRoundSchools);
+  normalizedRounds = repairRoundCountDeficits(normalizedRounds, applicationRoundSchools);
   assertSupportedApplicationRounds(normalizedRounds, applicationRoundSchools);
 
   if (normalizedRounds.rea.length + normalizedRounds.ed1.length !== 1) {
@@ -647,6 +667,35 @@ function repairUnsupportedEaSchools(rounds, applicationRoundSchools) {
   }
 
   return changed ? { ...rounds, ea, rd } : rounds;
+}
+
+function repairRoundCountDeficits(rounds, applicationRoundSchools) {
+  if (!Array.isArray(applicationRoundSchools) || !applicationRoundSchools.length) return rounds;
+
+  const schoolsByKey = buildApplicationRoundSchoolIndex(applicationRoundSchools);
+  const repairedRounds = { ...rounds, ea: [...(rounds.ea || [])], rd: [...(rounds.rd || [])] };
+  let changed = false;
+
+  for (const [targetRound, donorRound] of [["rd", "ea"], ["ea", "rd"]]) {
+    const target = repairedRounds[targetRound];
+    const donor = repairedRounds[donorRound];
+    const minimum = ROUND_LIMITS[targetRound][0];
+    const donorMinimum = ROUND_LIMITS[donorRound][0];
+
+    while (target.length < minimum && donor.length > donorMinimum) {
+      const donorIndex = donor.findIndex((recommendation) => {
+        const school = findApplicationRoundSchool(recommendation.school, schoolsByKey);
+        return school && isEligibleForRound(school, targetRound);
+      });
+      if (donorIndex === -1) break;
+
+      const [recommendation] = donor.splice(donorIndex, 1);
+      target.push(markRoundAdjustment(recommendation, donorRound.toUpperCase(), targetRound.toUpperCase()));
+      changed = true;
+    }
+  }
+
+  return changed ? repairedRounds : rounds;
 }
 
 function markRoundAdjustment(recommendation, fromRound, toRound) {
@@ -1007,7 +1056,14 @@ function normalizeInput(payload) {
   };
 }
 
-function buildUserMessage({ input, portfolio, ragContext = "", retrieval = {}, repairMessage = "" }) {
+function buildUserMessage({
+  input,
+  portfolio,
+  ragContext = "",
+  retrieval = {},
+  repairMessage = "",
+  repairSelection = null,
+}) {
   return [
     "请基于以下信息生成美本选校系统结果，并严格遵守系统提示中的 JSON schema 与轮次数量规则。",
     "请先判断学生整体竞争力，再分配 REA/ED1、ED2、EA、RD、UC。",
@@ -1017,6 +1073,12 @@ function buildUserMessage({ input, portfolio, ragContext = "", retrieval = {}, r
     "如果信息不足，明确写入 gaps，不要自行补全。",
     repairMessage
       ? `上一次输出未通过二次校验：${repairMessage}。请只修正 JSON，不要解释。`
+      : "",
+    repairSelection
+      ? [
+        "上一次需要修复的完整选校结果如下。保留其中合规且不重复的学校，只补齐或替换不合规轮次；不要删除已合规学校。",
+        JSON.stringify(repairSelection, null, 2),
+      ].join("\n")
       : "",
     "",
     "用户国籍：",

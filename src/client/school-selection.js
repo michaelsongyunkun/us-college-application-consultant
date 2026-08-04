@@ -132,7 +132,7 @@ async function generateSchoolSelection(event) {
         durationMs: performance.now() - startedAt,
       },
     });
-    setStatus("选校方案已生成");
+    setStatus(getSchoolSelectionCompletionStatus(result));
     clearPendingSchoolSelectionJob();
   } catch (error) {
     if (error.final || /not found/i.test(error.message)) clearPendingSchoolSelectionJob();
@@ -190,6 +190,12 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function getSchoolSelectionCompletionStatus(result = {}) {
+  return Number(result.attempts || 1) > 1
+    ? "选校方案已生成，系统已校正申请轮次。"
+    : "选校方案已生成";
+}
+
 function readPendingSchoolSelectionJob() {
   try {
     const raw = localStorage.getItem(SCHOOL_SELECTION_PENDING_JOB_KEY);
@@ -231,7 +237,7 @@ async function resumePendingSchoolSelectionJob() {
       },
       details: { resumed: true },
     });
-    setStatus("选校方案已生成");
+    setStatus(getSchoolSelectionCompletionStatus(result));
     clearPendingSchoolSelectionJob();
   } catch (error) {
     if (error.final || /not found/i.test(error.message)) clearPendingSchoolSelectionJob();
