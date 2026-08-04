@@ -177,6 +177,23 @@ assert.ok(
   repairedUnsupportedEaSchoolAtMinimum.rounds.rd.some((entry) => entry.school === "University of Washington"),
 );
 
+const repairedUcDuplicateAtRdMinimum = validateSchoolSelectionResult({
+  ...validSelection,
+  rounds: {
+    ...validSelection.rounds,
+    rd: [
+      school("University of California, Berkeley", "Data Science", "high"),
+      ...validSelection.rounds.rd.slice(0, 7),
+    ],
+  },
+}, { applicationRoundSchools });
+assert.equal(repairedUcDuplicateAtRdMinimum.rounds.rd.length, 8);
+assert.equal(repairedUcDuplicateAtRdMinimum.rounds.ea.length, 3);
+assert.equal(
+  repairedUcDuplicateAtRdMinimum.rounds.rd.some((entry) => entry.school === "University of California, Berkeley"),
+  false,
+);
+
 assert.throws(
   () => validateSchoolSelectionResult({
     ...validSelection,
@@ -238,7 +255,11 @@ const service = createSchoolSelectionService({
     (callNumber) => {
       const brokenSelection = {
         ...validSelection,
-        rounds: { ...validSelection.rounds, ea: validSelection.rounds.ea.slice(0, 2) },
+        rounds: {
+          ...validSelection.rounds,
+          ea: validSelection.rounds.ea.slice(0, 3),
+          rd: validSelection.rounds.rd.slice(0, 7),
+        },
       };
       return JSON.stringify(callNumber === 1 ? brokenSelection : validSelection);
     },
@@ -339,7 +360,10 @@ assert.match(sentPayload.messages[1].content, /如果信息不足，明确写入
 const retryPayload = calls[1];
 assert.equal(retryPayload.temperature, 0.1);
 assert.match(retryPayload.messages[1].content, /上一次输出未通过二次校验/);
-assert.match(retryPayload.messages[1].content, /EA 需要 3-5 所/);
+assert.match(retryPayload.messages[1].content, /RD 需要 8-12 所/);
+assert.match(retryPayload.messages[1].content, /当前轮次数量：REA\/ED1 1，ED2 1，EA 3，RD 7，UC 6/);
+assert.match(retryPayload.messages[1].content, /上一次需要修复的完整选校结果/);
+assert.match(retryPayload.messages[1].content, /Harvard University/);
 
 const incompleteProfileService = createSchoolSelectionService({
   activityPortfolio: {
