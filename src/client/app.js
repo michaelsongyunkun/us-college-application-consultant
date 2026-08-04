@@ -24,7 +24,10 @@ import { renderActivityQualityPanel } from "./activity-quality-ui.mjs";
 import { renderParseDiagnostics } from "./agent-answer-diagnostics-ui.mjs";
 import { buildSvgDocument } from "../domain/svg-export.mjs?v=20260531-svg-wrap";
 import { buildWordDocument } from "../domain/word-export.mjs?v=20260601-word-export";
-import { getRequestErrorMessage } from "./auth-client-errors.mjs";
+import {
+  getAiGenerationErrorMessage,
+  getRequestErrorMessage,
+} from "./auth-client-errors.mjs?v=20260804-ai-timeout-recovery";
 import { escapeHtml } from "./html-utils.mjs";
 import { csrfFetch } from "./csrf-token.mjs";
 import {
@@ -846,7 +849,10 @@ async function waitForDeepSeekPlanJob(jobId) {
       return job.result;
     }
     if (job.status === "failed") {
-      const error = new Error(job.error || "DeepSeek 规划生成失败，请稍后重试。");
+      const error = new Error(getAiGenerationErrorMessage(job, {
+        operation: "DeepSeek 规划生成",
+        fallbackMessage: "DeepSeek 规划生成失败，请稍后重试。",
+      }));
       error.final = true;
       throw error;
     }

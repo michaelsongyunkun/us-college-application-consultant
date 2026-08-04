@@ -23,7 +23,7 @@ export interface AiCallPolicyOptions {
 
 export function createAiCallPolicy(options: AiCallPolicyOptions = {}) {
   const timeoutMs = positive(options.timeoutMs, 30_000);
-  const maxAttempts = positive(options.maxAttempts, 3);
+  const defaultMaxAttempts = positive(options.maxAttempts, 3);
   const baseDelayMs = positive(options.baseDelayMs, 250);
   const maxDelayMs = positive(options.maxDelayMs, 4_000);
   const failureThreshold = positive(options.failureThreshold, 5);
@@ -38,6 +38,7 @@ export function createAiCallPolicy(options: AiCallPolicyOptions = {}) {
     primaryModel,
     fallbackModels = [],
     timeoutMs: requestTimeoutMs,
+    maxAttempts: requestMaxAttempts,
     signal,
     operation,
   }: {
@@ -45,17 +46,19 @@ export function createAiCallPolicy(options: AiCallPolicyOptions = {}) {
     primaryModel: string;
     fallbackModels?: string[];
     timeoutMs?: number;
+    maxAttempts?: number;
     signal?: AbortSignal;
     operation: (context: { model: string; attempt: number; signal: AbortSignal }) => Promise<T>;
   }): Promise<T & { selectedModel?: string }> {
     assertCircuit(feature);
     const activeTimeoutMs = positive(requestTimeoutMs, timeoutMs);
+    const activeMaxAttempts = positive(requestMaxAttempts, defaultMaxAttempts);
     const models = [...new Set([primaryModel, ...fallbackModels].map((item) => String(item || "").trim()).filter(Boolean))];
     let lastError: unknown;
     let attempt = 0;
 
     for (const model of models) {
-      for (let modelAttempt = 1; modelAttempt <= maxAttempts; modelAttempt += 1) {
+      for (let modelAttempt = 1; modelAttempt <= activeMaxAttempts; modelAttempt += 1) {
         attempt += 1;
         try {
           const result = await withTimeout((timeoutSignal) => operation({ model, attempt, signal: timeoutSignal }), {
@@ -69,7 +72,7 @@ export function createAiCallPolicy(options: AiCallPolicyOptions = {}) {
           lastError = error;
           const classification = classifyAiCallError(error);
           if (classification === "non_retryable") throw error;
-          const mayRetry = modelAttempt < maxAttempts;
+          const mayRetry = modelAttempt < activeMaxAttempts;
           if (!mayRetry) break;
           const exponential = Math.min(maxDelayMs, baseDelayMs * (2 ** (modelAttempt - 1)));
           await sleep(Math.round(exponential * (0.75 + random() * 0.5)));

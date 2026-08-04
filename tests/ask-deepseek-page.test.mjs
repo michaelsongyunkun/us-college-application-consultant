@@ -143,6 +143,7 @@ assert.doesNotMatch(
 );
 assert.ok(script.includes("renderThinkingMessage"), "Ask DeepSeek should render a thinking message.");
 assert.ok(script.includes("......"), "DeepSeek thinking state should show six dots.");
+assert.ok(script.includes("getAiGenerationErrorMessage"), "Ask DeepSeek should distinguish AI timeouts from network interruptions.");
 assert.ok(script.includes("renderSourceCards"), "Ask DeepSeek should show retrieved source cards inside the answer.");
 assert.ok(script.includes("renderSourceSnippet"), "Ask DeepSeek should render retrieved source snippets as visual markdown.");
 assert.ok(script.includes("chat-source-snippet"), "Ask DeepSeek source snippets should use a styled visual container.");
@@ -253,7 +254,7 @@ for (const expected of [
   'data-deepseek-workflow="confirm-question"',
   'data-deepseek-workflow="small-action"',
   "./assets/inspiration-bean-avatar.svg",
-  "./src/client/ask-deepseek.js?v=20260803-response-length-preview",
+  "./src/client/ask-deepseek.js?v=20260804-ai-timeout-recovery",
 ]) {
   assert.ok(inspirationPageHtml.includes(expected), `Inspiration robot page should include ${expected}.`);
 }

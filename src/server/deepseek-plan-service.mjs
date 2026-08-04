@@ -23,7 +23,8 @@ import {
 
 const MAX_DEEPSEEK_PLAN_ATTEMPTS = 2;
 const DEEPSEEK_PLAN_MAX_TOKENS = 6500;
-const DEEPSEEK_PLAN_TIMEOUT_MS = 75_000;
+const DEEPSEEK_PLAN_TIMEOUT_MS = 120_000;
+const DEEPSEEK_PLAN_CALL_MAX_ATTEMPTS = 1;
 const PLANNING_PROFILE_FIELD_LIMIT = 800;
 const PLANNING_PROFILE_FIELD_COUNT_LIMIT = 24;
 const PLANNING_ACTIVITY_SHORT_FIELD_LIMIT = 120;
@@ -60,6 +61,10 @@ export function createDeepSeekPlanService({
     const model = normalizeDeepSeekModel(env.DEEPSEEK_PLAN_MODEL, "deepseek-v4-flash");
     const maxTokens = normalizePositiveInteger(env.DEEPSEEK_PLAN_MAX_TOKENS, DEEPSEEK_PLAN_MAX_TOKENS);
     const timeoutMs = normalizePositiveInteger(env.DEEPSEEK_PLAN_TIMEOUT_MS, DEEPSEEK_PLAN_TIMEOUT_MS);
+    const maxAttempts = normalizePositiveInteger(
+      env.DEEPSEEK_PLAN_CALL_MAX_ATTEMPTS,
+      DEEPSEEK_PLAN_CALL_MAX_ATTEMPTS,
+    );
     let repairMessage = "";
 
     for (let attempt = 1; attempt <= MAX_DEEPSEEK_PLAN_ATTEMPTS; attempt += 1) {
@@ -70,6 +75,7 @@ export function createDeepSeekPlanService({
         model,
         maxTokens,
         timeoutMs,
+        maxAttempts,
         signal,
         temperature: attempt === 1 ? 0.4 : 0.2,
         messages: [
@@ -121,6 +127,7 @@ async function invokePlanLlm({
   model,
   maxTokens,
   timeoutMs,
+  maxAttempts,
   temperature,
   messages,
   signal,
@@ -134,6 +141,7 @@ async function invokePlanLlm({
       temperature,
       maxTokens,
       timeoutMs,
+      maxAttempts,
       messages,
       signal,
     });

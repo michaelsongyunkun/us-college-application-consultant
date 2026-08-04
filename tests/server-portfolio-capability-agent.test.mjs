@@ -134,6 +134,8 @@ try {
   const sentPayload = calls[0];
   assert.equal(sentPayload.model, "deepseek-v4-flash");
   assert.equal(sentPayload.maxTokens, 4200);
+  assert.equal(sentPayload.timeoutMs, 120_000);
+  assert.equal(sentPayload.maxAttempts, 1);
   assert.equal(sentPayload.temperature, 0.25);
   assert.equal(sentPayload.messages[0].role, "system");
   assert.match(sentPayload.messages[0].content, /严禁输出院校推荐/);
@@ -233,6 +235,8 @@ function createMockPortfolioCapabilityLlmClient(callLog) {
       callLog.push({
         model: options.model,
         maxTokens: options.maxTokens,
+        timeoutMs: options.timeoutMs,
+        maxAttempts: options.maxAttempts,
         temperature: options.temperature,
         messages: options.messages,
         signal: options.signal,

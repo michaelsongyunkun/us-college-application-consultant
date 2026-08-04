@@ -70,7 +70,7 @@ for (const expected of [
   "\u5bfc\u51faWord\u6587\u6863",
   "./assets/logo-mark.svg",
   "./styles.css?v=20260605-ui",
-  "./src/client/school-selection.js?v=20260603-admission-probability",
+  "./src/client/school-selection.js?v=20260804-ai-timeout-recovery",
 ]) {
   assert.ok(pageHtml.includes(expected), `School selection page should include ${expected}.`);
 }
@@ -144,6 +144,7 @@ assert.ok(script.includes('"/api/my-activities"'), "School selection should load
 assert.ok(script.includes("trackSchoolSelectionUsageEvent"), "School selection should record key usage events.");
 assert.ok(script.includes("school_selection_generate_success"), "School selection should track successful generation.");
 assert.ok(script.includes("school_selection_generate_failure"), "School selection should track failed generation.");
+assert.ok(script.includes("getAiGenerationErrorMessage"), "School selection should identify model timeouts instead of reporting a network interruption.");
 assert.ok(script.includes("school_selection_save"), "School selection should track saves into the portfolio.");
 assert.ok(script.includes("school_selection_export_svg"), "School selection should track SVG exports separately.");
 assert.ok(script.includes("school_selection_export_word"), "School selection should track Word exports separately.");

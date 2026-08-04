@@ -40,6 +40,22 @@ assert.equal(
   }).then((value) => value.ok),
   true,
 );
+const requestAttemptCalls = [];
+const overrideAttemptsPolicy = createAiCallPolicy({
+  maxAttempts: 3,
+  baseDelayMs: 1,
+  sleep: async () => {},
+});
+await assert.rejects(() => overrideAttemptsPolicy.execute({
+  feature: "school-selection-attempt-budget",
+  primaryModel: "primary",
+  maxAttempts: 1,
+  operation: async () => {
+    requestAttemptCalls.push("called");
+    throw Object.assign(new Error("temporary"), { statusCode: 503 });
+  },
+}));
+assert.equal(requestAttemptCalls.length, 1);
 let now = 100;
 const circuit = createAiCallPolicy({ maxAttempts: 1, failureThreshold: 1, resetTimeoutMs: 50, now: () => now });
 await assert.rejects(() => circuit.execute({ feature: "rag", primaryModel: "primary", operation: async () => { throw Object.assign(new Error("down"), { statusCode: 503 }); } }));

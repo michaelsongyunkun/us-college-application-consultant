@@ -167,6 +167,8 @@ try {
   const sentPayload = calls[0];
   assert.equal(sentPayload.model, "deepseek-v4-pro");
   assert.equal(sentPayload.temperature, 0.25);
+  assert.equal(sentPayload.timeoutMs, 90_000);
+  assert.equal(sentPayload.maxAttempts, 1);
   assert.equal(sentPayload.messages[0].role, "system");
   assert.equal(sentPayload.messages[1].role, "user");
   const systemPrompt = sentPayload.messages[0].content;
@@ -218,6 +220,8 @@ try {
   assert.equal(calls[1].model, "doubao-seed-2-1-turbo-test");
   assert.equal(calls[1].disableThinking, true);
   assert.equal(calls[1].maxTokens, 480);
+  assert.equal(calls[1].timeoutMs, 60_000);
+  assert.equal(calls[1].maxAttempts, 1);
   const inspirationSystemPrompt = calls[1].messages[0].content;
   assert.match(inspirationSystemPrompt, /“启发性机器人”/);
   assert.match(inspirationSystemPrompt, /知心大姐姐式学生探索伙伴/);
@@ -252,6 +256,8 @@ try {
   assert.ok(majorMatchBody.retrieval.graph.selectedFacts > 0);
   assert.equal(calls.length, 3);
   const majorMatchPayload = calls[2];
+  assert.equal(majorMatchPayload.timeoutMs, 90_000);
+  assert.equal(majorMatchPayload.maxAttempts, 1);
   const majorMatchSystemPrompt = majorMatchPayload.messages[0].content;
   assert.match(majorMatchPayload.messages[1].content, /graph_traversal.*document_retrieval.*evidence_synthesis/);
   assert.match(majorMatchSystemPrompt, /美本本科专业匹配顾问/);
@@ -343,6 +349,8 @@ function createMockRagLlmClient(callLog, getContent = () => ragAnswer) {
         temperature: options.temperature,
         disableThinking: options.disableThinking,
         maxTokens: options.maxTokens,
+        timeoutMs: options.timeoutMs,
+        maxAttempts: options.maxAttempts,
         messages: options.messages,
         signal: options.signal,
       });

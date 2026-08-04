@@ -31,6 +31,10 @@ const SOURCE_SNIPPET_CHARS = 260;
 const DEFAULT_INSPIRATION_MAX_TOKENS = 600;
 const DEFAULT_RAG_MAX_TOKENS = 1_600;
 const DEFAULT_MAJOR_MATCH_MAX_TOKENS = 2_200;
+const DEFAULT_INSPIRATION_TIMEOUT_MS = 60_000;
+const DEFAULT_RAG_TIMEOUT_MS = 90_000;
+const DEFAULT_MAJOR_MATCH_TIMEOUT_MS = 90_000;
+const DEFAULT_AI_CALL_MAX_ATTEMPTS = 1;
 const DEFAULT_RAG_MAX_ANSWER_CHARS = 12_000;
 const RAG_ANSWER_TRUNCATION_NOTICE = "\n\n> 回答已达到长度上限。建议缩小问题范围后继续追问。";
 
@@ -234,6 +238,11 @@ export function createDeepSeekRagService({
           baseURL: env.INSPIRATION_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3",
           fallbackModels: env.INSPIRATION_FALLBACK_MODEL || "",
           maxTokens: normalizePositiveInteger(env.INSPIRATION_MAX_TOKENS, DEFAULT_INSPIRATION_MAX_TOKENS),
+          timeoutMs: normalizePositiveInteger(env.INSPIRATION_TIMEOUT_MS, DEFAULT_INSPIRATION_TIMEOUT_MS),
+          maxAttempts: normalizePositiveInteger(
+            env.INSPIRATION_CALL_MAX_ATTEMPTS,
+            DEFAULT_AI_CALL_MAX_ATTEMPTS,
+          ),
           env,
           llmClient,
           metrics,
@@ -266,6 +275,8 @@ async function answerInspirationQuestion({
   baseURL,
   fallbackModels = "",
   maxTokens = DEFAULT_INSPIRATION_MAX_TOKENS,
+  timeoutMs = DEFAULT_INSPIRATION_TIMEOUT_MS,
+  maxAttempts = DEFAULT_AI_CALL_MAX_ATTEMPTS,
   env = process.env,
   llmClient,
   metrics = null,
@@ -284,6 +295,8 @@ async function answerInspirationQuestion({
     disableThinking: true,
     fallbackModels,
     maxTokens,
+    timeoutMs,
+    maxAttempts,
     messages: [
       { role: "system", content: INSPIRATION_SYSTEM_PROMPT },
       { role: "user", content: buildInspirationUserMessage(question, historySummary) },
@@ -310,6 +323,7 @@ async function draftDeepSeekRagAnswer({
   signal,
 }) {
   const outputLimits = resolveRagOutputLimits({ assistantProfile, env });
+  const callPolicy = resolveRagCallPolicy({ assistantProfile, env });
   const retrieval = retrievalResult.retrieval || {};
   const intentProfile = {
     intent: retrieval.intent,
@@ -327,6 +341,8 @@ async function draftDeepSeekRagAnswer({
     model,
     temperature: 0.25,
     maxTokens: outputLimits.maxTokens,
+    timeoutMs: callPolicy.timeoutMs,
+    maxAttempts: callPolicy.maxAttempts,
     messages: [
       { role: "system", content: selectSystemPrompt(assistantProfile) },
       {
@@ -372,6 +388,8 @@ async function invokeDeepSeekLlm({
   disableThinking = true,
   fallbackModels,
   maxTokens,
+  timeoutMs,
+  maxAttempts,
   messages,
   signal,
   onToken,
@@ -388,6 +406,8 @@ async function invokeDeepSeekLlm({
       disableThinking,
       fallbackModels,
       maxTokens,
+      timeoutMs,
+      maxAttempts,
       messages,
       signal,
       onToken,
@@ -457,6 +477,20 @@ function resolveRagOutputLimits({ assistantProfile = "", env = process.env } = {
     maxAnswerChars: normalizePositiveInteger(
       env.DEEPSEEK_RAG_MAX_ANSWER_CHARS,
       DEFAULT_RAG_MAX_ANSWER_CHARS,
+    ),
+  };
+}
+
+function resolveRagCallPolicy({ assistantProfile = "", env = process.env } = {}) {
+  const majorMatch = assistantProfile === "major-match";
+  return {
+    timeoutMs: normalizePositiveInteger(
+      majorMatch ? env.DEEPSEEK_MAJOR_MATCH_TIMEOUT_MS : env.DEEPSEEK_RAG_TIMEOUT_MS,
+      majorMatch ? DEFAULT_MAJOR_MATCH_TIMEOUT_MS : DEFAULT_RAG_TIMEOUT_MS,
+    ),
+    maxAttempts: normalizePositiveInteger(
+      env.DEEPSEEK_RAG_CALL_MAX_ATTEMPTS,
+      DEFAULT_AI_CALL_MAX_ATTEMPTS,
     ),
   };
 }

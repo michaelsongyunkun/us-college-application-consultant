@@ -236,7 +236,7 @@ assert.match(
 );
 assert.match(
   html,
-  /src="\.\/src\/client\/app\.js\?v=20260602-deepseek-wait-time"/,
+  /src="\.\/src\/client\/app\.js\?v=20260804-ai-timeout-recovery"/,
   "Main app script should be cache-busted when DeepSeek wait-time copy changes.",
 );
 assert.match(html, /id="resetButton"[^>]*class="danger"/, "Reset should use a danger action style.");

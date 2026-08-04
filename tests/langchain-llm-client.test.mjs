@@ -245,10 +245,12 @@ await timeoutClient.invoke({
   model: "deepseek-v4-flash",
   messages: [["user", "Test timeout"]],
   timeoutMs: 75_000,
+  maxAttempts: 1,
 });
 assert.equal(policyCalls.length, 1);
 assert.equal(policyCalls[0].feature, "deepseek-plan");
 assert.equal(policyCalls[0].timeoutMs, 75_000);
+assert.equal(policyCalls[0].maxAttempts, 1);
 assert.deepEqual(policySignals, ["policy-timeout-signal"]);
 
 assert.equal(normalizeLangChainMessages([["human", "Hi"]])[0]._getType(), "human");

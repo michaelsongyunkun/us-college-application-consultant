@@ -156,6 +156,8 @@ try {
   const sentPayload = calls[0];
   assert.equal(sentPayload.model, "deepseek-v4-flash");
   assert.equal(sentPayload.maxTokens, 9000);
+  assert.equal(sentPayload.timeoutMs, 120_000);
+  assert.equal(sentPayload.maxAttempts, 1);
   assert.equal(sentPayload.temperature, 0.2);
   assert.match(sentPayload.messages[1].content, /中国大陆高中/);
   assert.match(sentPayload.messages[1].content, /Data Science/);
@@ -214,6 +216,8 @@ function createMockSchoolSelectionLlmClient(callLog) {
       callLog.push({
         model: options.model,
         maxTokens: options.maxTokens,
+        timeoutMs: options.timeoutMs,
+        maxAttempts: options.maxAttempts,
         temperature: options.temperature,
         messages: options.messages,
         signal: options.signal,

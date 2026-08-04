@@ -2,6 +2,7 @@ import { escapeHtml } from "./html-utils.mjs";
 import { renderMarkdown } from "../domain/markdown-renderer.mjs?v=20260531-deepseek-markdown";
 import { csrfFetch } from "./csrf-token.mjs";
 import { requestRagStream } from "./rag-stream.mjs?v=20260731-stream-delta";
+import { getAiGenerationErrorMessage } from "./auth-client-errors.mjs?v=20260804-ai-timeout-recovery";
 
 const form = document.querySelector("#deepSeekQuestionForm");
 const questionInput = document.querySelector("#deepSeekQuestion");
@@ -368,7 +369,10 @@ async function waitForDeepSeekRagJob(jobId) {
 
     if (job.status === "completed") return job.result || {};
     if (job.status === "failed") {
-      const error = new Error(job.error || `${ASSISTANT_NAME}问答失败，请稍后重试。`);
+      const error = new Error(getAiGenerationErrorMessage(job, {
+        operation: `${ASSISTANT_NAME}回答生成`,
+        fallbackMessage: `${ASSISTANT_NAME}问答失败，请稍后重试。`,
+      }));
       error.final = true;
       throw error;
     }
@@ -775,17 +779,21 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
     setStatus(IS_INSPIRATION_PROFILE ? "已回复" : `已回复，附 ${sources.length} 条参考资料`);
   } catch (error) {
     if (error.final || /not found/i.test(error.message)) clearPendingDeepSeekRagJob();
+    const message = getAiGenerationErrorMessage(error, {
+      operation: `${ASSISTANT_NAME}回答生成`,
+      fallbackMessage: `${ASSISTANT_NAME}问答失败，请稍后重试。`,
+    });
     stopProgressStatus();
     replaceMessage(thinkingMessageId, {
       role: "assistant",
-      content: error.message,
+      content: message,
       error: true,
     });
     trackDeepSeekUsageEvent("deepseek_rag_question_failure", {
       metrics: { completionFields: 1, durationMs: performance.now() - startedAt },
-      details: { workflowKey, questionLength: question.length, failureReason: error.message },
+      details: { workflowKey, questionLength: question.length, failureReason: message },
     });
-    setStatus(error.message, true);
+    setStatus(message, true);
   } finally {
     deepSeekRagJobPolling = false;
     setWorking(false);
@@ -844,13 +852,17 @@ async function resumePendingDeepSeekRagJob() {
     setStatus(IS_INSPIRATION_PROFILE ? "已回复" : `已回复，附 ${sources.length} 条参考资料`);
   } catch (error) {
     if (error.final || /not found/i.test(error.message)) clearPendingDeepSeekRagJob();
+    const message = getAiGenerationErrorMessage(error, {
+      operation: `${ASSISTANT_NAME}回答生成`,
+      fallbackMessage: `${ASSISTANT_NAME}问答失败，请稍后重试。`,
+    });
     stopProgressStatus();
     replaceMessage(thinkingMessageId, {
       role: "assistant",
-      content: error.message,
+      content: message,
       error: true,
     });
-    setStatus(error.message, true);
+    setStatus(message, true);
   } finally {
     deepSeekRagJobPolling = false;
     setWorking(false);

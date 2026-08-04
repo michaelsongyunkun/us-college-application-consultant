@@ -13,6 +13,8 @@ import { monotonicNowMs } from "./observability.mjs";
 import { withSpan } from "./production-observability.ts";
 
 const DEEPSEEK_CAPABILITY_MAX_TOKENS = 4200;
+const DEEPSEEK_CAPABILITY_TIMEOUT_MS = 120_000;
+const DEEPSEEK_CAPABILITY_CALL_MAX_ATTEMPTS = 1;
 const MAX_AGENT_ATTEMPTS = 2;
 const TEXT_LIMIT = 700;
 const LIST_LIMIT = 8;
@@ -221,6 +223,14 @@ async function invokePortfolioCapabilityLlm({
   signal,
 }) {
   const startedAt = monotonicNowMs();
+  const timeoutMs = normalizePositiveInteger(
+    env.DEEPSEEK_CAPABILITY_ASSESSMENT_TIMEOUT_MS,
+    DEEPSEEK_CAPABILITY_TIMEOUT_MS,
+  );
+  const maxAttempts = normalizePositiveInteger(
+    env.DEEPSEEK_CAPABILITY_ASSESSMENT_CALL_MAX_ATTEMPTS,
+    DEEPSEEK_CAPABILITY_CALL_MAX_ATTEMPTS,
+  );
   try {
     const result = await llmClient.invoke({
       env,
@@ -228,6 +238,8 @@ async function invokePortfolioCapabilityLlm({
       model,
       temperature,
       maxTokens,
+      timeoutMs,
+      maxAttempts,
       messages,
       signal,
     });
