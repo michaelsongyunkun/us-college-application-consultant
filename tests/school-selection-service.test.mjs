@@ -132,6 +132,51 @@ assert.equal(
 const applicationRoundSchools = parseApplicationRoundSchoolsMarkdown(
   readFileSync("data/application-round-schools.md", "utf8"),
 );
+
+const repairedUnsupportedEaSchool = validateSchoolSelectionResult({
+  ...validSelection,
+  rounds: {
+    ...validSelection.rounds,
+    ea: [
+      ...validSelection.rounds.ea.slice(0, 3),
+      school("University of Washington", "Computer Science", "high"),
+    ],
+  },
+}, { applicationRoundSchools });
+assert.equal(repairedUnsupportedEaSchool.rounds.ea.length, 3);
+assert.equal(repairedUnsupportedEaSchool.rounds.rd.length, 9);
+assert.equal(
+  repairedUnsupportedEaSchool.rounds.ea.some((entry) => entry.school === "University of Washington"),
+  false,
+);
+assert.equal(
+  repairedUnsupportedEaSchool.rounds.rd.some((entry) => entry.school === "University of Washington"),
+  true,
+);
+assert.match(
+  repairedUnsupportedEaSchool.rounds.rd.find((entry) => entry.school === "University of Washington").gaps.join(" "),
+  /已根据申请轮次规则从 EA 调整为 RD/u,
+);
+
+const repairedUnsupportedEaSchoolAtMinimum = validateSchoolSelectionResult({
+  ...validSelection,
+  rounds: {
+    ...validSelection.rounds,
+    ea: [
+      ...validSelection.rounds.ea.slice(0, 2),
+      school("University of Washington", "Computer Science", "high"),
+    ],
+  },
+}, { applicationRoundSchools });
+assert.equal(repairedUnsupportedEaSchoolAtMinimum.rounds.ea.length, 3);
+assert.equal(repairedUnsupportedEaSchoolAtMinimum.rounds.rd.length, 8);
+assert.ok(
+  repairedUnsupportedEaSchoolAtMinimum.rounds.ea.some((entry) => entry.school === "Northeastern University"),
+);
+assert.ok(
+  repairedUnsupportedEaSchoolAtMinimum.rounds.rd.some((entry) => entry.school === "University of Washington"),
+);
+
 assert.throws(
   () => validateSchoolSelectionResult({
     ...validSelection,

@@ -562,6 +562,7 @@ export function validateSchoolSelectionResult(value, { applicationRoundSchools =
   ));
   normalizedRounds = repairEarlyApplicationChoice(normalizedRounds);
   normalizedRounds = repairRoundDuplicates(normalizedRounds);
+  normalizedRounds = repairUnsupportedEaSchools(normalizedRounds, applicationRoundSchools);
   assertSupportedApplicationRounds(normalizedRounds, applicationRoundSchools);
 
   if (normalizedRounds.rea.length + normalizedRounds.ed1.length !== 1) {
@@ -595,21 +596,82 @@ async function loadApplicationRoundSchools(root) {
 
 function assertSupportedApplicationRounds(rounds, applicationRoundSchools) {
   if (!Array.isArray(applicationRoundSchools) || !applicationRoundSchools.length) return;
+  const schoolsByKey = buildApplicationRoundSchoolIndex(applicationRoundSchools);
+  for (const round of ROUND_KEYS) {
+    for (const recommendation of rounds[round] || []) {
+      const school = findApplicationRoundSchool(recommendation.school, schoolsByKey);
+      if (!school || isEligibleForRound(school, round)) continue;
+      throw new SchoolSelectionError(`${recommendation.school} 不支持 ${round.toUpperCase()} 申请轮次。`, 502);
+    }
+  }
+}
+
+function repairUnsupportedEaSchools(rounds, applicationRoundSchools) {
+  if (!Array.isArray(applicationRoundSchools) || !applicationRoundSchools.length) return rounds;
+
+  const schoolsByKey = buildApplicationRoundSchoolIndex(applicationRoundSchools);
+  const ea = [...(rounds.ea || [])];
+  const rd = [...(rounds.rd || [])];
+  let changed = false;
+
+  for (let index = 0; index < ea.length;) {
+    const recommendation = ea[index];
+    const school = findApplicationRoundSchool(recommendation.school, schoolsByKey);
+    if (!school || isEligibleForRound(school, "ea") || !isEligibleForRound(school, "rd")) {
+      index += 1;
+      continue;
+    }
+
+    const canMoveToRd = ea.length > ROUND_LIMITS.ea[0] && rd.length < ROUND_LIMITS.rd[1];
+    if (canMoveToRd) {
+      ea.splice(index, 1);
+      rd.push(markRoundAdjustment(recommendation, "EA", "RD"));
+      changed = true;
+      continue;
+    }
+
+    const swapIndex = rd.findIndex((candidate) => {
+      const candidateSchool = findApplicationRoundSchool(candidate.school, schoolsByKey);
+      return candidateSchool && isEligibleForRound(candidateSchool, "ea");
+    });
+    if (swapIndex === -1) {
+      index += 1;
+      continue;
+    }
+
+    const replacement = rd[swapIndex];
+    ea[index] = markRoundAdjustment(replacement, "RD", "EA");
+    rd[swapIndex] = markRoundAdjustment(recommendation, "EA", "RD");
+    changed = true;
+    index += 1;
+  }
+
+  return changed ? { ...rounds, ea, rd } : rounds;
+}
+
+function markRoundAdjustment(recommendation, fromRound, toRound) {
+  const note = `系统已根据申请轮次规则从 ${fromRound} 调整为 ${toRound}；请以申请年度官网为准。`;
+  const gaps = normalizeStringList(recommendation.gaps);
+  return {
+    ...recommendation,
+    gaps: gaps.includes(note) ? gaps : [...gaps.slice(0, 5), note],
+  };
+}
+
+function buildApplicationRoundSchoolIndex(applicationRoundSchools) {
   const schoolsByKey = new Map();
   for (const school of applicationRoundSchools) {
     for (const key of buildFriendlinessSchoolKeys(school.name)) {
       if (!schoolsByKey.has(key)) schoolsByKey.set(key, school);
     }
   }
-  for (const round of ROUND_KEYS) {
-    for (const recommendation of rounds[round] || []) {
-      const school = buildFriendlinessSchoolKeys(recommendation.school)
-        .map((key) => schoolsByKey.get(key))
-        .find(Boolean);
-      if (!school || isEligibleForRound(school, round)) continue;
-      throw new SchoolSelectionError(`${recommendation.school} 不支持 ${round.toUpperCase()} 申请轮次。`, 502);
-    }
-  }
+  return schoolsByKey;
+}
+
+function findApplicationRoundSchool(name, schoolsByKey) {
+  return buildFriendlinessSchoolKeys(name)
+    .map((key) => schoolsByKey.get(key))
+    .find(Boolean);
 }
 
 async function buildSchoolFriendlinessIndex(root) {
