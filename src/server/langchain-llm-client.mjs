@@ -35,6 +35,7 @@ export function createLangChainDeepSeekClient({
     disableThinking = true,
     fallbackModels,
     timeoutMs,
+    maxAttempts,
     signal,
     onToken,
   } = {}) {
@@ -122,6 +123,7 @@ export function createLangChainDeepSeekClient({
             selectedModel,
           ),
           timeoutMs,
+          maxAttempts,
           signal,
           operation: ({ model: activeModel, signal: activeSignal }) => invokeModel(activeModel, activeSignal),
         });

@@ -10,6 +10,7 @@ import { buildSvgDocument } from "../domain/svg-export.mjs?v=20260531-svg-wrap";
 import { buildWordDocument } from "../domain/word-export.mjs?v=20260601-word-export";
 import { insertEntryIntoFirstEmptySlot } from "./portfolio-entry-slots.mjs?v=20260601-activity-import-slot";
 import { csrfFetch } from "./csrf-token.mjs";
+import { getAiGenerationErrorMessage } from "./auth-client-errors.mjs?v=20260804-ai-timeout-recovery";
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const CAPABILITY_ASSESSMENT_JOB_ENDPOINT = "/api/portfolio-capability-assessment-jobs";
@@ -2129,7 +2130,10 @@ async function waitForCapabilityAssessmentJob(jobId) {
 
     if (job.status === "completed") return job.result || {};
     if (job.status === "failed") {
-      const error = new Error(job.error || "DeepSeek Agent 评估失败，请稍后重试。");
+      const error = new Error(getAiGenerationErrorMessage(job, {
+        operation: "DeepSeek Agent 能力评估",
+        fallbackMessage: "DeepSeek Agent 评估失败，请稍后重试。",
+      }));
       error.final = true;
       throw error;
     }

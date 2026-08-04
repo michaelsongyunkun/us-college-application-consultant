@@ -105,7 +105,8 @@ try {
   assert.equal(sentPayload.model, "deepseek-v4-flash");
   assert.equal(sentPayload.temperature, 0.4);
   assert.equal(sentPayload.maxTokens, 6500);
-  assert.equal(sentPayload.timeoutMs, 75_000);
+  assert.equal(sentPayload.timeoutMs, 120_000);
+  assert.equal(sentPayload.maxAttempts, 1);
   assert.equal(sentPayload.messages[0].role, "system");
   assert.equal(sentPayload.messages[1].role, "user");
   assert.match(sentPayload.messages[1].content, /恰好15项/);
@@ -349,6 +350,7 @@ function createMockPlanLlmClient(callLog, getContent = () => deepSeekAnswer) {
         temperature: options.temperature,
         maxTokens: options.maxTokens,
         timeoutMs: options.timeoutMs,
+        maxAttempts: options.maxAttempts,
         messages: options.messages,
         signal: options.signal,
       };

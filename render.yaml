@@ -48,10 +48,32 @@ envVarGroups:
         value: deepseek-v4-pro
       - key: DEEPSEEK_PLAN_MODEL
         value: deepseek-v4-flash
+      - key: DEEPSEEK_PLAN_MAX_TOKENS
+        value: "6500"
+      - key: DEEPSEEK_PLAN_TIMEOUT_MS
+        value: "120000"
+      - key: DEEPSEEK_PLAN_CALL_MAX_ATTEMPTS
+        value: "1"
+      - key: DEEPSEEK_SCHOOL_SELECTION_MODEL
+        value: deepseek-v4-flash
+      - key: DEEPSEEK_SCHOOL_SELECTION_MAX_TOKENS
+        value: "9000"
+      - key: DEEPSEEK_SCHOOL_SELECTION_TIMEOUT_MS
+        value: "120000"
+      - key: DEEPSEEK_SCHOOL_SELECTION_CALL_MAX_ATTEMPTS
+        value: "1"
       - key: DEEPSEEK_RAG_MODEL
         value: deepseek-v4-pro
       - key: DEEPSEEK_RAG_MAX_TOKENS
         value: "1600"
+      - key: DEEPSEEK_RAG_TIMEOUT_MS
+        value: "90000"
+      - key: DEEPSEEK_RAG_CALL_MAX_ATTEMPTS
+        value: "1"
+      - key: DEEPSEEK_MAJOR_MATCH_MAX_TOKENS
+        value: "2200"
+      - key: DEEPSEEK_MAJOR_MATCH_TIMEOUT_MS
+        value: "90000"
       - key: DEEPSEEK_RAG_MAX_ANSWER_CHARS
         value: "12000"
       - key: DEEPSEEK_RERANK_ENABLED
@@ -72,6 +94,18 @@ envVarGroups:
         value: doubao-seed-2-1-turbo-260628
       - key: INSPIRATION_MAX_TOKENS
         value: "600"
+      - key: INSPIRATION_TIMEOUT_MS
+        value: "60000"
+      - key: INSPIRATION_CALL_MAX_ATTEMPTS
+        value: "1"
+      - key: DEEPSEEK_CAPABILITY_ASSESSMENT_MODEL
+        value: deepseek-v4-flash
+      - key: DEEPSEEK_CAPABILITY_ASSESSMENT_MAX_TOKENS
+        value: "4200"
+      - key: DEEPSEEK_CAPABILITY_ASSESSMENT_TIMEOUT_MS
+        value: "120000"
+      - key: DEEPSEEK_CAPABILITY_ASSESSMENT_CALL_MAX_ATTEMPTS
+        value: "1"
       - key: OBJECT_STORE_DRIVER
         value: r2
       - key: OBJECT_STORE_ENDPOINT

@@ -44,7 +44,7 @@ assert.ok(
   "Command focus bar should lead the dashboard before secondary task cards.",
 );
 assert.ok(
-  indexHtml.includes('./src/client/app.js?v=20260602-deepseek-wait-time'),
+  indexHtml.includes('./src/client/app.js?v=20260804-ai-timeout-recovery'),
   "Logged-in shell should cache-bust the main app module with the current DeepSeek wait-time release.",
 );
 assert.ok(

@@ -26,6 +26,8 @@ const MAX_SELECTION_ATTEMPTS = 2;
 const MAX_RAG_SOURCES = 8;
 const MAX_RAG_CONTEXT_CHARS = 12_000;
 const DEEPSEEK_SCHOOL_SELECTION_MAX_TOKENS = 9000;
+const DEEPSEEK_SCHOOL_SELECTION_TIMEOUT_MS = 120_000;
+const DEEPSEEK_SCHOOL_SELECTION_CALL_MAX_ATTEMPTS = 1;
 const ROUND_LIMITS = Object.freeze({
   ed2: [1, 1],
   ea: [3, 5],
@@ -505,6 +507,14 @@ async function invokeSchoolSelectionLlm({
   signal,
 }) {
   const startedAt = monotonicNowMs();
+  const timeoutMs = normalizePositiveInteger(
+    env.DEEPSEEK_SCHOOL_SELECTION_TIMEOUT_MS,
+    DEEPSEEK_SCHOOL_SELECTION_TIMEOUT_MS,
+  );
+  const maxAttempts = normalizePositiveInteger(
+    env.DEEPSEEK_SCHOOL_SELECTION_CALL_MAX_ATTEMPTS,
+    DEEPSEEK_SCHOOL_SELECTION_CALL_MAX_ATTEMPTS,
+  );
   try {
     const result = await llmClient.invoke({
       env,
@@ -512,6 +522,8 @@ async function invokeSchoolSelectionLlm({
       model,
       temperature,
       maxTokens,
+      timeoutMs,
+      maxAttempts,
       messages,
       signal,
     });

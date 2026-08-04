@@ -11,6 +11,18 @@ export function getRequestErrorMessage(error, context = getBrowserLocationContex
   return error.message || "请求失败";
 }
 
+export function getAiGenerationErrorMessage(
+  errorOrJob,
+  { operation = "AI 生成", fallbackMessage = "AI 生成失败，请稍后重试。" } = {},
+) {
+  const message = String(errorOrJob?.error || errorOrJob?.message || "").trim();
+  const statusCode = Number(errorOrJob?.statusCode || errorOrJob?.status || 0);
+  if (statusCode === 504 || /ETIMEDOUT|timed out|timeout/i.test(message)) {
+    return `${String(operation || "AI 生成").trim()}超时，本次任务已安全结束。请稍后重试；这不是您的网络中断。`;
+  }
+  return message || fallbackMessage;
+}
+
 function getBrowserLocationContext() {
   return {
     protocol: globalThis.location?.protocol || "",

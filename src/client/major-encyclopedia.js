@@ -11,6 +11,7 @@ import {
 } from "./visible-results.mjs";
 import { csrfFetch } from "./csrf-token.mjs";
 import { requestRagStream } from "./rag-stream.mjs";
+import { getAiGenerationErrorMessage } from "./auth-client-errors.mjs?v=20260804-ai-timeout-recovery";
 
 const status = document.querySelector("#majorStatus");
 const categoryTabs = document.querySelector("#majorCategoryTabs");
@@ -153,7 +154,10 @@ async function waitForMajorMatchJob(jobId) {
 
     if (job.status === "completed") return job.result || {};
     if (job.status === "failed") {
-      const error = new Error(job.error || "DeepSeek 专业匹配失败，请稍后重试。");
+      const error = new Error(getAiGenerationErrorMessage(job, {
+        operation: "DeepSeek 专业匹配",
+        fallbackMessage: "DeepSeek 专业匹配失败，请稍后重试。",
+      }));
       error.final = true;
       throw error;
     }
@@ -386,12 +390,16 @@ async function runDeepSeekMajorMatch() {
     clearPendingMajorMatchJob();
   } catch (error) {
     if (error.final || /not found/i.test(error.message)) clearPendingMajorMatchJob();
-    deepSeekMajorResult.innerHTML = `<p class="resource-empty">${escapeHtml(error.message)}</p>`;
+    const message = getAiGenerationErrorMessage(error, {
+      operation: "DeepSeek 专业匹配",
+      fallbackMessage: "DeepSeek 专业匹配失败，请稍后重试。",
+    });
+    deepSeekMajorResult.innerHTML = `<p class="resource-empty">${escapeHtml(message)}</p>`;
     trackMajorUsageEvent("major_match_failure", {
       metrics: { generatedActivityCount: 0, durationMs: performance.now() - startedAt },
-      details: { failureReason: error.message },
+      details: { failureReason: message },
     });
-    setDeepSeekStatus(error.message, true);
+    setDeepSeekStatus(message, true);
   } finally {
     majorMatchJobPolling = false;
     deepSeekMajorMatchButton.disabled = false;
@@ -420,8 +428,12 @@ async function resumePendingMajorMatchJob() {
     clearPendingMajorMatchJob();
   } catch (error) {
     if (error.final || /not found/i.test(error.message)) clearPendingMajorMatchJob();
-    deepSeekMajorResult.innerHTML = `<p class="resource-empty">${escapeHtml(error.message)}</p>`;
-    setDeepSeekStatus(error.message, true);
+    const message = getAiGenerationErrorMessage(error, {
+      operation: "DeepSeek 专业匹配",
+      fallbackMessage: "DeepSeek 专业匹配失败，请稍后重试。",
+    });
+    deepSeekMajorResult.innerHTML = `<p class="resource-empty">${escapeHtml(message)}</p>`;
+    setDeepSeekStatus(message, true);
   } finally {
     majorMatchJobPolling = false;
     deepSeekMajorMatchButton.disabled = false;

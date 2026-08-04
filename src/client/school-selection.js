@@ -1,5 +1,8 @@
 import { escapeHtml } from "./html-utils.mjs";
-import { getRequestErrorMessage } from "./auth-client-errors.mjs";
+import {
+  getAiGenerationErrorMessage,
+  getRequestErrorMessage,
+} from "./auth-client-errors.mjs?v=20260804-ai-timeout-recovery";
 import { csrfFetch } from "./csrf-token.mjs";
 
 const schoolSelectionForm = document.querySelector("#schoolSelectionForm");
@@ -169,7 +172,10 @@ async function waitForSchoolSelectionJob(jobId) {
       return job.result;
     }
     if (job.status === "failed") {
-      const error = new Error(job.error || "选校方案生成失败，请稍后重试。");
+      const error = new Error(getAiGenerationErrorMessage(job, {
+        operation: "选校方案 AI 生成",
+        fallbackMessage: "选校方案生成失败，请稍后重试。",
+      }));
       error.final = true;
       throw error;
     }

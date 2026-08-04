@@ -39,3 +39,17 @@ for (const secret of [
 ]) {
   assert.match(renderBlueprint, new RegExp(`key: ${secret}\\s+sync: false`, "u"));
 }
+
+for (const [key, value] of [
+  ["DEEPSEEK_PLAN_TIMEOUT_MS", "120000"],
+  ["DEEPSEEK_PLAN_CALL_MAX_ATTEMPTS", "1"],
+  ["DEEPSEEK_RAG_TIMEOUT_MS", "90000"],
+  ["DEEPSEEK_RAG_CALL_MAX_ATTEMPTS", "1"],
+  ["DEEPSEEK_MAJOR_MATCH_TIMEOUT_MS", "90000"],
+  ["DEEPSEEK_CAPABILITY_ASSESSMENT_TIMEOUT_MS", "120000"],
+  ["DEEPSEEK_CAPABILITY_ASSESSMENT_CALL_MAX_ATTEMPTS", "1"],
+  ["INSPIRATION_TIMEOUT_MS", "60000"],
+  ["INSPIRATION_CALL_MAX_ATTEMPTS", "1"],
+]) {
+  assert.match(renderBlueprint, new RegExp(`key: ${key}\\s+value: "${value}"`, "u"));
+}
