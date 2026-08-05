@@ -19,6 +19,7 @@ backups/
 
 # Local exports and drafts
 output/
+outputs/
 *.doc
 *.docx
 *.json
