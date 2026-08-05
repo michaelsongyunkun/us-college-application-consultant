@@ -222,6 +222,8 @@ export function createDeepSeekRagService({
     const normalizedQuestion = normalizeQuestion(question);
     const normalizedHistorySummary = normalizeHistorySummary(historySummary);
     const isInspirationProfile = assistantProfile === "inspiration";
+    const normalizedUsePersonalContext = assistantProfile === "major-match"
+      || usePersonalContext === true;
     const apiKey = resolveApiKey({
       environmentApiKey: isInspirationProfile ? env.INSPIRATION_API_KEY : env.DEEPSEEK_API_KEY,
       requestApiKey: "",
@@ -262,7 +264,7 @@ export function createDeepSeekRagService({
       question: normalizedQuestion,
       historySummary: normalizedHistorySummary,
       assistantProfile,
-      usePersonalContext: usePersonalContext === true,
+      usePersonalContext: normalizedUsePersonalContext,
       env,
       model,
       signal,
@@ -453,6 +455,7 @@ function evaluateRagGraphQuality({
   answer,
   outputDiagnostics = {},
   assistantProfile = "",
+  usePersonalContext = false,
   retrievalResult = {},
   model,
   workflowVersion = RAG_ANSWER_GRAPH_VERSION,
@@ -462,7 +465,10 @@ function evaluateRagGraphQuality({
     answer,
     outputDiagnostics,
     sources: retrievalResult.sources || [],
-    expectedSourceTypes: getExpectedRagSourceTypes(retrieval.intent),
+    expectedSourceTypes: getExpectedRagSourceTypes(retrieval.intent, {
+      usePersonalContext,
+      assistantProfile,
+    }),
     metadata: {
       feature: "deepseek-rag",
       promptVersion: getRagPromptVersion(assistantProfile),

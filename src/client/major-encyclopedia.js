@@ -371,7 +371,7 @@ async function runDeepSeekMajorMatch() {
   try {
     const job = await requestJson(DEEPSEEK_RAG_JOB_ENDPOINT, {
       method: "POST",
-      body: JSON.stringify({ question: prompt, assistantProfile: "major-match" }),
+      body: JSON.stringify({ question: prompt, assistantProfile: "major-match", usePersonalContext: true }),
     });
     rememberPendingMajorMatchJob(job.jobId);
     setDeepSeekStatus("专业匹配任务已提交，DeepSeek 正在后台生成。");

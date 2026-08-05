@@ -265,7 +265,6 @@ try {
     {
       question: "请根据我的申请档案自动匹配适合探索的美国本科专业。",
       assistantProfile: "major-match",
-      usePersonalContext: true,
     },
     cookie,
   );
@@ -275,6 +274,9 @@ try {
   assert.equal(majorMatchBody.retrieval.mode, "graph-rag");
   assert.equal(majorMatchBody.retrieval.queryPlan.taskType, "major-match");
   assert.ok(majorMatchBody.retrieval.graph.selectedFacts > 0);
+  assert.ok(majorMatchBody.sources.some((source) => source.type === "application-portfolio"));
+  assert.equal(majorMatchBody.quality.retrieval.retrievalHitRate, 1);
+  assert.equal(majorMatchBody.quality.review.fallback.triggered, false);
   assert.equal(calls.length, 3);
   const majorMatchPayload = calls[2];
   assert.equal(majorMatchPayload.timeoutMs, 90_000);

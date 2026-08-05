@@ -1,6 +1,6 @@
 export const AI_QUALITY_VERSIONS = Object.freeze({
   schema: "ai-quality@2026-06-18",
-  evaluator: "ai-quality-evaluator@2026-08-03",
+  evaluator: "ai-quality-evaluator@2026-08-06",
   deepseekPlanPrompt: "deepseek-plan-prompt@2026-07-13",
   deepseekPlanParser: "agent-output-parser@2026-06-18",
   ragPromptDefault: "ask-deepseek-graph-rag@2026-08-03",
@@ -52,6 +52,7 @@ export function buildAiRequestQuality({
     citations: [],
     retrieval: {
       expectedSourceTypes: [],
+      expectedSourceGroups: [],
       coveredSourceTypes: [],
       missingSourceTypes: [],
       retrievalHitRate: 1,
@@ -74,12 +75,14 @@ export function evaluateAiAnswerQuality({
   hitRateThreshold = DEFAULT_HIT_RATE_THRESHOLD,
 } = {}) {
   const normalizedSources = sources.map(normalizeSource).filter((source) => source.id || source.title);
-  const uniqueExpectedTypes = uniqueStrings(expectedSourceTypes);
+  const expectedGroups = (expectedSourceTypes || []).map((value) => (
+    Array.isArray(value) ? uniqueStrings(value) : uniqueStrings([value])
+  )).filter((group) => group.length);
   const sourceTypes = new Set(normalizedSources.map((source) => source.type).filter(Boolean));
-  const coveredSourceTypes = uniqueExpectedTypes.filter((type) => sourceTypes.has(type));
-  const missingSourceTypes = uniqueExpectedTypes.filter((type) => !sourceTypes.has(type));
-  const retrievalHitRate = uniqueExpectedTypes.length
-    ? roundMetric(coveredSourceTypes.length / uniqueExpectedTypes.length)
+  const coveredGroups = expectedGroups.filter((group) => group.some((type) => sourceTypes.has(type)));
+  const missingGroups = expectedGroups.filter((group) => !group.some((type) => sourceTypes.has(type)));
+  const retrievalHitRate = expectedGroups.length
+    ? roundMetric(coveredGroups.length / expectedGroups.length)
     : normalizedSources.length
       ? 1
       : 0;
@@ -105,9 +108,10 @@ export function evaluateAiAnswerQuality({
       sourceType: source.type,
     })),
     retrieval: {
-      expectedSourceTypes: uniqueExpectedTypes,
-      coveredSourceTypes,
-      missingSourceTypes,
+      expectedSourceTypes: uniqueStrings(expectedGroups.flat()),
+      expectedSourceGroups: expectedGroups,
+      coveredSourceTypes: uniqueStrings(coveredGroups.flat()),
+      missingSourceTypes: uniqueStrings(missingGroups.flat()),
       retrievalHitRate,
       sourceCount: normalizedSources.length,
     },
@@ -125,16 +129,26 @@ export function getRagPromptVersion(assistantProfile = "") {
   return AI_QUALITY_VERSIONS.ragPromptDefault;
 }
 
-export function getExpectedRagSourceTypes(intent = "general") {
+export function getExpectedRagSourceTypes(intent = "general", {
+  usePersonalContext = false,
+  assistantProfile = "",
+} = {}) {
+  if (assistantProfile === "major-match") {
+    return ["application-portfolio", "major-encyclopedia"];
+  }
   const normalizedIntent = String(intent || "general");
-  return {
-    school: ["application-portfolio", "school-encyclopedia"],
-    major: ["application-portfolio", "major-encyclopedia"],
-    resource: ["application-portfolio", "resource-library"],
-    academic: ["application-portfolio", "student-backup"],
-    recommendation: ["application-portfolio", "student-backup"],
-    general: ["application-portfolio", "student-backup"],
-  }[normalizedIntent] || ["application-portfolio", "student-backup"];
+  const knowledgeType = {
+    school: "school-encyclopedia",
+    major: "major-encyclopedia",
+    resource: "resource-library",
+  }[normalizedIntent];
+  const personalRequirement = ["academic", "general", "profile", "recommendation"].includes(normalizedIntent)
+    ? ["application-portfolio", "student-backup"]
+    : "application-portfolio";
+  return [
+    ...(usePersonalContext === true ? [personalRequirement] : []),
+    ...(knowledgeType ? [knowledgeType] : []),
+  ];
 }
 
 export function findUnsupportedCitations(answer, sources = []) {

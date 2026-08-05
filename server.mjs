@@ -572,7 +572,7 @@ export function createAppServer({
       question,
       historySummary,
       assistantProfile,
-      usePersonalContext: usePersonalContext === true,
+      usePersonalContext: assistantProfile === "major-match" || usePersonalContext === true,
       env,
       signal,
       onToken,
@@ -796,12 +796,14 @@ export function createAppServer({
         const user = await requireUser(request, response, auth);
         if (!user) return;
         const payload = await readJson(request);
+        const usePersonalContext = payload.assistantProfile === "major-match"
+          || payload.usePersonalContext === true;
         sendJson(response, 200, await deepSeekRag.answerQuestion({
           user,
           question: payload.question,
           historySummary: payload.historySummary,
           assistantProfile: payload.assistantProfile,
-          usePersonalContext: payload.usePersonalContext === true,
+          usePersonalContext,
           env,
         }));
         return;
@@ -927,12 +929,14 @@ export function createAppServer({
         const user = await requireUser(request, response, auth);
         if (!user) return;
         const payload = await readJson(request);
+        const usePersonalContext = payload.assistantProfile === "major-match"
+          || payload.usePersonalContext === true;
         const jobPayload = {
           user,
           question: payload.question,
           historySummary: payload.historySummary,
           assistantProfile: payload.assistantProfile,
-          usePersonalContext: payload.usePersonalContext === true,
+          usePersonalContext,
         };
         if (jobPayload.usePersonalContext) {
           const [profile, portfolio, currentPlan] = await Promise.all([
@@ -948,7 +952,7 @@ export function createAppServer({
             question: payload.question,
             historySummary: payload.historySummary,
             assistantProfile: payload.assistantProfile,
-            usePersonalContext: payload.usePersonalContext === true,
+            usePersonalContext,
             env,
             signal,
           }),

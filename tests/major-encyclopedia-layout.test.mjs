@@ -50,6 +50,10 @@ assert.doesNotMatch(script, /requestRagStream/, "DeepSeek major matching should 
 assert.ok(script.includes("getAiGenerationErrorMessage"), "DeepSeek major matching should distinguish AI timeouts from network interruptions.");
 assert.ok(script.includes("resumePendingMajorMatchJob"), "DeepSeek major matching should resume pending jobs after navigation.");
 assert.ok(script.includes('assistantProfile: "major-match"'), "DeepSeek major matching should request the dedicated major-match system prompt.");
+assert.ok(
+  script.includes('assistantProfile: "major-match", usePersonalContext: true'),
+  "Dedicated major matching must explicitly opt into the saved application profile.",
+);
 assert.ok(script.includes("专业百科 RAG"), "DeepSeek prompt should explicitly ask for 专业百科 RAG.");
 assert.ok(script.includes("sanitizeDeepSeekMajorAnswer"), "DeepSeek major matching should sanitize hidden columns from model output.");
 assert.ok(script.includes("trackMajorUsageEvent"), "专业百科应记录关键使用行为。");

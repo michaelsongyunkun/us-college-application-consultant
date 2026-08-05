@@ -16,7 +16,26 @@ const fixture = JSON.parse(
 
 assert.equal(getRagPromptVersion(), AI_QUALITY_VERSIONS.ragPromptDefault);
 assert.equal(getRagPromptVersion("major-match"), AI_QUALITY_VERSIONS.ragPromptMajorMatch);
-assert.deepEqual(getExpectedRagSourceTypes("school"), ["application-portfolio", "school-encyclopedia"]);
+assert.deepEqual(
+  getExpectedRagSourceTypes("school", { usePersonalContext: false }),
+  ["school-encyclopedia"],
+);
+assert.deepEqual(
+  getExpectedRagSourceTypes("school", { usePersonalContext: true }),
+  ["application-portfolio", "school-encyclopedia"],
+);
+assert.deepEqual(
+  getExpectedRagSourceTypes("general", { usePersonalContext: false }),
+  [],
+);
+assert.deepEqual(
+  getExpectedRagSourceTypes("general", { usePersonalContext: true }),
+  [["application-portfolio", "student-backup"]],
+);
+assert.deepEqual(
+  getExpectedRagSourceTypes("major", { assistantProfile: "major-match", usePersonalContext: true }),
+  ["application-portfolio", "major-encyclopedia"],
+);
 
 const goldenCase = fixture.ragCases.find((testCase) => testCase.id === "rag-robotics-school-resource");
 const quality = evaluateAiAnswerQuality({
