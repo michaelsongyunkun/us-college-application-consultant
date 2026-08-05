@@ -57,11 +57,11 @@ const defaultResult = await service.answerQuestion({
   question: "Give me an application strategy.",
   env: { DEEPSEEK_API_KEY: "test-only", DEEPSEEK_MODEL: "deepseek-chat" },
 });
-assert.equal(calls[0].maxTokens, 1_600);
+assert.equal(calls[0].maxTokens, 1_200);
 assert.ok(defaultResult.answer.length <= 12_000);
 assert.match(defaultResult.answer, /回答已达到长度上限/u);
 assert.equal(defaultResult.quality.output.truncated, true);
-assert.equal(defaultResult.quality.output.maxTokens, 1_600);
+assert.equal(defaultResult.quality.output.maxTokens, 1_200);
 assert.equal(defaultResult.quality.output.finishReason, "stop");
 assert.ok(defaultResult.quality.review.reasons.includes("response_too_long"));
 

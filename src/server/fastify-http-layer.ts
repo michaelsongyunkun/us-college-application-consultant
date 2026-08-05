@@ -53,6 +53,11 @@ export type FastifyHttpLayerOptions = {
   env?: Record<string, string | undefined>;
   readinessCheck: () => ReadinessPayload | Promise<ReadinessPayload>;
   readPrompt: () => string | Promise<string>;
+  onStreamError?: (context: {
+    error: unknown;
+    requestId: string;
+    assistantProfile: "" | "major-match" | "inspiration";
+  }) => void;
   answerRag: (input: {
     user: any;
     question: string;
@@ -110,7 +115,7 @@ const requestContextPlugin: FastifyPluginAsync<FastifyHttpLayerOptions> = async 
 
 const readOnlyRoutesPlugin: FastifyPluginAsync<FastifyHttpLayerOptions> = async (
   app,
-  { auth, env = process.env, readinessCheck, readPrompt, answerRag },
+  { auth, env = process.env, readinessCheck, readPrompt, onStreamError, answerRag },
 ) => {
   const ragRateLimit = createFixedWindowLimiter(Number(env.RAG_STREAM_RATE_LIMIT || 20), 60_000);
   app.get("/healthz", {
@@ -222,11 +227,18 @@ const readOnlyRoutesPlugin: FastifyPluginAsync<FastifyHttpLayerOptions> = async 
         stream.write(sseEvent("result", result));
         stream.write(sseEvent("done", { requestId: request.id }));
       } catch (error) {
+        const retryable = isRetryableStreamError(error);
+        onStreamError?.({
+          error,
+          requestId: request.id,
+          assistantProfile: parsed.data.assistantProfile,
+        });
         stream.write(sseEvent("error", {
-          error: isInspirationRequest ? "Inspiration conversation failed" : "RAG request failed",
+          error: `${isInspirationRequest ? "Inspiration conversation failed" : "RAG request failed"}: ${getPublicStreamErrorReason(error)}`,
           code: isInspirationRequest ? "INSPIRATION_ERROR" : "RAG_ERROR",
           requestId: request.id,
-          retryable: true,
+          retryable,
+          fallbackAllowed: retryable,
         }));
       } finally {
         stream.end();
@@ -245,6 +257,28 @@ const readOnlyRoutesPlugin: FastifyPluginAsync<FastifyHttpLayerOptions> = async 
     }));
   });
 };
+
+function isRetryableStreamError(error: any) {
+  if (error?.retryable === false) return false;
+  const statusCode = Number(error?.statusCode || error?.status || error?.response?.status || 0);
+  if ([408, 409, 425, 429, 500, 502, 503, 504].includes(statusCode) || statusCode >= 500) return true;
+  return ["ETIMEDOUT", "ECONNABORTED", "ECONNRESET", "ECONNREFUSED", "EAI_AGAIN", "ENOTFOUND"].includes(error?.code)
+    || /timeout|timed out|network|socket|connection/i.test(String(error?.message || ""));
+}
+
+function getPublicStreamErrorReason(error: any) {
+  const statusCode = Number(error?.statusCode || error?.status || error?.response?.status || 0);
+  const message = String(error?.message || "");
+  if (/API.*(未|没).*配置|API_KEY|api key/i.test(message)) return "服务配置未完成";
+  if ([401, 403].includes(statusCode) || /unauthorized|forbidden|invalid.*key|authentication/i.test(message)) {
+    return "服务商授权配置无效";
+  }
+  if (statusCode === 404 || /not found|model.*(not|invalid)/i.test(message)) return "模型或接口地址无效";
+  if (statusCode === 429 || /rate.?limit|too many requests/i.test(message)) return "服务商暂时达到频率限制";
+  if (statusCode === 408 || statusCode === 504 || /timeout|timed out/i.test(message)) return "服务商响应超时";
+  if (statusCode >= 500 || /network|socket|connection|temporarily/i.test(message)) return "服务商暂时不可用";
+  return "请稍后重试";
+}
 
 async function getAuthenticatedSession(request: any, auth: AuthDependency): Promise<{ user: any; sessionToken: string } | null> {
   for (const sessionToken of [...getSessionTokens(request)].reverse()) {

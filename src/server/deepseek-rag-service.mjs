@@ -29,7 +29,7 @@ const MAX_CONTEXT_CHARS = 18_000;
 const MAX_CHUNK_CHARS = 2_200;
 const SOURCE_SNIPPET_CHARS = 260;
 const DEFAULT_INSPIRATION_MAX_TOKENS = 600;
-const DEFAULT_RAG_MAX_TOKENS = 1_600;
+const DEFAULT_RAG_MAX_TOKENS = 1_200;
 const DEFAULT_MAJOR_MATCH_MAX_TOKENS = 2_200;
 const DEFAULT_INSPIRATION_TIMEOUT_MS = 60_000;
 const DEFAULT_RAG_TIMEOUT_MS = 90_000;
@@ -102,6 +102,7 @@ const SYSTEM_PROMPT = [
   "5. 不要另起“参考资料”章节；把可执行建议写完整即可。",
   "",
   "你不是替代升学顾问、学校官网或法律/财务/签证专业意见的工具。你的作用是帮助用户整理信息、发现问题、形成下一步申请规划。",
+  "篇幅控制：先给 1-2 句结论，再给最多 4 个要点和 1 个下一步；默认控制在 700 个中文字符以内。只保留与当前问题直接相关的证据，不重复复述资料，不输出冗长背景、过程性思考或参考资料清单。",
 ].join("\n");
 
 const INSPIRATION_SYSTEM_PROMPT = [
@@ -128,6 +129,7 @@ const INSPIRATION_SYSTEM_PROMPT = [
   "- 除了需要并列呈现 2-4 个待验证方向的阶段，回复通常控制在 300 个中文字符以内；避免重复复述规则、写成长篇报告或一次给出多个问题。",
   "- 你只能依据用户当前输入和系统提供的对话记忆摘要展开对话；不要假设你读取过学生档案、申请资料、外部知识库或其他未提供的信息。",
   "- 对话的成功标准不是输出“你适合什么”，而是帮助学生形成一个自己认可的探索问题、一次小行动和行动后的反思问题。",
+  "- 篇幅控制：除非正在并列呈现 2-4 个待验证方向，否则每轮控制在 300 个中文字符以内；每次只问一个关键问题，避免重复、长篇总结和一次输出多个问题。",
 ].join("\n");
 
 const MAJOR_MATCH_SYSTEM_PROMPT = [

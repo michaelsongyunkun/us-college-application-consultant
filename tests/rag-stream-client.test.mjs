@@ -38,12 +38,27 @@ await assert.rejects(
   requestRagStream({ question: "offline" }, { fetcher: async () => new Response("Not found", { status: 404 }) }),
   (error) => error.fallbackAllowed === true,
 );
+
+await assert.rejects(
+  requestRagStream({ question: "rate limited" }, { fetcher: async () => new Response("Too many requests", { status: 429 }) }),
+  (error) => error.status === 429 && error.fallbackAllowed === true,
+);
 await assert.rejects(
   readRagEventStream(new Response('event: error\ndata: {"error":"generation failed"}\n\n', {
     status: 200,
     headers: { "content-type": "text/event-stream" },
   })),
   (error) => error.message === "generation failed" && error.fallbackAllowed === false,
+);
+
+await assert.rejects(
+  readRagEventStream(new Response('event: error\ndata: {"error":"temporary upstream failure","fallbackAllowed":true,"retryable":true}\n\n', {
+    status: 200,
+    headers: { "content-type": "text/event-stream" },
+  })),
+  (error) => error.message === "temporary upstream failure"
+    && error.fallbackAllowed === true
+    && error.retryable === true,
 );
 
 await assert.rejects(

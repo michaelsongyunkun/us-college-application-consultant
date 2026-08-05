@@ -19,7 +19,7 @@ export async function requestRagStream(payload, { fetcher = csrfFetch, onDelta }
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    const fallbackAllowed = [404, 405, 501, 502, 503, 504].includes(response.status);
+    const fallbackAllowed = [404, 405, 408, 409, 425, 429, 500, 501, 502, 503, 504].includes(response.status);
     throw createStreamError(payload.error || `AI 快速通道请求失败（${response.status}）。`, {
       fallbackAllowed,
       status: response.status,
@@ -54,7 +54,10 @@ export async function readRagEventStream(response, { onDelta } = {}) {
       }
       if (event.type === "result") result = event.data;
       if (event.type === "error") {
-        throw createStreamError(event.data?.error || "AI 生成失败。", { fallbackAllowed: false });
+        throw createStreamError(event.data?.error || "AI 生成失败。", {
+          fallbackAllowed: Boolean(event.data?.fallbackAllowed),
+          retryable: Boolean(event.data?.retryable),
+        });
       }
       if (event.type === "done") {
         if (result !== undefined) return result;

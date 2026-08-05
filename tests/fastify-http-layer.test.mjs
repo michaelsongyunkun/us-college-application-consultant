@@ -12,6 +12,7 @@ let readiness = {
   },
 };
 let ragFailure = null;
+const streamErrors = [];
 
 const app = await createFastifyHttpLayer({
   auth: {
@@ -25,6 +26,7 @@ const app = await createFastifyHttpLayer({
   env: { DEEPSEEK_API_KEY: "configured-for-test" },
   readinessCheck: async () => readiness,
   readPrompt: async () => "fixed admissions prompt",
+  onStreamError: (context) => streamErrors.push(context),
   answerRag: async ({ user, question, assistantProfile, signal, onToken }) => {
     if (ragFailure) throw ragFailure;
     if (assistantProfile === "inspiration") {
@@ -149,7 +151,7 @@ try {
   assert.match(inspirationStreamResponse.body, /reflection/u);
   assert.doesNotMatch(inspirationStreamResponse.body, /retrieval_started/u);
 
-  ragFailure = new Error("postgresql://user:super-secret@db/internal");
+  ragFailure = Object.assign(new Error("postgresql://user:super-secret@db/internal"), { statusCode: 503 });
   const failedStreamResponse = await app.inject({
     method: "POST",
     url: "/api/deepseek-rag/stream",
@@ -161,7 +163,10 @@ try {
   });
   assert.equal(failedStreamResponse.statusCode, 200);
   assert.match(failedStreamResponse.body, /RAG request failed/u);
+  assert.match(failedStreamResponse.body, /fallbackAllowed":true/u);
   assert.doesNotMatch(failedStreamResponse.body, /super-secret|postgresql:\/\//u);
+  assert.equal(streamErrors[0].assistantProfile, "");
+  assert.equal(streamErrors[0].error.message, "postgresql://user:super-secret@db/internal");
 
   const failedInspirationStreamResponse = await app.inject({
     method: "POST",
@@ -173,7 +178,9 @@ try {
     payload: { question: "trigger inspiration failure", assistantProfile: "inspiration" },
   });
   assert.match(failedInspirationStreamResponse.body, /Inspiration conversation failed/u);
+  assert.match(failedInspirationStreamResponse.body, /fallbackAllowed":true/u);
   assert.doesNotMatch(failedInspirationStreamResponse.body, /RAG request failed|RAG_ERROR/u);
+  assert.equal(streamErrors[1].assistantProfile, "inspiration");
 } finally {
   await app.close();
 }

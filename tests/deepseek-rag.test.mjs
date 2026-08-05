@@ -178,6 +178,7 @@ try {
   assert.match(systemPrompt, /不要做绝对化承诺/);
   assert.match(systemPrompt, /保证录取/);
   assert.match(systemPrompt, /Markdown 的标题、列表、表格、加粗/);
+  assert.match(systemPrompt, /700/);
   assert.match(systemPrompt, /不要在回答正文中单独输出“参考资料”章节/);
   assert.match(systemPrompt, /前端会在折叠的“参考资料”区域展示/);
   assert.doesNotMatch(systemPrompt, /每次回答结尾必须给出“参考资料”/);
@@ -235,6 +236,7 @@ try {
   assert.doesNotMatch(inspirationSystemPrompt, /推荐专业优先级表/);
   assert.doesNotMatch(inspirationSystemPrompt, /RAG|检索来源/);
   assert.match(inspirationSystemPrompt, /不要假设你读取过学生档案、申请资料、外部知识库/);
+  assert.match(inspirationSystemPrompt, /300/);
   const inspirationUserPrompt = calls[1].messages[1].content;
   assert.match(inspirationUserPrompt, /用户此刻想聊的内容/);
   assert.match(inspirationUserPrompt, /当前对话记忆摘要/);

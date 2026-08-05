@@ -65,7 +65,7 @@ envVarGroups:
       - key: DEEPSEEK_RAG_MODEL
         value: deepseek-v4-pro
       - key: DEEPSEEK_RAG_MAX_TOKENS
-        value: "1600"
+        value: "1200"
       - key: DEEPSEEK_RAG_TIMEOUT_MS
         value: "90000"
       - key: DEEPSEEK_RAG_CALL_MAX_ATTEMPTS

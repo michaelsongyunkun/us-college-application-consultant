@@ -497,6 +497,19 @@ export function createAppServer({
     env,
     readinessCheck,
     readPrompt: () => readFile(promptPath, "utf8"),
+    onStreamError: ({ error, requestId, assistantProfile }) => {
+      logger?.error?.(buildStructuredEvent({
+        level: "error",
+        event: "deepseek_rag_stream_error",
+        requestId,
+        details: {
+          assistantProfile,
+          errorName: error?.name || "Error",
+          errorCategory: getStreamErrorCategory(error),
+          statusCode: error?.statusCode || error?.status || 0,
+        },
+      }));
+    },
     answerRag: ({ user, question, historySummary, assistantProfile, signal, onToken }) => deepSeekRag.answerQuestion({
       user,
       question,
@@ -1059,6 +1072,30 @@ export function createAppServer({
     void infrastructureClose?.();
   });
   return server;
+}
+
+function getStreamErrorCategory(error) {
+  const statusCode = Number(error?.statusCode || error?.status || error?.response?.status || 0);
+  const message = String(error?.message || "");
+  if ([401, 403].includes(statusCode) || /unauthorized|forbidden|invalid.*key|authentication/i.test(message)) {
+    return "authorization";
+  }
+  if (statusCode === 404 || /not found|model.*(not|invalid)/i.test(message)) {
+    return "model_or_endpoint";
+  }
+  if (statusCode === 429 || /rate.?limit|too many requests/i.test(message)) {
+    return "rate_limited";
+  }
+  if (statusCode === 408 || statusCode === 504 || /timeout|timed out/i.test(message)) {
+    return "timeout";
+  }
+  if (statusCode >= 500 || /network|socket|connection|temporarily/i.test(message)) {
+    return "upstream_unavailable";
+  }
+  if (/API_KEY|api key|未配置|配置未完成/i.test(message)) {
+    return "configuration";
+  }
+  return "unknown";
 }
 
 function isWritePaused(env) {
