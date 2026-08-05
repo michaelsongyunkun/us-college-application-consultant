@@ -567,11 +567,12 @@ export function createAppServer({
         },
       }));
     },
-    answerRag: ({ user, question, historySummary, assistantProfile, signal, onToken }) => deepSeekRag.answerQuestion({
+    answerRag: ({ user, question, historySummary, assistantProfile, usePersonalContext, signal, onToken }) => deepSeekRag.answerQuestion({
       user,
       question,
       historySummary,
       assistantProfile,
+      usePersonalContext: usePersonalContext === true,
       env,
       signal,
       onToken,
@@ -800,6 +801,7 @@ export function createAppServer({
           question: payload.question,
           historySummary: payload.historySummary,
           assistantProfile: payload.assistantProfile,
+          usePersonalContext: payload.usePersonalContext === true,
           env,
         }));
         return;
@@ -930,13 +932,15 @@ export function createAppServer({
           question: payload.question,
           historySummary: payload.historySummary,
           assistantProfile: payload.assistantProfile,
+          usePersonalContext: payload.usePersonalContext === true,
         };
-        if (payload.assistantProfile !== "inspiration") {
-          Object.assign(jobPayload, {
-            profile: await planning.getProfile(user),
-            portfolio: await activityPortfolio.getPortfolio(user),
-            backups: await planning.listRagBackups(user),
-          });
+        if (jobPayload.usePersonalContext) {
+          const [profile, portfolio, currentPlan] = await Promise.all([
+            planning.getProfile(user),
+            activityPortfolio.getPortfolio(user),
+            planning.getLatestRagPlan(user),
+          ]);
+          Object.assign(jobPayload, { profile, portfolio, currentPlan });
         }
         const createdJob = deepSeekRagJobs.create(user, ({ signal } = {}) =>
           deepSeekRag.answerQuestion({
@@ -944,6 +948,7 @@ export function createAppServer({
             question: payload.question,
             historySummary: payload.historySummary,
             assistantProfile: payload.assistantProfile,
+            usePersonalContext: payload.usePersonalContext === true,
             env,
             signal,
           }),

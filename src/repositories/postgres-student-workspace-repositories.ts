@@ -82,6 +82,11 @@ export function createPostgresWorkspaceRuntime({ pool, now = () => new Date() }:
       const { rows: snapshots } = await pool.query('SELECT s.id AS "snapshotId",s.project_id AS "planId",p.name AS "planName",s.note,s.snapshot_json->\'draft\' AS draft,s.created_at AS "savedAt" FROM planning_snapshots s JOIN planning_projects p ON p.id=s.project_id WHERE s.user_id=$1 ORDER BY s.created_at DESC,s.id DESC', [userId]);
       return [...plans.map((entry: any) => ({ ...entry, sourceType: "current_plan" })), ...snapshots.map((entry: any) => ({ ...entry, sourceType: "snapshot" }))];
     },
+    async getLatestRagPlan(user: any) {
+      const userId = requireUserId(user); await ensureDefaultPlan(user);
+      const { rows } = await pool.query('SELECT id AS "planId",name AS "planName",current_draft_json AS draft,updated_at AS "savedAt" FROM planning_projects WHERE user_id=$1 ORDER BY updated_at DESC,id DESC LIMIT 1', [userId]);
+      return rows[0] ? { ...rows[0], sourceType: "current_plan" } : null;
+    },
     async exportUserData(user: any) { return { profile: await planning.getProfile(user), plans: await planning.listPlans(user), ragBackups: await planning.listRagBackups(user) }; },
   };
 

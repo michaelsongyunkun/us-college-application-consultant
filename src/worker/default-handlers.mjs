@@ -65,7 +65,7 @@ export function createDefaultJobHandlers({
     "ai.deepseek-rag": async (payload, { signal } = {}) => {
       const planning = {
         getProfile: () => payload.profile || { profile: {}, updatedAt: null },
-        listRagBackups: () => payload.backups || [],
+        getLatestRagPlan: () => payload.currentPlan || null,
       };
       const activityPortfolio = { getPortfolio: () => payload.portfolio || {} };
       const retriever = pool ? createPostgresRagRetriever({
@@ -83,7 +83,15 @@ export function createDefaultJobHandlers({
         ? createPostgresAdmissionsKnowledgeGraphAdapter({ pool, fallback: localKnowledgeGraph })
         : localKnowledgeGraph;
       const service = createRagService({ root, planning, activityPortfolio, knowledgeGraph, ...(retriever ? { retriever } : {}) });
-      return service.answerQuestion({ user: payload.user, question: payload.question, historySummary: payload.historySummary, assistantProfile: payload.assistantProfile, env, signal });
+      return service.answerQuestion({
+        user: payload.user,
+        question: payload.question,
+        historySummary: payload.historySummary,
+        assistantProfile: payload.assistantProfile,
+        usePersonalContext: payload.usePersonalContext === true,
+        env,
+        signal,
+      });
     },
     "ai.school-selection": async (payload, { signal } = {}) => {
       const activityPortfolio = { getPortfolio: () => payload.portfolio || {} };

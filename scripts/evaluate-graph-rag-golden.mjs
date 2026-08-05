@@ -9,7 +9,7 @@ const root = process.cwd();
 const cases = JSON.parse(await readFile(new URL("../tests/fixtures/graph-rag-golden.json", import.meta.url), "utf8"));
 const planning = {
   async getProfile(user) { return user?.profile || {}; },
-  async listRagBackups() { return []; },
+  async getLatestRagPlan() { return null; },
 };
 const activityPortfolio = {
   async getPortfolio(user) { return user?.portfolio || {}; },
@@ -23,6 +23,7 @@ function inputFor(item) {
     question: item.query,
     taskType: item.taskType,
     assistantProfile: item.assistantProfile,
+    usePersonalContext: true,
   };
 }
 

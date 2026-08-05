@@ -20,11 +20,19 @@ export function createStaticAdmissionsKnowledgeGraphAdapter({
   const loadGraph = createStaticAdmissionsKnowledgeGraphLoader({ root, readMarkdownFile });
 
   return {
-    async search({ user, query, queryPlan, profile = null, portfolio = null } = {}) {
+    async search({
+      user,
+      query,
+      queryPlan,
+      profile = null,
+      portfolio = null,
+      usePersonalContext = true,
+    } = {}) {
+      const includePersonalContext = usePersonalContext !== false;
       const [graph, resolvedProfile, resolvedPortfolio] = await Promise.all([
         loadGraph(),
-        profile || planning?.getProfile?.(user) || {},
-        portfolio || activityPortfolio?.getPortfolio?.(user) || {},
+        includePersonalContext ? profile || planning?.getProfile?.(user) || {} : {},
+        includePersonalContext ? portfolio || activityPortfolio?.getPortfolio?.(user) || {} : {},
       ]);
       const evidenceText = buildStudentEvidenceText(resolvedProfile, resolvedPortfolio);
       const result = searchAdmissionsKnowledgeGraph(graph, {

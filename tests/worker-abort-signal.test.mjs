@@ -6,6 +6,8 @@ import { createPortfolioCapabilityAgentService } from "../src/server/portfolio-c
 
 const controller = new AbortController();
 const receivedSignals = [];
+const ragRequests = [];
+let workerPlanning;
 const handlers = createDefaultJobHandlers({
   env: { DEEPSEEK_API_KEY: "test-key" },
   root: process.cwd(),
@@ -17,12 +19,16 @@ const handlers = createDefaultJobHandlers({
   },
   mailer: { async sendPasswordResetEmail() {} },
   objectStore: {},
-  createRagService: () => ({
-    async answerQuestion(input) {
-      receivedSignals.push(input.signal);
-      return { ok: true };
-    },
-  }),
+  createRagService: ({ planning }) => {
+    workerPlanning = planning;
+    return {
+      async answerQuestion(input) {
+        receivedSignals.push(input.signal);
+        ragRequests.push(input);
+        return { ok: true };
+      },
+    };
+  },
   createSchoolSelection: () => ({
     async generateSelection(input) {
       receivedSignals.push(input.signal);
@@ -39,12 +45,22 @@ const handlers = createDefaultJobHandlers({
 const context = { signal: controller.signal, job: { id: "job-1" } };
 
 await handlers["ai.deepseek-plan"]({ payload: {} }, context);
-await handlers["ai.deepseek-rag"]({ user: { id: 1 }, question: "test" }, context);
+await handlers["ai.deepseek-rag"]({
+  user: { id: 1 },
+  question: "test",
+  usePersonalContext: true,
+  profile: { profile: { interests: "robotics" } },
+  portfolio: { activities: [{ activityName: "robotics lab" }] },
+  currentPlan: { sourceType: "current_plan", planId: 8, planName: "Current plan", draft: {} },
+}, context);
 await handlers["ai.school-selection"]({ user: { id: 1 }, payload: {} }, context);
 await handlers["ai.capability-assessment"]({ user: { id: 1 }, payload: {} }, context);
 
 assert.equal(receivedSignals.length, 4);
 assert.ok(receivedSignals.every((signal) => signal === controller.signal));
+assert.equal(ragRequests[0].usePersonalContext, true);
+assert.equal(workerPlanning.getProfile().profile.interests, "robotics");
+assert.equal(workerPlanning.getLatestRagPlan().planId, 8);
 
 const graphInputs = [];
 const env = { DEEPSEEK_API_KEY: "test-key" };

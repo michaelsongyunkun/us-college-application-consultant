@@ -84,6 +84,7 @@ try {
       question:
         "Please read my application portfolio, activities, recommendation letters, GPA/SAT/AP and school plan, then provide an activity boost workflow.",
       historySummary: "",
+      usePersonalContext: true,
     },
     cookie,
   );

@@ -43,13 +43,14 @@ const inspirationAvatar = readFileSync("assets/inspiration-bean-avatar.svg", "ut
 
 for (const expected of [
   "申请机器人",
-  "学生备份",
+  "可选个人上下文",
   "资源库",
   "院校百科",
   "专业百科",
   'id="deepSeekChatLog"',
   'id="deepSeekQuestionForm"',
   'id="deepSeekQuestion"',
+  'id="deepSeekPersonalContext"',
   'id="deepSeekAskStatus"',
   'id="deepSeekWorkflows"',
   'id="deepSeekExportButton"',
@@ -254,10 +255,22 @@ for (const expected of [
   'data-deepseek-workflow="confirm-question"',
   'data-deepseek-workflow="small-action"',
   "./assets/inspiration-bean-avatar.svg",
-  "./src/client/ask-deepseek.js?v=20260804-ai-timeout-recovery",
+  "./src/client/ask-deepseek.js?v=20260805-personal-context",
 ]) {
   assert.ok(inspirationPageHtml.includes(expected), `Inspiration robot page should include ${expected}.`);
 }
+
+assert.ok(pageHtml.includes("参考我的申请规划"));
+assert.ok(pageHtml.includes("不会读取历史快照"));
+assert.ok(pageHtml.includes("快捷任务会自动参考个人上下文"));
+assert.doesNotMatch(inspirationPageHtml, /deepSeekPersonalContext|参考我的申请规划|历史快照/u);
+assert.ok(script.includes('document.querySelector("#deepSeekPersonalContext")'));
+assert.ok(script.includes("usePersonalContext: personalContextToggle?.checked === true"));
+assert.ok(script.includes("personalContextToggle.checked = true"));
+assert.ok(script.includes("personalContextToggle.checked = false"));
+assert.ok(script.includes("personalContextToggle.disabled = isWorking"));
+assert.ok(script.includes("正在检索知识资料"));
+assert.match(styles, /\.personal-context-control\s*\{/u);
 
 assert.ok(
   inspirationPageHtml.indexOf("ask-deepseek.html") < inspirationPageHtml.indexOf("inspiration-robot.html"),

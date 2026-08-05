@@ -13,6 +13,7 @@ let readiness = {
 };
 let ragFailure = null;
 const streamErrors = [];
+const ragRequests = [];
 
 const app = await createFastifyHttpLayer({
   auth: {
@@ -27,7 +28,8 @@ const app = await createFastifyHttpLayer({
   readinessCheck: async () => readiness,
   readPrompt: async () => "fixed admissions prompt",
   onStreamError: (context) => streamErrors.push(context),
-  answerRag: async ({ user, question, assistantProfile, signal, onToken }) => {
+  answerRag: async ({ user, question, assistantProfile, usePersonalContext, signal, onToken }) => {
+    ragRequests.push({ question, usePersonalContext });
     if (ragFailure) throw ragFailure;
     if (assistantProfile === "inspiration") {
       await onToken?.("First");
@@ -126,7 +128,7 @@ try {
       cookie: "consultant_session=valid-session; consultant_csrf=valid-csrf",
       "x-csrf-token": "valid-csrf",
     },
-    payload: { question: "computer science" },
+    payload: { question: "computer science", usePersonalContext: true },
   });
   assert.equal(streamResponse.statusCode, 200);
   assert.match(streamResponse.headers["content-type"], /^text\/event-stream/u);
@@ -134,6 +136,7 @@ try {
   assert.match(streamResponse.body, /event: result/u);
   assert.match(streamResponse.body, /Answer for computer science/u);
   assert.match(streamResponse.body, /event: done/u);
+  assert.deepEqual(ragRequests[0], { question: "computer science", usePersonalContext: true });
 
   const inspirationStreamResponse = await app.inject({
     method: "POST",

@@ -271,6 +271,28 @@ export function createPlanningService({ authDb, now = () => new Date() }) {
     return [...currentPlans, ...snapshots];
   }
 
+  function getLatestRagPlan(user) {
+    const userId = requireUserId(user);
+    ensureDefaultPlan(userId);
+    const plan = db
+      .prepare(`
+        SELECT id, name, current_draft_json, updated_at AS updatedAt
+        FROM planning_projects
+        WHERE user_id = ?
+        ORDER BY updated_at DESC, id DESC
+        LIMIT 1
+      `)
+      .get(userId);
+    if (!plan) return null;
+    return {
+      sourceType: "current_plan",
+      planId: plan.id,
+      planName: plan.name,
+      savedAt: plan.updatedAt,
+      draft: parseDraft(plan.current_draft_json),
+    };
+  }
+
   function exportUserData(user) {
     const userId = requireUserId(user);
     const plans = db
@@ -354,6 +376,7 @@ export function createPlanningService({ authDb, now = () => new Date() }) {
     deleteSnapshot,
     listActivityImportSources,
     listRagBackups,
+    getLatestRagPlan,
     exportUserData,
   };
 }

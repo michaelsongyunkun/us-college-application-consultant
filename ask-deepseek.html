@@ -46,7 +46,7 @@
         </nav>
         <div class="command-sidebar-note">
           <strong>申请机器人</strong>
-          <span>由 DeepSeek 与 RAG 驱动，结合你的申请档案和资料库生成建议。</span>
+          <span>由 DeepSeek 与知识 RAG 驱动；个人申请资料仅在你明确开启时使用。</span>
         </div>
       </aside>
 
@@ -56,10 +56,10 @@
           <div>
             <p class="eyebrow">RAG Workspace</p>
             <h2>带资料来源追问申请问题</h2>
-            <p>围绕当前学生背景、规划版本、申请档案、项目资源与院校信息提问；参考资料会收起在回答下方，方便展开核验。</p>
+            <p>默认检索资源库、院校百科与专业百科；如需个性化分析，可选择参考当前画像、申请档案和最近规划。</p>
           </div>
           <div class="command-summary-metrics">
-            <span><strong>学生备份</strong>档案与快照</span>
+            <span><strong>可选个人上下文</strong>当前资料</span>
             <span><strong>资源库</strong>项目资料</span>
             <span><strong>院校百科</strong>学校信息</span>
           </div>
@@ -79,6 +79,7 @@
           </div>
 
           <div id="deepSeekWorkflows" class="deepseek-workflows" aria-label="Workflow 快捷任务">
+            <p class="deepseek-workflow-disclosure">快捷任务会自动参考个人上下文，并且不会读取历史快照。</p>
             <div class="deepseek-workflow-grid">
               <button class="workflow-button" type="button" data-deepseek-workflow="profile-audit">
                 <strong>申请档案体检</strong>
@@ -121,23 +122,32 @@
               <div class="chat-message-body">
                 <p class="chat-speaker">申请机器人</p>
                 <div class="chat-bubble">
-                  <p>你好，我是你的申请机器人。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍；我会结合你的个人申请档案和已保存资料回答，参考资料会收起在回答下方，需要核验时再展开。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。</p>
+                  <p>你好，我是你的申请机器人。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍。默认情况下，我会检索资料库、院校百科和专业百科；如果你开启“参考我的申请规划”，我也会结合你的当前资料回答。参考资料会收起在回答下方，需要核验时再展开。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。</p>
                 </div>
               </div>
             </article>
           </div>
 
           <form id="deepSeekQuestionForm" class="ask-deepseek-form chat-composer" autocomplete="off">
-            <label class="chat-input-label" for="deepSeekQuestion">
-              <span>问题</span>
-              <textarea
-                id="deepSeekQuestion"
-                name="question"
-                maxlength="1200"
-                placeholder="例如：这个学生如果申请 MIT，科研项目和活动叙事应该怎么补强？"
-                required
-              ></textarea>
-            </label>
+            <div class="chat-composer-inputs">
+              <label class="chat-input-label" for="deepSeekQuestion">
+                <span>问题</span>
+                <textarea
+                  id="deepSeekQuestion"
+                  name="question"
+                  maxlength="1200"
+                  placeholder="例如：申请 MIT 时，科研项目和活动叙事通常应该怎么补强？"
+                  required
+                ></textarea>
+              </label>
+              <label class="personal-context-control" for="deepSeekPersonalContext">
+                <input id="deepSeekPersonalContext" type="checkbox">
+                <span>
+                  <strong>参考我的申请规划</strong>
+                  <small>开启后会读取当前画像、申请档案和最近更新的一份规划；不会读取历史快照。</small>
+                </span>
+              </label>
+            </div>
             <div class="ask-deepseek-actions">
               <button id="deepSeekAskButton" type="submit">发送</button>
               <button id="deepSeekClearButton" class="secondary" type="button">清空</button>
@@ -148,6 +158,6 @@
     </main>
     <script type="module" src="./src/client/admin-nav.js?v=20260602-mobile-drawer"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260602-mobile-drawer"></script>
-    <script type="module" src="./src/client/ask-deepseek.js?v=20260804-ai-timeout-recovery"></script>
+    <script type="module" src="./src/client/ask-deepseek.js?v=20260805-personal-context"></script>
   </body>
 </html>

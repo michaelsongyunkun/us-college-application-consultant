@@ -14,4 +14,7 @@ assert.deepEqual(planning.caveats, []);
 assert.equal(SchoolSelectionResultSchema.safeParse({ rounds: {} }).success, false);
 assert.equal(RagStreamRequestSchema.parse({ question: "major match", assistantProfile: "major-match" }).assistantProfile, "major-match");
 assert.equal(RagStreamRequestSchema.parse({ question: "what matters", assistantProfile: "inspiration" }).assistantProfile, "inspiration");
+assert.equal(RagStreamRequestSchema.parse({ question: "knowledge only" }).usePersonalContext, false);
+assert.equal(RagStreamRequestSchema.parse({ question: "my plan", usePersonalContext: true }).usePersonalContext, true);
+assert.equal(RagStreamRequestSchema.safeParse({ question: "invalid", usePersonalContext: "true" }).success, false);
 assert.equal(RagStreamRequestSchema.safeParse({ question: "x".repeat(1_201) }).success, false);

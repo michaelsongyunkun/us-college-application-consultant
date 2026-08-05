@@ -63,6 +63,7 @@ export type FastifyHttpLayerOptions = {
     question: string;
     historySummary: string;
     assistantProfile: "" | "major-match" | "inspiration";
+    usePersonalContext: boolean;
     signal: AbortSignal;
     onToken?: (text: string) => void | Promise<void>;
   }) => unknown | Promise<unknown>;

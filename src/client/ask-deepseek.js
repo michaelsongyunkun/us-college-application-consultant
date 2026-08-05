@@ -12,6 +12,7 @@ const saveReviewButton = document.querySelector("#deepSeekSaveReviewButton");
 const status = document.querySelector("#deepSeekAskStatus");
 const chatLog = document.querySelector("#deepSeekChatLog");
 const workflowRegion = document.querySelector("#deepSeekWorkflows");
+const personalContextToggle = document.querySelector("#deepSeekPersonalContext");
 
 const PAGE_ASSISTANT_PROFILE = document.body.dataset.assistantProfile === "inspiration"
   ? "inspiration"
@@ -21,7 +22,7 @@ const ASSISTANT_NAME = IS_INSPIRATION_PROFILE ? "启发性机器人" : "申请�
 const ANALYTICS_SOURCE = IS_INSPIRATION_PROFILE ? "inspiration_robot" : "application_robot";
 const INITIAL_CHAT_MESSAGE = IS_INSPIRATION_PROFILE
   ? "你好，我是启发性机器人。我会像一位温暖、耐心但不过度推断的知心大姐姐式探索伙伴，先从我们真实说过的话里寻找可能的兴趣线索，再由你选择想探索的方向。如果现在还没有足够的历史对话，我们就从一个你真实经历过的具体时刻开始。"
-  : "你好，我是你的申请机器人。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍；我会结合你的个人申请档案和已保存资料回答，参考资料会收起在回答下方，需要核验时再展开。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。";
+  : "你好，我是你的申请机器人。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍。默认情况下，我会检索资料库、院校百科和专业百科；如果你开启“参考我的申请规划”，我也会结合你的当前资料回答。参考资料会收起在回答下方，需要核验时再展开。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。";
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const DEEPSEEK_RAG_JOB_ENDPOINT = "/api/deepseek-rag-jobs";
@@ -48,10 +49,15 @@ const PROGRESS_STATUSES = IS_INSPIRATION_PROFILE
       "启发性机器人正在组织回应...",
     ]
   : [
-      "正在检索你的申请档案...",
+      "正在检索知识资料...",
       "正在整理参考资料...",
       "DeepSeek 正在生成建议...",
     ];
+const PERSONAL_CONTEXT_PROGRESS_STATUSES = [
+  "正在检索你的申请档案...",
+  "正在整理当前画像与最近规划...",
+  "DeepSeek 正在生成个性化建议...",
+];
 const STANDARD_RESPONSE_SECTIONS = [
   "最终输出请只使用以下报告结构：",
   "## 核心结论",
@@ -270,13 +276,16 @@ function setStatus(message, isError = false) {
   status.classList.toggle("error", isError);
 }
 
-function startProgressStatus() {
+function startProgressStatus(usePersonalContext = false) {
   stopProgressStatus();
+  const progressStatuses = !IS_INSPIRATION_PROFILE && usePersonalContext === true
+    ? PERSONAL_CONTEXT_PROGRESS_STATUSES
+    : PROGRESS_STATUSES;
   let index = 0;
-  setStatus(PROGRESS_STATUSES[index]);
+  setStatus(progressStatuses[index]);
   progressStatusTimer = window.setInterval(() => {
-    index = Math.min(index + 1, PROGRESS_STATUSES.length - 1);
-    setStatus(PROGRESS_STATUSES[index]);
+    index = Math.min(index + 1, progressStatuses.length - 1);
+    setStatus(progressStatuses[index]);
   }, 1500);
 }
 
@@ -289,6 +298,7 @@ function stopProgressStatus() {
 function setWorking(isWorking) {
   askButton.disabled = isWorking;
   clearButton.disabled = isWorking;
+  if (personalContextToggle) personalContextToggle.disabled = isWorking;
   workflowRegion
     ?.querySelectorAll("[data-deepseek-workflow]")
     .forEach((button) => {
@@ -337,6 +347,7 @@ function rememberPendingDeepSeekRagJob(record) {
       question: record.question,
       displayQuestion: record.displayQuestion || record.question,
       workflowKey: record.workflowKey || "",
+      usePersonalContext: record.usePersonalContext === true,
       createdAt: new Date().toISOString(),
     }),
   );
@@ -495,6 +506,9 @@ function buildRagRequestPayload(question, historySummary) {
   return {
     question,
     historySummary,
+    ...(!IS_INSPIRATION_PROFILE
+      ? { usePersonalContext: personalContextToggle?.checked === true }
+      : {}),
     ...(PAGE_ASSISTANT_PROFILE ? { assistantProfile: PAGE_ASSISTANT_PROFILE } : {}),
   };
 }
@@ -687,6 +701,7 @@ form.addEventListener("submit", async (event) => {
 async function askDeepSeek({ question, displayQuestion = question, workflowKey = "" }) {
   if (deepSeekRagJobPolling) return;
   deepSeekRagJobPolling = true;
+  const requestPayload = buildRagRequestPayload(question, conversationSummary);
   appendMessage({ role: "user", content: displayQuestion });
   questionInput.value = "";
   const thinkingMessageId = renderThinkingMessage();
@@ -694,17 +709,18 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
 
   try {
     setWorking(true);
-    startProgressStatus();
+    startProgressStatus(requestPayload.usePersonalContext);
     setStatus(`正在提交${ASSISTANT_NAME}后台问答任务...`);
     const job = await requestJson(DEEPSEEK_RAG_JOB_ENDPOINT, {
       method: "POST",
-      body: JSON.stringify(buildRagRequestPayload(question, conversationSummary)),
+      body: JSON.stringify(requestPayload),
     });
     rememberPendingDeepSeekRagJob({
       jobId: job.jobId,
       question,
       displayQuestion,
       workflowKey,
+      usePersonalContext: requestPayload.usePersonalContext === true,
     });
     setStatus(`问答任务已提交，${ASSISTANT_NAME}正在后台生成回答。`);
     const data = await waitForDeepSeekRagJob(job.jobId);
@@ -771,13 +787,14 @@ async function resumePendingDeepSeekRagJob() {
   if (!pendingJob || deepSeekRagJobPolling) return;
 
   deepSeekRagJobPolling = true;
+  if (personalContextToggle) personalContextToggle.checked = pendingJob.usePersonalContext === true;
   appendMessage({ role: "user", content: pendingJob.displayQuestion || pendingJob.question });
   const thinkingMessageId = renderThinkingMessage();
   const startedAt = performance.now();
 
   try {
     setWorking(true);
-    startProgressStatus();
+    startProgressStatus(pendingJob.usePersonalContext === true);
     setStatus(`正在接回上次未完成的${ASSISTANT_NAME}问答任务...`);
     const data = await waitForDeepSeekRagJob(pendingJob.jobId);
     const sources = IS_INSPIRATION_PROFILE ? [] : data.sources || [];
@@ -1043,6 +1060,7 @@ workflowRegion?.addEventListener("click", (event) => {
   if (!button || button.disabled) return;
   const workflow = WORKFLOW_PROMPTS[button.dataset.deepseekWorkflow];
   if (!workflow) return;
+  if (personalContextToggle) personalContextToggle.checked = true;
   askDeepSeek({
     question: workflow.prompt,
     displayQuestion: `启动 Workflow：${workflow.label}`,
@@ -1093,6 +1111,7 @@ questionInput.addEventListener("keydown", (event) => {
 
 clearButton.addEventListener("click", () => {
   questionInput.value = "";
+  if (personalContextToggle) personalContextToggle.checked = false;
   clearPendingDeepSeekRagJob();
   conversationSummary = "";
   conversationTurns.length = 0;

@@ -128,6 +128,7 @@ export const RagStreamRequestSchema = z
     question: z.string().trim().min(1).max(1_200),
     historySummary: z.string().trim().max(1_800).optional().default(""),
     assistantProfile: z.enum(["", "major-match", "inspiration"]).optional().default(""),
+    usePersonalContext: z.boolean().optional().default(false),
   })
   .openapi("RagStreamRequest");
 

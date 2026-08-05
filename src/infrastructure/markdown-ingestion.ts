@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
+export const DEFAULT_MARKDOWN_CHUNK_CHARS = 2_200;
+
 export async function buildMarkdownKnowledgeRecords(sources: any[], { sourceVersion, embeddingModelVersion }: any) {
   const records: any[] = [];
   for (const source of [...sources].sort((left, right) => String(left.sourceId).localeCompare(String(right.sourceId)))) {
@@ -30,7 +32,7 @@ export async function buildMarkdownKnowledgeRecords(sources: any[], { sourceVers
           headingPath: chunk.headingPath,
           headingLevel: chunk.headingLevel,
           charCount: chunk.content.length,
-          chunkingVersion: "markdown-headings-v2",
+          chunkingVersion: "markdown-headings-v3",
         },
       });
     });
@@ -128,11 +130,11 @@ export function createPostgresKnowledgeRepository({ pool }: any) {
   };
 }
 
-export function splitMarkdownForIngestion(markdown: string, maxChars = 4_000) {
+export function splitMarkdownForIngestion(markdown: string, maxChars = DEFAULT_MARKDOWN_CHUNK_CHARS) {
   return splitMarkdownIntoStructuredChunks(markdown, maxChars).map((chunk) => chunk.content);
 }
 
-export function splitMarkdownIntoStructuredChunks(markdown: string, maxChars = 4_000) {
+export function splitMarkdownIntoStructuredChunks(markdown: string, maxChars = DEFAULT_MARKDOWN_CHUNK_CHARS) {
   const normalized = String(markdown).replace(/\r\n?/gu, "\n").trim();
   if (!normalized) return [];
   const sections = parseMarkdownSections(normalized);
@@ -184,7 +186,7 @@ function parseMarkdownSections(markdown: string) {
   let current: any = { headingPathEntries: [], bodyLines: [] };
   const flush = () => {
     const body = current.bodyLines.join("\n").trim();
-    if (body || current.headingPathEntries.length) sections.push({ headingPathEntries: current.headingPathEntries, body });
+    if (body) sections.push({ headingPathEntries: current.headingPathEntries, body });
   };
   for (const line of markdown.split("\n")) {
     const heading = line.match(/^(#{1,6})\s+(.+?)\s*$/u);
@@ -206,18 +208,53 @@ function splitTextToMax(text: string, maxChars: number) {
   if (!text) return [""];
   const output: string[] = [];
   let current = "";
-  for (const paragraph of text.split(/\n{2,}/gu).map((entry) => entry.trim()).filter(Boolean)) {
-    if (paragraph.length > maxChars) {
-      if (current) { output.push(current); current = ""; }
-      for (let offset = 0; offset < paragraph.length; offset += maxChars) output.push(paragraph.slice(offset, offset + maxChars));
-      continue;
+  for (const block of text.split(/\n{2,}/gu).map((entry) => entry.trim()).filter(Boolean)) {
+    const segments = block.length > maxChars ? splitOversizedMarkdownBlock(block, maxChars) : [block];
+    for (const segment of segments) {
+      const combined = current ? `${current}\n\n${segment}` : segment;
+      if (combined.length > maxChars) {
+        if (current) output.push(current);
+        current = segment;
+      } else {
+        current = combined;
+      }
     }
-    const combined = current ? `${current}\n\n${paragraph}` : paragraph;
-    if (combined.length > maxChars) { output.push(current); current = paragraph; }
-    else current = combined;
   }
   if (current) output.push(current);
   return output.length ? output : [text.slice(0, maxChars)];
+}
+
+function splitOversizedMarkdownBlock(block: string, maxChars: number) {
+  const output: string[] = [];
+  let current = "";
+  for (const line of block.split("\n")) {
+    const lineSegments = line.length > maxChars ? splitLongMarkdownLine(line, maxChars) : [line];
+    for (const segment of lineSegments) {
+      const combined = current ? `${current}\n${segment}` : segment;
+      if (combined.length > maxChars) {
+        if (current) output.push(current);
+        current = segment;
+      } else {
+        current = combined;
+      }
+    }
+  }
+  if (current) output.push(current);
+  return output;
+}
+
+function splitLongMarkdownLine(line: string, maxChars: number) {
+  const output: string[] = [];
+  let remaining = line;
+  while (remaining.length > maxChars) {
+    const window = remaining.slice(0, maxChars + 1);
+    const whitespaceIndex = window.lastIndexOf(" ");
+    const splitIndex = whitespaceIndex >= Math.floor(maxChars * 0.6) ? whitespaceIndex : maxChars;
+    output.push(remaining.slice(0, splitIndex).trimEnd());
+    remaining = remaining.slice(splitIndex).trimStart();
+  }
+  if (remaining) output.push(remaining);
+  return output;
 }
 
 function toStructuredChunk(section: any, sectionIndex: number, sectionChunkIndex: number, content: string) {

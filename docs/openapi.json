@@ -158,6 +158,10 @@
               "inspiration"
             ],
             "default": ""
+          },
+          "usePersonalContext": {
+            "type": "boolean",
+            "default": false
           }
         },
         "required": [

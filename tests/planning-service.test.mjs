@@ -74,6 +74,15 @@ try {
 
   const secondPlan = planning.createPlan(student, { name: "保底规划" });
   assert.equal(planning.listPlans(student).length, 2);
+  planning.savePlan(student, secondPlan.id, {
+    draft: { activities: [], rawAnswer: "latest current plan" },
+  });
+  const latestRagPlan = planning.getLatestRagPlan(student);
+  assert.equal(latestRagPlan.sourceType, "current_plan");
+  assert.equal(latestRagPlan.planName, "保底规划");
+  assert.equal(latestRagPlan.draft.rawAnswer, "latest current plan");
+  assert.equal(Object.hasOwn(latestRagPlan, "snapshotId"), false);
+  assert.equal(Object.hasOwn(latestRagPlan, "profile"), false);
   assert.throws(
     () => planning.createPlan(student, { name: " ".repeat(4) }),
     (error) => error instanceof PlanningError && error.statusCode === 400,

@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { createStudentWorkspaceService, isStudentWorkspaceRoute } from "../src/server/student-workspace-service.ts";
-import { buildPostgresUsageRecord } from "../src/repositories/postgres-student-workspace-repositories.ts";
+import {
+  buildPostgresUsageRecord,
+  createPostgresWorkspaceRuntime,
+} from "../src/repositories/postgres-student-workspace-repositories.ts";
 
 const calls = [];
 const repositories = {
@@ -33,3 +36,38 @@ const usageRecord = buildPostgresUsageRecord(
 assert.equal(usageRecord.userId, 7);
 assert.equal(usageRecord.userName, "Real User");
 assert.equal(usageRecord.userEmail, "real@example.com");
+
+const postgresQueries = [];
+const pool = {
+  async connect() {
+    return {
+      async query(sql) {
+        postgresQueries.push(sql);
+        if (sql.includes("SELECT id FROM planning_projects")) return { rows: [{ id: 42 }] };
+        return { rows: [] };
+      },
+      release() {},
+    };
+  },
+  async query(sql) {
+    postgresQueries.push(sql);
+    if (sql.includes("ORDER BY updated_at DESC,id DESC LIMIT 1")) {
+      return {
+        rows: [{
+          planId: 42,
+          planName: "Latest plan",
+          draft: { rawAnswer: "current only" },
+          savedAt: "2026-08-06T00:00:00.000Z",
+        }],
+      };
+    }
+    return { rows: [] };
+  },
+};
+const postgresRuntime = createPostgresWorkspaceRuntime({ pool });
+const latestPlan = await postgresRuntime.planning.getLatestRagPlan({ id: 7 });
+assert.equal(latestPlan.sourceType, "current_plan");
+assert.equal(latestPlan.planId, 42);
+assert.equal(latestPlan.draft.rawAnswer, "current only");
+assert.equal(Object.hasOwn(latestPlan, "snapshotId"), false);
+assert.equal(postgresQueries.some((sql) => sql.includes("planning_snapshots")), false);

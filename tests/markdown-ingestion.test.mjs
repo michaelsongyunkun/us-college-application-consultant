@@ -14,6 +14,17 @@ assert.deepEqual(structured.at(-1).headingPath, ["Guide", "Courses", "AP Calculu
 assert.equal(structured.at(-1).headingLevel, 3);
 assert.equal(structured.at(-1).sectionChunkIndex >= 0, true);
 assert.equal(structured.every((chunk) => chunk.content.length <= 120), true);
+assert.equal(
+  structured.some((chunk) => chunk.content.trim().endsWith("## Courses")),
+  false,
+  "Headings without evidence should not become standalone knowledge chunks.",
+);
+assert.ok(
+  structured
+    .filter((chunk) => chunk.headingPath.at(-1) === "AP Calculus BC")
+    .every((chunk) => chunk.content.includes("# Guide") && chunk.content.includes("## Courses")),
+  "Every continuation chunk should retain its complete heading path.",
+);
 
 const root = await mkdtemp(join(tmpdir(), "consultant-ingestion-"));
 try {
@@ -24,7 +35,7 @@ try {
   const second = await buildMarkdownKnowledgeRecords([source], { sourceVersion: "2026-07-12", embeddingModelVersion: "embed-v1" });
   assert.deepEqual(first, second, "ingestion records must be deterministic");
   assert.ok(first.every((record) => record.contentHash && record.sourceId && record.updatedAt === null));
-  assert.ok(first.every((record) => record.metadata.chunkingVersion === "markdown-headings-v2"));
+  assert.ok(first.every((record) => record.metadata.chunkingVersion === "markdown-headings-v3"));
   assert.ok(first.every((record) => Array.isArray(record.metadata.headingPath)));
   assert.ok(first.every((record) => Number.isInteger(record.metadata.charCount)));
 

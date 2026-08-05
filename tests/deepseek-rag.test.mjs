@@ -4,11 +4,22 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAppServer } from "../server.mjs";
 import { AI_QUALITY_VERSIONS } from "../src/server/ai-quality.mjs";
+import { createGenerationJobService } from "../src/server/generation-job-service.mjs";
 import { RAG_ANSWER_GRAPH_VERSION } from "../src/server/langgraph-rag-workflow.mjs";
 import { buildCookieHeader, jsonHeaders } from "./csrf-test-helpers.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-deepseek-rag-"));
 const calls = [];
+const queuedRagPayloads = [];
+const localRagJobs = createGenerationJobService();
+const deepSeekRagJobs = {
+  create(user, task, descriptor) {
+    queuedRagPayloads.push(descriptor.payload);
+    return localRagJobs.create(user, task);
+  },
+  get: (...args) => localRagJobs.get(...args),
+  cancel: (...args) => localRagJobs.cancel(...args),
+};
 const ragAnswer = "根据学生备份与资料库，Polygence 可以作为 Robotics Portfolio 的科研补充；MIT 需要强调 STEM 深度。";
 
 const server = createAppServer({
@@ -22,6 +33,7 @@ const server = createAppServer({
     INSPIRATION_MAX_TOKENS: "480",
   },
   deepSeekRagLlmClient: createMockRagLlmClient(calls),
+  jobServices: { deepSeekRag: deepSeekRagJobs },
 });
 
 try {
@@ -121,6 +133,7 @@ try {
     {
       question: "How should this Robotics Portfolio student use FRC/FTC 机器人队 as a Common App activity while comparing Polygence and MIT?",
       historySummary: "上一轮已经确认学生主线是 Robotics Portfolio 与 CS。",
+      usePersonalContext: true,
     },
     cookie,
   );
@@ -129,7 +142,12 @@ try {
   assert.equal(body.answer, ragAnswer);
   assert.equal(JSON.stringify(body).includes("env-rag-secret"), false);
   assert.ok(body.sources.some((source) => source.type === "application-portfolio"));
-  assert.ok(body.sources.some((source) => source.typeLabel === "个人申请档案"));
+  assert.ok(body.sources.some((source) => source.typeLabel === "个人上下文"));
+  assert.ok(
+    body.sources
+      .filter((source) => ["application-portfolio", "student-backup"].includes(source.type))
+      .every((source) => source.scope === "personal"),
+  );
   assert.ok(body.sources.some((source) => source.type === "student-backup"));
   assert.ok(body.sources.some((source) => source.type === "resource-library"));
   assert.ok(body.sources.some((source) => source.title.includes("课外活动库")));
@@ -247,6 +265,7 @@ try {
     {
       question: "请根据我的申请档案自动匹配适合探索的美国本科专业。",
       assistantProfile: "major-match",
+      usePersonalContext: true,
     },
     cookie,
   );
@@ -277,11 +296,19 @@ try {
     {
       question: "How should this Robotics Portfolio student prioritize MIT preparation?",
       historySummary: "Robotics Portfolio context.",
+      usePersonalContext: true,
     },
     cookie,
   );
   assert.equal(ragJobResponse.status, 202);
   const createdRagJob = await ragJobResponse.json();
+  assert.equal(queuedRagPayloads.length, 1);
+  assert.equal(queuedRagPayloads[0].usePersonalContext, true);
+  assert.equal(queuedRagPayloads[0].profile.profile.interests, "Robotics Portfolio");
+  assert.equal(queuedRagPayloads[0].currentPlan.planId, planId);
+  assert.equal(Object.hasOwn(queuedRagPayloads[0].currentPlan, "snapshotId"), false);
+  assert.ok(Array.isArray(queuedRagPayloads[0].portfolio.activities));
+  assert.equal(Object.hasOwn(queuedRagPayloads[0], "backups"), false);
   assert.match(createdRagJob.jobId, /^[a-f0-9-]{36}$/);
   assert.equal(createdRagJob.status, "pending");
   const completedRagJob = await waitForJob("/api/deepseek-rag-jobs", createdRagJob.jobId, cookie);

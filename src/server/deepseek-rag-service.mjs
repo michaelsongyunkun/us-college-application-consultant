@@ -21,6 +21,7 @@ import { monotonicNowMs } from "./observability.mjs";
 import { withSpan } from "./production-observability.ts";
 import { createStaticAdmissionsKnowledgeGraphAdapter } from "./admissions-knowledge-graph-adapter.mjs";
 import { createRetrievalOrchestrator } from "./retrieval-orchestrator.mjs";
+import { splitMarkdownIntoStructuredChunks } from "../infrastructure/markdown-ingestion.ts";
 
 const MAX_QUESTION_LENGTH = 1200;
 const MAX_HISTORY_SUMMARY_LENGTH = 1800;
@@ -63,6 +64,8 @@ const SOURCE_TYPE_LABELS = {
   "school-encyclopedia": "院校百科",
   "major-encyclopedia": "专业百科",
 };
+
+const PERSONAL_SOURCE_TYPES = new Set(["student-backup", "application-portfolio"]);
 
 const APPLICATION_ROUND_LABELS = {
   rea: "REA",
@@ -199,8 +202,8 @@ export function createDeepSeekRagService({
     logger,
   });
   const answerGraph = ragAnswerGraph || createRagAnswerGraph({
-    retrieveSources: ({ user, question, historySummary, assistantProfile }) =>
-      orchestratedRetriever.retrieve({ user, question, historySummary, assistantProfile }),
+    retrieveSources: ({ user, question, historySummary, assistantProfile, usePersonalContext }) =>
+      orchestratedRetriever.retrieve({ user, question, historySummary, assistantProfile, usePersonalContext }),
     draftAnswer: (state) => draftDeepSeekRagAnswer({ ...state, llmClient, metrics }),
     evaluateQuality: evaluateRagGraphQuality,
     metrics,
@@ -211,6 +214,7 @@ export function createDeepSeekRagService({
     question,
     historySummary = "",
     assistantProfile = "",
+    usePersonalContext = false,
     env = process.env,
     signal,
     onToken,
@@ -258,6 +262,7 @@ export function createDeepSeekRagService({
       question: normalizedQuestion,
       historySummary: normalizedHistorySummary,
       assistantProfile,
+      usePersonalContext: usePersonalContext === true,
       env,
       model,
       signal,
@@ -317,6 +322,7 @@ async function draftDeepSeekRagAnswer({
   question,
   historySummary = "",
   assistantProfile = "",
+  usePersonalContext = false,
   retrievalResult = {},
   model,
   env = process.env,
@@ -346,7 +352,7 @@ async function draftDeepSeekRagAnswer({
     timeoutMs: callPolicy.timeoutMs,
     maxAttempts: callPolicy.maxAttempts,
     messages: [
-      { role: "system", content: selectSystemPrompt(assistantProfile) },
+      { role: "system", content: selectSystemPrompt(assistantProfile, usePersonalContext) },
       {
         role: "user",
         content: buildUserMessage(
@@ -355,6 +361,7 @@ async function draftDeepSeekRagAnswer({
           historySummary,
           retrievalResult.missingFields || [],
           intentProfile,
+          usePersonalContext,
         ),
       },
     ],
@@ -596,21 +603,26 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
     question,
     historySummary = "",
     assistantProfile = "",
+    usePersonalContext = false,
   } = {}) {
     const normalizedQuestion = normalizeQuestion(question);
-
-    const profile = await planning.getProfile(user);
-    const portfolio = await activityPortfolio.getPortfolio(user);
-    const missingFields = buildMissingFieldChecklist({ profile, portfolio });
+    const includePersonalContext = usePersonalContext === true;
+    const [profile, portfolio, currentPlan] = includePersonalContext
+      ? await Promise.all([
+          planning.getProfile(user),
+          activityPortfolio.getPortfolio(user),
+          planning.getLatestRagPlan(user),
+        ])
+      : [{}, {}, null];
+    const missingFields = includePersonalContext
+      ? buildMissingFieldChecklist({ profile, portfolio })
+      : [];
     const retrievalStartedAt = monotonicNowMs();
     const documents = await buildRagDocuments({
-      root,
-      user,
-      planning,
-      activityPortfolio,
       profile,
       portfolio,
-      backups: await planning.listRagBackups(user),
+      currentPlan,
+      includePersonalContext,
       staticDocuments: await loadStaticMarkdownDocuments(),
     });
     const intentProfile = analyzeQuestionIntent(normalizedQuestion);
@@ -645,17 +657,17 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
 }
 
 async function buildRagDocuments({
-  user,
-  planning,
-  activityPortfolio,
-  profile = planning.getProfile(user),
-  portfolio = activityPortfolio.getPortfolio(user),
-  backups = [],
+  profile = {},
+  portfolio = {},
+  currentPlan = null,
+  includePersonalContext = false,
   staticDocuments = [],
 }) {
-  const studentDocuments = buildStudentDocuments({ profile, portfolio, backups })
+  const studentDocuments = includePersonalContext
+    ? buildStudentDocuments({ profile, portfolio, currentPlan })
     .filter((document) => document.text.trim())
-    .map(toLangChainRagDocument);
+    .map(toLangChainRagDocument)
+    : [];
   return [...studentDocuments, ...staticDocuments];
 }
 
@@ -693,7 +705,7 @@ export function toLangChainRagDocument(source = {}) {
   });
 }
 
-function buildStudentDocuments({ profile, portfolio, backups = [] }) {
+function buildStudentDocuments({ profile, portfolio, currentPlan = null }) {
   const documents = [];
   addJsonDocument(documents, {
     type: "student-backup",
@@ -707,14 +719,11 @@ function buildStudentDocuments({ profile, portfolio, backups = [] }) {
     data: summarizeApplicationPortfolio(portfolio),
   });
 
-  for (const backup of backups) {
+  if (currentPlan) {
     addJsonDocument(documents, {
       type: "student-backup",
-      title:
-        backup.sourceType === "snapshot"
-          ? `学生备份：${backup.planName} / ${backup.note || "历史快照"}`
-          : `学生备份：${backup.planName} / 当前方案`,
-      data: backup,
+      title: `学生备份：${currentPlan.planName} / 当前方案`,
+      data: currentPlan,
     });
   }
 
@@ -724,7 +733,7 @@ function buildStudentDocuments({ profile, portfolio, backups = [] }) {
 function addJsonDocument(documents, { type, title, data }) {
   const text = typeof data === "string" ? data : stringifyForRag(data);
   if (!hasMeaningfulText(text)) return;
-  const chunks = splitLongSection(text);
+  const chunks = splitMarkdownIntoChunks(text);
   chunks.forEach((chunk, index) => {
     const chunkTitle = chunks.length > 1 ? `${title}（${index + 1}/${chunks.length}）` : title;
     documents.push({
@@ -935,40 +944,11 @@ async function buildMarkdownDocuments(root, files, type, readMarkdownFile = read
 }
 
 export function splitMarkdownIntoChunks(text) {
-  const sections = text
-    .replace(/\r\n/g, "\n")
-    .split(/\n(?=#{2,4}\s+)/)
-    .map((section) => section.trim())
-    .filter(Boolean);
-  return sections.flatMap((section) => splitLongSection(section));
-}
-
-function splitLongSection(section) {
-  if (section.length <= MAX_CHUNK_CHARS) return [section];
-  const chunks = [];
-  const lines = section.split("\n");
-  let current = "";
-  for (const line of lines) {
-    const segments = line.length > MAX_CHUNK_CHARS
-      ? Array.from(
-          { length: Math.ceil(line.length / MAX_CHUNK_CHARS) },
-          (_, index) => line.slice(index * MAX_CHUNK_CHARS, (index + 1) * MAX_CHUNK_CHARS),
-        )
-      : [line];
-    for (const segment of segments) {
-      if (current && `${current}\n${segment}`.length > MAX_CHUNK_CHARS) {
-        chunks.push(current);
-        current = "";
-      }
-      current = current ? `${current}\n${segment}` : segment;
-    }
-  }
-  if (current) chunks.push(current);
-  return chunks;
+  return splitMarkdownIntoStructuredChunks(text, MAX_CHUNK_CHARS).map((chunk) => chunk.content);
 }
 
 function getChunkHeading(chunk) {
-  const heading = chunk.match(/^#{1,6}\s+(.+)$/m)?.[1] || "";
+  const heading = [...chunk.matchAll(/^#{1,6}\s+(.+)$/gm)].at(-1)?.[1] || "";
   return heading.replace(/\*+/g, "").trim().slice(0, 90);
 }
 
@@ -1120,7 +1100,7 @@ function scoreDocument(document, queryTokens, question, intentProfile) {
   const searchable = normalizeSearchText(`${title}\n${getRagDocumentText(document)}`);
   const normalizedTitle = normalizeSearchText(title);
   const sourceWeight = intentProfile.sourceWeights[type] || 1;
-  let score = sourceWeight;
+  let score = 0;
   for (const token of queryTokens) {
     if (!token) continue;
     if (searchable.includes(token)) score += (token.length >= 4 ? 3 : 1) * sourceWeight;
@@ -1218,8 +1198,13 @@ function buildUserMessage(
   historySummary,
   missingFields = [],
   intentProfile = analyzeQuestionIntent(question),
+  usePersonalContext = false,
 ) {
   return [
+    usePersonalContext === true
+      ? "本次已启用个人上下文，可结合当前画像、申请档案和最近更新的一份规划。"
+      : "本次未启用个人上下文；不得假设已读取用户画像、申请档案或规划。",
+    "",
     `问题：${question}`,
     "",
     `问题意图：${intentProfile.intent}`,
@@ -1255,9 +1240,12 @@ function buildInspirationUserMessage(question, historySummary = "") {
   ].join("\n");
 }
 
-function selectSystemPrompt(assistantProfile = "") {
-  if (assistantProfile === "major-match") return MAJOR_MATCH_SYSTEM_PROMPT;
-  return SYSTEM_PROMPT;
+function selectSystemPrompt(assistantProfile = "", usePersonalContext = false) {
+  const prompt = assistantProfile === "major-match" ? MAJOR_MATCH_SYSTEM_PROMPT : SYSTEM_PROMPT;
+  const personalContextBoundary = usePersonalContext === true
+    ? "本次请求已明确启用个人上下文，只能使用所提供的当前资料，不得假设存在其他规划或历史快照。"
+    : "本次请求未启用个人上下文，不得声称或暗示已经读取用户画像、申请档案、申请规划或历史快照。";
+  return `${prompt}\n\n${personalContextBoundary}`;
 }
 
 export function serializeRagSource(source) {
@@ -1265,7 +1253,8 @@ export function serializeRagSource(source) {
   return {
     id: getRagDocumentId(source),
     type,
-    typeLabel: SOURCE_TYPE_LABELS[type] || type,
+    scope: PERSONAL_SOURCE_TYPES.has(type) ? "personal" : "knowledge",
+    typeLabel: PERSONAL_SOURCE_TYPES.has(type) ? "个人上下文" : SOURCE_TYPE_LABELS[type] || type,
     title: getRagDocumentTitle(source),
     snippet: formatSourceSnippet(getRagDocumentText(source)),
   };

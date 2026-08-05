@@ -8,6 +8,7 @@ const RagAnswerState = Annotation.Root({
   question: Annotation(),
   historySummary: Annotation(),
   assistantProfile: Annotation(),
+  usePersonalContext: Annotation(),
   env: Annotation(),
   model: Annotation(),
   signal: Annotation(),
