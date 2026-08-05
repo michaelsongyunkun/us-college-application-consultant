@@ -207,6 +207,10 @@ assert.ok(script.includes('response_too_long: "回答达到长度上限"'), "Ask
 assert.ok(script.includes("quality.review"), "Ask DeepSeek should read review metadata from RAG quality results.");
 assert.ok(script.includes("chat-quality-review"), "Ask DeepSeek quality review should use a styled container.");
 assert.ok(script.includes("需要人工复核"), "Ask DeepSeek should warn when AI quality review requires human checking.");
+assert.ok(script.includes('limited_evidence: "可核验资料不足"'));
+assert.ok(script.includes('review_required: "需要人工复核"'));
+assert.ok(script.includes('pass: "质量检查通过"'));
+assert.ok(script.includes("quality.status"));
 assert.ok(script.includes("data-deepseek-save-actions"), "Ask DeepSeek should save answers as action checklists.");
 assert.ok(script.includes("data-deepseek-save-note"), "Ask DeepSeek should save answers into the application portfolio notes.");
 assert.ok(script.includes('"/api/my-activities"'), "Ask DeepSeek should save useful answers into my application portfolio.");
@@ -228,6 +232,7 @@ assert.match(styles, /\.chat-source-type-chip\s*\{/, "Ask DeepSeek should style 
 assert.match(styles, /\.chat-source-snippet\s*\{/, "Ask DeepSeek should style visual source snippets.");
 assert.match(styles, /\.chat-quality-review\s*\{/, "Ask DeepSeek should style AI quality review guidance.");
 assert.match(styles, /\.chat-quality-review\.needs-review\s*\{/, "Ask DeepSeek should style required review states.");
+assert.ok(styles.includes(".chat-quality-review.limited-evidence"));
 assert.ok(script.includes("LONG_ANSWER_COLLAPSE_CHARS = 3_000"), "Ask DeepSeek should use a stable long-answer threshold.");
 assert.ok(script.includes("LONG_ANSWER_PREVIEW_CHARS"), "Long answers should render a bounded collapsed preview.");
 assert.ok(script.includes("data-deepseek-answer-toggle"), "Ask DeepSeek should let users expand and collapse long answers.");
@@ -255,7 +260,7 @@ for (const expected of [
   'data-deepseek-workflow="confirm-question"',
   'data-deepseek-workflow="small-action"',
   "./assets/inspiration-bean-avatar.svg",
-  "./src/client/ask-deepseek.js?v=20260805-personal-context",
+  "./src/client/ask-deepseek.js?v=20260806-quality-states",
 ]) {
   assert.ok(inspirationPageHtml.includes(expected), `Inspiration robot page should include ${expected}.`);
 }

@@ -102,6 +102,11 @@ const QUALITY_REVIEW_REASON_LABELS = {
   high_risk_claims: "高风险录取表述",
   response_too_long: "回答达到长度上限",
 };
+const QUALITY_STATUS_LABELS = {
+  limited_evidence: "可核验资料不足",
+  review_required: "需要人工复核",
+  pass: "质量检查通过",
+};
 const APPLICATION_WORKFLOW_PROMPTS = {
   "profile-audit": {
     label: "申请档案体检",
@@ -518,7 +523,10 @@ function renderQualityReview(quality = null) {
   const review = quality.review || {};
   const retrieval = quality.retrieval || {};
   const reasons = Array.isArray(review.reasons) ? review.reasons.filter(Boolean) : [];
-  const requiresReview = Boolean(review.required);
+  const qualityStatus = String(quality.status || (review.required ? "review_required" : "pass"));
+  const requiresReview = qualityStatus === "review_required";
+  const limitedEvidence = qualityStatus === "limited_evidence";
+  const label = QUALITY_STATUS_LABELS[qualityStatus] || QUALITY_STATUS_LABELS.pass;
   const sourceCount = Number(retrieval.sourceCount) || 0;
   const hitRate = Number(retrieval.retrievalHitRate);
   const coverageText = Number.isFinite(hitRate)
@@ -531,12 +539,14 @@ function renderQualityReview(quality = null) {
     : "";
   const message = requiresReview
     ? review.fallback?.message || "当前回答需要人工复核，请先核验参考资料后再用于申请决策。"
-    : "质量检查通过，仍建议展开参考资料核验关键事实。";
+    : limitedEvidence
+      ? "当前可核验资料不足，回答已限制在现有证据范围内；可补充资料后重试。"
+      : "质量检查通过，仍建议展开参考资料核验关键事实。";
 
   return `
-    <section class="chat-quality-review ${requiresReview ? "needs-review" : "is-clear"}" aria-label="AI 质量复核">
+    <section class="chat-quality-review ${requiresReview ? "needs-review" : limitedEvidence ? "limited-evidence" : "is-clear"}" aria-label="AI 质量复核">
       <div>
-        <span>${requiresReview ? "需要人工复核" : "质量检查通过"}</span>
+        <span>${escapeHtml(label)}</span>
         <strong>${escapeHtml(coverageText)}</strong>
       </div>
       <p>${escapeHtml(message)}</p>

@@ -18,10 +18,14 @@ const graph = createRagAnswerGraph({
   },
   async draftAnswer(state) {
     nodeCalls.push(["draftAnswer", state.retrievalResult.context]);
-    return "Graph drafted answer.";
+    return {
+      answer: "Graph drafted answer.",
+      selectedModel: "deepseek-v4-flash",
+      outputDiagnostics: {},
+    };
   },
   async evaluateQuality(state) {
-    nodeCalls.push(["evaluateQuality", state.workflowVersion]);
+    nodeCalls.push(["evaluateQuality", state.workflowVersion, state.selectedModel]);
     return {
       metadata: {
         feature: "deepseek-rag",
@@ -38,13 +42,14 @@ const response = await graph.invoke({
   question: "Sensitive robotics question should not enter metrics.",
   historySummary: "",
   assistantProfile: "",
+  model: "deepseek-v4-pro",
 });
 
 assert.equal(graph.workflowVersion, RAG_ANSWER_GRAPH_VERSION);
 assert.deepEqual(nodeCalls, [
   ["retrieveSources", "Sensitive robotics question should not enter metrics."],
   ["draftAnswer", "Retrieved context"],
-  ["evaluateQuality", RAG_ANSWER_GRAPH_VERSION],
+  ["evaluateQuality", RAG_ANSWER_GRAPH_VERSION, "deepseek-v4-flash"],
 ]);
 assert.equal(response.answer, "Graph drafted answer.");
 assert.equal(response.sources[0].id, "rag-1");

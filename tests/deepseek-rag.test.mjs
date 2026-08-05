@@ -274,6 +274,10 @@ try {
   assert.ok(majorMatchBody.sources.some((source) => source.type === "application-portfolio"));
   assert.equal(majorMatchBody.quality.retrieval.retrievalHitRate, 1);
   assert.equal(majorMatchBody.quality.review.fallback.triggered, false);
+  assert.equal(majorMatchBody.quality.status, "pass");
+  assert.equal(majorMatchBody.quality.metadata.requestedModel, "deepseek-v4-pro");
+  assert.equal(majorMatchBody.quality.metadata.selectedModel, "deepseek-v4-flash");
+  assert.equal(majorMatchBody.quality.metadata.modelFallbackTriggered, true);
   assert.equal(calls.length, 3);
   const majorMatchPayload = calls[2];
   assert.equal(majorMatchPayload.timeoutMs, 90_000);
@@ -390,7 +394,7 @@ function createMockRagLlmClient(callLog, getContent = () => ragAnswer) {
       }
       return {
         content,
-        model: options.model,
+        model: callLog.length === 3 ? "deepseek-v4-flash" : options.model,
       };
     },
   };

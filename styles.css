@@ -3856,6 +3856,11 @@ button.danger:hover {
   background: #fff8ef;
 }
 
+.chat-quality-review.limited-evidence {
+  border-color: #bfd9e8;
+  background: #f3f9fc;
+}
+
 .chat-quality-review div {
   display: flex;
   align-items: center;

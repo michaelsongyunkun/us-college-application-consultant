@@ -41,6 +41,7 @@ export function buildAiRequestQuality({
 } = {}) {
   return {
     schemaVersion: AI_QUALITY_VERSIONS.schema,
+    status: "pass",
     metadata: buildAiRequestMetadata({
       feature,
       promptVersion,
@@ -62,7 +63,7 @@ export function buildAiRequestQuality({
       unsupportedCitations: [],
       highRiskClaims: [],
     },
-    review: buildReviewState([]),
+    review: buildReviewState([], "pass"),
   };
 }
 
@@ -90,16 +91,24 @@ export function evaluateAiAnswerQuality({
   const unsupportedCitations = findUnsupportedCitations(answer, normalizedSources);
   const highRiskClaims = findHighRiskClaims(answer);
   const output = normalizeOutputDiagnostics(answer, outputDiagnostics);
-  const reviewReasons = [
+  const evidenceReasons = [
     normalizedSources.length ? "" : "no_sources",
     retrievalHitRate < hitRateThreshold ? "low_retrieval_hit_rate" : "",
+  ].filter(Boolean);
+  const reviewReasons = [
     unsupportedCitations.length ? "unsupported_citations" : "",
     highRiskClaims.length ? "high_risk_claims" : "",
     output.truncated || output.finishReason === "length" ? "response_too_long" : "",
   ].filter(Boolean);
+  const status = reviewReasons.length
+    ? "review_required"
+    : evidenceReasons.length
+      ? "limited_evidence"
+      : "pass";
 
   return {
     schemaVersion: AI_QUALITY_VERSIONS.schema,
+    status,
     metadata: buildAiRequestMetadata(metadata),
     citations: normalizedSources.map((source, index) => ({
       marker: `S${index + 1}`,
@@ -120,7 +129,7 @@ export function evaluateAiAnswerQuality({
       highRiskClaims,
     },
     output,
-    review: buildReviewState(reviewReasons),
+    review: buildReviewState([...evidenceReasons, ...reviewReasons], status),
   };
 }
 
@@ -208,14 +217,15 @@ function buildAiRequestMetadata({
   };
 }
 
-function buildReviewState(reasons) {
+function buildReviewState(reasons, status = "pass") {
   const uniqueReasons = uniqueStrings(reasons);
+  const required = status === "review_required";
   return {
-    required: uniqueReasons.length > 0,
+    required,
     reasons: uniqueReasons,
     fallback: {
-      triggered: uniqueReasons.length > 0,
-      message: uniqueReasons.length ? AI_REVIEW_FALLBACK_MESSAGE : "",
+      triggered: required,
+      message: required ? AI_REVIEW_FALLBACK_MESSAGE : "",
     },
   };
 }

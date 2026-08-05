@@ -1,7 +1,7 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { monotonicNowMs } from "./observability.mjs";
 
-export const RAG_ANSWER_GRAPH_VERSION = "rag-answer-graph@2026-08-03";
+export const RAG_ANSWER_GRAPH_VERSION = "rag-answer-graph@2026-08-06";
 
 const RagAnswerState = Annotation.Root({
   user: Annotation(),
@@ -14,6 +14,7 @@ const RagAnswerState = Annotation.Root({
   signal: Annotation(),
   retrievalResult: Annotation(),
   answer: Annotation(),
+  selectedModel: Annotation(),
   outputDiagnostics: Annotation(),
   quality: Annotation(),
   response: Annotation(),
@@ -124,10 +125,11 @@ function normalizeDraftAnswer(result) {
   if (result && typeof result === "object" && Object.hasOwn(result, "answer")) {
     return {
       answer: String(result.answer || ""),
+      selectedModel: String(result.selectedModel || ""),
       outputDiagnostics: result.outputDiagnostics || {},
     };
   }
-  return { answer: String(result || ""), outputDiagnostics: {} };
+  return { answer: String(result || ""), selectedModel: "", outputDiagnostics: {} };
 }
 
 function finalizeRagAnswerResponse(state) {

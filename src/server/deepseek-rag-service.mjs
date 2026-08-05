@@ -393,6 +393,7 @@ async function draftDeepSeekRagAnswer({
   const boundedAnswer = enforceRagAnswerLength(rawAnswer, outputLimits.maxAnswerChars, { finishReason });
   return {
     answer: boundedAnswer.answer,
+    selectedModel: String(llmResult?.model || model || ""),
     outputDiagnostics: {
       originalCharacters: rawAnswer.length,
       returnedCharacters: boundedAnswer.answer.length,
@@ -475,6 +476,7 @@ function evaluateRagGraphQuality({
   usePersonalContext = false,
   retrievalResult = {},
   model,
+  selectedModel = "",
   workflowVersion = RAG_ANSWER_GRAPH_VERSION,
 }) {
   const retrieval = retrievalResult.retrieval || {};
@@ -494,6 +496,9 @@ function evaluateRagGraphQuality({
       parserVersion: AI_QUALITY_VERSIONS.ragParser,
       extraMetadata: {
         workflowVersion,
+        requestedModel: model,
+        selectedModel: selectedModel || model,
+        modelFallbackTriggered: Boolean(selectedModel && model && selectedModel !== model),
       },
     },
   });

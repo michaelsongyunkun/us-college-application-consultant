@@ -59,6 +59,7 @@ assert.equal(quality.metadata.sourceSetVersion, AI_QUALITY_VERSIONS.ragSourceSet
 assert.equal(quality.metadata.parserVersion, AI_QUALITY_VERSIONS.ragParser);
 assert.equal(quality.retrieval.retrievalHitRate, 1);
 assert.deepEqual(quality.retrieval.missingSourceTypes, []);
+assert.equal(quality.status, "pass");
 assert.equal(quality.review.required, false);
 assert.ok(quality.citations.some((citation) => citation.sourceId === "rag-school-mit"));
 assert.ok(quality.citations.every((citation) => citation.sourceTitle));
@@ -70,6 +71,7 @@ const riskyQuality = evaluateAiAnswerQuality({
   expectedSourceTypes: riskyCase.expectedSourceTypes,
 });
 
+assert.equal(riskyQuality.status, "review_required");
 assert.equal(riskyQuality.review.required, true);
 assert.equal(riskyQuality.review.fallback.triggered, true);
 assert.ok(riskyQuality.review.fallback.message);
@@ -83,7 +85,9 @@ const noSourceQuality = evaluateAiAnswerQuality({
   sources: [],
   expectedSourceTypes: ["application-portfolio"],
 });
-assert.equal(noSourceQuality.review.required, true);
+assert.equal(noSourceQuality.status, "limited_evidence");
+assert.equal(noSourceQuality.review.required, false);
+assert.equal(noSourceQuality.review.fallback.triggered, false);
 assert.ok(noSourceQuality.review.reasons.includes("no_sources"));
 assert.ok(noSourceQuality.review.reasons.includes("low_retrieval_hit_rate"));
 
@@ -103,6 +107,7 @@ const longAnswerQuality = evaluateAiAnswerQuality({
 assert.equal(longAnswerQuality.output.truncated, true);
 assert.equal(longAnswerQuality.output.originalCharacters, 14_000);
 assert.equal(longAnswerQuality.output.maxTokens, 1_600);
+assert.equal(longAnswerQuality.status, "review_required");
 assert.ok(longAnswerQuality.review.reasons.includes("response_too_long"));
 
 assert.deepEqual(findUnsupportedCitations("Use [2] and rag-missing.", [{ id: "rag-known" }]), [
