@@ -120,6 +120,8 @@ COOKIE_SECURE=true
 NODE_ENV=production
 ```
 
+Render 的生产 Blueprint 还会创建 PostgreSQL、Redis Key Value 和独立 Worker。请确保 Web 与 Worker 都配置同一个 `REDIS_URL`，并设置 `JOB_HANDLER_MODULE=./src/worker/default-handlers.mjs`；这样部署或重启 Web 服务时，进行中的 AI、导出和密码重置任务仍会保留在队列中。完整配置以 `render.yaml` 和 `docs/RENDER_DEPLOYMENT.md` 为准。
+
 可选环境变量：
 
 ```text

@@ -2,17 +2,21 @@
 
 This project deploys to Render from the repository-root `render.yaml` Blueprint.
 
-## Lean production topology
+## Production topology
 
 - Docker web service (`npm start`) with `/readyz` health checks.
+- Dedicated Docker worker (`node --import tsx worker.mjs`) consuming BullMQ jobs.
+- Render Key Value (Redis) with journal-snapshot persistence and `noeviction` so queue state and cancellation markers are not silently evicted under memory pressure.
 - Render Postgres with migrations and keyword/GraphRAG knowledge ingestion before each web deploy.
-- In-process generation jobs, using the application's existing no-Redis fallback.
+- In-process generation jobs remain available only as the local no-Redis fallback.
 - External S3-compatible object storage (the Blueprint defaults to Cloudflare R2) so exports survive web deploys and restarts.
 - Singapore region for every Render-managed component.
 
 The Blueprint uses a `starter` web service and `basic-256mb` Postgres. At the time this configuration was created, Render estimated approximately $14.95/month in Singapore; confirm the current price in the Dashboard before applying it. R2/S3 charges are separate. Do not substitute Free Postgres for production data: Render Free Postgres expires after 30 days and has no backups.
 
-This lean topology preserves model selection, Query Planning, GraphRAG, structured reasoning, account data, and knowledge ingestion. Without a worker and Key Value instance, jobs run in the web process: in-flight jobs are lost on a deploy or restart, and concurrency is limited to the web instance. Add the worker and Key Value service when traffic or job reliability requires it.
+This topology preserves model selection, Query Planning, GraphRAG, structured reasoning, account data, and knowledge ingestion. The Blueprint now provisions the worker and Key Value service by default, so queued and running jobs survive web deploys and can be resumed by the worker. If `REDIS_URL` is intentionally removed for local development, the application still falls back to in-process jobs; those jobs are not durable across a process restart.
+
+The worker and Key Value service are additional paid Render resources. Confirm the current regional price in the Dashboard before applying the Blueprint.
 
 ## Prerequisites
 
@@ -48,7 +52,7 @@ Invoke-RestMethod https://<service-url>/healthz
 Invoke-RestMethod https://<service-url>/readyz
 ```
 
-Both endpoints must return HTTP 200. Then verify registration/login, one planning request, Ask DeepSeek RAG, school selection, inspiration streaming, and a Word export. Confirm that the in-process job completes and the signed export URL downloads from the configured bucket.
+Both endpoints must return HTTP 200. Then verify registration/login, one planning request, Ask DeepSeek RAG, school selection, inspiration streaming, and a Word export. Confirm that the worker consumes the job and the signed export URL downloads from the configured bucket. For a durability check, enqueue a long-running job, restart or redeploy the web service, and confirm the same job ID transitions to `completed` or `failed` instead of disappearing.
 
 ## Admin and email setup
 

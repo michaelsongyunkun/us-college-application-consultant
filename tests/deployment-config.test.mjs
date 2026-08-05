@@ -27,8 +27,15 @@ assert.match(renderBlueprint, /type: web[\s\S]*runtime: docker[\s\S]*healthCheck
 assert.match(renderBlueprint, /preDeployCommand: npm run db:pg:migrate && npm run knowledge:ingest -- --keyword-only/u);
 assert.match(renderBlueprint, /key: DATABASE_URL\s+fromDatabase:\s+name: consultant-postgres\s+property: connectionString/u);
 assert.match(renderBlueprint, /databases:[\s\S]*name: consultant-postgres[\s\S]*ipAllowList: \[\]/u);
-assert.equal([...renderBlueprint.matchAll(/^  - type:/gmu)].length, 1);
-assert.doesNotMatch(renderBlueprint, /type: worker|type: keyvalue|key: REDIS_URL/u);
+assert.match(renderBlueprint, /type: worker[\s\S]*dockerCommand: node --import tsx worker\.mjs/u);
+assert.match(renderBlueprint, /type: worker[\s\S]*maxShutdownDelaySeconds: 120/u);
+assert.match(renderBlueprint, /type: keyvalue[\s\S]*name: consultant-redis[\s\S]*plan: starter/u);
+assert.match(renderBlueprint, /name: consultant-redis[\s\S]*persistenceMode: journal-snapshot/u);
+assert.match(renderBlueprint, /name: consultant-redis[\s\S]*maxmemoryPolicy: noeviction/u);
+assert.match(renderBlueprint, /key: REDIS_URL[\s\S]*type: keyvalue[\s\S]*name: consultant-redis[\s\S]*property: connectionString/u);
+assert.equal([...renderBlueprint.matchAll(/key: REDIS_URL/gmu)].length, 2);
+assert.match(renderBlueprint, /key: JOB_HANDLER_MODULE\s+value: \.\/src\/worker\/default-handlers\.mjs/u);
+assert.match(renderBlueprint, /key: WORKER_CONCURRENCY\s+value: "4"/u);
 for (const secret of [
   "DEEPSEEK_API_KEY",
   "INSPIRATION_API_KEY",
