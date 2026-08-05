@@ -1,5 +1,5 @@
 const DEFAULT_MAX_DEPTH = 2;
-const DEFAULT_FACT_LIMIT = 16;
+const DEFAULT_FACT_LIMIT = 8;
 
 export function buildAdmissionsKnowledgeGraph({
   majors = [],
@@ -213,6 +213,9 @@ export function searchAdmissionsKnowledgeGraph(graph = {}, {
   const queryMatchedEntityIds = new Set(scoredEntities
     .filter(({ queryScore }) => queryScore > 0)
     .map(({ entity }) => entity.id));
+  const evidenceMatchedEntityIds = new Set(scoredEntities
+    .filter(({ score, queryScore }) => score > 0 && score > queryScore * 3)
+    .map(({ entity }) => entity.id));
   const seedScores = scoredEntities
     .filter((entry) => entry.score > 0)
     .sort((left, right) => right.score - left.score || left.entity.id.localeCompare(right.entity.id))
@@ -253,6 +256,10 @@ export function searchAdmissionsKnowledgeGraph(graph = {}, {
       sourceId: relation.sourceId,
       confidence: relation.confidence,
       metadata: relation.metadata || {},
+      queryAnchored: queryMatchedEntityIds.has(relation.from)
+        || queryMatchedEntityIds.has(relation.to),
+      evidenceAnchored: evidenceMatchedEntityIds.has(relation.from)
+        || evidenceMatchedEntityIds.has(relation.to),
       score: (visited.get(relation.from)?.score || 0)
         + (visited.get(relation.to)?.score || 0)
         + (seedEntityIds.has(relation.from) ? 10 : 0)
@@ -264,7 +271,8 @@ export function searchAdmissionsKnowledgeGraph(graph = {}, {
       || fact.predicate !== "SUPPORTS_APPLICATION_ROUND"
       || requestedRounds.has(fact.object?.name?.toUpperCase()))
     .sort((left, right) => right.score - left.score || right.confidence - left.confidence || left.id.localeCompare(right.id));
-  const facts = selectDiverseGraphFacts(rankedFacts, { queryMatchedEntityIds, factLimit });
+  const anchoredFacts = rankedFacts.filter((fact) => fact.queryAnchored || fact.evidenceAnchored);
+  const facts = selectDiverseGraphFacts(anchoredFacts, { queryMatchedEntityIds, factLimit });
 
   const selectedEntityIds = new Set(facts.flatMap((fact) => [fact.subject?.id, fact.object?.id]).filter(Boolean));
   const selectedEntities = [...selectedEntityIds]

@@ -46,6 +46,8 @@ const result = searchAdmissionsKnowledgeGraph(graph, {
 });
 
 assert.ok(result.facts.length > 0);
+assert.ok(result.facts.length <= 8);
+assert.ok(result.facts.every((fact) => fact.queryAnchored === true || fact.evidenceAnchored === true));
 assert.match(result.context, /Computer Science/u);
 assert.ok(result.sourceIds.includes("data/majors.md"));
 assert.equal(result.traversal.maxDepth, 2);

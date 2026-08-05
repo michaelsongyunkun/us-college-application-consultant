@@ -3,6 +3,8 @@ import {
   createRetrievalQueryPlan,
   shouldUseKnowledgeGraph,
 } from "../domain/retrieval-query-plan.mjs";
+import { formatGraphFacts } from "../domain/admissions-knowledge-graph.mjs";
+import { selectRelevantEvidence } from "../domain/retrieval-relevance.mjs";
 
 const DEFAULT_MAX_GRAPH_CONTEXT_CHARS = 6_000;
 
@@ -51,14 +53,26 @@ export function mergeGraphAndDocumentRetrieval({
   maxGraphContextChars = DEFAULT_MAX_GRAPH_CONTEXT_CHARS,
 } = {}) {
   const documentContext = String(documentResult.context || "").trim();
-  const graphContext = String(graphResult.context || "").trim().slice(0, maxGraphContextChars);
+  const graphSelection = selectGraphFacts(graphResult, documentResult);
+  const selectedFacts = graphSelection.selected;
+  const selectedFactIds = new Set(selectedFacts.flatMap((fact) => [fact.id, `kg:${fact.id}`]).filter(Boolean));
+  const selectedGraphSourceIds = new Set(selectedFacts.map((fact) => fact.sourceId).filter(Boolean));
+  const availableGraphSources = graphResult.sources || [];
+  const hasExactFactSources = availableGraphSources.some((source) => selectedFactIds.has(source.id));
+  const graphSources = availableGraphSources.filter((source) => (
+    selectedFactIds.has(source.id)
+    || (!hasExactFactSources && (
+      selectedGraphSourceIds.has(source.id) || selectedGraphSourceIds.has(source.sourceId)
+    ))
+  ));
+  const graphContext = formatGraphFacts(selectedFacts).slice(0, maxGraphContextChars);
   const context = [
     graphContext ? `--- Knowledge graph relationships ---\n${graphContext}` : "",
     documentContext ? `--- Retrieved document evidence ---\n${documentContext}` : "",
   ].filter(Boolean).join("\n\n");
   const sources = dedupeSources([
     ...(documentResult.sources || []),
-    ...(graphResult.sources || []),
+    ...graphSources,
   ]);
   const documentRetrieval = documentResult.retrieval || {};
   const graphTraversal = graphResult.traversal || {};
@@ -76,12 +90,30 @@ export function mergeGraphAndDocumentRetrieval({
         adapter: graphResult.adapter || "",
         seedEntities: Array.isArray(graphTraversal.seedEntities) ? graphTraversal.seedEntities.length : 0,
         visitedEntities: Number(graphTraversal.visitedEntities || 0),
-        selectedFacts: Number(graphTraversal.selectedFacts || graphResult.facts?.length || 0),
+        selectedFacts: selectedFacts.length,
         maxDepth: Number(graphTraversal.maxDepth || 0),
+        relevance: graphSelection.diagnostics,
       },
       selectedDocuments: sources.length,
     },
   };
+}
+
+function selectGraphFacts(graphResult = {}, documentResult = {}) {
+  const documentSourceIds = new Set((documentResult.sources || []).map((source) => source.id));
+  const candidates = (graphResult.facts || [])
+    .filter((fact) => fact.queryAnchored
+      || fact.evidenceAnchored
+      || documentSourceIds.has(fact.sourceId))
+    .map((fact) => ({
+      ...fact,
+      id: fact.id,
+      type: "knowledge-graph",
+      scope: "knowledge",
+      channel: "graph",
+      rawScore: Number(fact.score || fact.confidence || 0),
+    }));
+  return selectRelevantEvidence(candidates, { maxResults: 8 });
 }
 
 async function searchGraphSafely(knowledgeGraph, input, logger) {
