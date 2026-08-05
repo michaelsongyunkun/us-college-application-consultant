@@ -2,35 +2,29 @@ import assert from "node:assert/strict";
 import { mergePostgresRetrieval } from "../src/infrastructure/postgres-rag-retriever.ts";
 
 const baselineResult = {
-  context: "[1] Baseline\nbaseline content",
-  sources: [{ id: "baseline", title: "Baseline" }],
-  retrieval: { selectedDocuments: 1 },
+  context: "",
+  sources: [],
+  candidates: [
+    { id: "local-good", type: "major-encyclopedia", scope: "knowledge", channel: "local-keyword", rawScore: 10, title: "Computer Science", text: "Algorithms and AI" },
+    { id: "local-noise", type: "major-encyclopedia", scope: "knowledge", channel: "local-keyword", rawScore: 1, title: "Hospitality", text: "Hotel operations" },
+  ],
+  retrieval: { selectedDocuments: 2 },
 };
-const postgresResults = Array.from({ length: 8 }, (_, index) => ({
-  id: `pg-${index + 1}`,
-  sourceType: "resource-library",
-  title: `Postgres ${index + 1}`,
-  content: `${String(index + 1).repeat(180)} END-${index + 1}`,
-}));
+const postgresResults = [
+  { id: "pg-good", sourceType: "major-encyclopedia", title: "Mechanical Engineering", content: "Robotics and CAD", score: 0.04 },
+  { id: "pg-noise", sourceType: "resource-library", title: "Archive Studies", content: "Library records", score: 0.01 },
+];
 
 const merged = mergePostgresRetrieval({
   baselineResult,
   postgresResults,
-  maxPostgresContextChars: 500,
-  maxPostgresSources: 8,
+  maxSources: 8,
 });
-const postgresSources = merged.sources.filter((source) => source.id.startsWith("pg-"));
-
-assert.equal(postgresSources.length, 2);
-assert.equal(merged.retrieval.postgresDocuments, 8);
-assert.equal(merged.retrieval.postgresSelectedDocuments, 2);
-for (const source of postgresSources) assert.match(merged.context, new RegExp(source.title));
-assert.doesNotMatch(merged.context, /Postgres 3/u);
-assert.doesNotMatch(merged.context, /END-3/u);
-assert.ok(merged.context.length < 26_000);
-
-const duplicate = mergePostgresRetrieval({
-  baselineResult,
-  postgresResults: [{ ...postgresResults[0], id: "baseline" }, postgresResults[1]],
-});
-assert.deepEqual(duplicate.sources.map((source) => source.id), ["baseline", "pg-2"]);
+assert.deepEqual(merged.sources.map((source) => source.id), ["local-good", "pg-good"]);
+assert.equal(merged.retrieval.selectedDocuments, 2);
+assert.equal(merged.retrieval.postgresDocuments, 2);
+assert.equal(merged.retrieval.postgresSelectedDocuments, 1);
+assert.ok(merged.retrieval.relevance.rejectedCandidates >= 2);
+assert.match(merged.context, /Computer Science/u);
+assert.match(merged.context, /Mechanical Engineering/u);
+assert.doesNotMatch(merged.context, /Hospitality|Archive Studies/u);

@@ -321,6 +321,8 @@ assert.ok(generated.ragSources.some((source) => source.type === "knowledge-graph
 assert.equal(generated.retrieval.mode, "graph-rag-with-constraints");
 assert.equal(generated.retrieval.queryPlan.primaryIntent, "school");
 assert.ok(generated.retrieval.graph.selectedFacts > 0);
+assert.ok(generated.ragSources.filter((source) => source.type === "school-encyclopedia").length <= 8);
+assert.ok(generated.retrieval.graph.selectedFacts <= 8);
 assert.equal(JSON.stringify(generated).includes("school-selection-secret"), false);
 
 assert.equal(calls.length, 2, "School selection should retry once when the first JSON fails strict validation.");

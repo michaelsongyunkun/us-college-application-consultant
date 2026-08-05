@@ -1359,6 +1359,7 @@ function selectSystemPrompt(assistantProfile = "", usePersonalContext = false) {
 
 export function serializeRagSource(source) {
   const type = getRagDocumentType(source);
+  const metadata = source?.metadata && typeof source.metadata === "object" ? source.metadata : source;
   return {
     id: getRagDocumentId(source),
     type,
@@ -1366,6 +1367,13 @@ export function serializeRagSource(source) {
     typeLabel: PERSONAL_SOURCE_TYPES.has(type) ? "个人上下文" : SOURCE_TYPE_LABELS[type] || type,
     title: getRagDocumentTitle(source),
     snippet: formatSourceSnippet(getRagDocumentText(source)),
+    ...(metadata.sourceId ? { sourceId: metadata.sourceId } : {}),
+    ...(metadata.contentHash ? { contentHash: metadata.contentHash } : {}),
+    ...(metadata.sourceVersion ? { sourceVersion: metadata.sourceVersion } : {}),
+    ...(metadata.updatedAt ? { updatedAt: metadata.updatedAt } : {}),
+    ...(Number.isFinite(metadata.confidence) ? { confidence: metadata.confidence } : {}),
+    ...(metadata.officialUrl ? { officialUrl: metadata.officialUrl } : {}),
+    ...(metadata.embeddingModelVersion ? { embeddingModelVersion: metadata.embeddingModelVersion } : {}),
   };
 }
 

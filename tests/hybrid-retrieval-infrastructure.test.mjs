@@ -111,6 +111,14 @@ assert.equal(rerankedResult.mode, "hybrid-reranked");
 assert.equal(rerankedResult.results[0].id, "best");
 assert.equal(rerankedResult.retrieval.reranker, "applied");
 
+const pruned = await createHybridRetriever({
+  keywordSearch: async () => [{ id: "one" }, { id: "two" }],
+  vectorSearch: async () => [{ id: "one" }, { id: "two" }],
+  rerank: async () => [{ id: "one", score: 0.9 }],
+}).search("focused", { limit: 8 });
+assert.deepEqual(pruned.results.map((item) => item.id), ["one"]);
+assert.equal(pruned.retrieval.reranker, "applied");
+
 const degraded = createHybridRetriever({
   vectorSearch: async () => [{ id: "rrf-winner" }, { id: "other" }],
   keywordSearch: async () => [{ id: "rrf-winner" }, { id: "other" }],

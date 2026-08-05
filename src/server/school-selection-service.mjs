@@ -5,6 +5,7 @@ import {
   parseApplicationRoundSchoolsMarkdown,
 } from "../domain/application-round-schools.mjs";
 import { parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs";
+import { selectRelevantEvidence } from "../domain/retrieval-relevance.mjs";
 import { resolveApiKey } from "./api-key.mjs";
 import { AI_QUALITY_VERSIONS, evaluateAiAnswerQuality } from "./ai-quality.mjs";
 import { normalizeDeepSeekModel } from "./deepseek-model.mjs";
@@ -1364,11 +1365,14 @@ async function buildSchoolSelectionRagSources({ root, input, portfolio }) {
     ),
   ].filter(Boolean).join(" ");
   const tokens = tokenize(query || "美本 选校 UC ED EA RD");
-  return documents
-    .map((document, index) => ({ ...document, index, score: scoreRagDocument(document, tokens) }))
-    .filter((document) => document.score > 0)
-    .sort((left, right) => right.score - left.score || left.index - right.index)
-    .slice(0, MAX_RAG_SOURCES);
+  const candidates = documents.map((document, index) => ({
+    ...document,
+    scope: "knowledge",
+    channel: "school-keyword",
+    rawScore: scoreRagDocument(document, tokens),
+    index,
+  }));
+  return selectRelevantEvidence(candidates, { maxResults: MAX_RAG_SOURCES }).selected;
 }
 
 function createSchoolSelectionDocumentRetriever({ root }) {
@@ -1434,8 +1438,12 @@ function splitMarkdownIntoChunks(text) {
 
 function scoreRagDocument(document, tokens) {
   const searchable = normalizeSearchText(`${document.title}\n${document.text}`);
+  const asciiTokens = new Set(searchable.match(/[a-z0-9][a-z0-9.+#-]*/g) || []);
   return tokens.reduce((score, token) => {
-    if (!searchable.includes(token)) return score;
+    const matches = /^[a-z0-9][a-z0-9.+#-]*$/u.test(token)
+      ? asciiTokens.has(token)
+      : searchable.includes(token);
+    if (!matches) return score;
     return score + (token.length >= 4 ? 3 : 1);
   }, 0);
 }

@@ -53,7 +53,7 @@ export function createHybridRetriever({
         const startedAt = performance.now();
         try {
           const reranked = await rerank(query, shortlist, { limit });
-          if (!Array.isArray(reranked) || reranked.length < Math.min(limit, shortlist.length)) throw new Error("Reranker returned too few results.");
+          if (!Array.isArray(reranked)) throw new Error("Reranker returned a non-array result.");
           return {
             mode: "keyword-fallback-reranked",
             results: reranked.slice(0, limit),
@@ -85,7 +85,7 @@ export function createHybridRetriever({
       const startedAt = performance.now();
       try {
         const reranked = await rerank(query, shortlist, { limit });
-        if (!Array.isArray(reranked) || reranked.length < Math.min(limit, shortlist.length)) throw new Error("Reranker returned too few results.");
+        if (!Array.isArray(reranked)) throw new Error("Reranker returned a non-array result.");
         return {
           mode: "hybrid-reranked",
           results: reranked.slice(0, limit),

@@ -1,4 +1,9 @@
-import { createRagRetriever } from "../server/deepseek-rag-service.mjs";
+import {
+  buildContextSelection,
+  createRagRetriever,
+  serializeRagSource,
+} from "../server/deepseek-rag-service.mjs";
+import { selectRelevantEvidence } from "../domain/retrieval-relevance.mjs";
 import { createHybridRetriever } from "./hybrid-retriever.js";
 import { createPostgresKnowledgeRepository } from "./markdown-ingestion.js";
 
@@ -49,7 +54,7 @@ export function createPostgresRagRetriever({ pool, root, planning, activityPortf
           },
         };
       }
-      const merged = mergePostgresRetrieval({ baselineResult, postgresResults: postgresResult.results });
+      const merged = mergePostgresRetrieval({ baselineResult, postgresResults: postgresResult.results, maxSources: 8 });
       return {
         ...merged,
         retrieval: {
@@ -68,61 +73,51 @@ export function createPostgresRagRetriever({ pool, root, planning, activityPortf
 export function mergePostgresRetrieval({
   baselineResult,
   postgresResults,
-  maxContextChars = 26_000,
-  maxPostgresContextChars = 8_000,
-  maxPostgresSources = 8,
+  maxSources = 8,
+  maxContextChars = 18_000,
 }: any) {
-  const baselineContext = String(baselineResult.context || "");
-  const baselineSources = baselineResult.sources || [];
-  const seen = new Set(baselineSources.map((source: any) => source.id));
-  const separator = "\n\n--- PostgreSQL hybrid retrieval ---\n\n";
-  const availableChars = Math.max(0, Math.min(
-    maxPostgresContextChars,
-    maxContextChars - baselineContext.length - separator.length,
-  ));
-  const selectedResults: any[] = [];
-  const sections: string[] = [];
-  let usedChars = 0;
-
-  for (const result of postgresResults) {
-    if (selectedResults.length >= maxPostgresSources || seen.has(result.id)) continue;
-    const block = `[PG-${selectedResults.length + 1}] ${result.title}\n${String(result.content || "").trim()}`;
-    const separatorChars = sections.length ? 7 : 0;
-    if (usedChars + separatorChars + block.length > availableChars) continue;
-    sections.push(block);
-    selectedResults.push(result);
-    seen.add(result.id);
-    usedChars += separatorChars + block.length;
-  }
-
-  const knowledgeContext = sections.join("\n\n---\n\n");
-  const knowledgeSources = selectedResults.map(serializeKnowledgeSource);
+  const baselineCandidates = Array.isArray(baselineResult.candidates)
+    ? baselineResult.candidates
+    : (baselineResult.sources || []).map((source: any, index: number) => ({
+        id: source.id,
+        type: source.type,
+        scope: source.scope || "knowledge",
+        title: source.title,
+        text: source.snippet || "",
+        channel: "local-keyword",
+        rawScore: Math.max(1, (baselineResult.sources || []).length - index),
+      }));
+  const postgresCandidates = (postgresResults || []).map((source: any, index: number) => ({
+    id: source.id,
+    type: source.sourceType,
+    scope: "knowledge",
+    title: source.title,
+    text: String(source.content || "").trim(),
+    channel: "postgres-hybrid",
+    rawScore: Number(source.score) > 0 ? Number(source.score) : 1 / (index + 1),
+    metadata: source,
+  }));
+  const hasPersonalCandidates = baselineCandidates.some((candidate: any) => candidate.scope === "personal");
+  const knowledgeLimit = hasPersonalCandidates ? Math.min(6, maxSources) : maxSources;
+  const selection = selectRelevantEvidence(
+    [...baselineCandidates, ...postgresCandidates],
+    {
+      maxResults: knowledgeLimit + (hasPersonalCandidates ? 3 : 0),
+      scopeLimits: { knowledge: knowledgeLimit, personal: hasPersonalCandidates ? 3 : 0 },
+    },
+  );
+  const contextSelection = buildContextSelection(selection.selected, maxContextChars);
   return {
     ...baselineResult,
-    context: knowledgeContext ? `${baselineContext}${separator}${knowledgeContext}` : baselineContext,
-    sources: [...baselineSources, ...knowledgeSources],
+    context: contextSelection.context,
+    candidates: selection.selected,
+    sources: contextSelection.included.map(serializeRagSource),
     retrieval: {
       ...baselineResult.retrieval,
       postgresDocuments: postgresResults.length,
-      postgresSelectedDocuments: selectedResults.length,
-      selectedDocuments: (baselineResult.retrieval?.selectedDocuments || baselineSources.length) + selectedResults.length,
+      postgresSelectedDocuments: contextSelection.included.filter((item: any) => item.channel === "postgres-hybrid").length,
+      selectedDocuments: contextSelection.included.length,
+      relevance: selection.diagnostics,
     },
-  };
-}
-
-function serializeKnowledgeSource(source: any) {
-  return {
-    id: source.id,
-    type: source.sourceType,
-    typeLabel: source.sourceType,
-    title: source.title,
-    snippet: String(source.content || "").slice(0, 1_200),
-    sourceId: source.sourceId,
-    contentHash: source.contentHash,
-    sourceVersion: source.sourceVersion,
-    updatedAt: source.updatedAt,
-    confidence: source.confidence,
-    officialUrl: source.officialUrl,
-    embeddingModelVersion: source.embeddingModelVersion,
   };
 }
