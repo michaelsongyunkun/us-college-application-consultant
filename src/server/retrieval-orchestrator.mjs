@@ -83,9 +83,13 @@ export function mergeGraphAndDocumentRetrieval({
   const sourceLimit = Number.isInteger(maxVisibleSources) && maxVisibleSources > 0
     ? maxVisibleSources
     : inferredSourceLimit;
+  const documentSourceLimit = graphSources.length
+    ? Math.max(0, sourceLimit - 1)
+    : sourceLimit;
+  const visibleDocumentSources = documentSources.slice(0, documentSourceLimit);
   const sources = dedupeSources([
-    ...documentSources.slice(0, sourceLimit),
-    ...graphSources.slice(0, Math.max(0, sourceLimit - documentSources.length)),
+    ...visibleDocumentSources,
+    ...graphSources.slice(0, Math.max(0, sourceLimit - visibleDocumentSources.length)),
   ]).slice(0, sourceLimit);
   const documentRetrieval = documentResult.retrieval || {};
   const graphTraversal = graphResult.traversal || {};

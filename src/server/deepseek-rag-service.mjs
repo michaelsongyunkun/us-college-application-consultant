@@ -1113,13 +1113,13 @@ function getAllowedKnowledgeTypes(question, primaryIntent) {
     resource: "resource-library",
   }[primaryIntent];
   if (primaryType) allowed.add(primaryType);
-  if (hasAny(["选校", "院校", "学校", "ed", "ea", "rd", "uc", "rea", "mit", "college", "university"])) {
+  if (hasAny(["选校", "院校", "学校", "ed", "ea", "rd", "uc", "rea", "mit", "college", "colleges", "university", "universities", "school", "schools"])) {
     allowed.add("school-encyclopedia");
   }
-  if (hasAny(["专业", "本科专业", "major", "concentration", "track", "职业", "岗位", "就业", "career", "computer science", "计算机"])) {
+  if (hasAny(["专业", "本科专业", "major", "majors", "concentration", "concentrations", "track", "tracks", "职业", "岗位", "就业", "career", "careers", "computer science", "计算机"])) {
     allowed.add("major-encyclopedia");
   }
-  if (hasAny(["竞赛", "夏校", "科研", "项目", "polygence", "活动", "resource", "competition", "summer", "frc", "ftc"])) {
+  if (hasAny(["竞赛", "夏校", "科研", "项目", "polygence", "活动", "resource", "resources", "competition", "competitions", "project", "projects", "activity", "activities", "summer", "frc", "ftc"])) {
     allowed.add("resource-library");
   }
   return allowed;
@@ -1176,7 +1176,7 @@ function consolidatePersonalDocuments(documents) {
 function personalAnchorScore(document) {
   const type = getRagDocumentType(document);
   const title = getRagDocumentTitle(document);
-  if (type === "application-portfolio") return 1;
+  if (type === "application-portfolio") return 1.1;
   if (title.includes("基础信息")) return 1;
   if (title.includes("当前方案")) return 0.8;
   return 0.9;

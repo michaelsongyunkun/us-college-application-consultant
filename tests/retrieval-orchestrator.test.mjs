@@ -121,6 +121,10 @@ const budgetedResult = await budgetedOrchestrator.retrieve({
 assert.equal(budgetedResult.sources.length, 9, "Document and graph citations must share one personalized source budget.");
 assert.equal(budgetedResult.retrieval.selectedDocuments, 9);
 assert.ok(
+  budgetedResult.sources.some((source) => source.type === "knowledge-graph"),
+  "A relevant graph citation should retain one slot inside the shared source budget.",
+);
+assert.ok(
   budgetedResult.retrieval.graph.selectedFacts > 0
     && budgetedResult.retrieval.graph.selectedFacts <= 8,
   "Graph context may retain relevant facts up to its independent eight-fact budget even when citation slots are full.",
