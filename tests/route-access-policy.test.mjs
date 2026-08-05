@@ -4,6 +4,7 @@ import {
   buildLoginRedirectLocation,
   evaluateRouteAccess,
   getStaticRouteAccessPolicy,
+  isKnownStaticRequestPath,
   isProtectedDataPath,
   isProtectedUserPagePath,
   normalizeStaticRequestPath,
@@ -14,6 +15,8 @@ assert.equal(normalizeStaticRequestPath("/"), "/index.html");
 assert.equal(normalizeStaticRequestPath("/favicon.ico"), "/favicon.svg");
 assert.equal(normalizeStaticRequestPath("/my-activities.html"), "/my-activities.html");
 assert.equal(normalizeStaticRequestPath("/data/schools%20copy.md"), "/data/schools copy.md");
+assert.equal(normalizeStaticRequestPath("/%70ublic%2f..%2f%64ata/auth.sqlite"), "/data/auth.sqlite");
+assert.equal(normalizeStaticRequestPath("/%ZZ"), null);
 
 for (const pagePath of [
   "/course-helper.html",
@@ -38,6 +41,12 @@ for (const pagePath of [
 
 assert.equal(isProtectedUserPagePath("/index.html"), false);
 assert.equal(isProtectedDataPath("/data/schools.md"), true);
+assert.equal(isProtectedDataPath("/data/auth.sqlite"), false);
+assert.equal(isKnownStaticRequestPath("/index.html"), true);
+assert.equal(isKnownStaticRequestPath("/src/client/app.js"), true);
+assert.equal(isKnownStaticRequestPath("/data/schools.md"), true);
+assert.equal(isKnownStaticRequestPath("/data/auth.sqlite"), false);
+assert.equal(isKnownStaticRequestPath("/prompts/us-college-admissions-strategist-agent.md"), false);
 assert.equal(isProtectedDataPath("/src/client/app.js"), false);
 assert.deepEqual(getStaticRouteAccessPolicy("/data/schools.md"), {
   role: "user",

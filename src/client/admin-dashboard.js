@@ -241,8 +241,8 @@ function renderUsageCategorySummary(items) {
 }
 
 function usageOutcome(event) {
-  if (event.failureReason) return `失败：${event.failureReason}`;
-  return event.generatedActivityCount || event.filledActivityCount || event.completionFields || "-";
+  if (event.failureReason) return `失败：${escapeHtml(event.failureReason)}`;
+  return escapeHtml(event.generatedActivityCount || event.filledActivityCount || event.completionFields || "-");
 }
 
 function renderUsageEvents(events) {

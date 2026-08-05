@@ -48,6 +48,10 @@ const pool = {
 };
 
 const auth = createPostgresAuthService({ pool });
+await assert.rejects(
+  () => auth.recordUsageEvent({ user: { id: 1 }, eventType: "unsupported_event" }),
+  (error) => error?.statusCode === 400 && error?.message === "Unsupported usage event",
+);
 const dashboard = await auth.getLoginDashboard({
   requester: { id: 99, role: "admin" },
   filters: {

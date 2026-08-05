@@ -106,9 +106,10 @@ export function normalizeGenerationJobError(
   { errorClasses = [], unexpectedErrorLogger = console.error } = {},
 ) {
   if (errorClasses.some((ErrorClass) => error instanceof ErrorClass)) {
+    const statusCode = error.statusCode || 500;
     return {
-      error: error.message,
-      statusCode: error.statusCode || 500,
+      error: getPublicGenerationErrorMessage(error, statusCode),
+      statusCode,
     };
   }
   unexpectedErrorLogger?.("Unexpected generation job error:", error);
@@ -116,4 +117,19 @@ export function normalizeGenerationJobError(
     error: "Server error",
     statusCode: 500,
   };
+}
+
+function getPublicGenerationErrorMessage(error, statusCode) {
+  const message = String(error?.message || "").trim();
+  if (statusCode >= 500 || !message || containsSensitiveErrorDetail(message)) {
+    if (statusCode === 429) return "Too many requests.";
+    if (statusCode === 503) return "Service temporarily unavailable.";
+    return "Generation failed.";
+  }
+  return message.slice(0, 1_000);
+}
+
+function containsSensitiveErrorDetail(message) {
+  return /(?:postgres(?:ql)?|sqlite|mysql|mongodb|redis):\/\/|(?:api[_ -]?key|secret|password|token|credential|connection string|database path|private key)\s*[:=]/iu.test(message)
+    || /(?:at|near)\s+[^\s]+(?:\.m?js|\.ts):\d+/iu.test(message);
 }

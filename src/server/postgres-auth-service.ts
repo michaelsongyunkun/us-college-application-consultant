@@ -127,6 +127,7 @@ export function createPostgresAuthService({ pool, sessionTtlMs = DEFAULT_SESSION
 
   async function recordUsageEvent({ user, eventType, profile = {}, metrics = {}, details = {}, metadata = {} }: any) {
     if (!user?.id) throw new AuthError("Not authenticated", 401);
+    if (!USAGE_EVENT_TYPES.has(eventType)) throw new AuthError("Unsupported usage event", 400);
     const timestamp = now().toISOString();
     await pool.query("INSERT INTO usage_events (user_id,user_name,user_email,event_type,grade,major_direction,completion_fields,filled_activity_count,generated_activity_count,duration_ms,failure_reason,details_json,occurred_at,event_date,event_week,user_agent,ip_address) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)", [user.id, user.name || "", user.email || "", eventType, limited(profile.grade, 80), limited(profile.majorDirection, 200), integer(metrics.completionFields), integer(metrics.filledActivityCount), integer(metrics.generatedActivityCount), integer(metrics.durationMs), limited(details.failureReason, 500), details, timestamp, timestamp.slice(0, 10), getWeekKey(new Date(timestamp)), metadata.userAgent || "", metadata.ipAddress || ""]);
   }

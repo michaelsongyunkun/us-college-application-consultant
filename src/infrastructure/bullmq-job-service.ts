@@ -118,7 +118,14 @@ export function serializeBullJob(job: any, state: string) {
   const status = mapBullState(state);
   const payload: any = { id: String(job.id), userId: Number(job.data?.userId), type: job.name, status, createdAt: job.timestamp, updatedAt: job.finishedOn || job.processedOn || job.timestamp };
   if (status === "completed") { payload.result = job.returnvalue; payload.completedAt = job.finishedOn; }
-  if (status === "failed") { payload.error = job.failedReason || "Job failed"; payload.statusCode = 500; payload.completedAt = job.finishedOn; }
+  if (status === "failed") {
+    // BullMQ only exposes a provider error string here. Do not send it to the
+    // browser because it may contain credentials, connection URLs, or stack
+    // traces from a worker.
+    payload.error = "Generation failed.";
+    payload.statusCode = 500;
+    payload.completedAt = job.finishedOn;
+  }
   return payload;
 }
 
@@ -160,7 +167,7 @@ export function buildDeadLetterPayload(job: any, error: any) {
     originalJobId: String(job.id),
     userId: Number(job.data?.userId),
     jobType: job.name,
-    failedReason: error?.message || job.failedReason || "Job failed",
+    failedReason: error?.name || "Job failed",
     attemptsMade: Number(job.attemptsMade || 0),
     failedAt: Date.now(),
   };

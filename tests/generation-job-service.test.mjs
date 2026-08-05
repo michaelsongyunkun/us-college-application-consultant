@@ -100,6 +100,13 @@ assert.deepEqual(
   { error: "Bad request", statusCode: 400 },
 );
 
+assert.deepEqual(
+  normalizeGenerationJobError(new KnownJobError("postgresql://user:super-secret@db/internal", 503), {
+    errorClasses: [KnownJobError],
+  }),
+  { error: "Service temporarily unavailable.", statusCode: 503 },
+);
+
 clock += 101;
 jobs.pruneJobs();
 assert.equal(jobs.get(alice, completedJob.id), null);

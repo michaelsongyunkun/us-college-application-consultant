@@ -4,6 +4,7 @@ import {
   buildDeadLetterPayload,
   createCancellationWatcher,
   resolveBullJobRecord,
+  serializeBullJob,
 } from "../src/infrastructure/bullmq-job-service.ts";
 
 assert.equal(typeof DEFAULT_JOB_OPTIONS.removeOnComplete, "object");
@@ -35,3 +36,17 @@ const deadLetter = buildDeadLetterPayload({
 assert.equal("payload" in deadLetter, false);
 assert.equal(JSON.stringify(deadLetter).includes("Private Student"), false);
 assert.equal(deadLetter.originalJobId, "job-1");
+assert.deepEqual(
+  serializeBullJob({ id: "job-2", name: "ai.deepseek-rag", data: { userId: 7 }, failedReason: "postgresql://user:secret@db/internal" }, "failed"),
+  {
+    id: "job-2",
+    userId: 7,
+    type: "ai.deepseek-rag",
+    status: "failed",
+    createdAt: undefined,
+    updatedAt: undefined,
+    error: "Generation failed.",
+    statusCode: 500,
+    completedAt: undefined,
+  },
+);

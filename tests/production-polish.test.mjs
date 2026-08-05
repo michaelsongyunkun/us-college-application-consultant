@@ -132,6 +132,26 @@ try {
     );
   }
 
+  for (const hiddenPath of [
+    "/.env",
+    "/.git/config",
+    "/package.json",
+    "/prompts/us-college-admissions-strategist-agent.md",
+    "/server.mjs",
+    "/src/server/auth-service.mjs",
+  ]) {
+    const response = await fetch(`${baseUrl}${hiddenPath}`);
+    assert.equal(response.status, 404, `${hiddenPath} should not be a public static file`);
+  }
+
+  const encodedTraversalResponse = await fetch(
+    `${baseUrl}/%70ublic%2f..%2f%64ata/auth.sqlite`,
+  );
+  assert.equal(encodedTraversalResponse.status, 401, "Encoded data paths should keep the data auth gate");
+
+  const malformedPathResponse = await fetch(`${baseUrl}/%ZZ`);
+  assert.equal(malformedPathResponse.status, 400, "Malformed encoded paths should not become server errors");
+
   for (const protectedPath of [
     "/data/application-round-schools.md",
     "/data/schools.md",

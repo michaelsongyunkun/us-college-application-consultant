@@ -1,6 +1,7 @@
 import { normalizePlannerState } from "../domain/progress-planner.mjs";
 import { normalizeSnapshotNote } from "../shared/privacy-guards.mjs";
 import { emptyPortfolio, normalizePortfolio } from "../server/activity-portfolio-service.mjs";
+import { AuthError, USAGE_EVENT_TYPES } from "../server/auth-service.mjs";
 import { PlanningError, emptyDraft, normalizeDraft, normalizePlanName } from "../server/planning-service.mjs";
 import { createPostgresProductionRepositories } from "./postgres-production-repositories.js";
 
@@ -103,6 +104,7 @@ export function createPostgresWorkspaceRuntime({ pool, now = () => new Date() }:
     },
     analytics: {
       async record(user: any, event: any, metadata: any) {
+        if (!USAGE_EVENT_TYPES.has(event?.eventType)) throw new AuthError("Unsupported usage event", 400);
         await core.analytics.recordUsage(buildPostgresUsageRecord(user, event, metadata));
       },
       async audit(input: any) { await core.audit.record({ actorUserId: input.actor?.id, actorUserName: input.actor?.name, actorUserEmail: input.actor?.email, actorRole: input.actor?.role, action: input.action, resourceType: input.resourceType, resourceId: input.resourceId, outcome: input.outcome, details: input.details, ...input.metadata }); },
@@ -111,8 +113,27 @@ export function createPostgresWorkspaceRuntime({ pool, now = () => new Date() }:
 
   async function ensureDefaultPlan(user: any) {
     const userId = requireUserId(user);
-    const { rows } = await pool.query("SELECT id FROM planning_projects WHERE user_id=$1 LIMIT 1", [userId]);
-    if (!rows.length) await core.plans.create(userId, { name: "默认规划", draft: emptyDraft() });
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      // Serialise the check-and-create pair per user. A regular SELECT followed
+      // by INSERT allows concurrent requests to create duplicate default plans.
+      await client.query("SELECT pg_advisory_xact_lock($1, $2)", [762019, userId]);
+      const { rows } = await client.query("SELECT id FROM planning_projects WHERE user_id=$1 LIMIT 1", [userId]);
+      if (!rows.length) {
+        const timestamp = now().toISOString();
+        await client.query(
+          "INSERT INTO planning_projects (user_id,name,current_draft_json,created_at,updated_at) VALUES ($1,$2,$3,$4,$4)",
+          [userId, "默认规划", emptyDraft(), timestamp],
+        );
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   return { core, repositories, planning, activityPortfolio, progressPlanner };

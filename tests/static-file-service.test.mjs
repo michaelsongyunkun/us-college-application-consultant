@@ -46,6 +46,14 @@ assert.equal(
 assert.equal(
   resolveStaticFilePath({
     root,
+    requestPath: "/../static-root-sibling/secret.txt",
+    stat: () => ({ isFile: () => true }),
+  }),
+  null,
+);
+assert.equal(
+  resolveStaticFilePath({
+    root,
     requestPath: "/../secrets.txt",
     stat: () => ({ isFile: () => true }),
   }),

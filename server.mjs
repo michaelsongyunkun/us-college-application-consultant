@@ -39,6 +39,7 @@ import {
   buildDeniedAuditEvent,
   evaluateRouteAccess,
   getStaticRouteAccessPolicy,
+  isKnownStaticRequestPath,
   normalizeStaticRequestPath,
 } from "./src/server/route-access-policy.mjs";
 import {
@@ -145,16 +146,34 @@ function sendJson(response, statusCode, payload) {
 }
 
 function buildErrorResponse(error, requestId, statusCode) {
+  const resolvedStatusCode = Number(statusCode || error?.statusCode || 500);
   const code = error instanceof ZodError
     ? "CONTRACT_VALIDATION_FAILED"
     : String(error?.name || "SERVER_ERROR").replace(/Error$/u, "").replace(/([a-z])([A-Z])/g, "$1_$2").toUpperCase();
   return {
-    error: String(error?.message || "Server error").slice(0, 1_000),
+    error: getPublicErrorMessage(error, resolvedStatusCode),
     code: code || "SERVER_ERROR",
     requestId: requestId || undefined,
-    retryable: statusCode === 429 || statusCode >= 500,
+    retryable: resolvedStatusCode === 429 || resolvedStatusCode >= 500,
     ...(error instanceof ZodError ? { details: { issues: error.issues } } : {}),
   };
+}
+
+function getPublicErrorMessage(error, statusCode) {
+  const message = String(error?.message || "").trim();
+  if (error instanceof ZodError) return "Invalid request.";
+  if (statusCode >= 500 || !message || containsSensitiveErrorDetail(message)) {
+    if (statusCode === 408 || statusCode === 504) return "Request timed out.";
+    if (statusCode === 429) return "Too many requests.";
+    if (statusCode === 503) return "Service temporarily unavailable.";
+    return statusCode >= 500 ? "Server error." : "Request could not be processed.";
+  }
+  return message.slice(0, 1_000);
+}
+
+function containsSensitiveErrorDetail(message) {
+  return /(?:postgres(?:ql)?|sqlite|mysql|mongodb|redis):\/\/|(?:api[_ -]?key|secret|password|token|credential|connection string|database path|private key)\s*[:=]/iu.test(message)
+    || /(?:at|near)\s+[^\s]+(?:\.m?js|\.ts):\d+/iu.test(message);
 }
 
 function withSecurityHeaders(headers = {}) {
@@ -227,9 +246,19 @@ function logRequestError(logger, request, error, statusCode, path = safeRequestP
       path,
       statusCode,
       errorName: error?.name || "Error",
-      errorMessage: error?.message || "Unknown server error",
+      errorCategory: classifyErrorForLogging(error, statusCode),
     },
   }));
+}
+
+function classifyErrorForLogging(error, statusCode) {
+  if (error instanceof ZodError) return "contract_validation";
+  if (statusCode === 401) return "authentication";
+  if (statusCode === 403) return "authorization";
+  if (statusCode === 404) return "not_found";
+  if (statusCode === 429) return "rate_limited";
+  if (statusCode >= 500) return "internal_server_error";
+  return error?.name ? String(error.name).replace(/Error$/u, "").toLowerCase() : "request_error";
 }
 
 function safeRequestPath(request) {
@@ -265,15 +294,32 @@ function buildReadinessPayload({ authDb }) {
         },
       },
     };
-  } catch (error) {
+  } catch {
     return {
       status: "not_ready",
       database: {
         ok: false,
-        error: error?.message || "Database readiness check failed.",
       },
     };
   }
+}
+
+function sanitizeReadinessPayload(readiness = {}) {
+  const database = readiness?.database && typeof readiness.database === "object" ? readiness.database : {};
+  const migrations = database.migrations && typeof database.migrations === "object" ? database.migrations : null;
+  return {
+    status: readiness?.status === "ready" ? "ready" : "not_ready",
+    database: {
+      ok: Boolean(database.ok),
+      ...(migrations ? {
+        migrations: {
+          appliedCount: Number.isInteger(migrations.appliedCount) ? Math.max(0, Number(migrations.appliedCount)) : 0,
+          pending: Array.isArray(migrations.pending) ? migrations.pending.map((item) => String(item).slice(0, 120)) : [],
+          unknown: Array.isArray(migrations.unknown) ? migrations.unknown.map((item) => String(item).slice(0, 120)) : [],
+        },
+      } : {}),
+    },
+  };
 }
 
 async function readRequestText(request, maxBytes = DEFAULT_MAX_REQUEST_BODY_BYTES) {
@@ -347,12 +393,23 @@ async function recordDeniedAudit(auth, user, audit, request) {
 
 function createRateLimiter(rateLimits) {
   const entries = new Map();
+  let nextCleanupAt = 0;
 
   return function getRateLimit(request, pathname) {
     const limit = rateLimits[pathname];
     if (!limit) return null;
 
     const now = Date.now();
+    if (now >= nextCleanupAt) {
+      for (const [entryKey, timestamps] of entries) {
+        const entryPathname = entryKey.slice(0, entryKey.indexOf(":"));
+        const entryLimit = rateLimits[entryPathname];
+        if (!entryLimit || timestamps.every((timestamp) => timestamp <= now - entryLimit.windowMs)) {
+          entries.delete(entryKey);
+        }
+      }
+      nextCleanupAt = now + 10_000;
+    }
     const key = `${pathname}:${getRequestMetadata(request).ipAddress}`;
     const requests = (entries.get(key) || []).filter(
       (timestamp) => timestamp > now - limit.windowMs,
@@ -569,7 +626,7 @@ export function createAppServer({
       }
 
       if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/readyz") {
-        const readiness = await readinessCheck();
+        const readiness = sanitizeReadinessPayload(await readinessCheck());
         sendJson(response, readiness.status === "ready" ? 200 : 503, readiness);
         return;
       }
@@ -605,6 +662,11 @@ export function createAppServer({
         }
 
         const requestPath = normalizeStaticRequestPath(url.pathname);
+        if (!requestPath) {
+          response.writeHead(400, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
+          response.end("Invalid path");
+          return;
+        }
         const filePath = resolveStaticFilePath({ root: worldRankingRoot, requestPath });
         if (!filePath) {
           response.writeHead(404, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
@@ -1014,8 +1076,19 @@ export function createAppServer({
       }
 
       const requestPath = normalizeStaticRequestPath(url.pathname);
+      if (!requestPath) {
+        response.writeHead(400, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
+        response.end("Invalid path");
+        return;
+      }
       const staticAccessPolicy = getStaticRouteAccessPolicy(requestPath);
       if (staticAccessPolicy && !await requireAccess(request, response, auth, staticAccessPolicy)) {
+        return;
+      }
+
+      if (!isKnownStaticRequestPath(requestPath)) {
+        response.writeHead(404, withSecurityHeaders({ "Content-Type": "text/plain;charset=utf-8" }));
+        response.end("Not Found");
         return;
       }
 
@@ -1198,8 +1271,8 @@ async function createRuntimeDatabaseInfrastructure(env) {
         try {
           const database = await checkPostgresReadiness(pool);
           return { status: database.vectorEnabled ? "ready" : "not_ready", database };
-        } catch (error) {
-          return { status: "not_ready", database: { ok: false, error: error?.message || "PostgreSQL readiness check failed." } };
+        } catch {
+          return { status: "not_ready", database: { ok: false } };
         }
       },
     };

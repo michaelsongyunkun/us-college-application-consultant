@@ -138,11 +138,11 @@ const readOnlyRoutesPlugin: FastifyPluginAsync<FastifyHttpLayerOptions> = async 
       },
     },
   }, async (_request, reply) => {
-    const readiness = await readinessCheck();
+    const readiness = sanitizeReadinessPayload(await readinessCheck());
     return reply.code(readiness.status === "ready" ? 200 : 503).send(readiness);
   });
   app.head("/readyz", async (_request, reply) => {
-    const readiness = await readinessCheck();
+    const readiness = sanitizeReadinessPayload(await readinessCheck());
     return reply
       .type("application/json;charset=utf-8")
       .code(readiness.status === "ready" ? 200 : 503)
@@ -298,12 +298,40 @@ function sseEvent(event: string, data: unknown) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
+function sanitizeReadinessPayload(readiness: ReadinessPayload): ReadinessPayload {
+  const database = readiness?.database || {};
+  const migrations = database.migrations;
+  const migrationRecord = migrations && typeof migrations === "object"
+    ? migrations as Record<string, unknown>
+    : null;
+  return {
+    status: readiness?.status === "ready" ? "ready" : "not_ready",
+    database: {
+      ok: Boolean(database.ok),
+      ...(migrationRecord ? {
+        migrations: {
+          appliedCount: Number.isInteger(migrationRecord.appliedCount) ? Math.max(0, Number(migrationRecord.appliedCount)) : 0,
+          pending: Array.isArray(migrationRecord.pending) ? migrationRecord.pending.map((item) => String(item).slice(0, 120)) : [],
+          unknown: Array.isArray(migrationRecord.unknown) ? migrationRecord.unknown.map((item) => String(item).slice(0, 120)) : [],
+        },
+      } : {}),
+    },
+  };
+}
+
 function createFixedWindowLimiter(maxRequests: number, windowMs: number) {
   const buckets = new Map<string, { count: number; expiresAt: number }>();
   const safeMax = Number.isInteger(maxRequests) && maxRequests > 0 ? maxRequests : 20;
+  let nextCleanupAt = 0;
   return {
     allow(key: string) {
       const now = Date.now();
+      if (now >= nextCleanupAt) {
+        for (const [bucketKey, bucketValue] of buckets) {
+          if (bucketValue.expiresAt <= now) buckets.delete(bucketKey);
+        }
+        nextCleanupAt = now + Math.min(windowMs, 10_000);
+      }
       const bucket = buckets.get(key);
       if (!bucket || bucket.expiresAt <= now) {
         buckets.set(key, { count: 1, expiresAt: now + windowMs });

@@ -1,5 +1,5 @@
 import { statSync } from "node:fs";
-import { extname, join, normalize } from "node:path";
+import { extname, resolve, sep } from "node:path";
 
 export const staticContentTypes = Object.freeze({
   ".html": "text/html;charset=utf-8",
@@ -31,8 +31,10 @@ export function cacheHeadersForPath(filePath) {
 }
 
 export function resolveStaticFilePath({ root, requestPath, stat = statSync }) {
-  const filePath = normalize(join(root, requestPath));
-  if (!filePath.startsWith(root)) return null;
+  const absoluteRoot = resolve(root);
+  const relativeRequestPath = String(requestPath || "").replace(/^[/\\]+/u, "");
+  const filePath = resolve(absoluteRoot, relativeRequestPath);
+  if (filePath !== absoluteRoot && !filePath.startsWith(`${absoluteRoot}${sep}`)) return null;
   try {
     if (!stat(filePath).isFile()) return null;
   } catch {
