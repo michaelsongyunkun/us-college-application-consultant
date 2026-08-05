@@ -2129,6 +2129,11 @@ async function waitForCapabilityAssessmentJob(jobId) {
     }
 
     if (job.status === "completed") return job.result || {};
+    if (job.status === "cancelled") {
+      const error = new Error("任务已取消。");
+      error.final = true;
+      throw error;
+    }
     if (job.status === "failed") {
       const error = new Error(getAiGenerationErrorMessage(job, {
         operation: "DeepSeek Agent 能力评估",

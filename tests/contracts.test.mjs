@@ -3,6 +3,7 @@ import { JobStatusSchema, PlanningResultSchema, RagStreamRequestSchema, SchoolSe
 
 assert.equal(StudentProfileSchema.parse({ grade: "10", customField: "preserved" }).customField, "preserved");
 assert.equal(JobStatusSchema.parse({ jobId: "00000000-0000-4000-8000-000000000000", status: "running" }).status, "running");
+assert.equal(JobStatusSchema.parse({ jobId: "00000000-0000-4000-8000-000000000000", status: "cancelled" }).status, "cancelled");
 assert.equal(UnifiedErrorSchema.parse({ error: "Bad input", code: "BAD_INPUT", retryable: false }).code, "BAD_INPUT");
 const planning = PlanningResultSchema.parse({
   activities: Array.from({ length: 15 }, (_, index) => ({ id: index + 1, type: "academic", activityName: `Activity ${index + 1}`, executionDescription: "Build evidence and document measurable outcomes.", suggestedGrade: "10-11" })),

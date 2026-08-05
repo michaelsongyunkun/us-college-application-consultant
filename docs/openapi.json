@@ -434,7 +434,8 @@
               "pending",
               "running",
               "completed",
-              "failed"
+              "failed",
+              "cancelled"
             ]
           },
           "result": {},

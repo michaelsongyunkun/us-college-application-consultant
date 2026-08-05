@@ -83,7 +83,7 @@ export const SchoolSelectionResultSchema = z
 export const JobStatusSchema = z
   .object({
     jobId: z.string().uuid(),
-    status: z.enum(["pending", "running", "completed", "failed"]),
+    status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
     result: z.unknown().optional(),
     error: z.string().max(1_000).optional(),
     statusCode: z.number().int().min(400).max(599).optional(),

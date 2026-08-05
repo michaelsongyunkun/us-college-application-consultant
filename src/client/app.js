@@ -848,6 +848,11 @@ async function waitForDeepSeekPlanJob(jobId) {
       if (!job.result?.parsed) throw new Error("DeepSeek 规划结果为空，请重新生成。");
       return job.result;
     }
+    if (job.status === "cancelled") {
+      const error = new Error("任务已取消。");
+      error.final = true;
+      throw error;
+    }
     if (job.status === "failed") {
       const error = new Error(getAiGenerationErrorMessage(job, {
         operation: "DeepSeek 规划生成",

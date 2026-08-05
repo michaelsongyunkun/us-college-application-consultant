@@ -171,6 +171,11 @@ async function waitForSchoolSelectionJob(jobId) {
       if (!job.result?.selection) throw new Error("选校方案结果为空，请重新生成。");
       return job.result;
     }
+    if (job.status === "cancelled") {
+      const error = new Error("任务已取消。");
+      error.final = true;
+      throw error;
+    }
     if (job.status === "failed") {
       const error = new Error(getAiGenerationErrorMessage(job, {
         operation: "选校方案 AI 生成",
