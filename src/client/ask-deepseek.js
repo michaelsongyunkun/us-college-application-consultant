@@ -1,7 +1,6 @@
 import { escapeHtml } from "./html-utils.mjs";
 import { renderMarkdown } from "../domain/markdown-renderer.mjs?v=20260531-deepseek-markdown";
 import { csrfFetch } from "./csrf-token.mjs";
-import { requestRagStream } from "./rag-stream.mjs?v=20260731-stream-delta";
 import { getAiGenerationErrorMessage } from "./auth-client-errors.mjs?v=20260804-ai-timeout-recovery";
 
 const form = document.querySelector("#deepSeekQuestionForm");
@@ -368,6 +367,11 @@ async function waitForDeepSeekRagJob(jobId) {
     }
 
     if (job.status === "completed") return job.result || {};
+    if (job.status === "cancelled") {
+      const error = new Error("任务已取消。");
+      error.final = true;
+      throw error;
+    }
     if (job.status === "failed") {
       const error = new Error(getAiGenerationErrorMessage(job, {
         operation: `${ASSISTANT_NAME}回答生成`,
@@ -629,20 +633,6 @@ function replaceMessage(messageId, message) {
   scrollChatToBottom();
 }
 
-function updateStreamingMessage(messageId, content) {
-  const existing = document.getElementById(messageId);
-  const bubble = existing?.querySelector(".chat-bubble");
-  if (!existing || !bubble) return;
-  existing.classList.remove("is-thinking");
-  bubble.setAttribute("aria-live", "polite");
-  bubble.innerHTML = renderBubbleContent(content, {
-    isUser: false,
-    error: false,
-    answerContentId: `${messageId}-answer-content`,
-  });
-  scrollChatToBottom();
-}
-
 function rememberAssistantMessage(messageId, message) {
   if (message.role !== "assistant" || message.thinking || message.error) return;
   assistantMessages.set(messageId, {
@@ -705,44 +695,19 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
   try {
     setWorking(true);
     startProgressStatus();
-    let data;
-    try {
-      let streamedAnswer = "";
-      let streamRenderPending = false;
-      data = await requestRagStream(buildRagRequestPayload(question, conversationSummary), {
-        onDelta: IS_INSPIRATION_PROFILE
-          ? (text) => {
-            if (!streamedAnswer) {
-              stopProgressStatus();
-              setStatus(`${ASSISTANT_NAME}正在回复...`);
-            }
-            streamedAnswer += text;
-            if (streamRenderPending) return;
-            streamRenderPending = true;
-            window.requestAnimationFrame(() => {
-              streamRenderPending = false;
-              updateStreamingMessage(thinkingMessageId, streamedAnswer);
-            });
-          }
-          : undefined,
-      });
-    } catch (streamError) {
-      if (streamError.status === 401) window.location.href = "./index.html";
-      if (!streamError.fallbackAllowed) throw streamError;
-      setStatus("快速通道暂时不可用，正在转入可恢复的后台任务...");
-      const job = await requestJson(DEEPSEEK_RAG_JOB_ENDPOINT, {
-        method: "POST",
-        body: JSON.stringify(buildRagRequestPayload(question, conversationSummary)),
-      });
-      rememberPendingDeepSeekRagJob({
-        jobId: job.jobId,
-        question,
-        displayQuestion,
-        workflowKey,
-      });
-      setStatus(`问答任务已提交，${ASSISTANT_NAME}正在后台生成回答。`);
-      data = await waitForDeepSeekRagJob(job.jobId);
-    }
+    setStatus(`正在提交${ASSISTANT_NAME}后台问答任务...`);
+    const job = await requestJson(DEEPSEEK_RAG_JOB_ENDPOINT, {
+      method: "POST",
+      body: JSON.stringify(buildRagRequestPayload(question, conversationSummary)),
+    });
+    rememberPendingDeepSeekRagJob({
+      jobId: job.jobId,
+      question,
+      displayQuestion,
+      workflowKey,
+    });
+    setStatus(`问答任务已提交，${ASSISTANT_NAME}正在后台生成回答。`);
+    const data = await waitForDeepSeekRagJob(job.jobId);
     const sources = IS_INSPIRATION_PROFILE ? [] : data.sources || [];
     const missingFields = IS_INSPIRATION_PROFILE ? [] : data.missingFields || [];
     const answer = data.answer || `${ASSISTANT_NAME}暂无回答。`;

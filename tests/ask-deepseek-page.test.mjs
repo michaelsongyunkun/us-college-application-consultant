@@ -130,7 +130,7 @@ assert.ok(script.includes("请进行成绩与课程规划诊断"), "Ask DeepSeek
 assert.ok(script.includes("请生成申请材料清单"), "Ask DeepSeek should prompt the material checklist workflow.");
 
 assert.ok(script.includes('"/api/deepseek-rag-jobs"'), "Ask DeepSeek should create a background RAG job.");
-assert.ok(script.includes("requestRagStream"), "Ask DeepSeek should prefer the Fastify RAG stream path.");
+assert.doesNotMatch(script, /requestRagStream/, "Ask DeepSeek should submit directly to a background job so navigation cannot abort generation.");
 assert.ok(script.includes("resumePendingDeepSeekRagJob"), "Ask DeepSeek should resume a pending RAG job after navigation.");
 assert.ok(
   script.includes("renderMarkdown"),
@@ -270,8 +270,7 @@ assert.ok(script.includes("isUser ? USER_AVATAR_SRC : ASSISTANT_AVATAR_SRC"));
 assert.ok(inspirationAvatar.includes("原创豆形探索伙伴头像"));
 assert.equal(/doubao|豆包/i.test(inspirationAvatar), false, "Original avatar asset should not use Doubao branding.");
 assert.ok(script.includes("buildRagRequestPayload(question, conversationSummary)"));
-assert.ok(script.includes("onDelta: IS_INSPIRATION_PROFILE"));
-assert.ok(script.includes("updateStreamingMessage(thinkingMessageId, streamedAnswer)"));
+assert.ok(script.includes("rememberPendingDeepSeekRagJob"));
 assert.ok(script.includes("deepseek-inspiration-pending-job"));
 assert.ok(script.includes("这一轮只问我一个最关键的问题"));
 assert.ok(script.includes("不是为了包装申请履历"));
