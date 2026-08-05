@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - master
+      - codex/render-lean-deployment
 
 permissions:
   contents: read

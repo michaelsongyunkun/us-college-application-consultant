@@ -20,6 +20,7 @@ assert.match(dockerfile, /HEALTHCHECK/);
 assert.match(compose, /consultant-data:\/app\/data/);
 assert.match(workflow, /node-version: "22"/);
 assert.doesNotMatch(workflow, /node-version: "20"/);
+assert.match(workflow, /codex\/render-lean-deployment/);
 for (const gate of ["typecheck", "openapi:check", "contracts:compat", "npm audit", "gitleaks", "docker/build-push-action", "eval:ai"]) assert.ok(workflow.includes(gate), `CI should include ${gate}`);
 assert.match(workflow, /ghcr\.io\/gitleaks\/gitleaks:v\d+\.\d+\.\d+ detect/);
 assert.doesNotMatch(workflow, /gitleaks\/gitleaks-action|GITLEAKS_LICENSE|GITHUB_TOKEN/);

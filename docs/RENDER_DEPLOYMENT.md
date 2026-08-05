@@ -28,7 +28,7 @@ The worker and Key Value service are additional paid Render resources. Confirm t
 ## Create the Blueprint
 
 1. Open **Render Dashboard → New → Blueprint**.
-2. Select `michaelsongyunkun/us-college-application-consultant` and branch `main`.
+2. Select `michaelsongyunkun/us-college-application-consultant` and branch `codex/render-lean-deployment`.
 3. Render detects `/render.yaml`.
 4. Enter the prompted values without committing them to Git:
 
@@ -60,7 +60,7 @@ The existing `npm run db:seed-admin` command targets SQLite and must not be used
 
 ## Deploy and rollback
 
-- `autoDeployTrigger: checksPass` deploys `main` only after GitHub checks pass.
+- `autoDeployTrigger: checksPass` deploys `codex/render-lean-deployment` only after GitHub checks pass; the CI workflow must keep this branch in its push trigger list.
 - The web pre-deploy command runs PostgreSQL migrations and idempotent keyword-only knowledge/graph ingestion.
 - Roll back the web service to the previous image revision from Render's deploy history.
 - Never roll back the database schema destructively during an incident. Restore or roll forward using the production data runbook.
