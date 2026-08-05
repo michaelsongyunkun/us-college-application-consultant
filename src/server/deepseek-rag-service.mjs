@@ -22,10 +22,17 @@ import { withSpan } from "./production-observability.ts";
 import { createStaticAdmissionsKnowledgeGraphAdapter } from "./admissions-knowledge-graph-adapter.mjs";
 import { createRetrievalOrchestrator } from "./retrieval-orchestrator.mjs";
 import { splitMarkdownIntoStructuredChunks } from "../infrastructure/markdown-ingestion.ts";
+import {
+  RETRIEVAL_RELEVANCE_POLICY_VERSION,
+  selectRelevantEvidence,
+} from "../domain/retrieval-relevance.mjs";
 
 const MAX_QUESTION_LENGTH = 1200;
 const MAX_HISTORY_SUMMARY_LENGTH = 1800;
-const MAX_SELECTED_CHUNKS = 14;
+const KNOWLEDGE_DOCUMENT_LIMIT = 8;
+const PERSONALIZED_KNOWLEDGE_DOCUMENT_LIMIT = 6;
+const PERSONAL_DOCUMENT_LIMIT = 3;
+const MAX_PERSONAL_SOURCE_CHARS = 6_000;
 const MAX_CONTEXT_CHARS = 18_000;
 const MAX_CHUNK_CHARS = 2_200;
 const SOURCE_SNIPPET_CHARS = 260;
@@ -66,6 +73,16 @@ const SOURCE_TYPE_LABELS = {
 };
 
 const PERSONAL_SOURCE_TYPES = new Set(["student-backup", "application-portfolio"]);
+const RETRIEVAL_STOP_PHRASES = [
+  "请根据", "申请档案", "自动匹配", "美国本科", "输出", "核心结论",
+  "推荐专业优先级表", "下一步行动",
+  "how", "should", "this", "that", "the", "and", "or", "for", "with", "from",
+  "student", "students", "compare", "comparison", "resource", "resources",
+  "please", "help", "what", "which", "use", "next", "prioritize", "application",
+  "recommendation", "recommendations", "letter", "letters", "requirement", "requirements",
+  "推荐信要求", "是什么",
+];
+const RETRIEVAL_STOP_TOKENS = new Set(RETRIEVAL_STOP_PHRASES.flatMap(tokenizeRaw));
 
 const APPLICATION_ROUND_LABELS = {
   rea: "REA",
@@ -632,8 +649,16 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
       staticDocuments: await loadStaticMarkdownDocuments(),
     });
     const intentProfile = analyzeQuestionIntent(normalizedQuestion);
-    const weightedSelected = selectRelevantDocuments(documents, normalizedQuestion, intentProfile);
-    const contextSelection = buildContextSelection(weightedSelected);
+    const retrievalQuestion = assistantProfile === "major-match"
+      ? buildMajorMatchRetrievalQuery({ question: normalizedQuestion, profile, portfolio })
+      : normalizedQuestion;
+    const selection = selectRelevantDocuments(
+      documents,
+      retrievalQuestion,
+      intentProfile,
+      { usePersonalContext: includePersonalContext },
+    );
+    const contextSelection = buildContextSelection(selection.selected);
     const context = contextSelection.context;
     const retrievalMs = Math.round(monotonicNowMs() - retrievalStartedAt);
     const retrieval = {
@@ -643,6 +668,10 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
       intentReason: intentProfile.reason,
       sourceWeights: intentProfile.sourceWeights,
       retrievalMs,
+      relevance: {
+        ...selection.diagnostics,
+        policyVersion: RETRIEVAL_RELEVANCE_POLICY_VERSION,
+      },
     };
     metrics?.recordRagRetrieval?.({
       intent: intentProfile.intent,
@@ -654,6 +683,7 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
     return {
       context,
       sources: contextSelection.included.map(serializeRagSource),
+      candidates: selection.selected,
       retrieval,
       missingFields,
     };
@@ -1019,81 +1049,132 @@ function intentProfile(intent, reason, sourceWeights) {
   return { intent, reason, sourceWeights };
 }
 
-function selectRelevantDocuments(documents, question, intentProfile = analyzeQuestionIntent(question)) {
+function selectRelevantDocuments(documents, question, intentProfile = analyzeQuestionIntent(question), {
+  usePersonalContext = false,
+} = {}) {
   const queryTokens = tokenize(question);
-  const scored = documents
-    .map((document, index) => ({
-      ...document,
+  const schoolTitleAnchors = findExplicitTitleAnchors(
+    documents,
+    queryTokens,
+    "school-encyclopedia",
+  );
+  const allowedKnowledgeTypes = getAllowedKnowledgeTypes(question, intentProfile.intent);
+  const candidates = consolidatePersonalDocuments(documents).map((document, index) => {
+    const scope = PERSONAL_SOURCE_TYPES.has(getRagDocumentType(document)) ? "personal" : "knowledge";
+    const type = getRagDocumentType(document);
+    const titleAnchored = type !== "school-encyclopedia"
+      || !schoolTitleAnchors.length
+      || matchesTitleAnchor(getRagDocumentTitle(document), schoolTitleAnchors);
+    const typeAllowed = !allowedKnowledgeTypes.size || allowedKnowledgeTypes.has(type);
+    const score = scope === "personal"
+      ? personalAnchorScore(document)
+      : titleAnchored && typeAllowed ? scoreDocument(document, queryTokens, question, intentProfile) : 0;
+    return {
+      id: getRagDocumentId(document),
+      type,
+      scope,
+      title: getRagDocumentTitle(document),
+      text: getRagDocumentText(document),
+      channel: scope === "personal" ? "personal" : `local-keyword:${getRagDocumentType(document)}`,
+      rawScore: score,
       index,
-      score: scoreDocument(document, queryTokens, question, intentProfile),
-    }))
-    .filter((document) => document.score > 0)
-    .sort((left, right) => right.score - left.score || left.index - right.index);
-
-  const selected = new Map();
-  for (const document of ensureBaselineContext(documents, scored, intentProfile)) {
-    selected.set(getRagDocumentId(document), document);
-  }
-  for (const document of scored) {
-    if (selected.size >= MAX_SELECTED_CHUNKS) break;
-    selected.set(getRagDocumentId(document), document);
-  }
-
-  const selectedDocuments = [...selected.values()];
-  if (isPortfolioLedQuestion(question)) {
-    return selectedDocuments
-      .sort((left, right) =>
-        portfolioLedSourcePriority(getRagDocumentType(left)) - portfolioLedSourcePriority(getRagDocumentType(right))
-        || right.score - left.score
-        || left.index - right.index)
-      .slice(0, MAX_SELECTED_CHUNKS);
-  }
-
-  return selectedDocuments
-    .sort((left, right) =>
-      right.score - left.score
-      || sourcePriority(getRagDocumentType(left), intentProfile) - sourcePriority(getRagDocumentType(right), intentProfile))
-    .slice(0, MAX_SELECTED_CHUNKS);
+    };
+  });
+  const knowledgeLimit = usePersonalContext
+    ? PERSONALIZED_KNOWLEDGE_DOCUMENT_LIMIT
+    : KNOWLEDGE_DOCUMENT_LIMIT;
+  return selectRelevantEvidence(candidates, {
+    maxResults: knowledgeLimit + (usePersonalContext ? PERSONAL_DOCUMENT_LIMIT : 0),
+    scopeLimits: {
+      knowledge: knowledgeLimit,
+      personal: usePersonalContext ? PERSONAL_DOCUMENT_LIMIT : 0,
+    },
+  });
 }
 
-function ensureBaselineContext(documents, scored, intentProfile) {
-  const portfolio =
-    scored.find((document) => getRagDocumentType(document) === "application-portfolio")
-    || documents
-      .filter((document) => getRagDocumentType(document) === "application-portfolio")
-      .map((document) => ({ ...document, score: 0.3 }))[0];
-  const studentScored = scored.filter((document) => getRagDocumentType(document) === "student-backup");
-  const studentProfile = studentScored.find(isStudentProfileDocument)
-    || documents
-      .filter((document) => getRagDocumentType(document) === "student-backup")
-      .filter(isStudentProfileDocument)
-      .map((document) => ({ ...document, score: 0.1 }))[0];
-  const studentDetails = studentScored.filter((document) => !isStudentProfileDocument(document));
-  const fallbackStudentDetails = studentDetails.length
-    ? studentDetails
-    : documents
-        .filter((document) => getRagDocumentType(document) === "student-backup")
-        .filter((document) => !isStudentProfileDocument(document))
-        .map((document) => ({ ...document, score: 0.1 }));
-  const studentDocuments = [studentProfile, ...fallbackStudentDetails.slice(0, 2)].filter(Boolean);
-  const school =
-    scored.find((document) => getRagDocumentType(document) === "school-encyclopedia")
-    || documents
-      .filter((document) => getRagDocumentType(document) === "school-encyclopedia")
-      .map((document) => ({ ...document, score: 0.1 }))[0];
-  const resource =
-    scored.find((document) => getRagDocumentType(document) === "resource-library")
-    || documents
-      .filter((document) => getRagDocumentType(document) === "resource-library")
-      .map((document) => ({ ...document, score: intentProfile.sourceWeights["resource-library"] || 0.1 }))[0];
-  const major =
-    scored.find((document) => getRagDocumentType(document) === "major-encyclopedia")
-    || documents
-      .filter((document) => getRagDocumentType(document) === "major-encyclopedia")
-      .map((document) => ({ ...document, score: intentProfile.sourceWeights["major-encyclopedia"] || 0.1 }))[0];
-  const baselines = [portfolio, ...studentDocuments, school, resource, major].filter(Boolean);
-  return baselines.sort((left, right) =>
-    sourcePriority(getRagDocumentType(left), intentProfile) - sourcePriority(getRagDocumentType(right), intentProfile));
+function getAllowedKnowledgeTypes(question, primaryIntent) {
+  const normalized = normalizeSearchText(question);
+  const asciiTokens = new Set(normalized.match(/[a-z0-9][a-z0-9.+#-]*/g) || []);
+  const allowed = new Set();
+  const hasAny = (patterns) => patterns.some((pattern) => {
+    const normalizedPattern = normalizeSearchText(pattern);
+    return /^[a-z0-9][a-z0-9.+#-]*$/u.test(normalizedPattern)
+      ? asciiTokens.has(normalizedPattern)
+      : normalized.includes(normalizedPattern);
+  });
+  const primaryType = {
+    school: "school-encyclopedia",
+    major: "major-encyclopedia",
+    resource: "resource-library",
+  }[primaryIntent];
+  if (primaryType) allowed.add(primaryType);
+  if (hasAny(["选校", "院校", "学校", "ed", "ea", "rd", "uc", "rea", "mit", "college", "university"])) {
+    allowed.add("school-encyclopedia");
+  }
+  if (hasAny(["专业", "本科专业", "major", "concentration", "track", "职业", "岗位", "就业", "career", "computer science", "计算机"])) {
+    allowed.add("major-encyclopedia");
+  }
+  if (hasAny(["竞赛", "夏校", "科研", "项目", "polygence", "活动", "resource", "competition", "summer", "frc", "ftc"])) {
+    allowed.add("resource-library");
+  }
+  return allowed;
+}
+
+function findExplicitTitleAnchors(documents, queryTokens, type) {
+  const titles = [...new Set(documents
+    .filter((document) => getRagDocumentType(document) === type)
+    .map((document) => normalizeSearchText(getRagDocumentTitle(document))))];
+  return queryTokens.filter((token) => {
+    if (/^[a-z0-9][a-z0-9.+#-]*$/u.test(token) && token.length < 3) return false;
+    const matchingTitles = titles.filter((title) => {
+      const asciiTokens = new Set(title.match(/[a-z0-9][a-z0-9.+#-]*/g) || []);
+      return containsSearchToken(title, asciiTokens, token);
+    });
+    return matchingTitles.length > 0 && matchingTitles.length <= 4;
+  });
+}
+
+function matchesTitleAnchor(title, anchors) {
+  const normalizedTitle = normalizeSearchText(title);
+  const asciiTokens = new Set(normalizedTitle.match(/[a-z0-9][a-z0-9.+#-]*/g) || []);
+  return anchors.some((token) => containsSearchToken(normalizedTitle, asciiTokens, token));
+}
+
+function consolidatePersonalDocuments(documents) {
+  const knowledgeDocuments = [];
+  const personalGroups = new Map();
+  for (const document of documents) {
+    const type = getRagDocumentType(document);
+    if (!PERSONAL_SOURCE_TYPES.has(type)) {
+      knowledgeDocuments.push(document);
+      continue;
+    }
+    const title = getRagDocumentTitle(document).replace(/（\d+\/\d+）$/u, "");
+    const key = `${type}:${title}`;
+    if (!personalGroups.has(key)) {
+      personalGroups.set(key, {
+        id: getRagDocumentId(document),
+        type,
+        title,
+        texts: [],
+      });
+    }
+    personalGroups.get(key).texts.push(getRagDocumentText(document));
+  }
+  const personalDocuments = [...personalGroups.values()].map(({ texts, ...document }) => ({
+    ...document,
+    text: texts.join("\n\n").slice(0, MAX_PERSONAL_SOURCE_CHARS),
+  }));
+  return [...personalDocuments, ...knowledgeDocuments];
+}
+
+function personalAnchorScore(document) {
+  const type = getRagDocumentType(document);
+  const title = getRagDocumentTitle(document);
+  if (type === "application-portfolio") return 1;
+  if (title.includes("基础信息")) return 1;
+  if (title.includes("当前方案")) return 0.8;
+  return 0.9;
 }
 
 function isStudentProfileDocument(document) {
@@ -1105,19 +1186,29 @@ function scoreDocument(document, queryTokens, question, intentProfile) {
   const type = getRagDocumentType(document);
   const searchable = normalizeSearchText(`${title}\n${getRagDocumentText(document)}`);
   const normalizedTitle = normalizeSearchText(title);
+  const searchableAsciiTokens = new Set(searchable.match(/[a-z0-9][a-z0-9.+#-]*/g) || []);
+  const titleAsciiTokens = new Set(normalizedTitle.match(/[a-z0-9][a-z0-9.+#-]*/g) || []);
   const sourceWeight = intentProfile.sourceWeights[type] || 1;
   let score = 0;
   for (const token of queryTokens) {
     if (!token) continue;
-    if (searchable.includes(token)) score += (token.length >= 4 ? 3 : 1) * sourceWeight;
-    if (normalizedTitle.includes(token)) score += 2 * sourceWeight;
+    if (containsSearchToken(searchable, searchableAsciiTokens, token)) {
+      score += (token.length >= 4 ? 3 : 1) * sourceWeight;
+    }
+    if (containsSearchToken(normalizedTitle, titleAsciiTokens, token)) score += 2 * sourceWeight;
   }
   const normalizedQuestion = normalizeSearchText(question);
   if (normalizedQuestion && searchable.includes(normalizedQuestion)) score += 8;
   return score;
 }
 
-function tokenize(value) {
+function containsSearchToken(text, asciiTokens, token) {
+  return /^[a-z0-9][a-z0-9.+#-]*$/u.test(token)
+    ? asciiTokens.has(token)
+    : text.includes(token);
+}
+
+function tokenizeRaw(value) {
   const text = String(value || "").toLowerCase();
   const asciiTokens = text.match(/[a-z0-9][a-z0-9.+#-]*/g) || [];
   const cjkChars = Array.from(text).filter((char) => /\p{Script=Han}/u.test(char));
@@ -1128,33 +1219,35 @@ function tokenize(value) {
   return [...new Set([...asciiTokens, ...cjkBigrams])].filter((token) => token.length >= 2);
 }
 
+function tokenize(value) {
+  return tokenizeRaw(value).filter((token) => !RETRIEVAL_STOP_TOKENS.has(token));
+}
+
+function buildMajorMatchRetrievalQuery({ question, profile = {}, portfolio = {} }) {
+  const profileData = profile.profile || profile;
+  return [
+    String(question || "").split("\n")[0],
+    profileData.interests,
+    profileData.intendedMajor,
+    profileData.majorDirection,
+    profileData.careerInterests,
+    ...(portfolio.activities || []).slice(0, 8).flatMap((activity) => [
+      activity.activityName || activity.name,
+      activity.description,
+      activity.role,
+    ]),
+    ...(portfolio.competitions || []).slice(0, 5).flatMap((competition) => [
+      competition.competitionName || competition.name,
+      competition.subject || competition.category,
+    ]),
+  ].map(cleanText).filter(Boolean).join(" ");
+}
+
 function normalizeSearchText(value) {
   return String(value || "")
     .toLowerCase()
     .replace(/[^\p{Letter}\p{Number}.+#-]+/gu, " ")
     .trim();
-}
-
-function isPortfolioLedQuestion(question) {
-  const normalized = normalizeSearchText(question);
-  return [
-    "application portfolio",
-    "my portfolio",
-    "saved portfolio",
-    "个人申请档案",
-    "我的申请档案",
-    "申请档案",
-  ].some((pattern) => normalized.includes(pattern));
-}
-
-function portfolioLedSourcePriority(type) {
-  return {
-    "application-portfolio": 0,
-    "student-backup": 1,
-    "resource-library": 2,
-    "school-encyclopedia": 3,
-    "major-encyclopedia": 4,
-  }[type] ?? 9;
 }
 
 export function buildContextSelection(selected, maxContextChars = MAX_CONTEXT_CHARS) {
@@ -1177,6 +1270,16 @@ export function buildContextSelection(selected, maxContextChars = MAX_CONTEXT_CH
 }
 
 function prioritizeContextSources(selected) {
+  const personal = [];
+  const knowledge = [];
+  for (const source of selected) {
+    if (PERSONAL_SOURCE_TYPES.has(getRagDocumentType(source))) personal.push(source);
+    else knowledge.push(source);
+  }
+  return [...prioritizeContextGroup(personal), ...prioritizeContextGroup(knowledge)];
+}
+
+function prioritizeContextGroup(selected) {
   const firstByGroup = [];
   const remaining = [];
   const seenGroups = new Set();
@@ -1324,16 +1427,4 @@ function stableId(value) {
     hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
   }
   return `rag-${hash.toString(36)}`;
-}
-
-function sourcePriority(type, intentProfile = analyzeQuestionIntent("")) {
-  const priority = {
-    "student-backup": 0,
-    "application-portfolio": 1,
-    "resource-library": 2,
-    "school-encyclopedia": 3,
-    "major-encyclopedia": 4,
-  }[type] ?? 9;
-  const weight = intentProfile.sourceWeights[type] || 1;
-  return priority - weight;
 }

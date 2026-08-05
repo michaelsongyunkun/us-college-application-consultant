@@ -105,7 +105,6 @@ try {
   assert.ok(result.sources.every((source) => source.type !== "student-backup"));
   assert.ok(result.sources.some((source) => source.type === "resource-library"));
   assert.ok(result.sources.some((source) => source.type === "school-encyclopedia"));
-  assert.ok(result.sources.some((source) => source.type === "major-encyclopedia"));
   assert.ok(
     result.sources.every((source) => !source.title.includes("Publication Outlet")),
     "A resource chunk with no query-token match should not consume a retrieval slot.",
@@ -131,6 +130,70 @@ try {
   );
   assert.match(personalizedResult.context, /Robotics current plan/u);
   assert.ok(personalizedResult.missingFields.includes("推荐信准备"));
+
+  const precisionMarkdown = [
+    "## Computer Science 计算机科学\n算法、人工智能、软件系统与机器人。",
+    "## Mechanical Engineering 机械工程\n机械设计、CAD、控制与机器人。",
+    "## Hospitality Management 酒店管理\n酒店运营、旅游与服务管理。",
+    "## Archive Studies 档案学\n档案保存、图书馆与历史文献。",
+  ].join("\n\n");
+  const schoolBoundaryMarkdown = [
+    "## MIT\nMIT recommendation requirements and maker culture.",
+    "## Smith College\nSmith recommendation requirements and humanities programs.",
+  ].join("\n\n");
+  const precisionRetriever = createRagRetriever({
+    root: tempDir,
+    readMarkdownFile: async (filePath) => {
+      if (String(filePath).endsWith("majors.md")) return precisionMarkdown;
+      if (String(filePath).endsWith("schools.md")) return schoolBoundaryMarkdown;
+      return "## Unrelated admissions material\nNo matching robotics, major, or weather evidence.";
+    },
+    planning: {
+      getProfile() {
+        return { profile: { interests: "机器人、人工智能、编程", intendedMajor: "Computer Science" } };
+      },
+      getLatestRagPlan() { return null; },
+    },
+    activityPortfolio: {
+      getPortfolio() {
+        return {
+          activities: [{
+            activityName: "Robotics Outreach",
+            description: "开发导航机器人并教授编程",
+            role: "负责人",
+          }],
+        };
+      },
+    },
+  });
+  const precisionResult = await precisionRetriever.retrieve({
+    user: { id: "precision-major" },
+    question: "请根据我的申请档案自动匹配适合探索的美国本科专业。",
+    assistantProfile: "major-match",
+    usePersonalContext: true,
+  });
+  assert.ok(precisionResult.sources.length <= 9, "Six knowledge plus three personal sources is the hard maximum.");
+  assert.ok(precisionResult.sources.some((source) => /Computer Science|Mechanical Engineering/u.test(source.title)));
+  assert.ok(precisionResult.sources.some((source) => source.scope === "personal"));
+  assert.ok(precisionResult.sources.every((source) => !/Hospitality|Archive Studies/u.test(source.title)));
+  assert.equal(precisionResult.retrieval.relevance.policyVersion, "retrieval-relevance@2026-08-06");
+  assert.ok(precisionResult.retrieval.relevance.rejectedCandidates > 0);
+
+  const mitResult = await precisionRetriever.retrieve({
+    user: { id: "precision-mit" },
+    question: "MIT recommendation letter requirements",
+    usePersonalContext: false,
+  });
+  assert.ok(mitResult.sources.some((source) => /MIT/u.test(source.title)));
+  assert.ok(mitResult.sources.every((source) => !/Smith/u.test(source.title)), "MIT must not substring-match Smith.");
+
+  const unrelated = await precisionRetriever.retrieve({
+    user: { id: "precision-negative" },
+    question: "今天北京天气如何？",
+    usePersonalContext: false,
+  });
+  assert.deepEqual(unrelated.sources, []);
+  assert.equal(unrelated.retrieval.selectedDocuments, 0);
 
   await retriever.retrieve({
     user: { id: "student-1" },
