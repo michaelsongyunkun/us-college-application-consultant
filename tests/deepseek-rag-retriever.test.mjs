@@ -195,6 +195,18 @@ try {
   assert.deepEqual(unrelated.sources, []);
   assert.equal(unrelated.retrieval.selectedDocuments, 0);
 
+  const unauthorizedProfile = await precisionRetriever.retrieve({
+    user: { id: "precision-profile-without-consent" },
+    question: "请分析我的申请档案优势和短板",
+    usePersonalContext: false,
+  });
+  assert.deepEqual(
+    unauthorizedProfile.sources,
+    [],
+    "A profile-only question without personal-context consent must not fall through to unrelated static knowledge.",
+  );
+  assert.equal(unauthorizedProfile.retrieval.selectedDocuments, 0);
+
   await retriever.retrieve({
     user: { id: "student-1" },
     question: "Which robotics resources should I prioritize next?",

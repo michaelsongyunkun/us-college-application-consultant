@@ -1070,7 +1070,7 @@ function selectRelevantDocuments(documents, question, intentProfile = analyzeQue
     const titleAnchored = type !== "school-encyclopedia"
       || !schoolTitleAnchors.length
       || matchesTitleAnchor(getRagDocumentTitle(document), schoolTitleAnchors);
-    const typeAllowed = !allowedKnowledgeTypes.size || allowedKnowledgeTypes.has(type);
+    const typeAllowed = allowedKnowledgeTypes.has(type);
     const score = scope === "personal"
       ? personalAnchorScore(document)
       : titleAnchored && typeAllowed ? scoreDocument(document, queryTokens, question, intentProfile) : 0;

@@ -9,6 +9,8 @@ export function buildAdmissionsKnowledgeGraph({
   const entities = new Map();
   const relations = new Map();
   const aliasIndex = new Map();
+  const schoolEntityIds = new Set();
+  const schoolSearchIndex = new Map();
 
   const addEntity = (value) => {
     const entity = normalizeEntity(value);
@@ -23,9 +25,13 @@ export function buildAdmissionsKnowledgeGraph({
         }
       : entity;
     entities.set(merged.id, merged);
-    for (const alias of [merged.name, ...merged.aliases]) {
-      const key = normalizeLookup(alias);
-      if (key && !aliasIndex.has(key)) aliasIndex.set(key, merged.id);
+    if (merged.type === "school") {
+      schoolEntityIds.add(merged.id);
+      const normalizedAliases = uniqueStrings([merged.name, ...merged.aliases].map(normalizeLookup));
+      schoolSearchIndex.set(merged.id, normalizedAliases);
+      for (const key of normalizedAliases) {
+        if (key && !aliasIndex.has(key)) aliasIndex.set(key, merged.id);
+      }
     }
     return merged;
   };
@@ -141,6 +147,8 @@ export function buildAdmissionsKnowledgeGraph({
         name: schoolName,
         entities,
         aliasIndex,
+        schoolEntityIds,
+        schoolSearchIndex,
         addEntity,
         sourceId,
       });
@@ -159,6 +167,8 @@ export function buildAdmissionsKnowledgeGraph({
       name: school.name,
       entities,
       aliasIndex,
+      schoolEntityIds,
+      schoolSearchIndex,
       addEntity,
       sourceId: "data/application-round-schools.md",
     });
@@ -331,30 +341,36 @@ export function formatGraphFacts(facts = []) {
   }).join("\n");
 }
 
-function resolveOrCreateSchool({ name, entities, aliasIndex, addEntity, sourceId }) {
+function resolveOrCreateSchool({
+  name,
+  entities,
+  aliasIndex,
+  schoolEntityIds,
+  schoolSearchIndex,
+  addEntity,
+  sourceId,
+}) {
   const normalized = normalizeLookup(name);
   if (!normalized) return null;
   const exactId = aliasIndex.get(normalized);
   if (exactId) return entities.get(exactId);
   const aliases = buildSchoolAliases(name);
-  const acronymAliases = aliases
+  const aliasMatches = uniqueStrings(aliases
     .filter((alias) => /^[A-Z0-9]{3,6}$/u.test(alias))
-    .map(normalizeLookup);
-  const acronymMatches = [...entities.values()].filter((entity) => entity.type === "school"
-    && [entity.name, ...(entity.aliases || [])]
-      .map(normalizeLookup)
-      .some((alias) => acronymAliases.includes(alias)));
-  if (acronymMatches.length === 1) {
-    const [matched] = acronymMatches;
+    .map(normalizeLookup)
+    .map((alias) => aliasIndex.get(alias))
+    .filter(Boolean));
+  if (aliasMatches.length === 1) {
+    const matched = entities.get(aliasMatches[0]);
     return addEntity({ ...matched, aliases: [...(matched.aliases || []), name, ...aliases] });
   }
-  const partial = [...entities.values()].find((entity) => entity.type === "school"
-    && [entity.name, ...(entity.aliases || [])].some((alias) => {
-      const candidate = normalizeLookup(alias);
-      return candidate.length >= 4 && (candidate.includes(normalized) || normalized.includes(candidate));
-    }));
+  const partial = [...schoolEntityIds]
+    .find((id) => (schoolSearchIndex.get(id) || []).some((candidate) => (
+      candidate.length >= 4 && (candidate.includes(normalized) || normalized.includes(candidate))
+    )));
   if (partial) {
-    const updated = addEntity({ ...partial, aliases: [...(partial.aliases || []), name] });
+    const entity = entities.get(partial);
+    const updated = addEntity({ ...entity, aliases: [...(entity.aliases || []), name] });
     aliasIndex.set(normalized, updated.id);
     return updated;
   }

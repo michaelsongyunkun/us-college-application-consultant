@@ -66,7 +66,16 @@ export function createRetrievalQueryPlan({
   const entities = extractEntities(query, normalizedQuery);
   const constraints = extractConstraints(query);
   const hasMultiHopSignal = MULTI_HOP_SIGNALS.some((signal) => includesSignal(normalizedQuery, signal));
-  const complex = hasMultiHopSignal || intents.length >= 2 || normalizedTaskType === "major-match" || normalizedTaskType === "school-selection";
+  const focusedAcademicLookup = isFocusedAcademicLookup({
+    normalizedQuery,
+    normalizedTaskType,
+    intents,
+    hasMultiHopSignal,
+  });
+  const complex = hasMultiHopSignal
+    || (intents.length >= 2 && !focusedAcademicLookup)
+    || normalizedTaskType === "major-match"
+    || normalizedTaskType === "school-selection";
   const needsConstraints = normalizedTaskType === "school-selection"
     || constraints.rounds.length > 0
     || constraints.budget
@@ -84,6 +93,12 @@ export function createRetrievalQueryPlan({
     steps: buildSteps(mode),
     reason: buildReason({ mode, normalizedTaskType, primaryIntent, complex, needsConstraints }),
   };
+}
+
+function isFocusedAcademicLookup({ normalizedQuery, normalizedTaskType, intents, hasMultiHopSignal }) {
+  if (normalizedTaskType !== "application" || hasMultiHopSignal || !intents.includes("academic")) return false;
+  return ["ap", "ib", "a-level", "sat", "act", "course", "testing"]
+    .some((signal) => includesSignal(normalizedQuery, signal));
 }
 
 export function shouldUseKnowledgeGraph(plan = {}) {

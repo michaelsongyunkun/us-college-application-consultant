@@ -7,6 +7,8 @@ import { formatGraphFacts } from "../domain/admissions-knowledge-graph.mjs";
 import { selectRelevantEvidence } from "../domain/retrieval-relevance.mjs";
 
 const DEFAULT_MAX_GRAPH_CONTEXT_CHARS = 6_000;
+const KNOWLEDGE_VISIBLE_SOURCE_LIMIT = 8;
+const PERSONALIZED_VISIBLE_SOURCE_LIMIT = 9;
 
 export function createRetrievalOrchestrator({
   documentRetriever,
@@ -41,6 +43,9 @@ export function createRetrievalOrchestrator({
         graphResult,
         queryPlan,
         maxGraphContextChars,
+        maxVisibleSources: input.usePersonalContext === true
+          ? PERSONALIZED_VISIBLE_SOURCE_LIMIT
+          : KNOWLEDGE_VISIBLE_SOURCE_LIMIT,
       });
     },
   };
@@ -51,6 +56,7 @@ export function mergeGraphAndDocumentRetrieval({
   graphResult = {},
   queryPlan = {},
   maxGraphContextChars = DEFAULT_MAX_GRAPH_CONTEXT_CHARS,
+  maxVisibleSources = null,
 } = {}) {
   const documentContext = String(documentResult.context || "").trim();
   const graphSelection = selectGraphFacts(graphResult, documentResult);
@@ -59,21 +65,28 @@ export function mergeGraphAndDocumentRetrieval({
   const selectedGraphSourceIds = new Set(selectedFacts.map((fact) => fact.sourceId).filter(Boolean));
   const availableGraphSources = graphResult.sources || [];
   const hasExactFactSources = availableGraphSources.some((source) => selectedFactIds.has(source.id));
-  const graphSources = availableGraphSources.filter((source) => (
+  const graphSources = dedupeGraphSources(availableGraphSources.filter((source) => (
     selectedFactIds.has(source.id)
     || (!hasExactFactSources && (
       selectedGraphSourceIds.has(source.id) || selectedGraphSourceIds.has(source.sourceId)
     ))
-  ));
+  )));
   const graphContext = formatGraphFacts(selectedFacts).slice(0, maxGraphContextChars);
   const context = [
     graphContext ? `--- Knowledge graph relationships ---\n${graphContext}` : "",
     documentContext ? `--- Retrieved document evidence ---\n${documentContext}` : "",
   ].filter(Boolean).join("\n\n");
+  const documentSources = dedupeSources(documentResult.sources || []);
+  const inferredSourceLimit = documentSources.some((source) => source.scope === "personal")
+    ? PERSONALIZED_VISIBLE_SOURCE_LIMIT
+    : KNOWLEDGE_VISIBLE_SOURCE_LIMIT;
+  const sourceLimit = Number.isInteger(maxVisibleSources) && maxVisibleSources > 0
+    ? maxVisibleSources
+    : inferredSourceLimit;
   const sources = dedupeSources([
-    ...(documentResult.sources || []),
-    ...graphSources,
-  ]);
+    ...documentSources.slice(0, sourceLimit),
+    ...graphSources.slice(0, Math.max(0, sourceLimit - documentSources.length)),
+  ]).slice(0, sourceLimit);
   const documentRetrieval = documentResult.retrieval || {};
   const graphTraversal = graphResult.traversal || {};
 
@@ -145,6 +158,16 @@ function dedupeSources(sources) {
   const seen = new Set();
   return sources.filter((source) => {
     const key = String(source?.id || source?.sourceId || source?.title || "").trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function dedupeGraphSources(sources) {
+  const seen = new Set();
+  return sources.filter((source) => {
+    const key = String(source?.sourceId || source?.id || source?.title || "").trim();
     if (!key || seen.has(key)) return false;
     seen.add(key);
     return true;

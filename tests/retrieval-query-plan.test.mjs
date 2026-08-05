@@ -34,6 +34,15 @@ assert.ok(complexApplicationQuestion.intents.includes("major"));
 const directLookup = createRetrievalQueryPlan({ query: "MIT 的推荐信要求是什么？" });
 assert.equal(directLookup.mode, RETRIEVAL_MODES.HYBRID_RAG);
 
+const focusedAcademicLookup = createRetrievalQueryPlan({
+  query: "What does AP Computer Science A cover?",
+});
+assert.equal(
+  focusedAcademicLookup.mode,
+  RETRIEVAL_MODES.HYBRID_RAG,
+  "A single-course AP lookup must not use GraphRAG merely because the course name also resembles a major.",
+);
+
 const englishRecommendationLookup = createRetrievalQueryPlan({
   query: "Summarize Stanford recommendation letter expectations.",
 });

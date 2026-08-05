@@ -66,6 +66,66 @@ assert.doesNotMatch(graphResult.context, /fact-noise|UNRELATED_TO/u);
 assert.ok(graphResult.sources.length <= 9);
 assert.deepEqual(graphResult.missingFields, ["GPA"]);
 
+const budgetedOrchestrator = createRetrievalOrchestrator({
+  documentRetriever: {
+    async retrieve() {
+      return {
+        context: "Personalized document context",
+        sources: [
+          ...Array.from({ length: 6 }, (_, index) => ({
+            id: `doc-${index + 1}`,
+            type: "major-encyclopedia",
+            scope: "knowledge",
+            title: `Major document ${index + 1}`,
+          })),
+          ...Array.from({ length: 3 }, (_, index) => ({
+            id: `personal-${index + 1}`,
+            type: "application-portfolio",
+            scope: "personal",
+            title: `Personal document ${index + 1}`,
+          })),
+        ],
+        retrieval: { selectedDocuments: 9, totalDocuments: 20 },
+      };
+    },
+  },
+  knowledgeGraph: {
+    async search() {
+      return {
+        adapter: "test-graph",
+        sources: Array.from({ length: 8 }, (_, index) => ({
+          id: `kg:budget-${index + 1}`,
+          sourceId: index < 2 ? "data/majors.md" : `data/source-${index + 1}.md`,
+          type: "knowledge-graph",
+          title: `Graph fact ${index + 1}`,
+        })),
+        facts: Array.from({ length: 8 }, (_, index) => ({
+          id: `budget-${index + 1}`,
+          score: 10 - index,
+          sourceId: index < 2 ? "data/majors.md" : `data/source-${index + 1}.md`,
+          queryAnchored: true,
+          subject: { id: `major:${index}`, name: `Major ${index}` },
+          predicate: "RELATED_TO",
+          object: { id: `school:${index}`, name: `School ${index}` },
+        })),
+        traversal: { seedEntities: ["major:0"], visitedEntities: 16, selectedFacts: 8, maxDepth: 2 },
+      };
+    },
+  },
+});
+const budgetedResult = await budgetedOrchestrator.retrieve({
+  question: "Match my robotics profile to majors and schools",
+  assistantProfile: "major-match",
+  usePersonalContext: true,
+});
+assert.equal(budgetedResult.sources.length, 9, "Document and graph citations must share one personalized source budget.");
+assert.equal(budgetedResult.retrieval.selectedDocuments, 9);
+assert.ok(
+  budgetedResult.retrieval.graph.selectedFacts > 0
+    && budgetedResult.retrieval.graph.selectedFacts <= 8,
+  "Graph context may retain relevant facts up to its independent eight-fact budget even when citation slots are full.",
+);
+
 calls.length = 0;
 const lookupResult = await orchestrator.retrieve({ question: "MIT 的推荐信要求是什么？" });
 assert.deepEqual(calls, [["documents", "hybrid-rag"]]);

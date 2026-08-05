@@ -1,0 +1,78 @@
+[
+  {
+    "id": "zh-major-robotics",
+    "category": "major",
+    "query": "根据我的机器人、AI 和编程项目匹配适合的本科专业",
+    "assistantProfile": "major-match",
+    "usePersonalContext": true,
+    "profile": { "profile": { "interests": "机器人、人工智能、编程", "intendedMajor": "Computer Science" } },
+    "portfolio": { "activities": [{ "activityName": "Robotics Outreach", "description": "开发导航机器人并教授编程" }] },
+    "relevantPatterns": ["Computer Science|Mechanical Engineering|Robotics|机器人|人工智能|AI"],
+    "forbiddenPatterns": ["Hospitality|Tourism|Archive / Library|Insurance"],
+    "maxSources": 9,
+    "maxGraphFacts": 8
+  },
+  {
+    "id": "en-major-humanities",
+    "category": "major",
+    "query": "Match majors for archival history research and public writing",
+    "assistantProfile": "major-match",
+    "usePersonalContext": true,
+    "profile": { "profile": { "interests": "history, archival research, public writing" } },
+    "portfolio": { "activities": [{ "activityName": "Local History Archive", "description": "Catalogued oral histories and published essays" }] },
+    "relevantPatterns": ["History|Archive|Political Science|Public Policy|Writing"],
+    "forbiddenPatterns": ["Hospitality|Tourism|Insurance"],
+    "maxSources": 9,
+    "maxGraphFacts": 8
+  },
+  {
+    "id": "zh-school-mit-recommendation",
+    "category": "school",
+    "query": "MIT 的推荐信要求是什么？",
+    "usePersonalContext": false,
+    "relevantPatterns": ["麻省理工|MIT"],
+    "forbiddenPatterns": ["普林斯顿|哈佛|斯坦福|耶鲁|西北|Smith"],
+    "maxSources": 4,
+    "maxGraphFacts": 0
+  },
+  {
+    "id": "zh-resource-cs-competition",
+    "category": "resource",
+    "query": "适合计算机学生的竞赛",
+    "usePersonalContext": false,
+    "relevantPatterns": ["竞赛|计算机|信息学|算法"],
+    "forbiddenPatterns": ["酒店|旅游|档案学"],
+    "maxSources": 8,
+    "maxGraphFacts": 8
+  },
+  {
+    "id": "en-academic-ap-cs",
+    "category": "academic",
+    "query": "What does AP Computer Science A cover?",
+    "usePersonalContext": false,
+    "relevantPatterns": ["AP|Computer Science"],
+    "forbiddenPatterns": ["Hospitality|Tourism|Archive"],
+    "maxSources": 8,
+    "maxGraphFacts": 0
+  },
+  {
+    "id": "zh-profile-without-consent",
+    "category": "negative",
+    "query": "请分析我的申请档案优势和短板",
+    "usePersonalContext": false,
+    "relevantPatterns": [],
+    "forbiddenPatterns": ["Business Analytics|Archive / Library|Hospitality|Tourism"],
+    "maxSources": 0,
+    "maxGraphFacts": 0
+  },
+  {
+    "id": "zh-unrelated-weather",
+    "category": "negative",
+    "query": "今天北京天气如何？",
+    "usePersonalContext": false,
+    "relevantPatterns": [],
+    "forbiddenPatterns": ["."],
+    "maxSources": 0,
+    "maxGraphFacts": 0
+  }
+]
