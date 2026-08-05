@@ -21,6 +21,7 @@ assert.match(compose, /consultant-data:\/app\/data/);
 assert.match(workflow, /node-version: "22"/);
 assert.doesNotMatch(workflow, /node-version: "20"/);
 for (const gate of ["typecheck", "openapi:check", "contracts:compat", "npm audit", "gitleaks", "docker/build-push-action", "eval:ai"]) assert.ok(workflow.includes(gate), `CI should include ${gate}`);
-assert.ok(workflow.includes("GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}"), "Gitleaks PR scans should receive the automatic GitHub token.");
+assert.match(workflow, /ghcr\.io\/gitleaks\/gitleaks:v\d+\.\d+\.\d+ detect/);
+assert.doesNotMatch(workflow, /gitleaks\/gitleaks-action|GITLEAKS_LICENSE|GITHUB_TOKEN/);
 for (const forbidden of ["studentProfile", "prompt", "messages", "context", "authorization", "cookie", "apiKey"]) assert.ok(observability.includes(forbidden), `Redaction should include ${forbidden}`);
 assert.equal(JSON.stringify(JSON.parse(manifest)).includes(prompt), false, "Manifest must reference prompt metadata, not duplicate prompt content.");
