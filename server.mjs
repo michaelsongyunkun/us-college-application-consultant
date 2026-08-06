@@ -796,12 +796,15 @@ export function createAppServer({
         const user = await requireUser(request, response, auth);
         if (!user) return;
         const payload = await readJson(request);
-        const usePersonalContext = payload.assistantProfile === "major-match"
+        const applicationPortfolioOnly = !["inspiration", "major-match"]
+          .includes(String(payload.assistantProfile || "").trim());
+        const usePersonalContext = applicationPortfolioOnly
+          || payload.assistantProfile === "major-match"
           || payload.usePersonalContext === true;
         sendJson(response, 200, await deepSeekRag.answerQuestion({
           user,
           question: payload.question,
-          historySummary: payload.historySummary,
+          historySummary: applicationPortfolioOnly ? "" : payload.historySummary,
           assistantProfile: payload.assistantProfile,
           usePersonalContext,
           env,
@@ -929,16 +932,20 @@ export function createAppServer({
         const user = await requireUser(request, response, auth);
         if (!user) return;
         const payload = await readJson(request);
-        const usePersonalContext = payload.assistantProfile === "major-match"
+        const applicationPortfolioOnly = !["inspiration", "major-match"]
+          .includes(String(payload.assistantProfile || "").trim());
+        const usePersonalContext = applicationPortfolioOnly
+          || payload.assistantProfile === "major-match"
           || payload.usePersonalContext === true;
         const jobPayload = {
           user,
           question: payload.question,
-          historySummary: payload.historySummary,
           assistantProfile: payload.assistantProfile,
           usePersonalContext,
         };
-        if (jobPayload.usePersonalContext) {
+        if (applicationPortfolioOnly) {
+          jobPayload.portfolio = await activityPortfolio.getPortfolio(user);
+        } else if (jobPayload.usePersonalContext) {
           const [profile, portfolio, currentPlan] = await Promise.all([
             planning.getProfile(user),
             activityPortfolio.getPortfolio(user),
@@ -950,7 +957,7 @@ export function createAppServer({
           deepSeekRag.answerQuestion({
             user,
             question: payload.question,
-            historySummary: payload.historySummary,
+            historySummary: applicationPortfolioOnly ? "" : payload.historySummary,
             assistantProfile: payload.assistantProfile,
             usePersonalContext,
             env,

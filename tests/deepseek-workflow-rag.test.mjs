@@ -8,6 +8,8 @@ import { jsonHeaders } from "./csrf-test-helpers.mjs";
 const tempDir = await mkdtemp(join(tmpdir(), "consultant-deepseek-workflow-rag-"));
 const calls = [];
 const portfolioMarker = `WorkflowPortfolioNeedle-${Date.now()}`;
+const profileOnlyMarker = `WorkflowProfileOnlyNeedle-${Date.now()}`;
+const historyOnlyMarker = `WorkflowHistoryOnlyNeedle-${Date.now()}`;
 
 const server = createAppServer({
   databasePath: join(tempDir, "workflow-rag.sqlite"),
@@ -33,8 +35,8 @@ try {
     {
       profile: {
         grade: "11",
-        majorDirection: `Computer Science ${portfolioMarker}`,
-        interests: `Robotics ${portfolioMarker}`,
+        majorDirection: `Computer Science ${profileOnlyMarker}`,
+        interests: `Robotics ${profileOnlyMarker}`,
       },
     },
     cookie,
@@ -83,7 +85,7 @@ try {
     {
       question:
         "Please read my application portfolio, activities, recommendation letters, GPA/SAT/AP and school plan, then provide an activity boost workflow.",
-      historySummary: "",
+      historySummary: historyOnlyMarker,
       usePersonalContext: true,
     },
     cookie,
@@ -100,19 +102,18 @@ try {
     JSON.stringify(body.sources).includes(portfolioMarker),
     "The visible RAG sources should include saved application portfolio details.",
   );
+  assert.ok(body.sources.every((source) => source.type === "application-portfolio"));
+  assert.equal(body.retrieval.mode, "application-portfolio-only");
+  assert.equal(body.retrieval.graph.selectedFacts, 0);
 
   const sentPayload = calls[0];
   const userPrompt = sentPayload.messages[1].content;
-  const contextStart = userPrompt.indexOf("检索到的资料片段");
-  const retrievedContext = contextStart >= 0 ? userPrompt.slice(contextStart) : userPrompt;
   assert.ok(
     userPrompt.includes(portfolioMarker),
     "The prompt sent to DeepSeek should include saved application portfolio details.",
   );
-  assert.ok(
-    retrievedContext.indexOf(portfolioMarker) < retrievedContext.indexOf("资源库"),
-    "Saved portfolio context should appear before external resource-library context for workflow prompts.",
-  );
+  assert.doesNotMatch(userPrompt, new RegExp(`${profileOnlyMarker}|${historyOnlyMarker}`, "u"));
+  assert.doesNotMatch(userPrompt, /院校百科：|专业百科：|课外活动库：|知识图谱关系/u);
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(tempDir, { recursive: true, force: true });

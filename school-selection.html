@@ -46,7 +46,7 @@
         </nav>
         <div class="command-sidebar-note">
           <strong>DeepSeek 选校</strong>
-          <span>根据国籍、高中地区和我的申请档案生成轮次组合。</span>
+          <span>除本次选校条件外，只读取当前账户的“我的申请档案”。</span>
         </div>
       </aside>
 
@@ -56,7 +56,7 @@
           <div>
             <p class="eyebrow">Round Structure</p>
             <h2>先定轮次，再看匹配</h2>
-            <p>REA 和 ED1 二选一；ED2 1 所；EA 3-5 所；RD 8-12 所；UC 6 所。结果用于规划参考，最终以申请年度官网为准。</p>
+            <p>REA 和 ED1 二选一；ED2 1 所；EA 3-5 所；RD 8-12 所；UC 6 所。除本次表单条件外，系统只读取当前账户的“我的申请档案”，不会读取任何其他持久化资料。</p>
           </div>
           <div class="command-summary-metrics">
             <span><strong>REA / ED1</strong>二选一 1 所</span>
@@ -69,7 +69,7 @@
           <div class="section-heading table-heading">
             <div>
               <h2 id="school-selection-form-title">生成选校方案</h2>
-              <p>国籍和高中地区仅用于本次选校生成，不会写回申请档案。</p>
+              <p>本次表单条件仅用于当前生成且不会写回档案；唯一读取的持久化资料是当前账户的“我的申请档案”。</p>
             </div>
             <span id="schoolSelectionStatus" class="status" role="status" aria-live="polite">等待生成</span>
           </div>
@@ -221,6 +221,6 @@
     </main>
     <script type="module" src="./src/client/admin-nav.js?v=20260602-mobile-drawer"></script>
     <script type="module" src="./src/client/safe-navigation.mjs?v=20260602-mobile-drawer"></script>
-    <script type="module" src="./src/client/school-selection.js?v=20260804-round-recovery"></script>
+    <script type="module" src="./src/client/school-selection.js?v=20260806-portfolio-only"></script>
   </body>
 </html>

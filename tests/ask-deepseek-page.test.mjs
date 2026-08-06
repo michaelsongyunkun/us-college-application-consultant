@@ -43,14 +43,12 @@ const inspirationAvatar = readFileSync("assets/inspiration-bean-avatar.svg", "ut
 
 for (const expected of [
   "申请机器人",
-  "可选个人上下文",
-  "资源库",
-  "院校百科",
-  "专业百科",
+  "只依据“我的申请档案”回答",
+  "唯一资料源",
+  "其他来源",
   'id="deepSeekChatLog"',
   'id="deepSeekQuestionForm"',
   'id="deepSeekQuestion"',
-  'id="deepSeekPersonalContext"',
   'id="deepSeekAskStatus"',
   'id="deepSeekWorkflows"',
   'id="deepSeekExportButton"',
@@ -91,12 +89,12 @@ assert.ok(
   "Ask DeepSeek reset state should reuse the new agent greeting.",
 );
 assert.ok(
-  pageHtml.includes("参考资料会收起在回答下方"),
-  "Ask DeepSeek greeting should tell users references stay collapsed below the answer.",
+  pageHtml.includes("档案依据会收起在回答下方"),
+  "Ask DeepSeek greeting should tell users portfolio evidence stays collapsed below the answer.",
 );
 assert.ok(
-  script.includes("参考资料会收起在回答下方"),
-  "Ask DeepSeek reset state should keep reference disclosure copy aligned.",
+  script.includes("档案依据会收起在回答下方"),
+  "Ask DeepSeek reset state should keep portfolio-evidence disclosure copy aligned.",
 );
 assert.ok(
   !pageHtml.includes("并在结尾列出参考资料"),
@@ -152,7 +150,7 @@ assert.ok(
   !script.includes("<p>${escapeHtml(source.snippet)}</p>"),
   "Ask DeepSeek should not expose retrieved markdown snippets as escaped paragraph text.",
 );
-assert.ok(script.includes("参考资料"), "Ask DeepSeek answers should include a reference section.");
+assert.ok(script.includes("申请档案依据"), "Ask DeepSeek answers should include a portfolio-evidence section.");
 assert.ok(script.includes("question.length"), "Ask DeepSeek should validate empty questions before sending.");
 assert.match(
   pageHtml,
@@ -176,9 +174,9 @@ assert.match(
 );
 assert.match(styles, /\.workflow-button::before\s*\{/, "Ask DeepSeek workflow buttons should have a compact visual accent.");
 assert.ok(script.includes("PROGRESS_STATUSES"), "Ask DeepSeek should rotate guided progress status copy.");
-assert.ok(script.includes("正在检索你的申请档案"), "Ask DeepSeek should tell users it is checking their portfolio.");
-assert.ok(script.includes("正在整理参考资料"), "Ask DeepSeek should tell users it is organizing references.");
-assert.ok(script.includes("DeepSeek 正在生成建议"), "Ask DeepSeek should tell users when generation is underway.");
+assert.ok(script.includes("正在读取你的申请档案"), "Ask DeepSeek should tell users it is checking their portfolio.");
+assert.ok(script.includes("正在筛选档案内证据"), "Ask DeepSeek should tell users it is filtering portfolio evidence.");
+assert.ok(script.includes("DeepSeek 正在基于档案生成建议"), "Ask DeepSeek should tell users when generation is underway.");
 assert.ok(script.includes("startProgressStatus"), "Ask DeepSeek should start staged progress while waiting.");
 assert.ok(script.includes("stopProgressStatus"), "Ask DeepSeek should stop staged progress after the response.");
 assert.ok(script.includes("<details class=\"chat-references\""), "Ask DeepSeek references should be collapsible.");
@@ -191,7 +189,11 @@ assert.ok(script.includes("chat-source-type-chip"), "Ask DeepSeek should show so
 assert.ok(script.includes("renderFollowUpActions"), "Ask DeepSeek should render follow-up actions after answers.");
 assert.ok(script.includes("data-deepseek-follow-up"), "Ask DeepSeek follow-up buttons should be actionable.");
 assert.ok(script.includes("conversationSummary"), "Ask DeepSeek should keep a compact conversation summary.");
-assert.ok(script.includes("historySummary"), "Ask DeepSeek should send conversation memory to the RAG API.");
+assert.ok(
+  script.includes('return { question, historySummary, assistantProfile: PAGE_ASSISTANT_PROFILE }'),
+  "Only the inspiration robot should send conversation memory.",
+);
+assert.ok(script.includes('assistantProfile: "application"'));
 assert.ok(script.includes("exportDeepSeekConversation"), "Ask DeepSeek should export the current conversation for review.");
 assert.ok(script.includes("saveDeepSeekReviewVersion"), "Ask DeepSeek should save a review version into the portfolio.");
 assert.ok(script.includes("trackDeepSeekUsageEvent"), "Ask DeepSeek should record key usage events.");
@@ -265,16 +267,14 @@ for (const expected of [
   assert.ok(inspirationPageHtml.includes(expected), `Inspiration robot page should include ${expected}.`);
 }
 
-assert.ok(pageHtml.includes("参考我的申请规划"));
-assert.ok(pageHtml.includes("不会读取历史快照"));
-assert.ok(pageHtml.includes("快捷任务会自动参考个人上下文"));
+assert.ok(pageHtml.includes("强制档案白名单"));
+assert.ok(pageHtml.includes("不会读取学生画像、申请规划、历史快照、对话记忆、资源库、院校百科、专业百科或其他用户数据"));
+assert.ok(pageHtml.includes("快捷任务也只读取当前账户的“我的申请档案”"));
 assert.doesNotMatch(inspirationPageHtml, /deepSeekPersonalContext|参考我的申请规划|历史快照/u);
-assert.ok(script.includes('document.querySelector("#deepSeekPersonalContext")'));
-assert.ok(script.includes("usePersonalContext: personalContextToggle?.checked === true"));
-assert.ok(script.includes("personalContextToggle.checked = true"));
-assert.ok(script.includes("personalContextToggle.checked = false"));
-assert.ok(script.includes("personalContextToggle.disabled = isWorking"));
-assert.ok(script.includes("正在检索知识资料"));
+assert.doesNotMatch(pageHtml, /id="deepSeekPersonalContext"/u);
+assert.ok(script.includes("usePersonalContext: true"));
+assert.doesNotMatch(script, /personalContextToggle/u);
+assert.ok(script.includes("正在读取你的申请档案"));
 assert.match(styles, /\.personal-context-control\s*\{/u);
 
 assert.ok(

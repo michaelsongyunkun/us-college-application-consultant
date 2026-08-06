@@ -70,11 +70,13 @@ for (const expected of [
   "\u5bfc\u51faWord\u6587\u6863",
   "./assets/logo-mark.svg",
   "./styles.css?v=20260605-ui",
-  "./src/client/school-selection.js?v=20260804-round-recovery",
+  "./src/client/school-selection.js?v=20260806-portfolio-only",
 ]) {
   assert.ok(pageHtml.includes(expected), `School selection page should include ${expected}.`);
 }
 assert.ok(!pageHtml.includes(">导出结果<"), "School selection should replace the old generic export label.");
+assert.ok(pageHtml.includes("唯一读取的持久化资料是当前账户的“我的申请档案”"));
+assert.ok(pageHtml.includes("不会读取任何其他持久化资料"));
 assert.ok(
   pageHtml.indexOf('class="school-selection-essential-grid"') < pageHtml.indexOf('class="school-selection-advanced full-span"'),
   "School selection form should ask for essential inputs before optional advanced preferences.",
@@ -154,6 +156,11 @@ assert.ok(script.includes("REA / ED1"), "School selection page should label the 
 assert.ok(script.includes("3-5所"), "School selection page should explain the EA count range.");
 assert.ok(script.includes("8-12所"), "School selection page should explain the RD count range.");
 assert.doesNotMatch(script, /deepSeekApiKey/i, "School selection should not expose a user DeepSeek API key field.");
+assert.doesNotMatch(
+  script,
+  /details:\s*\{[\s\S]{0,180}nationality|details:\s*\{[\s\S]{0,180}highSchoolRegion/u,
+  "School selection analytics must not store nationality or high-school region.",
+);
 
 for (const selector of [
   ".school-selection-shell",

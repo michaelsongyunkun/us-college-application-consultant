@@ -88,8 +88,6 @@ function trackSchoolSelectionUsageEvent(eventType, { metrics = {}, details = {} 
       },
       details: {
         source: "school_selection",
-        nationality: selectionNationality?.value.trim() || "",
-        highSchoolRegion: selectionHighSchoolRegion?.value.trim() || "",
         strategyMode: selectionStrategyMode?.value || "",
         ...details,
       },

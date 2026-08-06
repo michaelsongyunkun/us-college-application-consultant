@@ -14,7 +14,13 @@ const finishReasons = ["stop", "stop", "length", "length", "stop"];
 const service = createDeepSeekRagService({
   root: process.cwd(),
   planning: {},
-  activityPortfolio: {},
+  activityPortfolio: {
+    async getPortfolio() {
+      return {
+        activities: [{ activityName: "Output limit test activity", description: "Portfolio-only evidence." }],
+      };
+    },
+  },
   retrievalOrchestrator: {
     async retrieve({ assistantProfile }) {
       const majorMatch = assistantProfile === "major-match";

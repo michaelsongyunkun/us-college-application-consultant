@@ -67,7 +67,7 @@ try {
       profile: {
         grade: "10",
         majorDirection: "Computer Science",
-        interests: "Robotics Portfolio",
+        interests: "Robotics Portfolio PROFILE_ONLY_SECRET",
       },
     },
     cookie,
@@ -78,7 +78,7 @@ try {
     `/api/plans/${planId}`,
     {
       draft: {
-        narrative: "Robotics Portfolio should connect engineering research with community impact.",
+        narrative: "Robotics Portfolio should connect engineering research with community impact. PLAN_ONLY_SECRET",
         activities: [
           {
             type: "research",
@@ -132,7 +132,8 @@ try {
     "/api/deepseek-rag",
     {
       question: "How should this Robotics Portfolio student use FRC/FTC 机器人队 as a Common App activity while comparing Polygence and MIT?",
-      historySummary: "上一轮已经确认学生主线是 Robotics Portfolio 与 CS。",
+      historySummary: "上一轮已经确认学生主线是 Robotics Portfolio 与 CS。HISTORY_ONLY_SECRET",
+      assistantProfile: "untrusted-profile",
       usePersonalContext: true,
     },
     cookie,
@@ -141,27 +142,16 @@ try {
   const body = await response.json();
   assert.equal(body.answer, ragAnswer);
   assert.equal(JSON.stringify(body).includes("env-rag-secret"), false);
-  assert.ok(body.sources.some((source) => source.type === "application-portfolio"));
+  assert.ok(body.sources.length > 0);
+  assert.ok(body.sources.every((source) => source.type === "application-portfolio"));
   assert.ok(body.sources.some((source) => source.typeLabel === "个人上下文"));
-  assert.ok(
-    body.sources
-      .filter((source) => ["application-portfolio", "student-profile", "current-planning"].includes(source.type))
-      .every((source) => source.scope === "personal"),
-  );
-  assert.ok(body.sources.every((source) => source.type !== "student-backup"));
-  assert.ok(body.sources.some((source) => source.type === "student-profile"));
-  assert.ok(body.sources.some((source) => source.type === "current-planning"));
-  assert.ok(body.sources.some((source) => source.type === "resource-library"));
-  assert.ok(body.sources.some((source) => source.title.includes("课外活动库")));
-  assert.ok(body.sources.some((source) => source.type === "school-encyclopedia"));
-  assert.ok(body.sources.some((source) => source.type === "knowledge-graph"));
+  assert.ok(body.sources.every((source) => source.scope === "personal"));
   assert.equal(body.retrieval.intent, "school");
-  assert.equal(body.retrieval.mode, "graph-rag");
-  assert.ok(body.retrieval.graph.selectedFacts > 0);
-  assert.ok(
-    body.retrieval.sourceWeights["school-encyclopedia"] > body.retrieval.sourceWeights["resource-library"],
-    "School questions should weight school encyclopedia above general resources.",
-  );
+  assert.equal(body.retrieval.mode, "application-portfolio-only");
+  assert.equal(body.retrieval.dataScope, "current-user-application-portfolio");
+  assert.equal(body.retrieval.graph.status, "disabled-by-data-scope");
+  assert.equal(body.retrieval.graph.selectedFacts, 0);
+  assert.deepEqual(body.retrieval.sourceWeights, { "application-portfolio": 1 });
   assert.equal(body.quality.schemaVersion, AI_QUALITY_VERSIONS.schema);
   assert.equal(body.quality.metadata.feature, "deepseek-rag");
   assert.equal(body.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.ragPromptDefault);
@@ -172,15 +162,11 @@ try {
   assert.equal(body.quality.retrieval.retrievalHitRate, 1);
   assert.deepEqual(body.quality.retrieval.missingSourceTypes, []);
   assert.equal(body.quality.review.required, false);
-  assert.ok(body.quality.citations.some((citation) => citation.sourceType === "school-encyclopedia"));
+  assert.ok(body.quality.citations.every((citation) => citation.sourceType === "application-portfolio"));
   assert.ok(body.quality.citations.every((citation) => citation.sourceId && citation.sourceTitle));
   assert.match(body.retrieval.intentReason, /MIT|院校|school/i);
   assert.ok(Array.isArray(body.missingFields), "Ask DeepSeek should return missing-field guidance.");
   assert.ok(body.missingFields.includes("推荐信准备"), "Missing fields should flag empty recommendation letter data.");
-  const activitySource = body.sources.find((source) => source.title.includes("课外活动库"));
-  assert.match(activitySource.snippet, /^###/m);
-  assert.match(activitySource.snippet, /\n-\s+\*\*活动内容\*\*/);
-
   assert.equal(calls.length, 1);
   const sentPayload = calls[0];
   assert.equal(sentPayload.model, "deepseek-v4-pro");
@@ -191,29 +177,23 @@ try {
   assert.equal(sentPayload.messages[1].role, "user");
   const systemPrompt = sentPayload.messages[0].content;
   assert.match(systemPrompt, /“申请机器人”/);
-  assert.match(systemPrompt, /个人申请档案：选校计划、课外活动、竞赛、夏校、推荐信、GPA\/SAT\/AP 等成绩档案/);
+  assert.match(systemPrompt, /唯一允许使用的持久化资料/);
+  assert.match(systemPrompt, /严禁读取、引用或推断学生当前画像/);
   assert.match(systemPrompt, /当前资料不足以判断/);
   assert.match(systemPrompt, /不要做绝对化承诺/);
   assert.match(systemPrompt, /保证录取/);
   assert.match(systemPrompt, /Markdown 的标题、列表、表格、加粗/);
   assert.match(systemPrompt, /700/);
   assert.match(systemPrompt, /不要在回答正文中单独输出“参考资料”章节/);
-  assert.match(systemPrompt, /前端会在折叠的“参考资料”区域展示/);
+  assert.match(systemPrompt, /前端只会展示本次使用的申请档案片段/);
   assert.doesNotMatch(systemPrompt, /每次回答结尾必须给出“参考资料”/);
   const userPrompt = sentPayload.messages[1].content;
-  assert.match(userPrompt, /不要在正文末尾列出参考资料/);
-  assert.doesNotMatch(userPrompt, /回答末尾用“参考资料”列出/);
-  assert.match(sentPayload.messages[1].content, /当前画像/);
-  assert.match(sentPayload.messages[1].content, /最近规划/);
-  assert.match(sentPayload.messages[1].content, /不包含申请规划中心里的历史备份\/历史快照/);
-  assert.match(sentPayload.messages[1].content, /对话记忆摘要/);
-  assert.match(sentPayload.messages[1].content, /Robotics Portfolio 与 CS/);
-  assert.match(sentPayload.messages[1].content, /个人申请档案/);
-  assert.match(sentPayload.messages[1].content, /资源库/);
-  assert.match(sentPayload.messages[1].content, /课外活动库/);
-  assert.match(sentPayload.messages[1].content, /院校百科/);
-  assert.match(sentPayload.messages[1].content, /问题意图：school/);
-  assert.match(sentPayload.messages[1].content, /检索权重/);
+  assert.match(userPrompt, /只(?:能|会)使用.*“我的申请档案”/u);
+  assert.match(userPrompt, /当前登录用户的“我的申请档案”片段/);
+  assert.doesNotMatch(userPrompt, /PROFILE_ONLY_SECRET|PLAN_ONLY_SECRET|HISTORY_ONLY_SECRET/u);
+  assert.doesNotMatch(userPrompt, /对话记忆摘要/u);
+  assert.match(sentPayload.messages[1].content, /不得使用对话记忆、学生画像、申请规划、历史快照、资源库、院校百科、专业百科、知识图谱/);
+  assert.doesNotMatch(sentPayload.messages[1].content, /问题意图：school|检索权重/u);
   assert.match(sentPayload.messages[1].content, /Robotics Portfolio/);
   assert.match(sentPayload.messages[1].content, /FRC\/FTC 机器人队/);
   assert.match(sentPayload.messages[1].content, /Prototype assistive navigation robot/);
@@ -311,9 +291,9 @@ try {
   const createdRagJob = await ragJobResponse.json();
   assert.equal(queuedRagPayloads.length, 1);
   assert.equal(queuedRagPayloads[0].usePersonalContext, true);
-  assert.equal(queuedRagPayloads[0].profile.profile.interests, "Robotics Portfolio");
-  assert.equal(queuedRagPayloads[0].currentPlan.planId, planId);
-  assert.equal(Object.hasOwn(queuedRagPayloads[0].currentPlan, "snapshotId"), false);
+  assert.equal(Object.hasOwn(queuedRagPayloads[0], "profile"), false);
+  assert.equal(Object.hasOwn(queuedRagPayloads[0], "currentPlan"), false);
+  assert.equal(Object.hasOwn(queuedRagPayloads[0], "historySummary"), false);
   assert.ok(Array.isArray(queuedRagPayloads[0].portfolio.activities));
   assert.equal(Object.hasOwn(queuedRagPayloads[0], "backups"), false);
   assert.match(createdRagJob.jobId, /^[a-f0-9-]{36}$/);
@@ -321,8 +301,7 @@ try {
   const completedRagJob = await waitForJob("/api/deepseek-rag-jobs", createdRagJob.jobId, cookie);
   assert.equal(completedRagJob.status, "completed");
   assert.equal(completedRagJob.result.answer, ragAnswer);
-  assert.ok(completedRagJob.result.sources.every((source) => source.type !== "student-backup"));
-  assert.ok(completedRagJob.result.sources.some((source) => source.type === "current-planning"));
+  assert.ok(completedRagJob.result.sources.every((source) => source.type === "application-portfolio"));
   assert.equal(completedRagJob.result.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.ragPromptDefault);
 
   const inspirationStreamResponse = await post(

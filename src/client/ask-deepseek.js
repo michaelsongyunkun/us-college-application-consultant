@@ -12,17 +12,16 @@ const saveReviewButton = document.querySelector("#deepSeekSaveReviewButton");
 const status = document.querySelector("#deepSeekAskStatus");
 const chatLog = document.querySelector("#deepSeekChatLog");
 const workflowRegion = document.querySelector("#deepSeekWorkflows");
-const personalContextToggle = document.querySelector("#deepSeekPersonalContext");
 
 const PAGE_ASSISTANT_PROFILE = document.body.dataset.assistantProfile === "inspiration"
   ? "inspiration"
-  : "";
+  : "application";
 const IS_INSPIRATION_PROFILE = PAGE_ASSISTANT_PROFILE === "inspiration";
 const ASSISTANT_NAME = IS_INSPIRATION_PROFILE ? "启发性机器人" : "申请机器人";
 const ANALYTICS_SOURCE = IS_INSPIRATION_PROFILE ? "inspiration_robot" : "application_robot";
 const INITIAL_CHAT_MESSAGE = IS_INSPIRATION_PROFILE
   ? "你好，我是启发性机器人。我会像一位温暖、耐心但不过度推断的知心大姐姐式探索伙伴，先从我们真实说过的话里寻找可能的兴趣线索，再由你选择想探索的方向。如果现在还没有足够的历史对话，我们就从一个你真实经历过的具体时刻开始。"
-  : "你好，我是你的申请机器人。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍。默认情况下，我会检索资料库、院校百科和专业百科；如果你开启“参考我的申请规划”，我也会结合你的当前资料回答。参考资料会收起在回答下方，需要核验时再展开。涉及截止日期、费用、资格或官方政策时，请以申请年度官网为准。";
+  : "你好，我是你的申请机器人。你可以问我选校策略、活动补强、推荐信、成绩档案或项目取舍。除你本次输入的问题外，我只会读取当前登录账户的“我的申请档案”；不会读取学生画像、申请规划、历史快照、对话记忆、资源库、院校百科、专业百科或其他用户数据。档案依据会收起在回答下方，需要核验时再展开。";
 
 const MY_ACTIVITIES_ENDPOINT = "/api/my-activities";
 const DEEPSEEK_RAG_JOB_ENDPOINT = "/api/deepseek-rag-jobs";
@@ -49,14 +48,14 @@ const PROGRESS_STATUSES = IS_INSPIRATION_PROFILE
       "启发性机器人正在组织回应...",
     ]
   : [
-      "正在检索知识资料...",
-      "正在整理参考资料...",
-      "DeepSeek 正在生成建议...",
+      "正在读取你的申请档案...",
+      "正在筛选档案内证据...",
+      "DeepSeek 正在基于档案生成建议...",
     ];
 const PERSONAL_CONTEXT_PROGRESS_STATUSES = [
-  "正在检索你的申请档案...",
-  "正在整理当前画像与最近规划...",
-  "DeepSeek 正在生成个性化建议...",
+  "正在读取你的申请档案...",
+  "正在筛选档案内证据...",
+  "DeepSeek 正在基于档案生成建议...",
 ];
 const STANDARD_RESPONSE_SECTIONS = [
   "最终输出请只使用以下报告结构：",
@@ -64,7 +63,7 @@ const STANDARD_RESPONSE_SECTIONS = [
   "## 依据与证据",
   "## 主要风险",
   "## 下一步行动",
-  "不要在正文末尾单独输出“参考资料”章节；页面会把检索来源收起在回答下方的参考资料下拉区。",
+  "不要在正文末尾单独输出“参考资料”章节；页面会把使用的申请档案依据收起在回答下方。",
 ].join("\n");
 const FOLLOW_UP_ACTIONS = IS_INSPIRATION_PROFILE
   ? [
@@ -303,7 +302,6 @@ function stopProgressStatus() {
 function setWorking(isWorking) {
   askButton.disabled = isWorking;
   clearButton.disabled = isWorking;
-  if (personalContextToggle) personalContextToggle.disabled = isWorking;
   workflowRegion
     ?.querySelectorAll("[data-deepseek-workflow]")
     .forEach((button) => {
@@ -460,8 +458,8 @@ function renderSourceCards(sources = []) {
     : '<p class="chat-source-empty">本次没有检索到高相关资料。</p>';
 
   return `
-    <section class="chat-references" aria-label="参考资料">
-      <h3>参考资料</h3>
+    <section class="chat-references" aria-label="申请档案依据">
+      <h3>申请档案依据</h3>
       <div class="chat-source-grid">${sourceBody}</div>
     </section>`;
 }
@@ -489,9 +487,9 @@ function renderGuidedSourceCards(sources = []) {
     : '<p class="chat-source-empty">本次没有检索到高相关资料。</p>';
 
   return `
-    <details class="chat-references" aria-label="参考资料">
+    <details class="chat-references" aria-label="申请档案依据">
       <summary>
-        <span>参考资料</span>
+        <span>申请档案依据</span>
         <small>${summaryText}</small>
       </summary>
       <div class="chat-source-grid">${sourceBody}</div>
@@ -508,13 +506,13 @@ function renderMissingFieldChecklist(missingFields = []) {
 }
 
 function buildRagRequestPayload(question, historySummary) {
+  if (IS_INSPIRATION_PROFILE) {
+    return { question, historySummary, assistantProfile: PAGE_ASSISTANT_PROFILE };
+  }
   return {
     question,
-    historySummary,
-    ...(!IS_INSPIRATION_PROFILE
-      ? { usePersonalContext: personalContextToggle?.checked === true }
-      : {}),
-    ...(PAGE_ASSISTANT_PROFILE ? { assistantProfile: PAGE_ASSISTANT_PROFILE } : {}),
+    assistantProfile: "application",
+    usePersonalContext: true,
   };
 }
 
@@ -538,10 +536,10 @@ function renderQualityReview(quality = null) {
         .join("")}</ul>`
     : "";
   const message = requiresReview
-    ? review.fallback?.message || "当前回答需要人工复核，请先核验参考资料后再用于申请决策。"
+    ? review.fallback?.message || "当前回答需要人工复核，请先核验申请档案依据后再用于申请决策。"
     : limitedEvidence
       ? "当前可核验资料不足，回答已限制在现有证据范围内；可补充资料后重试。"
-      : "质量检查通过，仍建议展开参考资料核验关键事实。";
+      : "质量检查通过，仍建议展开申请档案依据核验关键事实。";
 
   return `
     <section class="chat-quality-review ${requiresReview ? "needs-review" : limitedEvidence ? "limited-evidence" : "is-clear"}" aria-label="AI 质量复核">
@@ -767,7 +765,7 @@ async function askDeepSeek({ question, displayQuestion = question, workflowKey =
       },
     });
     clearPendingDeepSeekRagJob();
-    setStatus(IS_INSPIRATION_PROFILE ? "已回复" : `已回复，附 ${sources.length} 条参考资料`);
+    setStatus(IS_INSPIRATION_PROFILE ? "已回复" : `已回复，附 ${sources.length} 条申请档案依据`);
   } catch (error) {
     if (error.final || /not found/i.test(error.message)) clearPendingDeepSeekRagJob();
     const message = getAiGenerationErrorMessage(error, {
@@ -797,7 +795,6 @@ async function resumePendingDeepSeekRagJob() {
   if (!pendingJob || deepSeekRagJobPolling) return;
 
   deepSeekRagJobPolling = true;
-  if (personalContextToggle) personalContextToggle.checked = pendingJob.usePersonalContext === true;
   appendMessage({ role: "user", content: pendingJob.displayQuestion || pendingJob.question });
   const thinkingMessageId = renderThinkingMessage();
   const startedAt = performance.now();
@@ -841,7 +838,7 @@ async function resumePendingDeepSeekRagJob() {
       },
     });
     clearPendingDeepSeekRagJob();
-    setStatus(IS_INSPIRATION_PROFILE ? "已回复" : `已回复，附 ${sources.length} 条参考资料`);
+    setStatus(IS_INSPIRATION_PROFILE ? "已回复" : `已回复，附 ${sources.length} 条申请档案依据`);
   } catch (error) {
     if (error.final || /not found/i.test(error.message)) clearPendingDeepSeekRagJob();
     const message = getAiGenerationErrorMessage(error, {
@@ -1070,7 +1067,6 @@ workflowRegion?.addEventListener("click", (event) => {
   if (!button || button.disabled) return;
   const workflow = WORKFLOW_PROMPTS[button.dataset.deepseekWorkflow];
   if (!workflow) return;
-  if (personalContextToggle) personalContextToggle.checked = true;
   askDeepSeek({
     question: workflow.prompt,
     displayQuestion: `启动 Workflow：${workflow.label}`,
@@ -1121,7 +1117,6 @@ questionInput.addEventListener("keydown", (event) => {
 
 clearButton.addEventListener("click", () => {
   questionInput.value = "";
-  if (personalContextToggle) personalContextToggle.checked = false;
   clearPendingDeepSeekRagJob();
   conversationSummary = "";
   conversationTurns.length = 0;

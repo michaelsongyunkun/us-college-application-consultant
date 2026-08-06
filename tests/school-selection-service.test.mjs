@@ -252,6 +252,7 @@ assert.throws(
 );
 
 const calls = [];
+let externalRetrievalCalls = 0;
 const service = createSchoolSelectionService({
   activityPortfolio: {
     getPortfolio() {
@@ -295,6 +296,18 @@ const service = createSchoolSelectionService({
       };
     },
   },
+  retrievalOrchestrator: {
+    async retrieve() {
+      externalRetrievalCalls += 1;
+      throw new Error("School selection must not call an external retrieval orchestrator.");
+    },
+  },
+  knowledgeGraph: {
+    async search() {
+      externalRetrievalCalls += 1;
+      throw new Error("School selection must not query a knowledge graph.");
+    },
+  },
   llmClient: createMockSchoolSelectionLlmClient(
     calls,
     (callNumber) => {
@@ -333,8 +346,8 @@ const generated = await service.generateSelection({
 
 assert.equal(generated.selection.rounds.uc.length, 6);
 assert.equal(generated.selection.rounds.ea.length, 4);
-assert.equal(generated.selection.rounds.ed1[0].admissionProbability, "5%-8%");
-assert.match(generated.selection.rounds.ed1[0].gaps.join(" "), /录取友好度为 5\/10/);
+assert.equal(generated.selection.rounds.ed1[0].admissionProbability, "8%-12%");
+assert.doesNotMatch(generated.selection.rounds.ed1[0].gaps.join(" "), /录取友好度/u);
 assert.equal(
   generated.selection.rounds.ea.find((entry) => entry.school === "University of Illinois Urbana-Champaign").admissionProbability,
   "24%-39%",
@@ -360,14 +373,15 @@ assert.equal(
   "46%-62%",
 );
 assert.equal(generated.selectionVersion, "均衡版");
+assert.equal(externalRetrievalCalls, 0);
 assert.equal(generated.quality.metadata.workflowVersion, SCHOOL_SELECTION_GRAPH_VERSION);
-assert.ok(generated.ragSources.some((source) => source.type === "school-encyclopedia"));
-assert.ok(generated.ragSources.some((source) => source.type === "knowledge-graph"));
-assert.equal(generated.retrieval.mode, "graph-rag-with-constraints");
+assert.ok(generated.ragSources.length > 0);
+assert.ok(generated.ragSources.every((source) => source.type === "application-portfolio"));
+assert.equal(generated.retrieval.mode, "application-portfolio-only");
+assert.equal(generated.retrieval.dataScope, "current-user-application-portfolio");
 assert.equal(generated.retrieval.queryPlan.primaryIntent, "school");
-assert.ok(generated.retrieval.graph.selectedFacts > 0);
-assert.ok(generated.ragSources.filter((source) => source.type === "school-encyclopedia").length <= 8);
-assert.ok(generated.retrieval.graph.selectedFacts <= 8);
+assert.equal(generated.retrieval.graph.status, "disabled-by-data-scope");
+assert.equal(generated.retrieval.graph.selectedFacts, 0);
 assert.equal(JSON.stringify(generated).includes("school-selection-secret"), false);
 
 assert.equal(calls.length, 2, "School selection should retry once when the first JSON fails strict validation.");
@@ -385,8 +399,8 @@ assert.match(sentPayload.messages[0].content, /不允许把同一所学校重复
 assert.match(sentPayload.messages[0].content, /风险等级定义/);
 assert.match(sentPayload.messages[0].content, /admissionProbability/);
 assert.match(sentPayload.messages[0].content, /录取概率区间/);
-assert.match(sentPayload.messages[0].content, /中国学生录取友好度/);
-assert.match(sentPayload.messages[0].content, /友好度低的学校/);
+assert.match(sentPayload.messages[0].content, /唯一允许使用的持久化资料是“我的申请档案”/);
+assert.doesNotMatch(sentPayload.messages[0].content, /中国学生录取友好度|友好度低的学校/u);
 assert.match(sentPayload.messages[0].content, /不是录取承诺/);
 assert.match(sentPayload.messages[0].content, /输出 JSON 前/);
 assert.match(sentPayload.messages[1].content, /中国/);
@@ -403,9 +417,8 @@ assert.match(
 );
 assert.match(sentPayload.messages[1].content, /1510/);
 assert.doesNotMatch(sentPayload.messages[1].content, /legacy-selection-json-marker/);
-assert.match(sentPayload.messages[1].content, /院校百科 RAG 参考/);
-assert.match(sentPayload.messages[1].content, /graph-rag-with-constraints/);
-assert.match(sentPayload.messages[1].content, /graph_traversal.*document_retrieval.*constraint_validation/);
+assert.match(sentPayload.messages[1].content, /唯一允许读取的持久化资料/);
+assert.doesNotMatch(sentPayload.messages[1].content, /院校百科 RAG 参考|graph-rag-with-constraints|graph_traversal/u);
 assert.match(sentPayload.messages[1].content, /University of California|UC/);
 assert.match(sentPayload.messages[1].content, /先判断学生整体竞争力/);
 assert.match(sentPayload.messages[1].content, /如果信息不足，明确写入 gaps/);
@@ -442,7 +455,7 @@ assert.match(sentPayload.messages[0].content, /Top30/);
 assert.match(sentPayload.messages[0].content, /Top30 之后/);
 assert.match(sentPayload.messages[0].content, /不要把 Top30 的极低概率口径套用到所有学校/);
 assert.match(sentPayload.messages[0].content, /低估/);
-assert.match(sentPayload.messages[0].content, /概率应显著下调/);
+assert.doesNotMatch(sentPayload.messages[0].content, /必须充分使用院校百科|院校百科中国学生录取友好度/u);
 assert.match(sentPayload.messages[0].content, /University of Florida \/ UF/);
 assert.match(sentPayload.messages[0].content, /15%-20% 上调/);
 assert.match(sentPayload.messages[0].content, /再次上调 15%/);

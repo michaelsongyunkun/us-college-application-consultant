@@ -21,9 +21,7 @@ import { monotonicNowMs } from "./observability.mjs";
 import { withSpan } from "./production-observability.ts";
 import {
   buildStudentEvidenceChunks,
-  createStaticAdmissionsKnowledgeGraphAdapter,
 } from "./admissions-knowledge-graph-adapter.mjs";
-import { createRetrievalOrchestrator } from "./retrieval-orchestrator.mjs";
 
 const ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "rd", "uc"];
 const MAX_SELECTION_ATTEMPTS = 3;
@@ -213,7 +211,8 @@ const UF_TOP30_SCHOOL_KEYS = new Set(buildFriendlinessSchoolKeys("University of 
 
 const SYSTEM_PROMPT = [
   "你是 US College Compass 的美本选校系统，服务对象是准备申请美国本科的学生和家长。",
-  "你的任务是基于用户国籍、用户高中地区、用户的“我的申请档案”数据，以及用户补充偏好，生成一套分轮次美本选校方案。方案必须可执行、结构清晰、风险分层合理，并严格遵守申请轮次数量规则。",
+  "你的任务是基于用户本次主动提交的选校条件和当前登录用户的“我的申请档案”数据，生成一套分轮次美本选校方案。方案必须可执行、结构清晰、风险分层合理，并严格遵守申请轮次数量规则。",
+  "数据访问边界：除本次选校条件外，唯一允许使用的持久化资料是“我的申请档案”。严禁读取或引用学生画像、申请规划、历史快照、历史对话、资源库、院校百科、专业百科、知识图谱、其他用户数据或任何其他持久化来源。",
   "",
   "核心判断维度：",
   "1. 学术匹配：GPA、课程体系、AP/IB/A-Level/校内难度、标化、语言成绩。",
@@ -242,9 +241,7 @@ const SYSTEM_PROMPT = [
   "- Top30 或同等超高选择性学校可以保持非常保守的概率区间；这些学校即使背景优秀也不要给出确定性表述。",
   "- Top30 之后的学校要按学生背景、专业匹配、成绩/课程、活动/竞赛、国际生身份和学校录取画像综合校准，不要把 Top30 的极低概率口径套用到所有学校。",
   "- 对 Top30 之后且与学生档案明显匹配的 medium/low 学校，概率区间应体现更高把握度，避免系统性低估；低风险学校通常应明显高于匹配校，匹配校通常应明显高于冲刺校。",
-  "- 必须充分使用院校百科中的“中国学生录取友好度”字段校准每所学校的 admissionProbability；友好度低的学校，即使学生背景较强，也要下调录取概率区间并避免标为过于乐观的风险等级。",
-  "- 友好度 1.0-3.5 视为低友好，概率应显著下调；4.0-5.0 视为中低友好，概率应下调；5.5-6.5 视为中等友好，概率口径应略偏保守；7.0 以上不因该字段额外压低。",
-  "- University of Florida / UF 必须按 Top30 学校处理，即使院校百科友好度较高，也要使用更保守的录取概率区间，避免把 UF 当作普通 Top30 之后学校。",
+  "- University of Florida / UF 必须按 Top30 学校处理，使用更保守的录取概率区间，避免把 UF 当作普通 Top30 之后学校。",
   `- 对以下指定学校，admissionProbability 应在此前 15%-20% 上调基础上再次上调 15%，且该上调优先于友好度下调：${ADMISSION_PROBABILITY_BOOST_SCHOOLS.join("、")}。`,
   "- 不要把官网整体录取率直接等同于该学生个人录取概率；官网录取率只能作为选择性参考，最终 admissionProbability 必须结合该学生档案竞争力和专业适配度给出区间。",
   "- 信息不足时用更宽的区间并在 gaps 中说明缺口，不要因为缺少信息就把 Top30 之后的学校全部压到极低概率。",
@@ -321,15 +318,9 @@ export function createSchoolSelectionService({
   logger = null,
   selectionGraph = null,
 } = {}) {
-  const graphAdapter = knowledgeGraph || createStaticAdmissionsKnowledgeGraphAdapter({ root, activityPortfolio });
-  const contextRetriever = retrievalOrchestrator || createRetrievalOrchestrator({
-    documentRetriever: createSchoolSelectionDocumentRetriever({ root }),
-    knowledgeGraph: graphAdapter,
-    logger,
-  });
   const graph = selectionGraph || createSchoolSelectionGraph({
     loadContext: ({ user, input }) =>
-      loadSchoolSelectionContext({ root, activityPortfolio, contextRetriever, user, input }),
+      loadSchoolSelectionContext({ activityPortfolio, user, input }),
     draftSelection: (state) =>
       draftSchoolSelection({ ...state, llmClient, metrics }),
     calibrateSelection: ({ validatedSelection, friendlinessIndex, input, portfolio }) =>
@@ -375,26 +366,42 @@ export function createSchoolSelectionService({
   return { generateSelection };
 }
 
-async function loadSchoolSelectionContext({ root, activityPortfolio, contextRetriever, user, input }) {
+async function loadSchoolSelectionContext({ activityPortfolio, user, input }) {
   const portfolio = await activityPortfolio.getPortfolio(user);
-  const [retrievalResult, friendlinessIndex, applicationRoundSchools] = await Promise.all([
-    contextRetriever.retrieve({
-      user,
-      question: buildSchoolSelectionRetrievalQuery({ input, portfolio }),
-      taskType: "school-selection",
-      input,
-      portfolio,
-    }),
-    buildSchoolFriendlinessIndex(root),
-    loadApplicationRoundSchools(root),
-  ]);
+  const portfolioContext = buildSchoolSelectionPortfolioContext(portfolio, input);
+  const portfolioText = JSON.stringify(portfolioContext, null, 2);
+  const ragSources = portfolioContext.length
+    ? [{
+        id: `application-portfolio-user-${Number(user?.id) || "current"}`,
+        type: "application-portfolio",
+        title: "当前登录用户的我的申请档案",
+        text: portfolioText,
+        scope: "personal",
+      }]
+    : [];
   return {
     portfolio,
-    ragSources: retrievalResult.sources || [],
-    friendlinessIndex,
-    applicationRoundSchools,
-    ragContext: retrievalResult.context || "",
-    retrieval: retrievalResult.retrieval || {},
+    ragSources,
+    friendlinessIndex: { entries: [], byKey: new Map() },
+    applicationRoundSchools: null,
+    ragContext: "",
+    retrieval: {
+      mode: "application-portfolio-only",
+      dataScope: "current-user-application-portfolio",
+      totalDocuments: ragSources.length,
+      selectedDocuments: ragSources.length,
+      graph: {
+        status: "disabled-by-data-scope",
+        selectedFacts: 0,
+      },
+      queryPlan: {
+        mode: "application-portfolio-only",
+        taskType: "school-selection",
+        primaryIntent: "school",
+        steps: ["application_portfolio_load", "evidence_selection", "constraint_validation"],
+        constraints: { dataScope: "current-user-application-portfolio" },
+      },
+    },
   };
 }
 
@@ -488,7 +495,7 @@ function evaluateSchoolSelectionQuality({
   return evaluateAiAnswerQuality({
     answer,
     sources: ragSources.map(serializeRagSource),
-    expectedSourceTypes: ["school-encyclopedia"],
+    expectedSourceTypes: ["application-portfolio"],
     metadata: {
       feature: "school-selection",
       promptVersion: AI_QUALITY_VERSIONS.schoolSelectionPrompt,
@@ -1064,13 +1071,12 @@ function normalizeInput(payload) {
 function buildUserMessage({
   input,
   portfolio,
-  ragContext = "",
-  retrieval = {},
   repairMessage = "",
   repairSelection = null,
 }) {
   return [
     "请基于以下信息生成美本选校系统结果，并严格遵守系统提示中的 JSON schema 与轮次数量规则。",
+    "数据访问边界：除下面列出的本次选校条件外，只能使用当前登录用户的“我的申请档案”。不得使用或暗示读取了任何其他持久化资料。",
     "请先判断学生整体竞争力，再分配 REA/ED1、ED2、EA、RD、UC。",
     `本次策略版本：${input.strategyMode}。保守版降低早申和冲刺比例；均衡版兼顾意愿与风险；冲刺版可以提高高风险学校比例但仍要保留稳妥覆盖。`,
     "REA/ED1 只能选择其中一个方向，合计只能 1 所。",
@@ -1104,15 +1110,7 @@ function buildUserMessage({
     "补充偏好：",
     input.preferences || "无",
     "",
-    `检索模式：${retrieval.queryPlan?.mode || "graph-rag-with-constraints"}`,
-    `证据处理步骤：${(retrieval.queryPlan?.steps || ["graph_traversal", "document_retrieval", "evidence_synthesis", "constraint_validation"]).join(" -> ")}`,
-    `结构化约束：${JSON.stringify(retrieval.queryPlan?.constraints || {})}`,
-    `知识图谱命中关系数：${retrieval.graph?.selectedFacts || 0}`,
-    "",
-    "知识图谱与院校百科 RAG 参考：",
-    ragContext || "未匹配到高相关院校百科片段；仍需提醒用户核验申请年度官网。",
-    "",
-    "我的申请档案（按当前选校问题筛选的独立片段）：",
+    "我的申请档案（唯一允许读取的持久化资料，按当前选校条件筛选）：",
     JSON.stringify(buildSchoolSelectionPortfolioContext(portfolio, input), null, 2),
   ].join("\n");
 }
