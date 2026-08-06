@@ -64,14 +64,15 @@ const MAJOR_ENCYCLOPEDIA_FILES = [
 ];
 
 const SOURCE_TYPE_LABELS = {
-  "student-backup": "学生备份",
+  "student-profile": "学生当前画像",
+  "current-planning": "当前申请规划",
   "application-portfolio": "个人申请档案",
   "resource-library": "资源库",
   "school-encyclopedia": "院校百科",
   "major-encyclopedia": "专业百科",
 };
 
-const PERSONAL_SOURCE_TYPES = new Set(["student-backup", "application-portfolio"]);
+const PERSONAL_SOURCE_TYPES = new Set(["student-profile", "application-portfolio", "current-planning"]);
 const SCHOOL_TITLE_ANCHOR_STOP_TOKENS = new Set([
   "college", "university", "school", "institute", "technology", "science", "engineering",
   "computer", "research", "program", "programs", "student", "students",
@@ -110,7 +111,7 @@ const SYSTEM_PROMPT = [
   "",
   "你可以使用的资料范围包括：",
   "1. 个人申请档案：选校计划、课外活动、竞赛、夏校、推荐信、GPA/SAT/AP 等成绩档案。",
-  "2. 学生备份：学生基础背景、历史规划版本、活动方案和保存快照。",
+  "2. 当前规划上下文：学生当前画像、最近更新的一份规划和当前活动方案；不要读取或引用历史备份/历史快照。",
   "3. 资料库：竞赛、夏校、科研/实习、课外活动素材、国际期刊汇总、项目资源等内容。",
   "4. 院校百科：院校申请要求、热门专业、学校风格、录取偏好、文书与推荐信要求等信息。",
   "5. 专业百科：美国本科专业开设核验、专业介绍、常见学习内容、就业方向、专业强校、录取难度和申请检索口径。",
@@ -118,7 +119,7 @@ const SYSTEM_PROMPT = [
   "回答规则：",
   "- 必须优先基于提供的 RAG 资料回答，不要凭空编造学生经历、项目细节、院校政策、录取概率或申请要求。",
   "- 如果资料不足，要明确说明“当前资料不足以判断”，并告诉用户需要补充哪些信息。",
-  "- 如果用户询问选校、专业、活动、竞赛、夏校、推荐信或申请策略，必须结合“个人申请档案”和“学生备份”判断学生当前状态，再参考资料库、院校百科和专业百科给建议。",
+  "- 如果用户询问选校、专业、活动、竞赛、夏校、推荐信或申请策略，必须结合“个人申请档案”和“当前规划上下文”判断学生当前状态，再参考资料库、院校百科和专业百科给建议。",
   "- 如果涉及截止日期、费用、资格、官方政策、申请要求或录取规则，必须提醒用户以申请年度官网信息为准。",
   "- 不要做绝对化承诺，例如“保证录取”“一定有优势”“必然适合”。应使用审慎表达，例如“更适合”“可以优先考虑”“需要进一步核验”。",
   "- 输出应面向学生和家长，中文为主，语气专业、清晰、低销售感、可执行。",
@@ -127,7 +128,7 @@ const SYSTEM_PROMPT = [
   "",
   "回答格式建议：",
   "1. 先给出简短结论。",
-  "2. 再解释判断依据，可概括来自个人申请档案、学生备份、资料库或院校百科中的信息，但不要列出资料编号或单独来源清单。",
+  "2. 再解释判断依据，可概括来自个人申请档案、当前规划、资料库或院校百科中的信息，但不要列出资料编号或单独来源清单。",
   "3. 给出具体建议，按优先级排列。",
   "4. 如有风险或不确定性，单独列出。",
   "5. 不要另起“参考资料”章节；把可执行建议写完整即可。",
@@ -768,8 +769,8 @@ export function toLangChainRagDocument(source = {}) {
 function buildStudentDocuments({ profile, portfolio, currentPlan = null }) {
   const documents = [];
   addJsonDocument(documents, {
-    type: "student-backup",
-    title: "学生备份：基础信息",
+    type: "student-profile",
+    title: "学生当前画像：基础信息",
     data: profile,
   });
 
@@ -781,8 +782,8 @@ function buildStudentDocuments({ profile, portfolio, currentPlan = null }) {
 
   if (currentPlan) {
     addJsonDocument(documents, {
-      type: "student-backup",
-      title: `学生备份：${currentPlan.planName} / 当前方案`,
+      type: "current-planning",
+      title: `当前申请规划：${currentPlan.planName} / 当前方案`,
       data: currentPlan,
     });
   }
@@ -1024,7 +1025,8 @@ function analyzeQuestionIntent(question, { assistantProfile = "", taskType = "ap
   if (assistantProfile === "major-match"
     || hasAny(["专业", "本科专业", "major", "majors", "concentration", "track", "职业", "岗位", "就业", "career"])) {
     return intentProfile("major", "问题包含专业、职业/岗位或 major 匹配信号。", {
-      "student-backup": 1.6,
+      "student-profile": 1.6,
+      "current-planning": 1.4,
       "application-portfolio": 2.2,
       "resource-library": 1.5,
       "school-encyclopedia": 1.5,
@@ -1033,7 +1035,8 @@ function analyzeQuestionIntent(question, { assistantProfile = "", taskType = "ap
   }
   if (taskType === "school-selection") {
     return intentProfile("school", "选校工作流强制使用院校检索意图。", {
-      "student-backup": 1.3,
+      "student-profile": 1.3,
+      "current-planning": 1.4,
       "application-portfolio": 1.6,
       "resource-library": 0.9,
       "school-encyclopedia": 3.4,
@@ -1042,7 +1045,8 @@ function analyzeQuestionIntent(question, { assistantProfile = "", taskType = "ap
   }
   if (hasSchoolSignal(["选校", "院校", "学校", "ed", "ea", "rd", "uc", "rea", "mit", "college", "colleges", "university", "universities"])) {
     return intentProfile("school", "问题包含院校、轮次或具体学校信号。", {
-      "student-backup": 1.3,
+      "student-profile": 1.3,
+      "current-planning": 1.4,
       "application-portfolio": 1.6,
       "resource-library": 0.9,
       "school-encyclopedia": 3.4,
@@ -1051,7 +1055,8 @@ function analyzeQuestionIntent(question, { assistantProfile = "", taskType = "ap
   }
   if (hasAny(["竞赛", "夏校", "科研", "项目", "polygence", "活动", "resource", "resources", "competition", "competitions", "summer", "research", "internship", "internships", "activity", "activities", "project", "projects"])) {
     return intentProfile("resource", "问题包含项目、竞赛、夏校或活动资源信号。", {
-      "student-backup": 1.3,
+      "student-profile": 1.3,
+      "current-planning": 1.4,
       "application-portfolio": 1.7,
       "resource-library": 3.3,
       "school-encyclopedia": 1.2,
@@ -1060,7 +1065,8 @@ function analyzeQuestionIntent(question, { assistantProfile = "", taskType = "ap
   }
   if (hasAny(["推荐信", "推荐人", "素材", "counselor", "teacher", "recommendation"])) {
     return intentProfile("recommendation", "问题包含推荐信或推荐人材料信号。", {
-      "student-backup": 2.2,
+      "student-profile": 1.8,
+      "current-planning": 1.6,
       "application-portfolio": 3.1,
       "resource-library": 1.0,
       "school-encyclopedia": 1.5,
@@ -1069,7 +1075,8 @@ function analyzeQuestionIntent(question, { assistantProfile = "", taskType = "ap
   }
   if (hasAny(["gpa", "sat", "ap", "课程", "成绩", "标化", "academic"])) {
     return intentProfile("academic", "问题包含成绩、课程或标化信号。", {
-      "student-backup": 2.1,
+      "student-profile": 1.7,
+      "current-planning": 1.6,
       "application-portfolio": 3.0,
       "resource-library": 1.1,
       "school-encyclopedia": 1.7,
@@ -1078,7 +1085,8 @@ function analyzeQuestionIntent(question, { assistantProfile = "", taskType = "ap
   }
   if (hasSchoolSignal(["school", "schools"])) {
     return intentProfile("school", "问题包含学校检索信号。", {
-      "student-backup": 1.3,
+      "student-profile": 1.3,
+      "current-planning": 1.4,
       "application-portfolio": 1.6,
       "resource-library": 0.9,
       "school-encyclopedia": 3.4,
@@ -1086,7 +1094,8 @@ function analyzeQuestionIntent(question, { assistantProfile = "", taskType = "ap
     });
   }
   return intentProfile("general", "未识别到强意图，采用均衡检索。", {
-    "student-backup": 1.6,
+    "student-profile": 1.6,
+    "current-planning": 1.4,
     "application-portfolio": 1.8,
     "resource-library": 1.4,
     "school-encyclopedia": 1.4,
@@ -1516,8 +1525,9 @@ function prioritizeContextGroup(selected) {
 
 function getContextSourceGroup(source) {
   const type = getRagDocumentType(source);
-  if (type !== "student-backup") return type;
-  return isStudentProfileDocument(source) ? "student-profile" : "student-plan";
+  if (type === "student-profile") return "student-profile";
+  if (type === "current-planning") return "current-plan";
+  return type;
 }
 
 function comparePersonalContextSource(left, right) {
@@ -1528,7 +1538,7 @@ function getPersonalContextPriority(source) {
   const group = getContextSourceGroup(source);
   if (group === "application-portfolio") return 0;
   if (group === "student-profile") return 1;
-  if (group === "student-plan") return 2;
+  if (group === "current-plan" || group === "student-plan") return 2;
   return 3;
 }
 
@@ -1558,7 +1568,7 @@ function buildUserMessage(
     "对话记忆摘要：",
     historySummary || "暂无上一轮对话记忆。",
     "",
-    "可用资料范围：学生备份、个人申请档案、资源库、院校百科、专业百科。",
+    "可用资料范围：当前画像、个人申请档案、最近规划、资源库、院校百科、专业百科；不包含申请规划中心里的历史备份/历史快照。",
     "请先判断资料是否足以回答；不要在正文末尾列出参考资料，检索来源会由页面的“参考资料”下拉区展示。",
     missingFields.length
       ? `当前资料缺失字段清单：${missingFields.join("、")}。如果这些字段会影响判断，请在回答中明确提示需要补充。`

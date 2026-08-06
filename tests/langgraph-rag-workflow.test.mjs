@@ -11,7 +11,7 @@ const graph = createRagAnswerGraph({
     nodeCalls.push(["retrieveSources", state.question]);
     return {
       context: "Retrieved context",
-      sources: [{ id: "rag-1", type: "student-backup", title: "Student", snippet: "Robotics" }],
+      sources: [{ id: "rag-1", type: "student-profile", title: "Student", snippet: "Robotics" }],
       retrieval: { intent: "general", selectedDocuments: 1, totalDocuments: 1 },
       missingFields: ["推荐信准备"],
     };

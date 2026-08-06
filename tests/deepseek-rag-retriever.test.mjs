@@ -103,6 +103,8 @@ try {
   assert.ok(result.sources.every((source) => source.scope === "knowledge"));
   assert.ok(result.sources.every((source) => source.type !== "application-portfolio"));
   assert.ok(result.sources.every((source) => source.type !== "student-backup"));
+  assert.ok(result.sources.every((source) => source.type !== "student-profile"));
+  assert.ok(result.sources.every((source) => source.type !== "current-planning"));
   assert.ok(result.sources.some((source) => source.type === "resource-library"));
   assert.ok(result.sources.some((source) => source.type === "school-encyclopedia"));
   assert.ok(
@@ -122,11 +124,13 @@ try {
   });
   assert.deepEqual(personalReadCalls, ["profile", "portfolio", "plan"]);
   assert.ok(personalizedResult.sources.some((source) => source.type === "application-portfolio"));
-  assert.ok(personalizedResult.sources.some((source) => source.type === "student-backup"));
+  assert.ok(personalizedResult.sources.every((source) => source.type !== "student-backup"));
+  assert.ok(personalizedResult.sources.some((source) => source.type === "student-profile"));
+  assert.ok(personalizedResult.sources.some((source) => source.type === "current-planning"));
   assert.ok(
     personalizedResult.sources
-      .filter((source) => ["application-portfolio", "student-backup"].includes(source.type))
-      .every((source) => source.scope === "personal" && source.typeLabel === "个人上下文"),
+      .filter((source) => ["application-portfolio", "student-profile", "current-planning"].includes(source.type))
+      .every((source) => source.scope === "personal"),
   );
   assert.match(personalizedResult.context, /Robotics current plan/u);
   assert.ok(personalizedResult.missingFields.includes("推荐信准备"));
@@ -430,7 +434,8 @@ try {
   assert.match(longPlanResult.context, /Computer Science \/ Education Technology/u);
   assert.match(longPlanResult.context, /MIT review should emphasize STEM depth/u);
   assert.ok(longPlanResult.context.length <= 18_000);
-  assert.ok(longPlanResult.sources.some((source) => source.type === "student-backup"));
+  assert.ok(longPlanResult.sources.every((source) => source.type !== "student-backup"));
+  assert.ok(longPlanResult.sources.some((source) => source.type === "current-planning"));
   assert.ok(longPlanResult.sources.some((source) => source.type === "school-encyclopedia" && /MIT/u.test(source.title)));
 
   const chunks = splitMarkdownIntoChunks([

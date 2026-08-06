@@ -152,7 +152,7 @@ export function getExpectedRagSourceTypes(intent = "general", {
     resource: "resource-library",
   }[normalizedIntent];
   const personalRequirement = ["academic", "general", "profile", "recommendation"].includes(normalizedIntent)
-    ? ["application-portfolio", "student-backup"]
+    ? ["application-portfolio", "student-profile"]
     : "application-portfolio";
   return [
     ...(usePersonalContext === true ? [personalRequirement] : []),

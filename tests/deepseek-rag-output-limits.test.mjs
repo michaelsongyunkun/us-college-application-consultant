@@ -27,7 +27,7 @@ const service = createDeepSeekRagService({
           ]
           : [
             { id: "portfolio", type: "application-portfolio", title: "Portfolio" },
-            { id: "backup", type: "student-backup", title: "Backup" },
+            { id: "current-plan", type: "current-planning", title: "Current plan" },
           ],
         missingFields: [],
         retrieval: {

@@ -20,7 +20,7 @@ const deepSeekRagJobs = {
   get: (...args) => localRagJobs.get(...args),
   cancel: (...args) => localRagJobs.cancel(...args),
 };
-const ragAnswer = "根据学生备份与资料库，Polygence 可以作为 Robotics Portfolio 的科研补充；MIT 需要强调 STEM 深度。";
+const ragAnswer = "根据当前规划与资料库，Polygence 可以作为 Robotics Portfolio 的科研补充；MIT 需要强调 STEM 深度。";
 
 const server = createAppServer({
   databasePath: join(tempDir, "deepseek-rag.sqlite"),
@@ -145,10 +145,12 @@ try {
   assert.ok(body.sources.some((source) => source.typeLabel === "个人上下文"));
   assert.ok(
     body.sources
-      .filter((source) => ["application-portfolio", "student-backup"].includes(source.type))
+      .filter((source) => ["application-portfolio", "student-profile", "current-planning"].includes(source.type))
       .every((source) => source.scope === "personal"),
   );
-  assert.ok(body.sources.some((source) => source.type === "student-backup"));
+  assert.ok(body.sources.every((source) => source.type !== "student-backup"));
+  assert.ok(body.sources.some((source) => source.type === "student-profile"));
+  assert.ok(body.sources.some((source) => source.type === "current-planning"));
   assert.ok(body.sources.some((source) => source.type === "resource-library"));
   assert.ok(body.sources.some((source) => source.title.includes("课外活动库")));
   assert.ok(body.sources.some((source) => source.type === "school-encyclopedia"));
@@ -201,7 +203,9 @@ try {
   const userPrompt = sentPayload.messages[1].content;
   assert.match(userPrompt, /不要在正文末尾列出参考资料/);
   assert.doesNotMatch(userPrompt, /回答末尾用“参考资料”列出/);
-  assert.match(sentPayload.messages[1].content, /学生备份/);
+  assert.match(sentPayload.messages[1].content, /当前画像/);
+  assert.match(sentPayload.messages[1].content, /最近规划/);
+  assert.match(sentPayload.messages[1].content, /不包含申请规划中心里的历史备份\/历史快照/);
   assert.match(sentPayload.messages[1].content, /对话记忆摘要/);
   assert.match(sentPayload.messages[1].content, /Robotics Portfolio 与 CS/);
   assert.match(sentPayload.messages[1].content, /个人申请档案/);
@@ -317,7 +321,8 @@ try {
   const completedRagJob = await waitForJob("/api/deepseek-rag-jobs", createdRagJob.jobId, cookie);
   assert.equal(completedRagJob.status, "completed");
   assert.equal(completedRagJob.result.answer, ragAnswer);
-  assert.ok(completedRagJob.result.sources.some((source) => source.type === "student-backup"));
+  assert.ok(completedRagJob.result.sources.every((source) => source.type !== "student-backup"));
+  assert.ok(completedRagJob.result.sources.some((source) => source.type === "current-planning"));
   assert.equal(completedRagJob.result.quality.metadata.promptVersion, AI_QUALITY_VERSIONS.ragPromptDefault);
 
   const inspirationStreamResponse = await post(

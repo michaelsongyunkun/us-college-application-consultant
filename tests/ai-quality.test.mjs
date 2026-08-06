@@ -30,7 +30,7 @@ assert.deepEqual(
 );
 assert.deepEqual(
   getExpectedRagSourceTypes("general", { usePersonalContext: true }),
-  [["application-portfolio", "student-backup"]],
+  [["application-portfolio", "student-profile"]],
 );
 assert.deepEqual(
   getExpectedRagSourceTypes("major", { assistantProfile: "major-match", usePersonalContext: true }),
