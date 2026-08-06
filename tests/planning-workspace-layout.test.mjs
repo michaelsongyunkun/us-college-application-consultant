@@ -20,6 +20,10 @@ for (const id of [
   "landingHeader",
   "heroStartButton",
   "authCard",
+  "compassPath",
+  "compassPathProfile",
+  "compassPathEvidence",
+  "compassPathDecisions",
   "capabilityHighlights",
   "loggedInPreview",
   "landingProcess",
@@ -92,10 +96,12 @@ for (const id of [
 
 for (const copy of [
   "AI 美本规划工作台",
-  "生成规划，",
-  "顺手匹配资源",
-  "免费生成我的行动地图",
-  "3500+ 课外活动资源",
+  "从散落信息，",
+  "到有依据的申请决策",
+  "开始整理我的申请",
+  "Profile",
+  "Evidence",
+  "Decisions",
   "院校百科",
   "中国AI升学规划行业TOP级",
   "全站免费使用",
@@ -103,9 +109,7 @@ for (const copy of [
   "3500+课外活动资源",
   "150+院校详解",
   "全免费开放",
-  "全免费使用",
   "领取你的申请行动地图",
-  "网站核心功能目前全免费",
   "免费注册并生成规划",
   "可执行、可核验、可复盘",
   "我们如何降低 AI 幻觉风险",
@@ -152,7 +156,10 @@ const planningActivityTableBody = html.match(/<table id="activityTable"[\s\S]*?<
 const commandSubnav = html.match(/<div class="command-subnav"[\s\S]*?<\/div>/)?.[0] || "";
 const dashboardOverview = html.match(/<section id="dashboardOverview"[\s\S]*?<\/section>/)?.[0] || "";
 
-assert.ok(html.includes("./styles.css?v=20260605-ui"), "Planning workspace should bust the stylesheet cache for sidebar navigation scroll fixes.");
+assert.ok(
+  html.includes("./styles.css?v=20260806-login-first-screen-v2"),
+  "Planning workspace should bust the stylesheet cache for the refreshed login first screen.",
+);
 assert.ok(dashboardOverview.includes('id="dashboardTaskGrid"'), "Logged-in home should expose a task dashboard grid above the planning form.");
 for (const target of ["my-activities.html", "ask-deepseek.html", "school-selection.html", "#profilePanel"]) {
   assert.ok(dashboardOverview.includes(target), `Logged-in dashboard should link users to ${target}.`);
@@ -342,6 +349,13 @@ for (const selector of [
 assert.match(styles, /@media \(max-width: 780px\)[\s\S]*\.landing-hero/, "Landing hero should stack on small screens.");
 assert.match(styles, /html\s*\{[\s\S]*?overflow-x:\s*visible;/, "Page root should not create an overflow container that breaks sticky sidebars.");
 assert.match(styles, /\.auth-preview-report\s*\{/, "Action map preview should include compact report preview styling.");
+assert.match(styles, /\.landing-shell-v3\s+\.landing-hero/, "Refreshed first screen should use a scoped hero layout.");
+assert.match(
+  styles,
+  /@media \(max-width: 760px\)[\s\S]*?\.landing-shell-v3\s+\.auth-card/,
+  "Refreshed auth card should have an explicit mobile order.",
+);
+assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/, "Refreshed first screen should respect reduced motion.");
 assert.match(appJs, /const heroStartButton = document\.querySelector\("#heroStartButton"\)/);
 assert.match(appJs, /heroStartButton\?\.addEventListener\("click"/);
 assert.match(appJs, /initialAuthMode === "login" \|\| getSafeNextPath\(\) \? "login" : "register"/);

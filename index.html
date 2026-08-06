@@ -15,67 +15,69 @@
     <meta name="twitter:description" content="面向学生与家长的 AI 美本规划工作台：背景整理、活动规划、资源匹配和报告导出。" />
     <title>AI 美本规划工作台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260605-ui-calm-os-v2" />
+    <link rel="stylesheet" href="./styles.css?v=20260806-login-first-screen-v2" />
   </head>
   <body>
-    <section id="authShell" class="landing-shell" aria-labelledby="landing-title">
+    <section id="authShell" class="landing-shell landing-shell-v3" aria-labelledby="landing-title">
       <header id="landingHeader" class="landing-header">
         <a class="brand-mark" href="./index.html" aria-label="US College Compass 首页">
           <img class="brand-mark-icon" src="./assets/logo-mark.svg" width="36" height="36" alt="" aria-hidden="true" />
           <span class="brand-mark-text"><span class="brand-prefix">US</span> College Compass</span>
         </a>
         <nav class="landing-nav" aria-label="了解产品">
-          <a href="#capabilityHighlights">规划方式</a>
-          <a href="#loggedInPreview">登录后能做什么</a>
-          <a href="#hallucinationRisk">AI 风险</a>
+          <a href="#capabilityHighlights">工作方式</a>
+          <a href="#loggedInPreview">工作区能力</a>
+          <a href="#hallucinationRisk">AI 核验</a>
           <a href="#audienceFit">适用边界</a>
         </nav>
       </header>
 
       <div class="landing-hero">
         <div class="hero-copy">
-          <p class="eyebrow">免费申请规划工具 · 可保存复盘</p>
-          <h1 id="landing-title">生成规划，<br /><span>整理成一套可复盘系统</span></h1>
+          <p class="eyebrow">US APPLICATION WORKSPACE</p>
+          <h1 id="landing-title">从散落信息，<br /><span>到有依据的申请决策</span></h1>
           <p class="hero-description">
-            输入年级、方向、成绩和已有活动，生成可保存的申请行动地图，顺手匹配资源，并对照 3500+ 项目资源与 150+ 院校信息，把建议落到可执行、可核验、可复盘的选择上。
+            把成绩、课程、活动与目标方向整理进同一套工作区，再用资料核验、能力评估和选校规划把信息变成下一步行动。
           </p>
-          <button id="heroStartButton" type="button">免费生成我的行动地图</button>
-          <div class="hero-proof" aria-label="产品能力">
-            <p><strong>建议可复核</strong><span>关键要求保留人工核验边界</span></p>
-            <p><strong>3500+ 课外活动资源</strong><span>覆盖竞赛、夏校、研究和活动方向</span></p>
-            <p><strong>150+院校信息</strong><span>对照学校要求与申请轮次</span></p>
-            <p><strong>可保存导出</strong><span>规划、档案与报告支持持续复盘</span></p>
+          <button id="heroStartButton" type="button">开始整理我的申请</button>
+          <div id="compassPath" class="compass-path" aria-label="从学生档案到申请决策的工作路径">
+            <div class="compass-path-head">
+              <span>COMPASS PATH</span>
+              <small>信息 → 证据 → 决策</small>
+            </div>
+            <div class="compass-path-track">
+              <article id="compassPathProfile" class="compass-path-stage is-current">
+                <span class="compass-path-code">Profile</span>
+                <strong>建立学生档案</strong>
+                <p>成绩、课程、活动与目标方向</p>
+              </article>
+              <article id="compassPathEvidence" class="compass-path-stage">
+                <span class="compass-path-code">Evidence</span>
+                <strong>核对申请证据</strong>
+                <p>能力评估、资源与院校资料</p>
+              </article>
+              <article id="compassPathDecisions" class="compass-path-stage">
+                <span class="compass-path-code">Decisions</span>
+                <strong>形成申请决策</strong>
+                <p>选校轮次、规划版本与行动</p>
+              </article>
+            </div>
+            <div class="auth-preview-report" aria-label="工作区输出预览">
+              <span><strong>Assess</strong><small>档案能力证据</small></span>
+              <span><strong>Compare</strong><small>院校与资源核验</small></span>
+              <span><strong>Act</strong><small>本周下一步行动</small></span>
+            </div>
           </div>
           <!-- 历史营销文案已从可见 UI 移除：中国AI升学规划行业TOP级 / 全站免费使用 / 资深升学顾问认可 / 3500+课外活动资源 / 150+院校详解 / 全免费开放 -->
         </div>
 
         <div id="authCard" class="auth-card">
-          <p class="eyebrow">全免费使用</p>
-          <h2 id="auth-title">领取你的申请行动地图</h2>
-          <p class="auth-copy">注册后可免费保存规划，继续使用资源库、院校百科、GPA/SAT/AP 档案和报告导出。网站核心功能目前全免费。</p>
-          <div class="auth-preview-map" aria-label="申请行动地图预览">
-            <div class="auth-preview-top">
-              <span>Action Map Preview</span>
-              <strong>9-11 年级</strong>
-            </div>
-            <div class="auth-preview-row is-active">
-              <span>1</span>
-              <p><strong>背景诊断</strong><small>先整理成绩、课程、活动证据</small></p>
-            </div>
-            <div class="auth-preview-row">
-              <span>2</span>
-              <p><strong>资源匹配</strong><small>竞赛 / 夏校 / 科研项目按方向筛选</small></p>
-            </div>
-            <div class="auth-preview-row">
-              <span>3</span>
-              <p><strong>下周行动</strong><small>生成可保存、可导出的申请清单</small></p>
-            </div>
-            <div class="auth-preview-report" aria-label="报告输出预览">
-              <span><strong>Match</strong><small>资源匹配 12 项</small></span>
-              <span><strong>Risk</strong><small>ED 风险待复核</small></span>
-              <span><strong>Next</strong><small>本周 3 个动作</small></span>
-            </div>
+          <div class="auth-card-head">
+            <p class="eyebrow">ACCOUNT WORKSPACE</p>
+            <span>核心功能可使用</span>
           </div>
+          <h2 id="auth-title">领取你的申请行动地图</h2>
+          <p class="auth-copy">登录或创建账户，继续管理申请档案、规划版本、选校与进度。</p>
           <form id="authForm" class="auth-form" method="post" action="/api/auth/register">
             <label id="authNameField">
               <span>姓名</span>
@@ -94,6 +96,7 @@
           </form>
           <button id="forgotPasswordButton" type="button" class="quiet auth-mode-button is-hidden">忘记密码？</button>
           <a id="authModeButton" href="/?auth=login" class="quiet auth-mode-button">已有账号？登录</a>
+          <p class="auth-card-footnote">账号用于保存你的工作区内容。AI 建议仍需结合官方信息人工核验。</p>
         </div>
       </div>
 

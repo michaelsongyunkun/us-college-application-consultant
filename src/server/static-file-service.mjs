@@ -79,8 +79,8 @@ export function renderIndexForSession(html, user, authMode = "register") {
   if (!user) return renderedHtml;
   return renderedHtml
     .replace(
-      '<section id="authShell" class="landing-shell" aria-labelledby="landing-title">',
-      '<section id="authShell" class="landing-shell is-hidden" aria-labelledby="landing-title">',
+      /(<section id="authShell" class=")([^"]*\blanding-shell\b[^"]*)(" aria-labelledby="landing-title">)/u,
+      "$1$2 is-hidden$3",
     )
     .replace(
       '<main id="appShell" class="app-shell command-shell is-hidden">',

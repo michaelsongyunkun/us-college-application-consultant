@@ -91,7 +91,7 @@ const indexHtml = [
   '<button id="authSubmitButton" type="submit">免费注册并生成规划</button>',
   '<button id="forgotPasswordButton" type="button" class="quiet auth-mode-button is-hidden">忘记密码？</button>',
   '<a id="authModeButton" href="/?auth=login" class="quiet auth-mode-button">已有账号？登录</a>',
-  '<section id="authShell" class="landing-shell" aria-labelledby="landing-title">',
+  '<section id="authShell" class="landing-shell landing-shell-v3" aria-labelledby="landing-title">',
   '<main id="appShell" class="app-shell command-shell is-hidden">',
 ].join("\n");
 
@@ -104,6 +104,6 @@ assert.match(loginHtml, />没有账号？注册<\/a>/);
 assert.equal(renderIndexForAuthMode(indexHtml, "register"), indexHtml);
 
 const authenticatedHtml = renderIndexForSession(indexHtml, { id: 1 }, "register");
-assert.match(authenticatedHtml, /<section id="authShell" class="landing-shell is-hidden"/);
+assert.match(authenticatedHtml, /<section id="authShell" class="landing-shell landing-shell-v3 is-hidden"/);
 assert.match(authenticatedHtml, /<main id="appShell" class="app-shell command-shell">/);
 assert.equal(renderIndexForSession(indexHtml, null, "register"), indexHtml);
