@@ -19,13 +19,17 @@ import {
 } from "./langgraph-school-selection-workflow.mjs";
 import { monotonicNowMs } from "./observability.mjs";
 import { withSpan } from "./production-observability.ts";
-import { createStaticAdmissionsKnowledgeGraphAdapter } from "./admissions-knowledge-graph-adapter.mjs";
+import {
+  buildStudentEvidenceChunks,
+  createStaticAdmissionsKnowledgeGraphAdapter,
+} from "./admissions-knowledge-graph-adapter.mjs";
 import { createRetrievalOrchestrator } from "./retrieval-orchestrator.mjs";
 
 const ROUND_KEYS = ["rea", "ed1", "ed2", "ea", "rd", "uc"];
 const MAX_SELECTION_ATTEMPTS = 3;
 const MAX_RAG_SOURCES = 8;
 const MAX_RAG_CONTEXT_CHARS = 12_000;
+const MAX_PERSONAL_CONTEXT_CHARS = 18_000;
 const DEEPSEEK_SCHOOL_SELECTION_MAX_TOKENS = 9000;
 const DEEPSEEK_SCHOOL_SELECTION_TIMEOUT_MS = 120_000;
 const DEEPSEEK_SCHOOL_SELECTION_CALL_MAX_ATTEMPTS = 1;
@@ -1108,88 +1112,63 @@ function buildUserMessage({
     "知识图谱与院校百科 RAG 参考：",
     ragContext || "未匹配到高相关院校百科片段；仍需提醒用户核验申请年度官网。",
     "",
-    "我的申请档案：",
-    JSON.stringify(buildSchoolSelectionPortfolioContext(portfolio), null, 2),
+    "我的申请档案（按当前选校问题筛选的独立片段）：",
+    JSON.stringify(buildSchoolSelectionPortfolioContext(portfolio, input), null, 2),
   ].join("\n");
 }
 
-function buildSchoolSelectionPortfolioContext(portfolio = {}) {
-  const academicRecords = portfolio.academicRecords || {};
-  return {
-    applicationPlan: compactApplicationPlan(portfolio.applicationPlan),
-    activities: compactList(portfolio.activities, 10, [
-      "activityName",
-      "type",
-      "timeStage",
-      "role",
-      "description",
-      "outcome",
-      "status",
-    ]),
-    competitions: compactList(portfolio.competitions, 5, [
-      "competitionName",
-      "subject",
-      "yearGrade",
-      "award",
-      "contribution",
-      "status",
-    ]),
-    summerSchools: compactList(portfolio.summerSchools, 3, [
-      "programName",
-      "organizer",
-      "direction",
-      "participationTime",
-      "status",
-      "output",
-    ]),
-    recommendationLetters: compactObject(portfolio.recommendationLetters),
-    planningActions: compactList(portfolio.planningActions, 8, ["text", "source"]),
-    deepSeekNotes: compactList(portfolio.deepSeekNotes, 5, ["title", "content", "source"]),
-    academicRecords: {
-      courseSystem: cleanString(academicRecords.courseSystem),
-      ibPredictedScore: cleanString(academicRecords.ibPredictedScore),
-      gpaScale: cleanString(academicRecords.gpaScale),
-      gpaRecords: compactList(academicRecords.gpaRecords, 8, ["gradeLevel", "term", "gpa"]),
-      satTests: compactList(academicRecords.satTests, 3, ["totalScore", "englishScore", "mathScore", "testDate"]),
-      apExams: compactList(academicRecords.apExams, 12, ["courseName", "score", "examYear"]),
-    },
-  };
+export function buildSchoolSelectionPortfolioContext(
+  portfolio = {},
+  input = {},
+  maxContextChars = MAX_PERSONAL_CONTEXT_CHARS,
+) {
+  const chunks = buildStudentEvidenceChunks({}, portfolio);
+  const queryTokens = tokenize([
+    input.targetMajor,
+    input.preferences,
+    input.regionPreference,
+    input.campusSetting,
+    input.schoolSize,
+    input.budgetSensitivity,
+    input.scholarshipNeed,
+    input.edRiskTolerance,
+  ].filter(Boolean).join(" "));
+  const ranked = chunks.map((chunk, index) => ({
+    chunk,
+    index,
+    section: chunk.match(/^section:([^\n]+)/u)?.[1] || "personal",
+    score: scoreRagDocument({ title: "", text: chunk }, queryTokens),
+  }));
+  const academic = ranked.filter((entry) => entry.section === "academic-records");
+  const academicIndexes = new Set(academic.map((entry) => entry.index));
+  const candidates = ranked
+    .filter((entry) => !academicIndexes.has(entry.index))
+    .sort((left, right) => right.score - left.score
+      || getSchoolSelectionSectionPriority(right.section) - getSchoolSelectionSectionPriority(left.section)
+      || left.index - right.index);
+  const selected = selectCompletePortfolioChunks([...academic, ...candidates], maxContextChars);
+  return selected
+    .sort((left, right) => left.index - right.index)
+    .map((entry) => entry.chunk);
 }
 
-function compactApplicationPlan(applicationPlan = {}) {
-  return Object.fromEntries(
-    ["rea", "ed1", "ed2", "ea", "uc", "rd", "multiCountry"].map((round) => [
-      round,
-      compactList(applicationPlan[round], 24, ["school", "major"]),
-    ]),
-  );
+function getSchoolSelectionSectionPriority(section) {
+  if (section.startsWith("application-plan:")) return 2;
+  if (section === "academic-records") return 3;
+  return 1;
 }
 
-function compactList(items, limit, fields) {
-  if (!Array.isArray(items)) return [];
-  return items.slice(0, limit).map((item) => compactObject(item, fields));
-}
-
-function compactObject(item, fields) {
-  if (!item || typeof item !== "object") return {};
-  const entries = fields ? fields.map((field) => [field, item[field]]) : Object.entries(item);
-  return Object.fromEntries(
-    entries
-      .map(([key, value]) => [key, compactValue(value)])
-      .filter(([, value]) => value !== "" && value !== undefined && value !== null),
-  );
-}
-
-function compactValue(value) {
-  if (Array.isArray(value)) {
-    return value.map(compactValue).filter((item) => item !== "" && item !== undefined && item !== null);
+function selectCompletePortfolioChunks(entries, maxContextChars) {
+  const limit = Number.isInteger(maxContextChars) && maxContextChars > 0
+    ? maxContextChars
+    : MAX_PERSONAL_CONTEXT_CHARS;
+  const selected = [];
+  for (const entry of entries) {
+    const next = [...selected, entry];
+    const serializedLength = JSON.stringify(next.map((item) => item.chunk), null, 2).length;
+    if (serializedLength <= limit) selected.push(entry);
   }
-  if (value && typeof value === "object") return compactObject(value);
-  return truncateText(cleanString(value), 500);
-}
-
-function truncateText(value, maxLength) {
-  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
+  return selected;
 }
 
 function assertNoDuplicateSchools(rounds) {
@@ -1379,15 +1358,16 @@ function createSchoolSelectionDocumentRetriever({ root }) {
   return {
     async retrieve({ input = {}, portfolio = {} } = {}) {
       const sources = await buildSchoolSelectionRagSources({ root, input, portfolio });
+      const contextSelection = buildSchoolSelectionRagContext(sources);
       return {
-        context: buildRagContext(sources),
-        sources,
+        context: contextSelection.context,
+        sources: contextSelection.included,
         missingFields: [],
         retrieval: {
           intent: "school",
           intentReason: "School-selection generation requires school encyclopedia evidence.",
           totalDocuments: sources.length,
-          selectedDocuments: sources.length,
+          selectedDocuments: contextSelection.included.length,
         },
       };
     },
@@ -1448,16 +1428,19 @@ function scoreRagDocument(document, tokens) {
   }, 0);
 }
 
-function buildRagContext(sources) {
+export function buildSchoolSelectionRagContext(sources, maxContextChars = MAX_RAG_CONTEXT_CHARS) {
   const sections = [];
+  const included = [];
   let totalChars = 0;
-  for (const [index, source] of sources.entries()) {
-    const block = [`[${index + 1}] ${source.title}`, source.text].join("\n");
-    if (totalChars + block.length > MAX_RAG_CONTEXT_CHARS) break;
+  for (const source of sources) {
+    const block = [`[${included.length + 1}] ${source.title}`, source.text].join("\n");
+    const separatorChars = sections.length ? 7 : 0;
+    if (totalChars + separatorChars + block.length > maxContextChars) continue;
     sections.push(block);
-    totalChars += block.length;
+    included.push(source);
+    totalChars += separatorChars + block.length;
   }
-  return sections.join("\n\n---\n\n");
+  return { context: sections.join("\n\n---\n\n"), included };
 }
 
 function serializeRagSource(source) {

@@ -205,6 +205,7 @@ export function searchAdmissionsKnowledgeGraph(graph = {}, {
   query = "",
   queryPlan = {},
   evidenceText = "",
+  evidenceTexts = [],
   maxDepth = DEFAULT_MAX_DEPTH,
   factLimit = DEFAULT_FACT_LIMIT,
 } = {}) {
@@ -213,7 +214,7 @@ export function searchAdmissionsKnowledgeGraph(graph = {}, {
   if (!entities.size || !relations.length) return emptyGraphSearchResult();
 
   const queryTerms = buildSearchTerms(query);
-  const evidenceTerms = buildSearchTerms(evidenceText);
+  const evidenceTerms = buildEvidenceSearchTerms(evidenceText, evidenceTexts);
   const requestedRounds = new Set((queryPlan.constraints?.rounds || []).map((round) => round.toUpperCase()));
   const scoredEntities = [...entities.values()].map((entity) => {
     const queryScore = scoreEntity(entity, queryTerms, queryPlan);
@@ -472,7 +473,7 @@ function scoreEntity(entity, terms, queryPlan, { includeConstraintBoost = true }
   return score;
 }
 
-function buildSearchTerms(value) {
+function buildSearchTerms(value, { limit = 48 } = {}) {
   const normalized = String(value || "").normalize("NFKC").toLocaleLowerCase();
   const wordTerms = normalized.match(/[\p{L}\p{N}+#.-]{2,}/gu) || [];
   const cjkRuns = normalized.match(/[\p{Script=Han}]{2,}/gu) || [];
@@ -482,7 +483,14 @@ function buildSearchTerms(value) {
     for (let index = 0; index <= run.length - 2 && output.length < 24; index += 1) output.push(run.slice(index, index + 2));
     return output;
   });
-  return uniqueStrings([...wordTerms, ...cjkTerms]).slice(0, 48);
+  return uniqueStrings([...wordTerms, ...cjkTerms]).slice(0, limit);
+}
+
+function buildEvidenceSearchTerms(evidenceText, evidenceTexts) {
+  const chunks = Array.isArray(evidenceTexts) && evidenceTexts.length
+    ? evidenceTexts
+    : [evidenceText];
+  return uniqueStrings(chunks.flatMap((chunk) => buildSearchTerms(chunk)));
 }
 
 function buildSchoolAliases(name) {

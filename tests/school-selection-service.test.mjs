@@ -2,10 +2,44 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { parseApplicationRoundSchoolsMarkdown } from "../src/domain/application-round-schools.mjs";
 import {
+  buildSchoolSelectionPortfolioContext,
+  buildSchoolSelectionRagContext,
   createSchoolSelectionService,
   validateSchoolSelectionResult,
 } from "../src/server/school-selection-service.mjs";
 import { SCHOOL_SELECTION_GRAPH_VERSION } from "../src/server/langgraph-school-selection-workflow.mjs";
+
+const schoolContextSelection = buildSchoolSelectionRagContext([
+  { id: "school-context-1", title: "Complete school chunk", text: "A".repeat(8_000) },
+  { id: "school-context-2", title: "Over-budget school chunk", text: "B".repeat(8_000) },
+], 12_000);
+assert.deepEqual(schoolContextSelection.included.map((source) => source.id), ["school-context-1"]);
+assert.doesNotMatch(schoolContextSelection.context, /Over-budget school chunk|B{20}/u);
+
+const personalContextSelection = buildSchoolSelectionPortfolioContext({
+  applicationPlan: {
+    ea: Array.from({ length: 40 }, (_, index) => ({
+      school: `Unrelated College ${index + 1}`,
+      major: "General Studies",
+    })),
+  },
+  activities: [{
+    activityName: "Capstone Civic Data Lab",
+    description: "Applied Data Science to map transit access gaps in California.",
+  }],
+  academicRecords: { gpaScale: "4.0分制", satTests: [{ totalScore: "1510" }] },
+}, {
+  targetMajor: "Data Science",
+  regionPreference: "California",
+}, 1_200);
+const serializedPersonalContext = JSON.stringify(personalContextSelection, null, 2);
+assert.ok(serializedPersonalContext.length <= 1_200);
+assert.match(serializedPersonalContext, /Capstone Civic Data Lab/u);
+assert.match(serializedPersonalContext, /1510/u);
+assert.ok(
+  personalContextSelection.every((chunk) => !chunk.endsWith("...")),
+  "School-selection personal context must keep complete chunks instead of hard truncating them.",
+);
 
 const validSelection = {
   summary: "该学生适合以工程与应用数学为主线，早申选择控制风险。",
@@ -229,6 +263,17 @@ const service = createSchoolSelectionService({
             type: "research",
             outcome: "Demo and technical writeup",
           },
+          ...Array.from({ length: 18 }, (_, index) => ({
+            activityName: `General service activity ${index + 1}`,
+            type: "service",
+            description: "Routine event support",
+          })),
+          {
+            activityName: "Capstone Data Equity Lab",
+            type: "research",
+            description: "Applied Data Science to analyze access gaps across California school districts.",
+            outcome: "Published a reproducible equity dashboard.",
+          },
         ],
         competitions: [],
         summerSchools: [],
@@ -351,6 +396,11 @@ assert.match(sentPayload.messages[1].content, /Data Science/);
 assert.match(sentPayload.messages[1].content, /ED 风险承受度/);
 assert.match(sentPayload.messages[1].content, /均衡/);
 assert.match(sentPayload.messages[1].content, /Robotics Portfolio Lab/);
+assert.match(
+  sentPayload.messages[1].content,
+  /Capstone Data Equity Lab/,
+  "School-selection RAG must select a later portfolio chunk that matches the current major and region constraints.",
+);
 assert.match(sentPayload.messages[1].content, /1510/);
 assert.doesNotMatch(sentPayload.messages[1].content, /legacy-selection-json-marker/);
 assert.match(sentPayload.messages[1].content, /院校百科 RAG 参考/);

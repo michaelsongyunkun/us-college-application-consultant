@@ -25,12 +25,13 @@ export function createPostgresRagRetriever({ pool, root, planning, activityPortf
   return {
     async retrieve(input: any) {
       const baselineResult = await baseline.retrieve(input);
-      const search = () => hybrid.search(input.question, { limit: 8, embeddingModelVersion: embeddingClient?.modelVersion || "" });
+      const retrievalQuery = resolvePostgresRetrievalQuery(input, baselineResult);
+      const search = () => hybrid.search(retrievalQuery, { limit: 8, embeddingModelVersion: embeddingClient?.modelVersion || "" });
       const rerankerProvider = rerankerClient?.provider || "disabled";
       const rerankerModelVersion = rerankerClient?.modelVersion || "";
       const cached = retrievalCache
         ? await retrievalCache.getOrLoad({
-          query: input.question,
+          query: retrievalQuery,
           variant: [
             knowledgeVersion || "unversioned",
             embeddingClient?.modelVersion || "keyword-only",
@@ -87,16 +88,21 @@ export function mergePostgresRetrieval({
         channel: "local-keyword",
         rawScore: Math.max(1, (baselineResult.sources || []).length - index),
       }));
-  const postgresCandidates = (postgresResults || []).map((source: any, index: number) => ({
-    id: source.id,
-    type: source.sourceType,
-    scope: "knowledge",
-    title: source.title,
-    text: String(source.content || "").trim(),
-    channel: "postgres-hybrid",
-    rawScore: Number(source.score) > 0 ? Number(source.score) : 1 / (index + 1),
-    metadata: source,
-  }));
+  const allowedKnowledgeTypes = Array.isArray(baselineResult.allowedKnowledgeTypes)
+    ? new Set(baselineResult.allowedKnowledgeTypes.map((type: any) => String(type || "").trim()).filter(Boolean))
+    : null;
+  const postgresCandidates = (postgresResults || [])
+    .filter((source: any) => !allowedKnowledgeTypes || allowedKnowledgeTypes.has(String(source.sourceType || "")))
+    .map((source: any, index: number) => ({
+      id: source.id,
+      type: source.sourceType,
+      scope: "knowledge",
+      title: source.title,
+      text: String(source.content || "").trim(),
+      channel: "postgres-hybrid",
+      rawScore: resolvePostgresCandidateScore(source, index),
+      metadata: source,
+    }));
   const hasPersonalCandidates = baselineCandidates.some((candidate: any) => candidate.scope === "personal");
   const knowledgeLimit = hasPersonalCandidates ? Math.min(6, maxSources) : maxSources;
   const selection = selectRelevantEvidence(
@@ -120,4 +126,15 @@ export function mergePostgresRetrieval({
       relevance: selection.diagnostics,
     },
   };
+}
+
+export function resolvePostgresRetrievalQuery(input: any = {}, baselineResult: any = {}) {
+  return String(baselineResult.searchQuery || input.question || input.query || "").trim();
+}
+
+function resolvePostgresCandidateScore(source: any, index: number) {
+  const rerankScore = Number(source?.rerankScore);
+  if (Number.isFinite(rerankScore)) return Math.max(0, rerankScore);
+  const retrievalScore = Number(source?.score);
+  return retrievalScore > 0 ? retrievalScore : 1 / (index + 1);
 }

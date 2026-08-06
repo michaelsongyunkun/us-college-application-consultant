@@ -73,7 +73,10 @@ export function mergeGraphAndDocumentRetrieval({
       ? maxGraphFacts
       : getGraphFactLimit(queryPlan),
   });
-  const selectedFacts = graphSelection.selected;
+  const selectedFacts = selectGraphFactsForContext(
+    graphSelection.selected,
+    maxGraphContextChars,
+  );
   const selectedFactIds = new Set(selectedFacts.flatMap((fact) => [fact.id, `kg:${fact.id}`]).filter(Boolean));
   const selectedGraphSourceIds = new Set(selectedFacts.map((fact) => fact.sourceId).filter(Boolean));
   const availableGraphSources = graphResult.sources || [];
@@ -84,13 +87,16 @@ export function mergeGraphAndDocumentRetrieval({
       selectedGraphSourceIds.has(source.id) || selectedGraphSourceIds.has(source.sourceId)
     ))
   )));
-  const graphContext = formatGraphFacts(selectedFacts).slice(0, maxGraphContextChars);
+  const graphContext = formatGraphFacts(selectedFacts);
   const contextLimit = Number.isInteger(maxCombinedContextChars) && maxCombinedContextChars > 0
     ? maxCombinedContextChars
     : getCombinedContextLimit(queryPlan, false);
   const contextSelection = composeRetrievalContext({ graphContext, documentContext, maxChars: contextLimit });
   const context = contextSelection.context;
   const documentSources = dedupeSources(documentResult.sources || []);
+  const contextAlignedDocumentSources = contextSelection.totalDocumentSections === documentSources.length
+    ? contextSelection.includedDocumentIndexes.map((index) => documentSources[index]).filter(Boolean)
+    : documentSources;
   const inferredSourceLimit = documentSources.some((source) => source.scope === "personal")
     ? PERSONALIZED_VISIBLE_SOURCE_LIMIT
     : KNOWLEDGE_VISIBLE_SOURCE_LIMIT;
@@ -100,7 +106,7 @@ export function mergeGraphAndDocumentRetrieval({
   const documentSourceLimit = graphSources.length
     ? Math.max(0, sourceLimit - 1)
     : sourceLimit;
-  const visibleDocumentSources = documentSources.slice(0, documentSourceLimit);
+  const visibleDocumentSources = contextAlignedDocumentSources.slice(0, documentSourceLimit);
   const sources = dedupeSources([
     ...visibleDocumentSources,
     ...graphSources.slice(0, Math.max(0, sourceLimit - visibleDocumentSources.length)),
@@ -171,20 +177,55 @@ function getCombinedContextLimit(queryPlan = {}, usePersonalContext = false) {
 function composeRetrievalContext({ graphContext = "", documentContext = "", maxChars }) {
   const graphPrefix = "--- Knowledge graph relationships ---\n";
   const documentPrefix = "--- Retrieved document evidence ---\n";
-  const graphSection = graphContext ? `${graphPrefix}${graphContext}`.slice(0, maxChars) : "";
+  const graphSection = graphContext && graphPrefix.length + graphContext.length <= maxChars
+    ? `${graphPrefix}${graphContext}`
+    : "";
   const separatorLength = graphSection && documentContext ? 2 : 0;
   const availableDocumentChars = Math.max(
     0,
     maxChars - graphSection.length - separatorLength - (documentContext ? documentPrefix.length : 0),
   );
-  const visibleDocumentContext = availableDocumentChars > 0
-    ? documentContext.slice(0, availableDocumentChars)
-    : "";
+  const documentSelection = selectCompleteContextSections(documentContext, availableDocumentChars);
+  const visibleDocumentContext = documentSelection.context;
   const documentSection = visibleDocumentContext ? `${documentPrefix}${visibleDocumentContext}` : "";
   return {
-    context: [graphSection, documentSection].filter(Boolean).join("\n\n").slice(0, maxChars),
+    context: [graphSection, documentSection].filter(Boolean).join("\n\n"),
     graphCharacters: graphSection ? Math.max(0, graphSection.length - graphPrefix.length) : 0,
     documentCharacters: visibleDocumentContext.length,
+    includedDocumentIndexes: documentSelection.includedIndexes,
+    totalDocumentSections: documentSelection.totalSections,
+  };
+}
+
+function selectGraphFactsForContext(facts, maxChars) {
+  const selected = [];
+  for (const fact of facts || []) {
+    const next = [...selected, fact];
+    if (formatGraphFacts(next).length <= maxChars) selected.push(fact);
+  }
+  return selected;
+}
+
+function selectCompleteContextSections(context, maxChars) {
+  const normalized = String(context || "").trim();
+  if (!normalized || maxChars <= 0) {
+    return { context: "", includedIndexes: [], totalSections: normalized ? 1 : 0 };
+  }
+  const sections = normalized.split("\n\n---\n\n");
+  const included = [];
+  const includedIndexes = [];
+  let usedChars = 0;
+  for (const [index, section] of sections.entries()) {
+    const separatorChars = included.length ? 7 : 0;
+    if (usedChars + separatorChars + section.length > maxChars) continue;
+    included.push(section);
+    includedIndexes.push(index);
+    usedChars += separatorChars + section.length;
+  }
+  return {
+    context: included.join("\n\n---\n\n"),
+    includedIndexes,
+    totalSections: sections.length,
   };
 }
 

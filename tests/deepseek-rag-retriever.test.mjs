@@ -131,6 +131,117 @@ try {
   assert.match(personalizedResult.context, /Robotics current plan/u);
   assert.ok(personalizedResult.missingFields.includes("推荐信准备"));
 
+  const sectionAwareRetriever = createRagRetriever({
+    root: tempDir,
+    planning: {
+      getProfile() {
+        return {
+          grade: "11",
+          majorDirection: "Data Science / Public Policy",
+          interests: "Civic technology and data storytelling",
+        };
+      },
+      getLatestRagPlan() { return null; },
+    },
+    activityPortfolio: {
+      getPortfolio() {
+        return {
+          applicationPlan: { rea: [], ed1: [], ed2: [], ea: [], uc: [], rd: [] },
+          activities: [
+            ...Array.from({ length: 80 }, (_, index) => ({
+              activityName: `Generic service activity ${index + 1}`,
+              type: "service",
+              role: "member",
+              description: "General volunteering context without civic data evidence. ".repeat(4),
+              outcome: "Routine participation",
+            })),
+            {
+              activityName: "Capstone Civic Data Lab",
+              type: "research",
+              role: "founder",
+              description: "Built a city open-data dashboard to identify transit access gaps.",
+              outcome: "Published a policy memo and reproducible analysis notebook.",
+            },
+          ],
+          competitions: [],
+          summerSchools: [],
+          recommendationLetters: {},
+          academicRecords: {},
+        };
+      },
+    },
+  });
+
+  const sectionAwareResult = await sectionAwareRetriever.retrieve({
+    user: { id: "student-section-aware" },
+    question: "How should I present Capstone Civic Data Lab in my activity strategy?",
+    usePersonalContext: true,
+  });
+  assert.match(sectionAwareResult.context, /Capstone Civic Data Lab/u);
+  assert.match(sectionAwareResult.context, /city open-data dashboard/u);
+  assert.doesNotMatch(
+    sectionAwareResult.context,
+    /Generic service activity 1/u,
+    "Personal RAG should select the relevant profile chunk instead of merging early chunks and truncating later evidence.",
+  );
+  assert.ok(
+    sectionAwareResult.sources.some((source) =>
+      source.type === "application-portfolio" && /课外活动/u.test(source.title)),
+  );
+
+  const lateEvidenceMajorRetriever = createRagRetriever({
+    root: tempDir,
+    readMarkdownFile: async (filePath) => {
+      if (String(filePath).endsWith("majors.md")) {
+        return [
+          "## Marine Biology 海洋生物学\nCoastal ecosystems, marine genomics, microbiome DNA, and field research.",
+          "## Hospitality Management 酒店管理\nHotel operations, tourism, and guest services.",
+        ].join("\n\n");
+      }
+      return "## Unrelated reference\nNo marine biology or hospitality evidence.";
+    },
+    planning: {
+      getProfile() {
+        return { grade: "11", interests: "Undeclared exploratory student" };
+      },
+      getLatestRagPlan() { return null; },
+    },
+    activityPortfolio: {
+      getPortfolio() {
+        return {
+          activities: [
+            ...Array.from({ length: 24 }, (_, index) => ({
+              activityName: `General community service ${index + 1}`,
+              description: "Routine volunteering and event support. ".repeat(8),
+              role: "member",
+            })),
+            {
+              activityName: "Ocean Genome Lab",
+              description: "Marine Biology field research sequencing coastal microbiome DNA.",
+              role: "research lead",
+              outcome: "Published a marine genomics poster.",
+            },
+          ],
+        };
+      },
+    },
+  });
+  const lateEvidenceMajorResult = await lateEvidenceMajorRetriever.retrieve({
+    user: { id: "late-major-evidence" },
+    question: "请根据我的申请档案自动匹配适合探索的美国本科专业。",
+    assistantProfile: "major-match",
+    usePersonalContext: true,
+  });
+  assert.ok(
+    lateEvidenceMajorResult.sources.some((source) => /Marine Biology/u.test(source.title)),
+    "Automatic major matching must let a later portfolio chapter influence knowledge retrieval.",
+  );
+  assert.match(
+    lateEvidenceMajorResult.context,
+    /Ocean Genome Lab/u,
+    "Automatic major matching must retain the later personal chunk that supports the retrieved major.",
+  );
+
   const precisionMarkdown = [
     "## Computer Science 计算机科学\n算法、人工智能、软件系统与机器人。",
     "## Mechanical Engineering 机械工程\n机械设计、CAD、控制与机器人。",

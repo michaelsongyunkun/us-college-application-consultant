@@ -134,6 +134,10 @@ export function createPostgresKnowledgeGraphRepository({ pool }: any) {
           from_entity.aliases_json AS "fromAliases", from_entity.metadata_json AS "fromMetadata",
           to_entity.id AS "toId", to_entity.entity_type AS "toType", to_entity.name AS "toName",
           to_entity.aliases_json AS "toAliases", to_entity.metadata_json AS "toMetadata",
+          EXISTS (
+            SELECT 1 FROM seed
+            WHERE seed.id = relation.from_entity_id OR seed.id = relation.to_entity_id
+          ) AS "queryAnchored",
           (SELECT COUNT(*)::int FROM seed) AS "seedCount",
           (SELECT COUNT(*)::int FROM visited) AS "visitedCount"
         FROM selected_relations relation
@@ -205,6 +209,7 @@ function toGraphFact(row: any) {
     object: { id: row.toId, type: row.toType, name: row.toName, aliases: row.toAliases || [], metadata: row.toMetadata || {} },
     sourceId: row.sourceId,
     confidence: Number(row.confidence || 0),
+    queryAnchored: Boolean(row.queryAnchored),
     metadata: row.relationMetadata || {},
   };
 }

@@ -181,6 +181,64 @@ assert.ok(applicationBudgetResult.context.length <= 18_000, "Knowledge-only appl
 assert.ok(applicationBudgetResult.retrieval.contextCharacters.combined <= 18_000);
 assert.equal(applicationBudgetResult.retrieval.selectedSourceCounts.byScope.knowledge, applicationBudgetResult.sources.length);
 
+const atomicContextOrchestrator = createRetrievalOrchestrator({
+  documentRetriever: {
+    async retrieve() {
+      return {
+        context: [
+          `[1] 资源库 | Complete first chunk\n${"A".repeat(9_000)}`,
+          `[2] 资源库 | Second chunk must stay atomic\n${"B".repeat(9_000)}`,
+        ].join("\n\n---\n\n"),
+        sources: [
+          { id: "atomic-doc-1", type: "resource-library", scope: "knowledge", title: "Complete first chunk" },
+          { id: "atomic-doc-2", type: "resource-library", scope: "knowledge", title: "Second chunk must stay atomic" },
+        ],
+        retrieval: { selectedDocuments: 2, totalDocuments: 2 },
+      };
+    },
+  },
+  knowledgeGraph: {
+    async search() {
+      return {
+        adapter: "atomic-test-graph",
+        sources: [{ id: "kg:atomic", sourceId: "data/atomic.md", type: "knowledge-graph", title: "Atomic fact" }],
+        facts: [{
+          id: "atomic",
+          score: 10,
+          sourceId: "data/atomic.md",
+          queryAnchored: true,
+          subject: { id: "major:atomic", name: "Atomic Major" },
+          predicate: "RELATED_TO",
+          object: { id: "school:atomic", name: "Atomic School" },
+        }],
+        traversal: { seedEntities: ["major:atomic"], visitedEntities: 2, selectedFacts: 1, maxDepth: 1 },
+      };
+    },
+  },
+});
+const atomicContextResult = await atomicContextOrchestrator.retrieve({
+  question: "Compare and prioritize this major and school",
+  queryPlan: {
+    mode: "graph-rag",
+    taskType: "application",
+    primaryIntent: "major",
+    intents: ["major", "school"],
+    constraints: {},
+    steps: [],
+  },
+});
+assert.match(atomicContextResult.context, /Complete first chunk/u);
+assert.doesNotMatch(
+  atomicContextResult.context,
+  /Second chunk must stay atomic|B{20}/u,
+  "Combined GraphRAG context must omit an over-budget chunk instead of cutting it mid-chunk.",
+);
+assert.equal(
+  atomicContextResult.sources.some((source) => source.id === "atomic-doc-2"),
+  false,
+  "Visible sources must stay aligned with the complete chunks actually sent to the model.",
+);
+
 calls.length = 0;
 const lookupResult = await orchestrator.retrieve({ question: "MIT 的推荐信要求是什么？" });
 assert.deepEqual(calls, [["documents", "hybrid-rag"]]);

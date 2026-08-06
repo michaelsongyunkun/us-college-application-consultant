@@ -32,7 +32,6 @@ const MAX_HISTORY_SUMMARY_LENGTH = 1800;
 const KNOWLEDGE_DOCUMENT_LIMIT = 8;
 const PERSONALIZED_KNOWLEDGE_DOCUMENT_LIMIT = 6;
 const PERSONAL_DOCUMENT_LIMIT = 3;
-const MAX_PERSONAL_SOURCE_CHARS = 6_000;
 const MAX_CONTEXT_CHARS = 18_000;
 const MAX_CHUNK_CHARS = 2_200;
 const SOURCE_SNIPPET_CHARS = 260;
@@ -667,15 +666,20 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
       staticDocuments: await loadStaticMarkdownDocuments(),
     });
     const intentProfile = analyzeQuestionIntent(normalizedQuestion, { assistantProfile, taskType });
-    const retrievalQuestion = assistantProfile === "major-match"
-      ? buildMajorMatchRetrievalQuery({ question: normalizedQuestion, profile, portfolio })
-      : normalizedQuestion;
+    const retrievalQuestion = normalizedQuestion;
     const selection = selectRelevantDocuments(
       documents,
       retrievalQuestion,
       intentProfile,
-      { usePersonalContext: includePersonalContext },
+      { usePersonalContext: includePersonalContext, assistantProfile },
     );
+    const searchQuery = assistantProfile === "major-match"
+      ? buildMajorMatchRetrievalQuery({
+          question: normalizedQuestion,
+          profile,
+          selected: selection.selected,
+        })
+      : normalizedQuestion;
     const contextSelection = buildContextSelection(selection.selected);
     const context = contextSelection.context;
     const retrievalMs = Math.round(monotonicNowMs() - retrievalStartedAt);
@@ -702,6 +706,8 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
       context,
       sources: contextSelection.included.map(serializeRagSource),
       candidates: selection.selected,
+      searchQuery,
+      allowedKnowledgeTypes: selection.allowedKnowledgeTypes,
       retrieval,
       missingFields,
     };
@@ -789,11 +795,13 @@ function addJsonDocument(documents, { type, title, data }) {
   if (!hasMeaningfulText(text)) return;
   const chunks = splitMarkdownIntoChunks(text);
   chunks.forEach((chunk, index) => {
-    const chunkTitle = chunks.length > 1 ? `${title}（${index + 1}/${chunks.length}）` : title;
+    const heading = getChunkHeading(chunk);
+    const headingSuffix = heading ? ` / ${heading}` : "";
+    const partSuffix = chunks.length > 1 ? ` (${index + 1}/${chunks.length})` : "";
     documents.push({
       id: stableId(`${type}:${title}:${index}`),
       type,
-      title: chunkTitle,
+      title: `${title}${headingSuffix}${partSuffix}`,
       text: chunk,
     });
   });
@@ -1092,8 +1100,15 @@ function intentProfile(intent, reason, sourceWeights) {
 
 function selectRelevantDocuments(documents, question, intentProfile = analyzeQuestionIntent(question), {
   usePersonalContext = false,
+  assistantProfile = "",
 } = {}) {
   const queryTokens = tokenize(question);
+  const personalEvidenceTokenSets = assistantProfile === "major-match" && usePersonalContext
+    ? documents
+        .filter((document) => PERSONAL_SOURCE_TYPES.has(getRagDocumentType(document)))
+        .map((document) => tokenize(`${getRagDocumentTitle(document)}\n${getRagDocumentText(document)}`))
+        .filter((tokens) => tokens.length)
+    : [];
   const schoolTitleAnchors = findExplicitTitleAnchors(
     documents,
     queryTokens,
@@ -1104,7 +1119,7 @@ function selectRelevantDocuments(documents, question, intentProfile = analyzeQue
   if (schoolTitleAnchors.length && ["school", "recommendation"].includes(intentProfile.intent)) {
     allowedKnowledgeTypes.add("school-encyclopedia");
   }
-  const candidates = consolidatePersonalDocuments(documents).map((document, index) => {
+  const candidates = documents.map((document, index) => {
     const scope = PERSONAL_SOURCE_TYPES.has(getRagDocumentType(document)) ? "personal" : "knowledge";
     const type = getRagDocumentType(document);
     const titleAnchored = type !== "school-encyclopedia"
@@ -1116,30 +1131,86 @@ function selectRelevantDocuments(documents, question, intentProfile = analyzeQue
     const typeAllowed = allowedKnowledgeTypes.has(type)
       && resourceLabelAllowed
       && !isReferenceOnlyDocument(document);
-    const score = scope === "personal"
-      ? personalAnchorScore(document)
+    const directScore = scope === "personal"
+      ? scorePersonalDocument(document, queryTokens, question, intentProfile)
       : titleAnchored && typeAllowed ? scoreDocument(document, queryTokens, question, intentProfile) : 0;
+    const personalEvidenceScore = scope === "knowledge" && titleAnchored && typeAllowed
+      ? scoreKnowledgeAgainstPersonalEvidence(document, personalEvidenceTokenSets, intentProfile)
+      : 0;
     return {
       id: getRagDocumentId(document),
       type,
       scope,
       title: getRagDocumentTitle(document),
       text: getRagDocumentText(document),
-      channel: scope === "personal" ? "personal" : `local-keyword:${getRagDocumentType(document)}`,
-      rawScore: score,
+      channel: scope === "personal"
+        ? `personal:${getPersonalSection(document)}`
+        : `local-keyword:${getRagDocumentType(document)}`,
+      rawScore: directScore + personalEvidenceScore,
       index,
     };
   });
+  if (personalEvidenceTokenSets.length) {
+    const supportingKnowledgeTokens = [...new Set(candidates
+      .filter((candidate) => candidate.scope === "knowledge" && candidate.rawScore > 0)
+      .sort((left, right) => right.rawScore - left.rawScore || left.index - right.index)
+      .slice(0, 3)
+      .flatMap((candidate) => tokenize(`${candidate.title}\n${candidate.text}`)))];
+    if (supportingKnowledgeTokens.length) {
+      for (const candidate of candidates) {
+        if (candidate.scope !== "personal") continue;
+        candidate.rawScore = scorePersonalDocument(
+          candidate,
+          [...new Set([...queryTokens, ...supportingKnowledgeTokens])],
+          question,
+          intentProfile,
+        );
+      }
+    }
+  }
+  const diversifiedCandidates = usePersonalContext ? keepBestPersonalChunkPerSection(candidates) : candidates;
   const knowledgeLimit = usePersonalContext
     ? PERSONALIZED_KNOWLEDGE_DOCUMENT_LIMIT
     : KNOWLEDGE_DOCUMENT_LIMIT;
-  return selectRelevantEvidence(candidates, {
+  const evidenceSelection = selectRelevantEvidence(diversifiedCandidates, {
     maxResults: knowledgeLimit + (usePersonalContext ? PERSONAL_DOCUMENT_LIMIT : 0),
     scopeLimits: {
       knowledge: knowledgeLimit,
       personal: usePersonalContext ? PERSONAL_DOCUMENT_LIMIT : 0,
     },
   });
+  return {
+    ...evidenceSelection,
+    allowedKnowledgeTypes: [...allowedKnowledgeTypes],
+  };
+}
+
+function keepBestPersonalChunkPerSection(candidates) {
+  const knowledge = [];
+  const bestPersonalBySection = new Map();
+  for (const candidate of candidates) {
+    if (candidate.scope !== "personal") {
+      knowledge.push(candidate);
+      continue;
+    }
+    const key = getPersonalCandidateSectionKey(candidate);
+    const existing = bestPersonalBySection.get(key);
+    if (!existing || comparePersonalCandidate(candidate, existing) < 0) {
+      bestPersonalBySection.set(key, candidate);
+    }
+  }
+  return [...bestPersonalBySection.values(), ...knowledge];
+}
+
+function getPersonalCandidateSectionKey(candidate) {
+  const sectionTitle = String(candidate.title || "").replace(/\s+\(\d+\/\d+\)$/u, "");
+  return `${candidate.type}:${getPersonalSection(candidate)}:${sectionTitle}`;
+}
+
+function comparePersonalCandidate(left, right) {
+  return Number(right.rawScore || 0) - Number(left.rawScore || 0)
+    || Number(left.index || 0) - Number(right.index || 0)
+    || String(left.id).localeCompare(String(right.id));
 }
 
 function getAllowedKnowledgeTypes(question, primaryIntent) {
@@ -1223,45 +1294,107 @@ function matchesTitleAnchor(title, anchors) {
   return anchors.some((token) => containsSearchToken(normalizedTitle, asciiTokens, token));
 }
 
-function consolidatePersonalDocuments(documents) {
-  const knowledgeDocuments = [];
-  const personalGroups = new Map();
-  for (const document of documents) {
-    const type = getRagDocumentType(document);
-    if (!PERSONAL_SOURCE_TYPES.has(type)) {
-      knowledgeDocuments.push(document);
-      continue;
-    }
-    const title = getRagDocumentTitle(document).replace(/（\d+\/\d+）$/u, "");
-    const key = `${type}:${title}`;
-    if (!personalGroups.has(key)) {
-      personalGroups.set(key, {
-        id: getRagDocumentId(document),
-        type,
-        title,
-        texts: [],
-      });
-    }
-    personalGroups.get(key).texts.push(getRagDocumentText(document));
-  }
-  const personalDocuments = [...personalGroups.values()].map(({ texts, ...document }) => ({
-    ...document,
-    text: texts.join("\n\n").slice(0, MAX_PERSONAL_SOURCE_CHARS),
-  }));
-  return [...personalDocuments, ...knowledgeDocuments];
-}
-
 function personalAnchorScore(document) {
   const type = getRagDocumentType(document);
   const title = getRagDocumentTitle(document);
-  if (type === "application-portfolio") return 1.1;
-  if (title.includes("基础信息")) return 1;
-  if (title.includes("当前方案")) return 0.8;
-  return 0.9;
+  if (type === "application-portfolio") return 0.8;
+  if (title.includes("基础信息")) return 0.9;
+  if (title.includes("当前方案")) return 0.7;
+  return 0.6;
+}
+
+function scorePersonalDocument(document, queryTokens, question, intentProfile) {
+  return personalAnchorScore(document)
+    + scoreDocument(document, queryTokens, question, intentProfile)
+    + getPersonalSectionIntentBoost(document, intentProfile.intent)
+    + (isGenericPersonalQuestion(question) ? 0.8 : 0);
+}
+
+function scoreKnowledgeAgainstPersonalEvidence(document, tokenSets, intentProfile) {
+  const scores = tokenSets
+    .map((tokens) => scoreDocument(document, tokens, "", intentProfile))
+    .filter((score) => score > 0)
+    .sort((left, right) => right - left)
+    .slice(0, 3);
+  return scores.reduce((total, score, index) => total + score / (2 ** index), 0);
+}
+
+function getPersonalSectionIntentBoost(document, intent) {
+  const section = getPersonalSection(document);
+  const boosts = {
+    major: {
+      profile: 4,
+      activity: 3.5,
+      competition: 3.5,
+      summer: 2.5,
+      academic: 3,
+      plan: 2.5,
+      school: 1,
+    },
+    school: {
+      school: 4,
+      profile: 2,
+      plan: 2,
+      activity: 1.5,
+      competition: 1.5,
+      academic: 1,
+    },
+    resource: {
+      activity: 4,
+      competition: 4,
+      summer: 4,
+      plan: 2,
+      profile: 1.5,
+    },
+    recommendation: {
+      recommendation: 5,
+      profile: 1.5,
+      activity: 1,
+      plan: 1,
+    },
+    academic: {
+      academic: 5,
+      profile: 2,
+      plan: 1.5,
+    },
+    general: {
+      profile: 2,
+      school: 2,
+      activity: 2,
+      competition: 2,
+      summer: 2,
+      recommendation: 2,
+      academic: 2,
+      plan: 2,
+    },
+  };
+  return boosts[intent]?.[section] || 0;
+}
+
+function getPersonalSection(document) {
+  const text = `${getRagDocumentTitle(document)}\n${getRagDocumentText(document)}`;
+  const normalized = normalizeSearchText(text);
+  const includes = (patterns) => patterns.some((pattern) => matchesSearchSignal(normalized, pattern));
+  if (isStudentProfileDocument(document)) return "profile";
+  if (includes(["current_plan", "planname", "draft", "\u5f53\u524d\u65b9\u6848"])) return "plan";
+  if (includes(["applicationplan", "targetschool", "\u9009\u6821\u8ba1\u5212"])) return "school";
+  if (includes(["recommendationletters", "teacher", "counselor", "\u63a8\u8350\u4fe1"])) return "recommendation";
+  if (includes(["academicrecords", "gpa", "sat", "ap", "\u6210\u7ee9\u6863\u6848"])) return "academic";
+  if (includes(["competitions", "competitionname", "\u7ade\u8d5b"])) return "competition";
+  if (includes(["summerschools", "programname", "\u590f\u6821"])) return "summer";
+  if (includes(["activities", "activityname", "\u8bfe\u5916\u6d3b\u52a8"])) return "activity";
+  return "personal";
+}
+
+function isGenericPersonalQuestion(question) {
+  const normalized = normalizeSearchText(question);
+  return ["\u7533\u8bf7\u6863\u6848", "\u4e2a\u4eba\u6863\u6848", "\u5b66\u751f\u80cc\u666f", "profile", "portfolio"]
+    .some((pattern) => matchesSearchSignal(normalized, pattern));
 }
 
 function isStudentProfileDocument(document) {
-  return getRagDocumentTitle(document).includes("基础信息");
+  return getRagDocumentTitle(document).includes("基础信息")
+    || /"?(grade|majorDirection|interests|schoolContext)"?\s*:/u.test(getRagDocumentText(document));
 }
 
 function scoreDocument(document, queryTokens, question, intentProfile) {
@@ -1311,7 +1444,7 @@ function tokenize(value) {
   return tokenizeRaw(value).filter((token) => !RETRIEVAL_STOP_TOKENS.has(token));
 }
 
-function buildMajorMatchRetrievalQuery({ question, profile = {}, portfolio = {} }) {
+function buildMajorMatchRetrievalQuery({ question, profile = {}, selected = [] }) {
   const profileData = profile.profile || profile;
   return [
     String(question || "").split("\n")[0],
@@ -1319,15 +1452,10 @@ function buildMajorMatchRetrievalQuery({ question, profile = {}, portfolio = {} 
     profileData.intendedMajor,
     profileData.majorDirection,
     profileData.careerInterests,
-    ...(portfolio.activities || []).slice(0, 8).flatMap((activity) => [
-      activity.activityName || activity.name,
-      activity.description,
-      activity.role,
-    ]),
-    ...(portfolio.competitions || []).slice(0, 5).flatMap((competition) => [
-      competition.competitionName || competition.name,
-      competition.subject || competition.category,
-    ]),
+    ...selected
+      .filter((candidate) => candidate.scope === "knowledge")
+      .slice(0, 6)
+      .map((candidate) => candidate.title),
   ].map(cleanText).filter(Boolean).join(" ");
 }
 
@@ -1364,7 +1492,10 @@ function prioritizeContextSources(selected) {
     if (PERSONAL_SOURCE_TYPES.has(getRagDocumentType(source))) personal.push(source);
     else knowledge.push(source);
   }
-  return [...prioritizeContextGroup(personal), ...prioritizeContextGroup(knowledge)];
+  return [
+    ...prioritizeContextGroup(personal).sort(comparePersonalContextSource),
+    ...prioritizeContextGroup(knowledge),
+  ];
 }
 
 function prioritizeContextGroup(selected) {
@@ -1387,6 +1518,18 @@ function getContextSourceGroup(source) {
   const type = getRagDocumentType(source);
   if (type !== "student-backup") return type;
   return isStudentProfileDocument(source) ? "student-profile" : "student-plan";
+}
+
+function comparePersonalContextSource(left, right) {
+  return getPersonalContextPriority(left) - getPersonalContextPriority(right);
+}
+
+function getPersonalContextPriority(source) {
+  const group = getContextSourceGroup(source);
+  if (group === "application-portfolio") return 0;
+  if (group === "student-profile") return 1;
+  if (group === "student-plan") return 2;
+  return 3;
 }
 
 function buildUserMessage(

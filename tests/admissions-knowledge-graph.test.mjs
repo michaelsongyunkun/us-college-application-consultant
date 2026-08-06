@@ -4,6 +4,7 @@ import {
   searchAdmissionsKnowledgeGraph,
 } from "../src/domain/admissions-knowledge-graph.mjs";
 import { createRetrievalQueryPlan } from "../src/domain/retrieval-query-plan.mjs";
+import { buildStudentEvidenceChunks } from "../src/server/admissions-knowledge-graph-adapter.mjs";
 
 const graph = buildAdmissionsKnowledgeGraph({
   majors: [{
@@ -132,3 +133,46 @@ assert.ok(
   "Exact acronym matches should prioritize the requested school-round relationship.",
 );
 assert.equal(constrainedResult.facts[0].subject.name, "Massachusetts Institute of Technology");
+
+const lateEvidenceGraph = buildAdmissionsKnowledgeGraph({
+  majors: [{
+    id: "major-marine-biology",
+    title: "Marine Biology 海洋生物学",
+    englishName: "Marine Biology",
+    chineseName: "海洋生物学",
+    category: "生命科学",
+    learningContent: "海洋生态、海洋基因组、微生物组 DNA",
+    careerPaths: "海洋研究员",
+    strongSchools: "UC San Diego",
+    admissionDifficulty: "高",
+  }],
+});
+const lateEvidenceChunks = buildStudentEvidenceChunks(
+  { grade: "11", interests: "Undeclared" },
+  {
+    activities: [
+      ...Array.from({ length: 24 }, (_, index) => ({
+        activityName: `General service ${index + 1}`,
+        description: "Routine volunteering",
+      })),
+      {
+        activityName: "Ocean Genome Lab",
+        description: "Marine Biology research using coastal microbiome DNA sequencing.",
+      },
+    ],
+  },
+);
+const lateEvidenceGraphResult = searchAdmissionsKnowledgeGraph(lateEvidenceGraph, {
+  query: "请根据我的申请档案自动匹配专业",
+  queryPlan: createRetrievalQueryPlan({
+    query: "请根据我的申请档案自动匹配专业",
+    assistantProfile: "major-match",
+  }),
+  evidenceTexts: lateEvidenceChunks,
+});
+assert.ok(
+  lateEvidenceGraphResult.facts.some((fact) => /Marine Biology/u.test(
+    `${fact.subject?.name || ""} ${fact.object?.name || ""}`,
+  )),
+  "Graph RAG must evaluate later personal evidence chunks instead of truncating a merged profile.",
+);

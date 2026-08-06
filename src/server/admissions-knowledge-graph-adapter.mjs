@@ -9,7 +9,6 @@ import { parseMajorsMarkdown } from "../domain/major-encyclopedia.mjs";
 import { parseSchoolsMarkdown } from "../domain/school-encyclopedia.mjs";
 
 const SCHOOL_FILES = ["schools.md", "international-schools.md", "other-region-schools.md"];
-const MAX_EVIDENCE_CHARS = 8_000;
 
 export function createStaticAdmissionsKnowledgeGraphAdapter({
   root,
@@ -34,11 +33,11 @@ export function createStaticAdmissionsKnowledgeGraphAdapter({
         includePersonalContext ? profile || planning?.getProfile?.(user) || {} : {},
         includePersonalContext ? portfolio || activityPortfolio?.getPortfolio?.(user) || {} : {},
       ]);
-      const evidenceText = buildStudentEvidenceText(resolvedProfile, resolvedPortfolio);
+      const evidenceTexts = buildStudentEvidenceChunks(resolvedProfile, resolvedPortfolio);
       const result = searchAdmissionsKnowledgeGraph(graph, {
         query,
         queryPlan,
-        evidenceText,
+        evidenceTexts,
       });
       return {
         ...result,
@@ -77,19 +76,36 @@ export function createStaticAdmissionsKnowledgeGraphLoader({ root, readMarkdownF
 }
 
 export function buildStudentEvidenceText(profile = {}, portfolio = {}) {
+  return buildStudentEvidenceChunks(profile, portfolio).join("\n");
+}
+
+export function buildStudentEvidenceChunks(profile = {}, portfolio = {}) {
   const normalizedProfile = profile?.profile && typeof profile.profile === "object" ? profile.profile : profile;
-  const sections = [
-    compactJson(normalizedProfile),
-    compactJson({
-      applicationPlan: portfolio?.applicationPlan,
-      activities: compactList(portfolio?.activities, 12),
-      competitions: compactList(portfolio?.competitions, 10),
-      summerSchools: compactList(portfolio?.summerSchools, 8),
-      recommendationLetters: portfolio?.recommendationLetters,
-      academicRecords: portfolio?.academicRecords,
-    }),
-  ].filter(Boolean);
-  return sections.join("\n").slice(0, MAX_EVIDENCE_CHARS);
+  const chunks = [];
+  addEvidenceChunk(chunks, "student-profile", normalizedProfile);
+  for (const [round, entries] of Object.entries(portfolio?.applicationPlan || {})) {
+    for (const entry of Array.isArray(entries) ? entries : []) {
+      addEvidenceChunk(chunks, `application-plan:${round}`, entry);
+    }
+  }
+  for (const activity of Array.isArray(portfolio?.activities) ? portfolio.activities : []) {
+    addEvidenceChunk(chunks, "activity", activity);
+  }
+  for (const competition of Array.isArray(portfolio?.competitions) ? portfolio.competitions : []) {
+    addEvidenceChunk(chunks, "competition", competition);
+  }
+  for (const program of Array.isArray(portfolio?.summerSchools) ? portfolio.summerSchools : []) {
+    addEvidenceChunk(chunks, "summer-school", program);
+  }
+  for (const action of Array.isArray(portfolio?.planningActions) ? portfolio.planningActions : []) {
+    addEvidenceChunk(chunks, "planning-action", action);
+  }
+  for (const note of Array.isArray(portfolio?.deepSeekNotes) ? portfolio.deepSeekNotes : []) {
+    addEvidenceChunk(chunks, "saved-note", note);
+  }
+  addEvidenceChunk(chunks, "recommendation-letters", portfolio?.recommendationLetters);
+  addEvidenceChunk(chunks, "academic-records", portfolio?.academicRecords);
+  return chunks;
 }
 
 function serializeGraphSources(facts) {
@@ -104,8 +120,9 @@ function serializeGraphSources(facts) {
   }));
 }
 
-function compactList(value, limit) {
-  return Array.isArray(value) ? value.slice(0, limit) : [];
+function addEvidenceChunk(chunks, section, value) {
+  const content = compactJson(value);
+  if (content) chunks.push(`section:${section}\n${content}`);
 }
 
 function compactJson(value) {

@@ -93,6 +93,7 @@ const adapter = createPostgresAdmissionsKnowledgeGraphAdapter({
           toAliases: [],
           toMetadata: {},
           relationMetadata: {},
+          queryAnchored: true,
           seedCount: 2,
           visitedCount: 4,
         }],
@@ -103,4 +104,5 @@ const adapter = createPostgresAdmissionsKnowledgeGraphAdapter({
 const result = await adapter.search({ query: "MIT EA", queryPlan: { constraints: { rounds: ["EA"] } } });
 assert.equal(result.adapter, "postgres-admissions-graph");
 assert.equal(result.facts[0].predicate, "SUPPORTS_APPLICATION_ROUND");
+assert.equal(result.facts[0].queryAnchored, true);
 assert.match(result.context, /MIT/u);
