@@ -9,6 +9,11 @@ import { selectRelevantEvidence } from "../domain/retrieval-relevance.mjs";
 const DEFAULT_MAX_GRAPH_CONTEXT_CHARS = 6_000;
 const KNOWLEDGE_VISIBLE_SOURCE_LIMIT = 8;
 const PERSONALIZED_VISIBLE_SOURCE_LIMIT = 9;
+const APPLICATION_GRAPH_FACT_LIMIT = 6;
+const DEEP_GRAPH_FACT_LIMIT = 8;
+const APPLICATION_KNOWLEDGE_CONTEXT_LIMIT = 18_000;
+const APPLICATION_PERSONALIZED_CONTEXT_LIMIT = 20_000;
+const DEEP_CONTEXT_LIMIT = 22_000;
 
 export function createRetrievalOrchestrator({
   documentRetriever,
@@ -46,6 +51,8 @@ export function createRetrievalOrchestrator({
         maxVisibleSources: input.usePersonalContext === true
           ? PERSONALIZED_VISIBLE_SOURCE_LIMIT
           : KNOWLEDGE_VISIBLE_SOURCE_LIMIT,
+        maxGraphFacts: getGraphFactLimit(queryPlan),
+        maxCombinedContextChars: getCombinedContextLimit(queryPlan, input.usePersonalContext === true),
       });
     },
   };
@@ -57,9 +64,15 @@ export function mergeGraphAndDocumentRetrieval({
   queryPlan = {},
   maxGraphContextChars = DEFAULT_MAX_GRAPH_CONTEXT_CHARS,
   maxVisibleSources = null,
+  maxGraphFacts = null,
+  maxCombinedContextChars = null,
 } = {}) {
   const documentContext = String(documentResult.context || "").trim();
-  const graphSelection = selectGraphFacts(graphResult, documentResult);
+  const graphSelection = selectGraphFacts(graphResult, documentResult, {
+    maxResults: Number.isInteger(maxGraphFacts) && maxGraphFacts > 0
+      ? maxGraphFacts
+      : getGraphFactLimit(queryPlan),
+  });
   const selectedFacts = graphSelection.selected;
   const selectedFactIds = new Set(selectedFacts.flatMap((fact) => [fact.id, `kg:${fact.id}`]).filter(Boolean));
   const selectedGraphSourceIds = new Set(selectedFacts.map((fact) => fact.sourceId).filter(Boolean));
@@ -72,10 +85,11 @@ export function mergeGraphAndDocumentRetrieval({
     ))
   )));
   const graphContext = formatGraphFacts(selectedFacts).slice(0, maxGraphContextChars);
-  const context = [
-    graphContext ? `--- Knowledge graph relationships ---\n${graphContext}` : "",
-    documentContext ? `--- Retrieved document evidence ---\n${documentContext}` : "",
-  ].filter(Boolean).join("\n\n");
+  const contextLimit = Number.isInteger(maxCombinedContextChars) && maxCombinedContextChars > 0
+    ? maxCombinedContextChars
+    : getCombinedContextLimit(queryPlan, false);
+  const contextSelection = composeRetrievalContext({ graphContext, documentContext, maxChars: contextLimit });
+  const context = contextSelection.context;
   const documentSources = dedupeSources(documentResult.sources || []);
   const inferredSourceLimit = documentSources.some((source) => source.scope === "personal")
     ? PERSONALIZED_VISIBLE_SOURCE_LIMIT
@@ -112,11 +126,21 @@ export function mergeGraphAndDocumentRetrieval({
         relevance: graphSelection.diagnostics,
       },
       selectedDocuments: sources.length,
+      selectedSourceCounts: {
+        byType: countSourcesBy(sources, (source) => source.type || "unknown"),
+        byScope: countSourcesBy(sources, (source) => source.scope || "knowledge"),
+      },
+      contextCharacters: {
+        document: contextSelection.documentCharacters,
+        graph: contextSelection.graphCharacters,
+        combined: context.length,
+        limit: contextLimit,
+      },
     },
   };
 }
 
-function selectGraphFacts(graphResult = {}, documentResult = {}) {
+function selectGraphFacts(graphResult = {}, documentResult = {}, { maxResults = DEEP_GRAPH_FACT_LIMIT } = {}) {
   const documentSourceIds = new Set((documentResult.sources || []).map((source) => source.id));
   const candidates = (graphResult.facts || [])
     .filter((fact) => fact.queryAnchored
@@ -130,7 +154,46 @@ function selectGraphFacts(graphResult = {}, documentResult = {}) {
       channel: "graph",
       rawScore: Number(fact.score || fact.confidence || 0),
     }));
-  return selectRelevantEvidence(candidates, { maxResults: 8 });
+  return selectRelevantEvidence(candidates, { maxResults });
+}
+
+function getGraphFactLimit(queryPlan = {}) {
+  return ["major-match", "school-selection"].includes(queryPlan.taskType)
+    ? DEEP_GRAPH_FACT_LIMIT
+    : APPLICATION_GRAPH_FACT_LIMIT;
+}
+
+function getCombinedContextLimit(queryPlan = {}, usePersonalContext = false) {
+  if (["major-match", "school-selection"].includes(queryPlan.taskType)) return DEEP_CONTEXT_LIMIT;
+  return usePersonalContext ? APPLICATION_PERSONALIZED_CONTEXT_LIMIT : APPLICATION_KNOWLEDGE_CONTEXT_LIMIT;
+}
+
+function composeRetrievalContext({ graphContext = "", documentContext = "", maxChars }) {
+  const graphPrefix = "--- Knowledge graph relationships ---\n";
+  const documentPrefix = "--- Retrieved document evidence ---\n";
+  const graphSection = graphContext ? `${graphPrefix}${graphContext}`.slice(0, maxChars) : "";
+  const separatorLength = graphSection && documentContext ? 2 : 0;
+  const availableDocumentChars = Math.max(
+    0,
+    maxChars - graphSection.length - separatorLength - (documentContext ? documentPrefix.length : 0),
+  );
+  const visibleDocumentContext = availableDocumentChars > 0
+    ? documentContext.slice(0, availableDocumentChars)
+    : "";
+  const documentSection = visibleDocumentContext ? `${documentPrefix}${visibleDocumentContext}` : "";
+  return {
+    context: [graphSection, documentSection].filter(Boolean).join("\n\n").slice(0, maxChars),
+    graphCharacters: graphSection ? Math.max(0, graphSection.length - graphPrefix.length) : 0,
+    documentCharacters: visibleDocumentContext.length,
+  };
+}
+
+function countSourcesBy(sources, keyFor) {
+  return sources.reduce((counts, source) => {
+    const key = String(keyFor(source) || "unknown");
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
 }
 
 async function searchGraphSafely(knowledgeGraph, input, logger) {

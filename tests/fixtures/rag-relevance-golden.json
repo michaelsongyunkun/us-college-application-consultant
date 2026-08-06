@@ -9,6 +9,7 @@
     "portfolio": { "activities": [{ "activityName": "Robotics Outreach", "description": "开发导航机器人并教授编程" }] },
     "relevantPatterns": ["Computer Science|Mechanical Engineering|Robotics|机器人|人工智能|AI"],
     "forbiddenPatterns": ["Hospitality|Tourism|Archive / Library|Insurance"],
+    "expectedMode": "graph-rag",
     "maxSources": 9,
     "maxGraphFacts": 8
   },
@@ -22,28 +23,92 @@
     "portfolio": { "activities": [{ "activityName": "Local History Archive", "description": "Catalogued oral histories and published essays" }] },
     "relevantPatterns": ["History|Archive|Political Science|Public Policy|Writing"],
     "forbiddenPatterns": ["Hospitality|Tourism|Insurance"],
+    "expectedMode": "graph-rag",
+    "maxSources": 9,
+    "maxGraphFacts": 8
+  },
+  {
+    "id": "en-major-business",
+    "category": "major",
+    "query": "Match majors for business analytics, economics, and data-driven entrepreneurship",
+    "assistantProfile": "major-match",
+    "usePersonalContext": true,
+    "profile": { "profile": { "interests": "business analytics, economics, entrepreneurship", "intendedMajor": "Business" } },
+    "portfolio": { "activities": [{ "activityName": "Student Store Analytics", "description": "Analyzed sales data and proposed a pricing strategy" }] },
+    "relevantPatterns": ["Business|Economics|Finance|Data Science|Analytics|经济|金融|商业"],
+    "forbiddenPatterns": ["Hospitality|Tourism|Archive / Library|Mechanical Engineering"],
+    "expectedMode": "graph-rag",
+    "maxSources": 9,
+    "maxGraphFacts": 8
+  },
+  {
+    "id": "zh-major-undecided",
+    "category": "major",
+    "query": "我还没定专业，喜欢气候议题、写作和数据分析，请帮我比较可能方向",
+    "assistantProfile": "major-match",
+    "usePersonalContext": true,
+    "profile": { "profile": { "interests": "气候议题、写作、数据分析", "intendedMajor": "Undecided" } },
+    "portfolio": { "activities": [{ "activityName": "Climate Newsletter", "description": "用公开数据撰写校园碳排放报道" }] },
+    "relevantPatterns": ["Environmental|Climate|Writing|Journalism|Data Science|环境|气候|写作|数据"],
+    "forbiddenPatterns": ["Hospitality|Tourism|Insurance"],
+    "expectedMode": "graph-rag",
     "maxSources": 9,
     "maxGraphFacts": 8
   },
   {
     "id": "zh-school-mit-recommendation",
-    "category": "school",
+    "category": "recommendation",
     "query": "MIT 的推荐信要求是什么？",
     "usePersonalContext": false,
     "relevantPatterns": ["麻省理工|MIT"],
     "forbiddenPatterns": ["普林斯顿|哈佛|斯坦福|耶鲁|西北|Smith"],
+    "expectedMode": "hybrid-rag",
     "maxSources": 4,
     "maxGraphFacts": 0
   },
   {
     "id": "zh-resource-cs-competition",
-    "category": "resource",
+    "category": "competition",
     "query": "适合计算机学生的竞赛",
     "usePersonalContext": false,
     "relevantPatterns": ["竞赛|计算机|信息学|算法"],
-    "forbiddenPatterns": ["酒店|旅游|档案学"],
+    "forbiddenPatterns": ["酒店|旅游|档案学|Tokyo Institute of Science"],
+    "expectedMode": "graph-rag",
     "maxSources": 8,
-    "maxGraphFacts": 8
+    "maxGraphFacts": 6
+  },
+  {
+    "id": "en-resource-cs-competition",
+    "category": "competition",
+    "query": "Computer science competitions for high school students",
+    "usePersonalContext": false,
+    "relevantPatterns": ["Competition|Computer|Computing|Informatics|Olympiad|App Challenge|CSES|Contest|程序设计|竞赛|算法|信息学"],
+    "forbiddenPatterns": ["Google Science Fair|Tokyo Institute of Science|Hospitality|Tourism|Archive / Library"],
+    "expectedMode": "hybrid-rag",
+    "maxSources": 8,
+    "maxGraphFacts": 0
+  },
+  {
+    "id": "zh-resource-math-summer",
+    "category": "summer",
+    "query": "适合数学方向高中生的暑期项目或夏校",
+    "usePersonalContext": false,
+    "relevantPatterns": ["Math|Mathematics|数学|PROMYS|SUMaC|Ross"],
+    "forbiddenPatterns": ["Hospitality|Tourism|Archive / Library|Business Analytics"],
+    "expectedMode": "graph-rag",
+    "maxSources": 8,
+    "maxGraphFacts": 6
+  },
+  {
+    "id": "en-resource-ai-research",
+    "category": "research",
+    "query": "AI research programs for high school students",
+    "usePersonalContext": false,
+    "relevantPatterns": ["Research|AI|Artificial Intelligence|Polygence|Lumiere|Inspirit|Veritas"],
+    "forbiddenPatterns": ["High School Program|Hospitality|Tourism|Archive / Library"],
+    "expectedMode": "hybrid-rag",
+    "maxSources": 8,
+    "maxGraphFacts": 0
   },
   {
     "id": "en-academic-ap-cs",
@@ -52,7 +117,21 @@
     "usePersonalContext": false,
     "relevantPatterns": ["AP|Computer Science"],
     "forbiddenPatterns": ["Hospitality|Tourism|Archive"],
+    "expectedMode": "hybrid-rag",
     "maxSources": 8,
+    "maxGraphFacts": 0
+  },
+  {
+    "id": "zh-profile-with-consent",
+    "category": "profile",
+    "query": "请结合我的申请档案分析优势、短板，并列出下一步行动",
+    "usePersonalContext": true,
+    "profile": { "profile": { "interests": "计算机科学", "intendedMajor": "Computer Science", "strengths": "机器人项目", "gaps": "缺少研究经历" } },
+    "portfolio": { "activities": [{ "activityName": "Robotics Club", "description": "负责控制算法和新生培训" }] },
+    "relevantPatterns": ["Computer Science|Robotics|机器人|student|申请档案"],
+    "forbiddenPatterns": ["Hospitality|Tourism|Archive / Library|Insurance"],
+    "expectedMode": "hybrid-rag",
+    "maxSources": 9,
     "maxGraphFacts": 0
   },
   {
@@ -62,6 +141,30 @@
     "usePersonalContext": false,
     "relevantPatterns": [],
     "forbiddenPatterns": ["Business Analytics|Archive / Library|Hospitality|Tourism"],
+    "expectedMode": "hybrid-rag",
+    "maxSources": 0,
+    "maxGraphFacts": 0
+  },
+  {
+    "id": "zh-school-selection-constraints",
+    "category": "school-selection",
+    "query": "请按每年预算、美国东北部城市环境和 ED1 轮次筛选匹配院校",
+    "taskType": "school-selection",
+    "usePersonalContext": false,
+    "relevantPatterns": ["大学|学院|University|College|MIT|Harvard|Princeton|学校|院校"],
+    "forbiddenPatterns": ["Competition|Summer Program|Research Mentorship|Hospitality|Tourism"],
+    "expectedMode": "graph-rag-with-constraints",
+    "maxSources": 8,
+    "maxGraphFacts": 8
+  },
+  {
+    "id": "zh-underspecified-application",
+    "category": "negative",
+    "query": "我该怎么准备申请？",
+    "usePersonalContext": false,
+    "relevantPatterns": [],
+    "forbiddenPatterns": ["."],
+    "expectedMode": "hybrid-rag",
     "maxSources": 0,
     "maxGraphFacts": 0
   },
@@ -72,6 +175,7 @@
     "usePersonalContext": false,
     "relevantPatterns": [],
     "forbiddenPatterns": ["."],
+    "expectedMode": "hybrid-rag",
     "maxSources": 0,
     "maxGraphFacts": 0
   }

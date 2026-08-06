@@ -117,7 +117,12 @@ function detectIntents(normalizedQuery, taskType) {
   if (taskType === "school-selection") return ["school"];
   if (taskType === "major-match") return ["major", "profile"];
   const matched = Object.entries(INTENT_SIGNALS)
-    .filter(([, signals]) => signals.some((signal) => includesSignal(normalizedQuery, signal)))
+    .filter(([intent, signals]) => {
+      const searchableQuery = intent === "school"
+        ? stripNonTargetSchoolPhrases(normalizedQuery)
+        : normalizedQuery;
+      return signals.some((signal) => includesSignal(searchableQuery, signal));
+    })
     .map(([intent]) => intent);
   return matched.length ? matched : ["general"];
 }
@@ -145,8 +150,11 @@ function extractEntities(query, normalizedQuery) {
     entities.push({ type: "application-round", value: round.toUpperCase() });
   }
   for (const [type, signals] of Object.entries(INTENT_SIGNALS)) {
+    const searchableQuery = type === "school"
+      ? stripNonTargetSchoolPhrases(normalizedQuery)
+      : normalizedQuery;
     for (const signal of signals) {
-      if (signal.length < 3 || !includesSignal(normalizedQuery, signal)) continue;
+      if (signal.length < 3 || !includesSignal(searchableQuery, signal)) continue;
       entities.push({ type, value: signal });
     }
   }
@@ -200,6 +208,13 @@ function buildReason({ mode, normalizedTaskType, primaryIntent, complex, needsCo
 
 function normalizeText(value) {
   return String(value || "").normalize("NFKC").toLocaleLowerCase().replace(/\s+/gu, " ").trim();
+}
+
+function stripNonTargetSchoolPhrases(value) {
+  return String(value || "")
+    .replace(/\b(?:high|secondary|middle|summer)\s+schools?\b/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
 }
 
 function includesSignal(value, signal) {

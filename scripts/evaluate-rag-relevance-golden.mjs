@@ -23,6 +23,7 @@ const report = await evaluateRagRelevanceGoldenSet({
   retrieve: (item) => orchestrator.retrieve({
     user: { id: `rag-relevance:${item.id}`, profile: item.profile || {}, portfolio: item.portfolio || {} },
     question: item.query,
+    taskType: item.taskType || "application",
     assistantProfile: item.assistantProfile || "",
     usePersonalContext: item.usePersonalContext === true,
   }),
@@ -32,6 +33,7 @@ const failures = report.details.filter((item) => (
   !item.forbiddenPassed
   || !item.sourceBudgetPassed
   || !item.graphBudgetPassed
+  || !item.modePassed
   || !item.absoluteLatencyPassed
 ));
 console.log(JSON.stringify({

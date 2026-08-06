@@ -130,6 +130,57 @@ assert.ok(
   "Graph context may retain relevant facts up to its independent eight-fact budget even when citation slots are full.",
 );
 
+const applicationBudgetOrchestrator = createRetrievalOrchestrator({
+  documentRetriever: {
+    async retrieve() {
+      return {
+        context: "D".repeat(18_000),
+        sources: [{ id: "application-doc", type: "resource-library", scope: "knowledge", title: "Application evidence" }],
+        retrieval: { selectedDocuments: 1, totalDocuments: 1 },
+      };
+    },
+  },
+  knowledgeGraph: {
+    async search() {
+      return {
+        adapter: "test-graph",
+        sources: Array.from({ length: 8 }, (_, index) => ({
+          id: `kg:application-${index + 1}`,
+          sourceId: `data/application-${index + 1}.md`,
+          type: "knowledge-graph",
+          title: `Application graph fact ${index + 1}`,
+        })),
+        facts: Array.from({ length: 8 }, (_, index) => ({
+          id: `application-${index + 1}`,
+          score: 10,
+          sourceId: `data/application-${index + 1}.md`,
+          queryAnchored: true,
+          subject: { id: `resource:${index}`, name: `Resource ${index}` },
+          predicate: "SUPPORTS",
+          object: { id: `activity:${index}`, name: `Activity ${index}` },
+        })),
+        traversal: { seedEntities: ["resource:0"], visitedEntities: 16, selectedFacts: 8, maxDepth: 2 },
+      };
+    },
+  },
+});
+const applicationBudgetResult = await applicationBudgetOrchestrator.retrieve({
+  question: "Compare activities and resources for an application strategy",
+  usePersonalContext: false,
+  queryPlan: {
+    mode: "graph-rag",
+    taskType: "application",
+    primaryIntent: "resource",
+    intents: ["resource"],
+    constraints: {},
+    steps: [],
+  },
+});
+assert.equal(applicationBudgetResult.retrieval.graph.selectedFacts, 6);
+assert.ok(applicationBudgetResult.context.length <= 18_000, "Knowledge-only application context must respect its 18k combined budget.");
+assert.ok(applicationBudgetResult.retrieval.contextCharacters.combined <= 18_000);
+assert.equal(applicationBudgetResult.retrieval.selectedSourceCounts.byScope.knowledge, applicationBudgetResult.sources.length);
+
 calls.length = 0;
 const lookupResult = await orchestrator.retrieve({ question: "MIT 的推荐信要求是什么？" });
 assert.deepEqual(calls, [["documents", "hybrid-rag"]]);

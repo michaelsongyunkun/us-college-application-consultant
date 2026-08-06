@@ -140,12 +140,20 @@ try {
   const schoolBoundaryMarkdown = [
     "## MIT\nMIT recommendation requirements and maker culture.",
     "## Smith College\nSmith recommendation requirements and humanities programs.",
+    "## Tokyo Institute of Science\nTokyo science and technology programs.",
+    "## 北京大学 Peking University\nUniversity admissions information in Beijing.",
   ].join("\n\n");
   const precisionRetriever = createRagRetriever({
     root: tempDir,
     readMarkdownFile: async (filePath) => {
       if (String(filePath).endsWith("majors.md")) return precisionMarkdown;
       if (String(filePath).endsWith("schools.md")) return schoolBoundaryMarkdown;
+      if (String(filePath).endsWith("research-projects.md")) {
+        return "## AI Research Scholars\nResearch mentorship and AI projects for high school students.";
+      }
+      if (String(filePath).endsWith("competitions.md")) {
+        return "## ACSL Computer Science Competition\nA computer science competition for high school students.";
+      }
       return "## Unrelated admissions material\nNo matching robotics, major, or weather evidence.";
     },
     planning: {
@@ -187,6 +195,45 @@ try {
   assert.ok(mitResult.sources.some((source) => /MIT/u.test(source.title)));
   assert.ok(mitResult.sources.every((source) => !/Smith/u.test(source.title)), "MIT must not substring-match Smith.");
 
+  const englishResearchResult = await precisionRetriever.retrieve({
+    user: { id: "precision-english-research" },
+    question: "AI research programs for high school students",
+    usePersonalContext: false,
+  });
+  assert.ok(englishResearchResult.sources.some((source) => source.type === "resource-library"));
+  assert.ok(
+    englishResearchResult.sources.every((source) => (
+      source.type === "resource-library" && source.title.includes("实习/科研库")
+    )),
+    "A research-resource lookup must stay inside the research catalog.",
+  );
+
+  const englishCompetitionResult = await precisionRetriever.retrieve({
+    user: { id: "precision-english-competition" },
+    question: "Competitions for computer science students",
+    usePersonalContext: false,
+  });
+  assert.ok(englishCompetitionResult.sources.some((source) => /ACSL/u.test(source.title)));
+  assert.ok(englishCompetitionResult.sources.every((source) => !/Google Science Fair/u.test(source.title)));
+  assert.ok(
+    englishCompetitionResult.sources.every((source) => (
+      source.type === "resource-library" && source.title.includes("竞赛库")
+    )),
+    "A competition lookup must stay inside the competition catalog.",
+  );
+
+  const humanitiesMajorResult = await precisionRetriever.retrieve({
+    user: { id: "precision-humanities-major" },
+    question: "Match majors for archival history research and public writing",
+    assistantProfile: "major-match",
+    usePersonalContext: true,
+  });
+  assert.equal(humanitiesMajorResult.retrieval.intent, "major");
+  assert.ok(
+    humanitiesMajorResult.sources.every((source) => source.type !== "school-encyclopedia"),
+    "Major-match topic words must not be mistaken for explicit school names.",
+  );
+
   const unrelated = await precisionRetriever.retrieve({
     user: { id: "precision-negative" },
     question: "今天北京天气如何？",
@@ -194,6 +241,23 @@ try {
   });
   assert.deepEqual(unrelated.sources, []);
   assert.equal(unrelated.retrieval.selectedDocuments, 0);
+
+  const focusedApComputerScience = await precisionRetriever.retrieve({
+    user: { id: "precision-ap-cs" },
+    question: "What does AP Computer Science A cover?",
+    usePersonalContext: false,
+  });
+  assert.ok(focusedApComputerScience.sources.some((source) => /Computer Science/u.test(source.title)));
+  assert.ok(focusedApComputerScience.sources.every((source) => !/Mechanical Engineering/u.test(source.title)));
+
+  const schoolSelectionResult = await precisionRetriever.retrieve({
+    user: { id: "precision-school-selection" },
+    question: "Is Smith ED1 coherent for Biomedical Engineering?",
+    taskType: "school-selection",
+    usePersonalContext: false,
+  });
+  assert.equal(schoolSelectionResult.retrieval.intent, "school");
+  assert.ok(schoolSelectionResult.sources.some((source) => /Smith/u.test(source.title)));
 
   const unauthorizedProfile = await precisionRetriever.retrieve({
     user: { id: "precision-profile-without-consent" },

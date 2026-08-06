@@ -73,16 +73,28 @@ const SOURCE_TYPE_LABELS = {
 };
 
 const PERSONAL_SOURCE_TYPES = new Set(["student-backup", "application-portfolio"]);
+const SCHOOL_TITLE_ANCHOR_STOP_TOKENS = new Set([
+  "college", "university", "school", "institute", "technology", "science", "engineering",
+  "computer", "research", "program", "programs", "student", "students",
+  "大学", "学院", "学校", "理工", "科技", "科学", "工程",
+]);
 const RETRIEVAL_STOP_PHRASES = [
   "请根据", "申请档案", "自动匹配", "美国本科", "输出", "核心结论",
   "推荐专业优先级表", "下一步行动",
   "how", "should", "this", "that", "the", "and", "or", "for", "with", "from",
-  "student", "students", "compare", "comparison", "resource", "resources",
+  "student", "students", "high school", "school", "schools", "compare", "comparison",
+  "resource", "resources", "program", "programs", "major", "majors",
+  "适合", "学生", "高中生", "专业", "竞赛", "夏校", "科研", "暑期项目",
+  "competition", "competitions", "summer", "research", "science", "科学",
   "please", "help", "what", "which", "use", "next", "prioritize", "application",
   "recommendation", "recommendations", "letter", "letters", "requirement", "requirements",
   "推荐信要求", "是什么",
 ];
 const RETRIEVAL_STOP_TOKENS = new Set(RETRIEVAL_STOP_PHRASES.flatMap(tokenizeRaw));
+const TITLE_PHRASE_ANCHORS = [
+  "computer science", "data science", "artificial intelligence", "mechanical engineering",
+  "business analytics", "political science", "public policy", "environmental science",
+];
 
 const APPLICATION_ROUND_LABELS = {
   rea: "REA",
@@ -630,6 +642,7 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
     user,
     question,
     historySummary = "",
+    taskType = "application",
     assistantProfile = "",
     usePersonalContext = false,
   } = {}) {
@@ -653,7 +666,7 @@ export function createRagRetriever({ root, planning, activityPortfolio, metrics 
       includePersonalContext,
       staticDocuments: await loadStaticMarkdownDocuments(),
     });
-    const intentProfile = analyzeQuestionIntent(normalizedQuestion);
+    const intentProfile = analyzeQuestionIntent(normalizedQuestion, { assistantProfile, taskType });
     const retrievalQuestion = assistantProfile === "major-match"
       ? buildMajorMatchRetrievalQuery({ question: normalizedQuestion, profile, portfolio })
       : normalizedQuestion;
@@ -993,10 +1006,15 @@ function getChunkHeading(chunk) {
   return heading.replace(/\*+/g, "").trim().slice(0, 90);
 }
 
-function analyzeQuestionIntent(question) {
+function analyzeQuestionIntent(question, { assistantProfile = "", taskType = "application" } = {}) {
   const normalized = normalizeSearchText(question);
-  const hasAny = (patterns) => patterns.some((pattern) => normalized.includes(pattern));
-  if (hasAny(["专业", "本科专业", "major", "concentration", "track", "职业", "岗位", "就业", "career"])) {
+  const normalizedWithoutGenericSchools = stripNonTargetSchoolPhrases(normalized);
+  const hasAny = (patterns) => patterns.some((pattern) => matchesSearchSignal(normalized, pattern));
+  const hasSchoolSignal = (patterns) => patterns.some((pattern) => (
+    matchesSearchSignal(normalizedWithoutGenericSchools, pattern)
+  ));
+  if (assistantProfile === "major-match"
+    || hasAny(["专业", "本科专业", "major", "majors", "concentration", "track", "职业", "岗位", "就业", "career"])) {
     return intentProfile("major", "问题包含专业、职业/岗位或 major 匹配信号。", {
       "student-backup": 1.6,
       "application-portfolio": 2.2,
@@ -1005,7 +1023,16 @@ function analyzeQuestionIntent(question) {
       "major-encyclopedia": 3.7,
     });
   }
-  if (hasAny(["选校", "院校", "学校", "ed", "ea", "rd", "uc", "rea", "match", "mit", "college", "university"])) {
+  if (taskType === "school-selection") {
+    return intentProfile("school", "选校工作流强制使用院校检索意图。", {
+      "student-backup": 1.3,
+      "application-portfolio": 1.6,
+      "resource-library": 0.9,
+      "school-encyclopedia": 3.4,
+      "major-encyclopedia": 1.5,
+    });
+  }
+  if (hasSchoolSignal(["选校", "院校", "学校", "ed", "ea", "rd", "uc", "rea", "mit", "college", "colleges", "university", "universities"])) {
     return intentProfile("school", "问题包含院校、轮次或具体学校信号。", {
       "student-backup": 1.3,
       "application-portfolio": 1.6,
@@ -1014,7 +1041,7 @@ function analyzeQuestionIntent(question) {
       "major-encyclopedia": 1.5,
     });
   }
-  if (hasAny(["竞赛", "夏校", "科研", "项目", "polygence", "活动", "resource", "competition", "summer"])) {
+  if (hasAny(["竞赛", "夏校", "科研", "项目", "polygence", "活动", "resource", "resources", "competition", "competitions", "summer", "research", "internship", "internships", "activity", "activities", "project", "projects"])) {
     return intentProfile("resource", "问题包含项目、竞赛、夏校或活动资源信号。", {
       "student-backup": 1.3,
       "application-portfolio": 1.7,
@@ -1041,6 +1068,15 @@ function analyzeQuestionIntent(question) {
       "major-encyclopedia": 1.5,
     });
   }
+  if (hasSchoolSignal(["school", "schools"])) {
+    return intentProfile("school", "问题包含学校检索信号。", {
+      "student-backup": 1.3,
+      "application-portfolio": 1.6,
+      "resource-library": 0.9,
+      "school-encyclopedia": 3.4,
+      "major-encyclopedia": 1.5,
+    });
+  }
   return intentProfile("general", "未识别到强意图，采用均衡检索。", {
     "student-backup": 1.6,
     "application-portfolio": 1.8,
@@ -1064,13 +1100,22 @@ function selectRelevantDocuments(documents, question, intentProfile = analyzeQue
     "school-encyclopedia",
   );
   const allowedKnowledgeTypes = getAllowedKnowledgeTypes(question, intentProfile.intent);
+  const allowedResourceLabels = getAllowedResourceLabels(question);
+  if (schoolTitleAnchors.length && ["school", "recommendation"].includes(intentProfile.intent)) {
+    allowedKnowledgeTypes.add("school-encyclopedia");
+  }
   const candidates = consolidatePersonalDocuments(documents).map((document, index) => {
     const scope = PERSONAL_SOURCE_TYPES.has(getRagDocumentType(document)) ? "personal" : "knowledge";
     const type = getRagDocumentType(document);
     const titleAnchored = type !== "school-encyclopedia"
       || !schoolTitleAnchors.length
       || matchesTitleAnchor(getRagDocumentTitle(document), schoolTitleAnchors);
-    const typeAllowed = allowedKnowledgeTypes.has(type);
+    const resourceLabelAllowed = type !== "resource-library"
+      || !allowedResourceLabels.length
+      || allowedResourceLabels.some((label) => getRagDocumentTitle(document).includes(label));
+    const typeAllowed = allowedKnowledgeTypes.has(type)
+      && resourceLabelAllowed
+      && !isReferenceOnlyDocument(document);
     const score = scope === "personal"
       ? personalAnchorScore(document)
       : titleAnchored && typeAllowed ? scoreDocument(document, queryTokens, question, intentProfile) : 0;
@@ -1099,30 +1144,62 @@ function selectRelevantDocuments(documents, question, intentProfile = analyzeQue
 
 function getAllowedKnowledgeTypes(question, primaryIntent) {
   const normalized = normalizeSearchText(question);
-  const asciiTokens = new Set(normalized.match(/[a-z0-9][a-z0-9.+#-]*/g) || []);
+  const normalizedWithoutGenericSchools = stripNonTargetSchoolPhrases(normalized);
   const allowed = new Set();
-  const hasAny = (patterns) => patterns.some((pattern) => {
-    const normalizedPattern = normalizeSearchText(pattern);
-    return /^[a-z0-9][a-z0-9.+#-]*$/u.test(normalizedPattern)
-      ? asciiTokens.has(normalizedPattern)
-      : normalized.includes(normalizedPattern);
-  });
+  const hasAny = (patterns) => patterns.some((pattern) => matchesSearchSignal(normalized, pattern));
+  const hasSchoolSignal = (patterns) => patterns.some((pattern) => (
+    matchesSearchSignal(normalizedWithoutGenericSchools, pattern)
+  ));
   const primaryType = {
     school: "school-encyclopedia",
     major: "major-encyclopedia",
     resource: "resource-library",
   }[primaryIntent];
   if (primaryType) allowed.add(primaryType);
-  if (hasAny(["选校", "院校", "学校", "ed", "ea", "rd", "uc", "rea", "mit", "college", "colleges", "university", "universities", "school", "schools"])) {
+  if (primaryIntent === "resource") return allowed;
+  if (hasSchoolSignal(["选校", "院校", "学校", "ed", "ea", "rd", "uc", "rea", "mit", "college", "colleges", "university", "universities", "school", "schools"])) {
     allowed.add("school-encyclopedia");
   }
   if (hasAny(["专业", "本科专业", "major", "majors", "concentration", "concentrations", "track", "tracks", "职业", "岗位", "就业", "career", "careers", "computer science", "计算机"])) {
     allowed.add("major-encyclopedia");
   }
-  if (hasAny(["竞赛", "夏校", "科研", "项目", "polygence", "活动", "resource", "resources", "competition", "competitions", "project", "projects", "activity", "activities", "summer", "frc", "ftc"])) {
+  if (hasAny(["竞赛", "夏校", "科研", "项目", "polygence", "活动", "resource", "resources", "competition", "competitions", "project", "projects", "activity", "activities", "summer", "research", "internship", "internships", "frc", "ftc"])) {
     allowed.add("resource-library");
   }
   return allowed;
+}
+
+function getAllowedResourceLabels(question) {
+  const normalized = normalizeSearchText(question);
+  const labels = [];
+  const includesAny = (patterns) => patterns.some((pattern) => matchesSearchSignal(normalized, pattern));
+  if (includesAny(["竞赛", "competition", "competitions"])) labels.push("竞赛库");
+  if (includesAny(["夏校", "暑期", "summer", "summer school", "summer program"])) labels.push("夏校库");
+  if (includesAny(["科研", "research", "internship", "internships"])) labels.push("实习/科研库");
+  if (includesAny(["活动", "activity", "activities", "extracurricular"])) labels.push("课外活动库");
+  if (includesAny(["期刊", "journal", "journals", "publication", "publications"])) labels.push("国际期刊汇总");
+  return [...new Set(labels)];
+}
+
+function isReferenceOnlyDocument(document) {
+  return /核验参考链接|reference links?/iu.test(getRagDocumentTitle(document));
+}
+
+function matchesSearchSignal(normalizedText, pattern) {
+  const normalizedPattern = normalizeSearchText(pattern);
+  if (!normalizedPattern) return false;
+  if (!/^[a-z0-9][a-z0-9.+#-]*$/u.test(normalizedPattern)) {
+    return normalizedText.includes(normalizedPattern);
+  }
+  const asciiTokens = new Set(normalizedText.match(/[a-z0-9][a-z0-9.+#-]*/g) || []);
+  return asciiTokens.has(normalizedPattern);
+}
+
+function stripNonTargetSchoolPhrases(value) {
+  return String(value || "")
+    .replace(/\b(?:high|secondary|middle|summer)\s+schools?\b/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
 }
 
 function findExplicitTitleAnchors(documents, queryTokens, type) {
@@ -1131,6 +1208,7 @@ function findExplicitTitleAnchors(documents, queryTokens, type) {
     .map((document) => normalizeSearchText(getRagDocumentTitle(document))))];
   return queryTokens.filter((token) => {
     if (/^[a-z0-9][a-z0-9.+#-]*$/u.test(token) && token.length < 3) return false;
+    if (SCHOOL_TITLE_ANCHOR_STOP_TOKENS.has(token)) return false;
     const matchingTitles = titles.filter((title) => {
       const asciiTokens = new Set(title.match(/[a-z0-9][a-z0-9.+#-]*/g) || []);
       return containsSearchToken(title, asciiTokens, token);
@@ -1203,6 +1281,11 @@ function scoreDocument(document, queryTokens, question, intentProfile) {
     if (containsSearchToken(normalizedTitle, titleAsciiTokens, token)) score += 2 * sourceWeight;
   }
   const normalizedQuestion = normalizeSearchText(question);
+  for (const phrase of TITLE_PHRASE_ANCHORS) {
+    if (normalizedQuestion.includes(phrase) && normalizedTitle.includes(phrase)) {
+      score += 8 * sourceWeight;
+    }
+  }
   if (normalizedQuestion && searchable.includes(normalizedQuestion)) score += 8;
   return score;
 }

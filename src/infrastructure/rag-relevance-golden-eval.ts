@@ -30,7 +30,10 @@ export async function evaluateRagRelevanceGoldenSet({
   const ok = summary.precisionAtK >= precisionFloor
     && summary.recallAtK >= recallFloor
     && Object.values(categories).every((group: any) => group.precisionAtK >= categoryPrecisionFloor)
-    && details.every((detail) => detail.forbiddenPassed && detail.sourceBudgetPassed && detail.graphBudgetPassed)
+    && details.every((detail) => detail.forbiddenPassed
+      && detail.sourceBudgetPassed
+      && detail.graphBudgetPassed
+      && detail.modePassed)
     && latencyPassed
     && absoluteLatencyPassed;
   return { ok, summary, categories, latencyPassed, absoluteLatencyPassed, details };
@@ -64,6 +67,7 @@ function buildDetail(item: any, baseline: any, candidate: any, maxLatencyMs: num
     forbiddenPassed: forbidden.length === 0,
     sourceBudgetPassed: sources.length <= Number(item.maxSources ?? 8),
     graphBudgetPassed: Number(candidate.result.retrieval?.graph?.selectedFacts || 0) <= Number(item.maxGraphFacts ?? 8),
+    modePassed: !item.expectedMode || candidate.result.retrieval?.mode === item.expectedMode,
     baselineLatencyMs: baseline?.latencyMs || 0,
     candidateLatencyMs: candidate.latencyMs,
     absoluteLatencyPassed: candidate.latencyMs <= Number(item.maxLatencyMs ?? maxLatencyMs),

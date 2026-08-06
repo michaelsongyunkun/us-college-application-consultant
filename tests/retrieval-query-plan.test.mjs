@@ -43,6 +43,16 @@ assert.equal(
   "A single-course AP lookup must not use GraphRAG merely because the course name also resembles a major.",
 );
 
+const highSchoolResearchLookup = createRetrievalQueryPlan({
+  query: "AI research programs for high school students",
+});
+assert.equal(highSchoolResearchLookup.primaryIntent, "resource");
+assert.equal(
+  highSchoolResearchLookup.mode,
+  RETRIEVAL_MODES.HYBRID_RAG,
+  "The phrase high school must not turn a focused research-resource lookup into a school GraphRAG query.",
+);
+
 const englishRecommendationLookup = createRetrievalQueryPlan({
   query: "Summarize Stanford recommendation letter expectations.",
 });
