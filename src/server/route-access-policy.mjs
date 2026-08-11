@@ -7,7 +7,6 @@ export const protectedUserPagePaths = Object.freeze([
   "/planning-tracker.html",
   "/school-selection.html",
   "/ask-deepseek.html",
-  "/inspiration-robot.html",
   "/resource-library.html",
   "/school-encyclopedia.html",
   "/university-ranking.html",

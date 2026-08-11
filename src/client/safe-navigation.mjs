@@ -1,15 +1,35 @@
 let navigationLocked = false;
+let navigationAttempt = 0;
+let unlockTimerId = null;
 
 function isModifiedNavigation(event) {
   return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
 }
 
 function resetNavigationState(root = document) {
+  navigationAttempt += 1;
+  clearNavigationUnlockTimer();
   navigationLocked = false;
   root.querySelectorAll("[data-safe-nav]").forEach((link) => {
     link.removeAttribute("aria-disabled");
     link.classList.remove("is-loading");
   });
+}
+
+function clearNavigationUnlockTimer() {
+  if (unlockTimerId === null) return;
+  window.clearTimeout?.(unlockTimerId);
+  unlockTimerId = null;
+}
+
+function scheduleNavigationUnlock(root = document) {
+  const attempt = navigationAttempt;
+  clearNavigationUnlockTimer();
+  unlockTimerId = window.setTimeout(() => {
+    if (attempt !== navigationAttempt) return;
+    unlockTimerId = null;
+    resetNavigationState(root);
+  }, 1_000);
 }
 
 export function bindSafeNavigation(root = document) {
@@ -24,10 +44,12 @@ export function bindSafeNavigation(root = document) {
       if (navigationLocked) return;
 
       navigationLocked = true;
+      navigationAttempt += 1;
       link.setAttribute("aria-disabled", "true");
       link.classList.add("is-loading");
 
       window.location.href = new URL(href, window.location.href).href;
+      scheduleNavigationUnlock(root);
     });
   });
 }

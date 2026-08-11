@@ -25,7 +25,6 @@ for (const pagePath of [
   "/planning-tracker.html",
   "/school-selection.html",
   "/ask-deepseek.html",
-  "/inspiration-robot.html",
   "/resource-library.html",
   "/school-encyclopedia.html",
   "/university-ranking.html",

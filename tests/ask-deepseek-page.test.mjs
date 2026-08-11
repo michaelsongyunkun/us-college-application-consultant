@@ -5,7 +5,6 @@ const appPages = [
   "index.html",
   "my-activities.html",
   "ask-deepseek.html",
-  "inspiration-robot.html",
   "resource-library.html",
   "school-encyclopedia.html",
   "major-encyclopedia.html",
@@ -24,22 +23,16 @@ for (const page of appPages) {
     `${page} sidebar should include the application robot entry.`,
   );
   assert.ok(
-    navigation.includes('href="./inspiration-robot.html"'),
-    `${page} sidebar should include the inspiration robot entry.`,
-  );
-  assert.ok(
     navigation.indexOf("my-activities.html") < navigation.indexOf("ask-deepseek.html")
-      && navigation.indexOf("ask-deepseek.html") < navigation.indexOf("inspiration-robot.html")
-      && navigation.indexOf("inspiration-robot.html") < navigation.indexOf("resource-library.html"),
-    `${page} sidebar should place both robots between portfolio and resource library.`,
+      && navigation.indexOf("ask-deepseek.html") < navigation.indexOf("resource-library.html"),
+    `${page} sidebar should place the application robot between portfolio and resource library.`,
   );
+  assert.ok(!navigation.includes('href="./inspiration-robot.html"'), `${page} sidebar should not include the removed inspiration robot entry.`);
 }
 
 const pageHtml = readFileSync("ask-deepseek.html", "utf8");
-const inspirationPageHtml = readFileSync("inspiration-robot.html", "utf8");
 const script = readFileSync("src/client/ask-deepseek.js", "utf8");
 const styles = readFileSync("styles.css", "utf8");
-const inspirationAvatar = readFileSync("assets/inspiration-bean-avatar.svg", "utf8");
 
 for (const expected of [
   "申请机器人",
@@ -189,10 +182,6 @@ assert.ok(script.includes("chat-source-type-chip"), "Ask DeepSeek should show so
 assert.ok(script.includes("renderFollowUpActions"), "Ask DeepSeek should render follow-up actions after answers.");
 assert.ok(script.includes("data-deepseek-follow-up"), "Ask DeepSeek follow-up buttons should be actionable.");
 assert.ok(script.includes("conversationSummary"), "Ask DeepSeek should keep a compact conversation summary.");
-assert.ok(
-  script.includes('return { question, historySummary, assistantProfile: PAGE_ASSISTANT_PROFILE }'),
-  "Only the inspiration robot should send conversation memory.",
-);
 assert.ok(script.includes('assistantProfile: "application"'));
 assert.ok(script.includes("exportDeepSeekConversation"), "Ask DeepSeek should export the current conversation for review.");
 assert.ok(script.includes("saveDeepSeekReviewVersion"), "Ask DeepSeek should save a review version into the portfolio.");
@@ -248,72 +237,11 @@ assert.match(styles, /\.chat-answer-preview\s*\{/, "Ask DeepSeek should style th
 assert.match(styles, /\.chat-answer-content\[hidden\]\s*\{/, "Hidden complete answers should stay out of layout.");
 assert.match(styles, /\.chat-answer-toggle\s*\{/, "Ask DeepSeek should style the answer expansion control.");
 
-for (const expected of [
-  "启发性机器人",
-  'data-assistant-profile="inspiration"',
-  "在寻找答案之前，先看清你真正关心什么",
-  "知心大姐姐式对话",
-  "从历史对话找线索",
-  "探索一个兴趣方向",
-  "确认探索问题",
-  "设计一次小行动",
-  'data-deepseek-workflow="history-clues"',
-  'data-deepseek-workflow="explore-direction"',
-  'data-deepseek-workflow="confirm-question"',
-  'data-deepseek-workflow="small-action"',
-  "./assets/inspiration-bean-avatar.svg",
-  "./src/client/ask-deepseek.js?v=20260806-quality-states",
-]) {
-  assert.ok(inspirationPageHtml.includes(expected), `Inspiration robot page should include ${expected}.`);
-}
-
 assert.ok(pageHtml.includes("强制档案白名单"));
 assert.ok(pageHtml.includes("不会读取学生画像、申请规划、历史快照、对话记忆、资源库、院校百科、专业百科或其他用户数据"));
 assert.ok(pageHtml.includes("快捷任务也只读取当前账户的“我的申请档案”"));
-assert.doesNotMatch(inspirationPageHtml, /deepSeekPersonalContext|参考我的申请规划|历史快照/u);
 assert.doesNotMatch(pageHtml, /id="deepSeekPersonalContext"/u);
 assert.ok(script.includes("usePersonalContext: true"));
 assert.doesNotMatch(script, /personalContextToggle/u);
 assert.ok(script.includes("正在读取你的申请档案"));
 assert.match(styles, /\.personal-context-control\s*\{/u);
-
-assert.ok(
-  inspirationPageHtml.indexOf("ask-deepseek.html") < inspirationPageHtml.indexOf("inspiration-robot.html"),
-  "Inspiration robot should appear immediately below the application robot in navigation.",
-);
-assert.ok(script.includes('PAGE_ASSISTANT_PROFILE = document.body.dataset.assistantProfile === "inspiration"'));
-assert.ok(script.includes('assistantProfile: PAGE_ASSISTANT_PROFILE'));
-assert.ok(script.includes('INSPIRATION_AVATAR_SRC = "./assets/inspiration-bean-avatar.svg"'));
-assert.ok(script.includes("isUser ? USER_AVATAR_SRC : ASSISTANT_AVATAR_SRC"));
-assert.ok(inspirationAvatar.includes("原创豆形探索伙伴头像"));
-assert.equal(/doubao|豆包/i.test(inspirationAvatar), false, "Original avatar asset should not use Doubao branding.");
-assert.ok(script.includes("buildRagRequestPayload(question, conversationSummary)"));
-assert.ok(script.includes("rememberPendingDeepSeekRagJob"));
-assert.ok(script.includes("deepseek-inspiration-pending-job"));
-assert.ok(script.includes("这一轮只问我一个最关键的问题"));
-assert.ok(script.includes("不是为了包装申请履历"));
-assert.ok(script.includes("MAX_MEMORY_TURNS = IS_INSPIRATION_PROFILE ? 8 : 4"));
-assert.ok(
-  inspirationPageHtml.includes("采用纯对话模式，不读取申请档案或资料库"),
-  "Inspiration robot should clearly disclose that it does not read RAG data.",
-);
-assert.ok(
-  inspirationPageHtml.includes("由豆包 Seed 2.1 Turbo 驱动"),
-  "Inspiration robot should disclose its dedicated Doubao model.",
-);
-assert.ok(
-  script.includes("showReferences: !IS_INSPIRATION_PROFILE"),
-  "Inspiration responses should not render reference cards.",
-);
-assert.ok(
-  script.includes("quality: IS_INSPIRATION_PROFILE ? null"),
-  "Inspiration responses should not render retrieval quality metadata.",
-);
-assert.ok(
-  script.includes('IS_INSPIRATION_PROFILE ? "已回复"'),
-  "Inspiration status should not mention reference counts.",
-);
-assert.ok(
-  script.includes("if (!IS_INSPIRATION_PROFILE)"),
-  "Inspiration workflows should not inherit the application robot's fixed report template.",
-);

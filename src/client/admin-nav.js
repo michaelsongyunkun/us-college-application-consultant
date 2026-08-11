@@ -1,3 +1,5 @@
+import { requestCurrentAuthSession } from "./auth-session.mjs";
+
 function getAdminDashboardLinks() {
   return [...document.querySelectorAll("[data-admin-dashboard-link]")];
 }
@@ -13,9 +15,8 @@ async function updateAdminDashboardLinks() {
   if (!getAdminDashboardLinks().length) return;
   setAdminDashboardVisible(false);
   try {
-    const response = await fetch("/api/auth/me", { method: "GET" });
-    const data = await response.json().catch(() => ({}));
-    setAdminDashboardVisible(response.ok && data.user?.role === "admin");
+    const session = await requestCurrentAuthSession();
+    setAdminDashboardVisible(session.ok && session.user?.role === "admin");
   } catch {
     setAdminDashboardVisible(false);
   }

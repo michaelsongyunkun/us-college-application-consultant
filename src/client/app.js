@@ -31,6 +31,11 @@ import {
 import { escapeHtml } from "./html-utils.mjs";
 import { csrfFetch } from "./csrf-token.mjs";
 import {
+  clearCurrentAuthSession,
+  rememberCurrentAuthSession,
+  requestCurrentAuthSession,
+} from "./auth-session.mjs";
+import {
   applyProfileFields,
   buildPlanningGenerationPayload,
   collectActivitiesFromTable,
@@ -253,7 +258,8 @@ async function requestJson(url, options = {}) {
 
 async function loadCurrentUser() {
   try {
-    const data = await requestJson("/api/auth/me", { method: "GET" });
+    const data = await requestCurrentAuthSession();
+    if (!data.ok || !data.user) throw new Error("Not authenticated");
     if (redirectToNextPath()) return;
     await initializeApp(data.user);
     showAppView(data.user);
@@ -309,6 +315,7 @@ async function submitAuthForm(event) {
       method: "POST",
       body: JSON.stringify(payload),
     });
+    rememberCurrentAuthSession(data.user, data);
     authForm.reset();
     if (redirectToNextPath()) return;
     await initializeApp(data.user);
@@ -334,6 +341,7 @@ async function logout(event) {
     plans = [];
     snapshots = [];
     workspaceDirty = false;
+    clearCurrentAuthSession();
     setAuthMode("login");
     showAuthView("已退出登录");
     window.location.assign("/");

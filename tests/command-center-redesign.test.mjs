@@ -7,7 +7,6 @@ const pages = [
   ["planning-tracker.html", "计划与进度"],
   ["school-selection.html", "美本选校系统"],
   ["ask-deepseek.html", "申请机器人"],
-  ["inspiration-robot.html", "启发性机器人"],
   ["resource-library.html", "资源库"],
   ["school-encyclopedia.html", "院校百科"],
   ["major-encyclopedia.html", "专业百科"],
@@ -26,6 +25,7 @@ const courseHelperScript = readFileSync("src/client/course-helper.js", "utf8");
 const planningTrackerHtml = readFileSync("planning-tracker.html", "utf8");
 const planningTrackerScript = readFileSync("src/client/planning-tracker.js", "utf8");
 const safeNavigationScript = readFileSync("src/client/safe-navigation.mjs", "utf8");
+const authSessionScript = readFileSync("src/client/auth-session.mjs", "utf8");
 
 const authShell = indexHtml.match(/<section id="authShell"[\s\S]*?<\/section>\s*<main id="appShell"/)?.[0] || "";
 assert.ok(authShell.includes("landing-shell"), "Public landing shell should remain the public landing design.");
@@ -157,7 +157,7 @@ for (const [file, activeLabel] of pages) {
       && commandNav.indexOf("我的申请档案") < commandNav.indexOf("计划与进度")
       && commandNav.indexOf("计划与进度") < commandNav.indexOf("美本选校系统")
       && commandNav.indexOf("美本选校系统") < commandNav.indexOf("申请机器人")
-      && commandNav.indexOf("申请机器人") < commandNav.indexOf("启发性机器人")
+      && commandNav.indexOf("申请机器人") < commandNav.indexOf("资源库")
       && commandNav.indexOf("院校百科") < commandNav.indexOf("专业百科")
       && commandNav.indexOf("专业百科") < commandNav.indexOf("选课辅助器")
       && commandNav.indexOf("选课辅助器") < commandNav.indexOf("GPA / AP 工具")
@@ -172,7 +172,8 @@ assert.ok(indexHtml.includes('class="dashboard-account-actions account-actions"'
 assert.ok(indexHtml.includes('id="logoutButton"'), "Logged-in home should retain logout after removing the top brand header.");
 
 const adminNavScript = readFileSync("src/client/admin-nav.js", "utf8");
-assert.match(adminNavScript, /\/api\/auth\/me/, "Admin nav script should check the authenticated user.");
+assert.match(adminNavScript, /auth-session\.mjs/, "Admin nav script should reuse the shared authenticated user request.");
+assert.match(authSessionScript, /\/api\/auth\/me/, "Shared auth session script should check the authenticated user.");
 assert.match(adminNavScript, /role === "admin"/, "Admin nav script should reveal dashboard links only for admins.");
 assert.match(adminNavScript, /data-admin-dashboard-link/, "Admin nav script should target shared admin dashboard links.");
 assert.match(adminNavScript, /function getAdminDashboardLinks/, "Admin nav script should include links cloned into the mobile drawer.");
